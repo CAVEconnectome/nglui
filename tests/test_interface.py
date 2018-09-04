@@ -1,4 +1,4 @@
-from annotation_tools import interface
+from neuroglancer_annotation_ui import interface
 import neuroglancer
 import pytest
 

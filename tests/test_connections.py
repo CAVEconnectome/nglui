@@ -1,4 +1,4 @@
-from annotation import point_annotation, generate_id
+from neuroglancer_annotation_ui import annotation
 from connections import Connections
 import random
 import pytest
@@ -6,12 +6,12 @@ import pytest
 
 def generate_connections():
     points = []
-    pre_pt = point_annotation(random.sample(range(1, 100), 3),
-                              generate_id(), description=0)
-    syn_pt = point_annotation(random.sample(range(1, 100), 3),
-                              generate_id(), description=1)
-    post_pt = point_annotation(random.sample(range(1, 100), 3),
-                               generate_id(), description=2)
+    pre_pt = annotation.point_annotation(random.sample(range(1, 100), 3),
+                              annotation.generate_id(), description=0)
+    syn_pt = annotation.point_annotation(random.sample(range(1, 100), 3),
+                              annotation.generate_id(), description=1)
+    post_pt = annotation.point_annotation(random.sample(range(1, 100), 3),
+                               annotation.generate_id(), description=2)
     points.append(pre_pt.point.tolist())
     points.append(syn_pt.point.tolist())
     points.append(post_pt.point.tolist())
