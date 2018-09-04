@@ -1,1 +1,3 @@
-# NeuroglancerAnnotationUI
+# neuroglancer_annotation_ui
+
+NeuroglancerAnnotationUI
