@@ -14,7 +14,7 @@ class Interface(neuroglancer.Viewer):
         super(Interface, self).__init__()
         self.viewer = neuroglancer.Viewer()
         self.current_state = None
-        self.base_state = None
+        self._base_state = None
         self.states = {}
         self.segment_source = None
         self.segmet_layer_name = None
@@ -31,7 +31,7 @@ class Interface(neuroglancer.Viewer):
         """
         state = neuroglancer.parse_url(url)
         self.viewer.set_state(state)
-        self.base_state = copy.deepcopy(self.viewer.state)
+        self._base_state = copy.deepcopy(self.viewer.state)
         self.segment_layer_name = self.viewer.state.layers[1].type
         return self.viewer
 
@@ -104,10 +104,10 @@ class Interface(neuroglancer.Viewer):
 
     @property
     def state(self):
-        return self.state
+        return self._base_state
 
     def _update_state(self):
-        self.base_state = self.viewer.state
+        self._base_state = self.viewer.state
         return self.viewer
 
     def add_state(self, state_name):
