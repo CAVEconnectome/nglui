@@ -19,6 +19,12 @@ class Interface(neuroglancer.Viewer):
         self.segment_source = None
         self.segmet_layer_name = None
 
+    def __repr__(self):
+        return self.viewer.get_viewer_url()
+
+    def _repr_html_(self):
+        return '<a href="%s" target="_blank">Viewer</a>' % self.viewer.get_viewer_url()
+
     def set_source_url(self, ngl_url):
         self.ngl_url = neuroglancer.set_server_bind_address(ngl_url)
 
@@ -71,8 +77,35 @@ class Interface(neuroglancer.Viewer):
         except Exception as e:
             raise e
 
-    def add_annotation(self, layer_name, annotation, color):
-        """Add annotations layer to viewer instance, the type is specified.
+
+    def add_annotation_layer(self, layer_name, color=None ):
+        """Add annotation layer to the viewer instance.
+
+        Attributes:
+            layer_name (str): name of layer to be created
+        """
+        if layer_name in [l.name for l in self.viewer.state.layers]:
+            pass
+        else:
+            with self.viewer.txn() as s:
+                s.layers.append( name=layer_name,
+                                 layer=neuroglancer.AnnotationLayer() )
+                if color is not None:
+                    s.layers[layer_name].annotationColor = color
+
+    def set_annotation_layer_color( self, layer_name, color ):
+        """Set the color for the annotation layer
+
+        """
+        if layer_name in [l.name for l in self.viewer.state.layers]:
+            with self.viewer.txn() as s:
+                s.layers[layer_name].annotationColor = color
+        else:
+            pass
+
+    def add_annotation(self, layer_name, annotation, color=None):
+        """Add annotations to a viewer instance, the type is specified.
+           If layer name does not exist, add the layer
 
         Attributes:
             layer_name (str): name of layer to be displayed in neuroglancer ui.
@@ -80,11 +113,13 @@ class Interface(neuroglancer.Viewer):
         """
         if layer_name is None:
             layer_name = 'Annotations'
+        if issubclass(type(annotation), neuroglancer.viewer_state.AnnotationBase):
+            annotation = [ annotation ]
         try:
+            self.add_annotation_layer(layer_name, color)
             with self.viewer.txn() as s:
-                s.layers[layer_name] = neuroglancer.AnnotationLayer(
-                    annotations=annotation,
-                    annotation_color=color)
+                for anno in annotation:
+                    s.layers[layer_name].annotations.append( anno )
             self.current_state = self.viewer.state
         except Exception as e:
             raise e

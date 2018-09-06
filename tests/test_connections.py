@@ -1,5 +1,5 @@
 from neuroglancer_annotation_ui import annotation
-from connections import Connections
+from neuroglancer_annotation_ui.connections import Connections
 import random
 import pytest
 

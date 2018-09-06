@@ -2,7 +2,7 @@ import neuroglancer
 import secrets
 
 
-def line_annotation(a, b, id, description=None):
+def line_annotation(a, b, id=None, description=None):
     """Returns line annotation object.
 
     Attributes:
@@ -20,7 +20,7 @@ def line_annotation(a, b, id, description=None):
     return line
 
 
-def point_annotation(point, id, description=None):
+def point_annotation(point, id=None, description=None):
     """Returns point annotation object
 
     Attributes:
@@ -36,7 +36,7 @@ def point_annotation(point, id, description=None):
     return point
 
 
-def ellipsoid_annotation(center, radii, id, description=None):
+def ellipsoid_annotation(center, radii, id=None, description=None):
     """returns ellipsoid annotation object.
 
     Attributes:
@@ -54,7 +54,7 @@ def ellipsoid_annotation(center, radii, id, description=None):
     return ellipsoid
 
 
-def bounding_box_annotaiton(a, b, id, description=None):
+def bounding_box_annotaiton(a, b, id=None, description=None):
     """returns axis aligned bounding box annotation object.
 
     Attributes:

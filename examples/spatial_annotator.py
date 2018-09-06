@@ -67,6 +67,7 @@ class Connector(interface.Interface):
         self.data.add_connection(self.pre_point.point.tolist(),
                                  self.post_point.point.tolist(),
                                  self.synapse.point.tolist())
+        self.clear_segment()
 
     def select_pre_process(self, s):
         if self.pre_id is not None:
