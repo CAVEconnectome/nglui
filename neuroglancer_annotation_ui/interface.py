@@ -4,8 +4,10 @@ import time
 import json
 import urllib
 import copy
+from collections import OrderedDict
 from neuroglancer_annotation_ui import connections 
 from neuroglancer_annotation_ui import annotation
+
 
 class Interface(neuroglancer.Viewer):
     """Abstraction layer of neuroglancer.Viewer to quickly create
@@ -263,7 +265,7 @@ class Connector(Interface):
                                  self.post_point.point.tolist(),
                                  self.synapse.point.tolist())
         self.clear_segment(None)
-        
+
     def select_pre_process(self, s):
         if self.pre_id is not None:
             self.update_message("Press 'Shift + V' to clear so a new \
@@ -314,11 +316,19 @@ class Connector(Interface):
             self.index = self.data.set_active_pair(self.pre_id, self.post_id)
         return self.index
 
+    def _clear_annotation_layers( self, s ):
+        all_layers = neuroglancer.json_wrappers.to_json( self.viewer.state.layers )
+        new_layers = OrderedDict()
+        for layer in all_layers:
+            if all_layers[layer]['type'] != 'annotation':
+                new_layers[layer] = all_layers[layer]
+        
+        with self.viewer.txn() as s:
+            s.layers = neuroglancer.viewer_state.Layers(new_layers)
+
+
     def clear_all(self, s):
-        pos = self.viewer.state.navigation.position.voxel_coordinates
-        print(self.base_state)
-        self.viewer.set_state(self.base_state)
-        self._update_view(pos)
+        self._clear_annotation_layers(s)
         self.pre_id = None
         self.post_id = None
         self.post_point = None
