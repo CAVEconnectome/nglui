@@ -5,7 +5,7 @@ import json
 import urllib
 import copy
 from neuroglancer_annotation_ui import connections 
-
+from neuroglancer_annotation_ui import annotation
 
 class Interface(neuroglancer.Viewer):
     """Abstraction layer of neuroglancer.Viewer to quickly create
@@ -262,8 +262,8 @@ class Connector(Interface):
         self.data.add_connection(self.pre_point.point.tolist(),
                                  self.post_point.point.tolist(),
                                  self.synapse.point.tolist())
-        self.clear_segment()
-
+        self.clear_segment(None)
+        
     def select_pre_process(self, s):
         if self.pre_id is not None:
             self.update_message("Press 'Shift + V' to clear so a new \
