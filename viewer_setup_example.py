@@ -1,6 +1,6 @@
-import neuroglancer_annotation_ui.interface as anno_ui
+from neuroglancer_annotation_ui.interface import Connector
 
-syn_anno_viewer = anno_ui.Connector()
+syn_anno_viewer = Connector()
 
 actions = {
     'select_pre': ['shift+keyq', syn_anno_viewer.select_pre_process],
