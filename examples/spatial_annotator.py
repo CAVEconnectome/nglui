@@ -163,10 +163,11 @@ class Connector(interface.Interface):
 
 if __name__ == '__main__':
     # intialize annotation class
-    ngl_url = 'https://nkem-rebase-dot-neuromancer-seung-import.appspot.com/'
+    ngl_url = 'https://neuromancer-seung-import.appspot.com/'
 
     example = Connector()
     example.set_source_url(ngl_url)
+
     # dict of actions
     actions = {
         'select_pre': ['shift+keyq', example.select_pre_process],
@@ -181,6 +182,7 @@ if __name__ == '__main__':
     # bind actions to interface
     for action, bindings in actions.items():
         example.add_action(action, bindings[0], bindings[1])
+
     segment_source = 'precomputed://gs://neuroglancer/pinky40_v11/watershed_mst_trimmed_sem_remap'
     image_source = 'precomputed://gs://neuroglancer/pinky40_v11/image_rechunked'
     example.add_segmentation_layer('Segmentation', segment_source)

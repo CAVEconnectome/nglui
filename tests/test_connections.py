@@ -1,5 +1,5 @@
 from neuroglancer_annotation_ui import annotation
-from neuroglancer_annotation_ui.connections import Connections
+from neuroglancer_annotation_ui import connections
 import random
 import pytest
 
@@ -20,7 +20,7 @@ def generate_connections():
 
 if __name__ == '__main__':
     pt1 = generate_connections()
-    data = Connections()
+    data = connections.Connections()
     # add pre and post segment ids
     pre_id1 = '0987'
     post_id1 = '1234'
