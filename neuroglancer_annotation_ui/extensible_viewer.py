@@ -5,12 +5,12 @@ from neuroglancer_annotation_ui import annotation
 from inspect import getmembers, ismethod
 from functools import wraps
 
-def check_layer( layer_name ):
+def check_layer( layer_list ):
     def specific_layer_wrapper( func ):
         @wraps(func)
         def layer_wrapper(self, *args, **kwargs):
             curr_layer = self.viewer.get_selected_layer()
-            if curr_layer == layer_name:
+            if curr_layer in layer_list:
                 func(self, *args, **kwargs)
             else:
                 self.viewer.update_message( 'Select layer \"{}\"" to do that action!'.format(layer_name) )
@@ -151,6 +151,18 @@ class ExtensibleViewer( neuroglancer.Viewer ):
             self.current_state = self.viewer.state
         except Exception as e:
             raise e
+
+    def _remove_annotation(self, layer_name, aid):
+        try:
+            with self.viewer.txn() as s:
+                for ind, anno in enumerate( s.layers[layer_name].annotations ):
+                    if anno.id == aid:
+                        s.layers[layer_name].annotations.pop(ind)
+                        break
+                else:
+                    raise Exception
+        except:
+            self.update_message('Could not remove annotation')
 
     @property
     def state(self):

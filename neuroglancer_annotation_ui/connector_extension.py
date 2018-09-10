@@ -17,32 +17,39 @@ class ConnectorExtension():
                           'post_pt':'#ff0000',
                           'ctr_pt':'#555555'}
 
-        self.viewer.add_annotation_layer('synapses')
+        self.create_synapse_layer(None)
         #self.annotation_client = annotation_client
+
+    def create_synapse_layer( self, s):
+        self.viewer.add_annotation_layer('synapses')
 
     def update_synapse_points( self, point_type, s):
         message_dict = {'pre_pt':'presynaptic point',
                         'post_pt':'postsynaptic point',
                         'ctr_pt': 'synapse point'}
+        layer_dict = {'pre_pt':'presynaptic point',
+                      'post_pt':'postsynaptic point'}
         if self.synapse_points[point_type] is None:
             message = 'Assigned {}'.format(message_dict[point_type])
         else:
+            self.viewer._remove_annotation( layer_dict[point_type],
+                            self.synapse_points[point_type].id )
             message = 'Re-assigned {}'.format(message_dict[point_type])
         self.synapse_points[point_type] = self.add_point(s)
         self.viewer.add_annotation( message_dict[point_type],
                              [self.synapse_points[point_type]],
                              self.color_map[point_type] )
-        self.viewer.update_message( message)
+        self.viewer.update_message( message)        
 
-    @check_layer('synapses')
+    @check_layer(['synapses'])
     def update_presynaptic_point( self, s):
         self.update_synapse_points( 'pre_pt', s)
 
-    @check_layer('synapses')
+    @check_layer(['synapses'])
     def update_postsynaptic_point( self, s):
         self.update_synapse_points( 'post_pt', s)
 
-    @check_layer('synapses')
+    @check_layer(['synapses'])
     def update_synapse( self, s ):
         if (self.synapse_points['pre_pt'] is None) or \
                     (self.synapse_points['post_pt'] is None):
@@ -105,7 +112,7 @@ class ConnectorExtension():
         with self.viewer.txn() as s:
             s.voxel_coordinates = pos
 
-    @check_layer('synapses')
+    @check_layer(['synapses'])
     def clear_segment(self, s):
         self.synapse_points = {'pre_pt':None, 'post_pt':None, 'ctr_pt':None}
         self.viewer.update_message('Starting new synapse...')
