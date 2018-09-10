@@ -6,27 +6,12 @@ class Connections:
     Simple datastructure to append pre-post synaptic connections
     """
     def __init__(self):
-        self.dataset = {}
+        self.dataset = []
         self.points = {}
         self.info = {}
         self.pre_point = None
         self.synapse_point = None
         self.post_point = None
-        self.active_pair = None
-
-    def set_active_pair(self, pre_id, post_id):
-        """Set active pre and post synapse ids.
-
-        Attributes:
-            pre_id (int): Segment ID of pre_synapatic object
-            post_id (int): Segment ID of post_synapatic object
-        """
-        self.active_pair = '{}_{}'.format(pre_id, post_id)
-        if self.active_pair not in self.dataset:
-            self.dataset[self.active_pair] = []
-        else:
-            return
-        return self.active_pair
 
     def add_connection(self, pre, post, synapse, obj_type=None, description=None):
         """"Add segmentation layer to viewer instance.
@@ -38,8 +23,6 @@ class Connections:
             obj_type (string): type of anatomy (e.g. synapse)
             description (string): optional description tag for annotation
         """
-        if self.active_pair is None:
-            return
         if description is not None:
             self.points['description'] = description
         if obj_type is not None:
@@ -47,17 +30,12 @@ class Connections:
         self.points['pre_pt'] = {'position': pre}
         self.points['ctr_pt'] = {'position': synapse}
         self.points['post_pt'] = {'position': post}
-        self.dataset[self.active_pair].append(self.points)
+        self.dataset.append(self.points)
         self._reset_points()
         return self.dataset
 
     def _reset_points(self):
         self.points = {}
-        self.active_pair = None
-
-    def remove_connection(self, connection_id):
-        self.dataset.pop(connection_id, None)
-        return self.dataset
 
     def save_json(self, json_file):
         with open(json_file, "w") as f:
