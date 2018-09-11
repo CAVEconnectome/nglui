@@ -20,6 +20,17 @@ class ConnectorExtension():
         self.create_synapse_layer(None)
         #self.annotation_client = annotation_client
 
+    @staticmethod
+    def default_bindings():
+        bindings = {
+            'update_presynaptic_point': 'shift+keyq',
+            'update_synapse': 'shift+keyw',
+            'update_postsynaptic_point': 'shift+keye',
+            'create_synapse_layer': 'shift+control+keys',
+            'clear_segment': 'shift-keyv',
+            }
+        return bindings
+
     def create_synapse_layer( self, s):
         self.viewer.add_annotation_layer('synapses')
 
@@ -35,7 +46,7 @@ class ConnectorExtension():
             self.viewer._remove_annotation( layer_dict[point_type],
                             self.synapse_points[point_type].id )
             message = 'Re-assigned {}'.format(message_dict[point_type])
-        self.synapse_points[point_type] = self.add_point(s)
+        self.synapse_points[point_type] = self.viewer.add_point(s)
         self.viewer.add_annotation( message_dict[point_type],
                              [self.synapse_points[point_type]],
                              self.color_map[point_type] )
@@ -59,9 +70,9 @@ class ConnectorExtension():
 
         self.update_synapse_points( 'ctr_pt', s )
 
-        pre_line = self.add_line(self.synapse_points['pre_pt'].point, \
+        pre_line = self.viewer.add_line(self.synapse_points['pre_pt'].point, \
                                  self.synapse_points['ctr_pt'].point)
-        post_line = self.add_line(self.synapse_points['post_pt'].point, \
+        post_line = self.viewer.add_line(self.synapse_points['post_pt'].point, \
                                   self.synapse_points['ctr_pt'].point)
         self.pre_lines.append(pre_line)
         self.post_lines.append(post_line)
@@ -73,22 +84,6 @@ class ConnectorExtension():
                                  self.synapse_points['ctr_pt'].point.tolist())
 
         self.clear_segment(None)
-
-    def add_point(self, s, description=None):
-        pos = s.mouse_voxel_coordinates
-        if pos is None:
-            return
-        if len(pos) is 3:  # FIXME: bad hack need to revisit
-            id = neuroglancer.random_token.make_random_token()
-            point = annotation.point_annotation(pos, id, description)
-            return point
-        else:
-            return
-
-    def add_line(self, a, b, description=None):
-        id = neuroglancer.random_token.make_random_token()
-        line = annotation.line_annotation(a, b, id)
-        return line
 
     def delete_synapse(self, s):
         """ TODO

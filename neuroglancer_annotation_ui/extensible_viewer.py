@@ -13,7 +13,7 @@ def check_layer( layer_list ):
             if curr_layer in layer_list:
                 func(self, *args, **kwargs)
             else:
-                self.viewer.update_message( 'Select layer \"{}\"" to do that action!'.format(layer_name) )
+                self.viewer.update_message( 'Select layer in \"{}\"" to do that action!'.format(layer_list) )
         return layer_wrapper
     return specific_layer_wrapper 
 
@@ -203,3 +203,19 @@ class ExtensibleViewer( neuroglancer.Viewer ):
         except:
             selected_layer = None
         return selected_layer
+
+    def add_point(self, s, description=None):
+        pos = s.mouse_voxel_coordinates
+        if pos is None:
+            return
+        if len(pos) is 3:  # FIXME: bad hack need to revisit
+            id = neuroglancer.random_token.make_random_token()
+            point = annotation.point_annotation(pos, id, description)
+            return point
+        else:
+            return
+
+    def add_line(self, a, b, description=None):
+        id = neuroglancer.random_token.make_random_token()
+        line = annotation.line_annotation(a, b, id)
+        return line
