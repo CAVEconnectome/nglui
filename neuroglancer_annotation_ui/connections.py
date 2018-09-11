@@ -27,9 +27,9 @@ class Connections:
             self.points['description'] = description
         if obj_type is not None:
             self.points['type'] = obj_type
-        self.points['pre_pt'] = {'position': pre}
-        self.points['ctr_pt'] = {'position': synapse}
-        self.points['post_pt'] = {'position': post}
+        self.points['pre_pt'] = {'position': [int(x) for x in pre]}
+        self.points['ctr_pt'] = {'position': [int(x) for x in synapse]}
+        self.points['post_pt'] = {'position': [int(x) for x in post]}
         self.dataset.append(self.points)
         self._reset_points()
         return self.dataset

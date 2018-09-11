@@ -204,7 +204,7 @@ class ExtensibleViewer( neuroglancer.Viewer ):
             selected_layer = None
         return selected_layer
 
-    def add_point(self, s, description=None):
+    def add_point(self, s, description=None ):
         pos = s.mouse_voxel_coordinates
         if pos is None:
             return

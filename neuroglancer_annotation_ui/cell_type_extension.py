@@ -42,7 +42,7 @@ class CellTypeExtension():
 
     def format_cell_type_annotation(self, point, curr_layer ):
         return {'type':'cell_type_local',
-                'pt':{'position': point.point.tolist() },
+                'pt':{'position': [int(x) for x in point.point] },
                 'cell_type':curr_layer,
                 'classification_system':class_sys_map[curr_layer]}
     #self.annotation_client = annotation_client
