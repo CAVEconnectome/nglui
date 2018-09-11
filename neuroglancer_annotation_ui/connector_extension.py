@@ -39,7 +39,8 @@ class ConnectorExtension():
                         'post_pt':'postsynaptic point',
                         'ctr_pt': 'synapse point'}
         layer_dict = {'pre_pt':'presynaptic point',
-                      'post_pt':'postsynaptic point'}
+                      'post_pt':'postsynaptic point',
+                      'ctr_pt':'center point'}
         if self.synapse_points[point_type] is None:
             message = 'Assigned {}'.format(message_dict[point_type])
         else:
@@ -81,7 +82,8 @@ class ConnectorExtension():
 
         self.data.add_connection(self.synapse_points['pre_pt'].point.tolist(),
                                  self.synapse_points['post_pt'].point.tolist(),
-                                 self.synapse_points['ctr_pt'].point.tolist())
+                                 self.synapse_points['ctr_pt'].point.tolist(),
+                                 obj_type='synapse')
 
         self.clear_segment(None)
 
