@@ -14,7 +14,7 @@ class CellTypeExtension():
     def __init__(self, extensible_viewer ):
         self.data = []
         self.viewer = extensible_viewer
-
+        self.allowed_layers = cell_types
         self.cell_types = cell_types
         self.generate_cell_type_layers(None)
 
@@ -30,7 +30,7 @@ class CellTypeExtension():
         for cell_type in cell_types:
             self.viewer.add_annotation_layer(cell_type)
 
-    @check_layer(cell_types)
+    @check_layer()
     def add_cell_type_point( self, s ):
         point = self.viewer.add_point(s)
         curr_layer = self.viewer.get_selected_layer()

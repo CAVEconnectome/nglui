@@ -3,6 +3,8 @@ from neuroglancer_annotation_ui import connections
 from neuroglancer_annotation_ui import annotation
 from neuroglancer_annotation_ui.extensible_viewer import check_layer
 
+main_layer_name = 'synapses'
+
 class ConnectorExtension():
     def __init__(self, extensible_viewer ):
         self.data = connections.Connections()
@@ -13,6 +15,7 @@ class ConnectorExtension():
         self.pre_lines = []
         self.post_lines = []
         self.viewer = extensible_viewer
+        self.allowed_layers = [ main_layer_name ]
         self.color_map = {'pre_pt':'#00ff24',
                           'post_pt':'#ff0000',
                           'ctr_pt':'#555555'}
@@ -32,7 +35,7 @@ class ConnectorExtension():
         return bindings
 
     def create_synapse_layer( self, s):
-        self.viewer.add_annotation_layer('synapses')
+        self.viewer.add_annotation_layer(main_layer_name)
 
     def update_synapse_points( self, point_type, s):
         message_dict = {'pre_pt':'presynaptic point',
@@ -53,15 +56,15 @@ class ConnectorExtension():
                              self.color_map[point_type] )
         self.viewer.update_message( message)        
 
-    @check_layer(['synapses'])
+    @check_layer()
     def update_presynaptic_point( self, s):
         self.update_synapse_points( 'pre_pt', s)
 
-    @check_layer(['synapses'])
+    @check_layer()
     def update_postsynaptic_point( self, s):
         self.update_synapse_points( 'post_pt', s)
 
-    @check_layer(['synapses'])
+    @check_layer()
     def update_synapse( self, s ):
         if (self.synapse_points['pre_pt'] is None) or \
                     (self.synapse_points['post_pt'] is None):
@@ -109,7 +112,7 @@ class ConnectorExtension():
         with self.viewer.txn() as s:
             s.voxel_coordinates = pos
 
-    @check_layer(['synapses'])
+    @check_layer()
     def clear_segment(self, s):
         self.synapse_points = {'pre_pt':None, 'post_pt':None, 'ctr_pt':None}
         self.viewer.update_message('Starting new synapse...')

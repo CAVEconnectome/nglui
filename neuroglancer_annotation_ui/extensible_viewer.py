@@ -5,10 +5,14 @@ from neuroglancer_annotation_ui import annotation
 from inspect import getmembers, ismethod
 from functools import wraps
 
-def check_layer( layer_list ):
+def check_layer( context_specifier ):
     def specific_layer_wrapper( func ):
         @wraps(func)
         def layer_wrapper(self, *args, **kwargs):
+            if context_specier is not None:
+                layer_list = self.allowed_layers[context_specifier]
+            else:
+                layer_list = self.allowed_layers
             curr_layer = self.viewer.get_selected_layer()
             if curr_layer in layer_list:
                 func(self, *args, **kwargs)
