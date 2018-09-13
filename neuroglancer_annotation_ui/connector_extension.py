@@ -24,7 +24,7 @@ class ConnectorExtension():
         #self.annotation_client = annotation_client
 
     @staticmethod
-    def default_bindings():
+    def default_key_bindings():
         bindings = {
             'update_presynaptic_point': 'shift+keyq',
             'update_synapse': 'shift+keyw',
