@@ -10,17 +10,21 @@ class SimpleExtension():
         self.allowed_layers = ['new_annotation_layer']
         self.create_annotation_layer(None)
         self.annotationClient = annotationClient
-
-
-    def create_annotation_layer(self, s):
-        self.viewer.add_annotation_layer('new_annotation_layer')
-
+    
     @staticmethod
-    def default_bindings():
+    def default_key_bindings():
         bindings = {
             'add_point_data': 'shift+keyd',
             }
         return bindings
+
+    @staticmethod
+    def extension_layers():
+        layers = ['new_annotation_layer']
+        return layers
+
+    def create_annotation_layer(self, s):
+        self.viewer.add_annotation_layer('new_annotation_layer')
 
     @check_layer(None)
     def add_point_data(self, s):
