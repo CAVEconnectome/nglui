@@ -1,7 +1,5 @@
-import neuroglancer
-from neuroglancer_annotation_ui.annotation import point_annotation
 from neuroglancer_annotation_ui.base import check_layer
-from neuroglancer_annotation_ui.ngl_rendering import NeuroglancerRenderer
+from neuroglancer_annotation_ui.ngl_rendering import SchemaRenderer
 from emannotationschemas.cell_type_local import CellTypeLocal, allowed_types
 
 class_sys_map = {}
@@ -14,23 +12,26 @@ cell_types = ['chandelier', 'pyramidal']
 class CellTypeExtension():
     def __init__(self, easy_viewer, annotation_client=None ):
         # General
-        self.data = []
         self.viewer = easy_viewer
-        self.defined_layers = cell_types
         self.annotation_client = annotation_client
+        self.ngl_renderer = SchemaRenderer(CellTypeLocal)
         self.allowed_layers = cell_types
 
         # Specific
+        self.data = []
         self.generate_cell_type_layers(None)
-        self.ngl_renderer = NeuroglancerRenderer(CellTypeLocal)
 
     @staticmethod
-    def default_bindings( ):
+    def _default_key_bindings( ):
         bindings = {
         'generate_cell_type_layers':'shift+control+keyt',
         'add_cell_type_point':'shift+keyt',
         }
         return bindings
+
+    @staticmethod
+    def _defined_layers():
+        return cell_types
 
     def generate_cell_type_layers(self, s):
         for cell_type in cell_types:
@@ -42,14 +43,14 @@ class CellTypeExtension():
         xyz = self.viewer.get_mouse_coordinates(s)
         if xyz is not None:
             curr_layer = self.viewer.get_selected_layer()
-            new_point = point_annotation(xyz)
+            new_point = xyz
             new_data = self.format_cell_type_annotation(new_point, curr_layer)
             self.data.append(new_data)
         else:
             self.viewer.update_message('Mouse position not well defined!')
             return
         # 2. Render to neuroglancer
-        self.ngl_renderer(new_data)
+        self.ngl_renderer(self.viewer, new_data, layermap={'cell_type':curr_layer})
         self.viewer.update_message('Added point annotating cell type {}'.format(curr_layer))
 
         # 3. Send to annotation client and update neuroglancer annotation.
@@ -64,10 +65,5 @@ class CellTypeExtension():
                 'cell_type':curr_layer,
                 'classification_system':class_sys_map[curr_layer]}
 
-    # def post_data(self, data, update_id=True):
-    #     if self.annotation_client is not None:
-    #         response = self.annotation_client.post( data )
-    #         if update_id:
-
-    #     else:
-    #         return
+    def post_data(self, data, update_id=True):
+        return

@@ -10,21 +10,22 @@ base_dir=os.path.dirname(os.path.dirname(__file__))
 with open(base_dir+"/data/default_key_bindings.json") as fid:
     default_key_bindings = json.load(fid)
 
-def check_layer( context_specifier=None ):
+def check_layer(allowed_layer_key=None):
     def specific_layer_wrapper( func ):
         @wraps(func)
         def layer_wrapper(self, *args, **kwargs):
-            if context_specier is not None:
-                layer_list = self.allowed_layers[context_specifier]
+            if allowed_layer_key == None:
+                allowed_layers = self.allowed_layers
             else:
-                layer_list = self.allowed_layers
-            curr_layer = self.get_selected_layer()
-            if curr_layer in layer_list:
+                allowed_layers = self.allowed_layers[allowed_layer_key]
+
+            curr_layer = self.viewer.get_selected_layer()
+            if curr_layer in allowed_layers:
                 func(self, *args, **kwargs)
             else:
-                self.update_message( 'Select layer from amongst \"{}\"" to do that action!'.format(layer_list) )
+                self.viewer.update_message( 'Select layer from amongst \"{}\"" to do that action!'.format(allowed_layers) )
         return layer_wrapper
-    return specific_layer_wrapper 
+    return specific_layer_wrapper
 
 class EasyViewer( neuroglancer.Viewer ):
     """
@@ -147,11 +148,13 @@ class EasyViewer( neuroglancer.Viewer ):
         except Exception as e:
             raise e
 
-    def _remove_annotation(self, layer_name, aid):
+    def remove_annotation(self, layer_name, aids):
+        if isinstance(aids, str):
+            aids = [aids]
         try:
             with self.txn() as s:
                 for ind, anno in enumerate( s.layers[layer_name].annotations ):
-                    if anno.id == aid:
+                    if anno.id in aids:
                         s.layers[layer_name].annotations.pop(ind)
                         break
                 else:
@@ -194,8 +197,11 @@ class EasyViewer( neuroglancer.Viewer ):
 
 
 class ViewerManager():
-    def __init__(self, easy_viewer, annotation_client=None):
-        self.viewer = easy_viewer
+    def __init__(self, easy_viewer=None, annotation_client=None):
+        if easy_viewer is None:
+            self.viewer = EasyViewer()
+        else:
+            self.viewer = easy_viewer
         self.annotation_client = annotation_client
         self.extensions = {}
 
@@ -219,7 +225,7 @@ class ViewerManager():
 
         if bindings is None:
             try:
-                bindings = ExtensionClass.default_bindings()
+                bindings = ExtensionClass._default_key_bindings()
             except:
                 raise Exception('No bindings provided and no default bindings in {}!'.format(ExtensionClass)) 
 
@@ -234,18 +240,15 @@ class ViewerManager():
                                    bound_methods[method_name])
             self.key_bindings.append(key_command)
 
-        for layer in self.ExtensionClass.extension_layers():
-            self.extension_layers.append(layer)
-
     def list_extensions(self):
         return list(self.extensions.keys())
 
     def validate_extension( self, ExtensionClass ):
         validity = True
-        if len( set(self.extension_layers).intersection(set(ExtensionClass.extension_layers)) ) > 0:
+        if len( set(self.extension_layers).intersection(set(ExtensionClass._defined_layers())) ) > 0:
             print('{} contains layers that conflict with the current ExtensionManager'.format(ExtensionClass))
             validity=False
-        if len( set(self.key_bindings).intersection(set(ExtensionClass.default_key_bindings.values())) ) > 0:
+        if len( set(self.key_bindings).intersection(set(ExtensionClass._default_key_bindings().values())) ) > 0:
             print('{} contains key bindings that conflict with the current ExtensionManager'.format(ExtensionClass))
             validity=False
         return validity

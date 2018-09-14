@@ -20,7 +20,7 @@ class SchemaRenderer():
         self.render_functions = self.render_rule.generate_processors()
 
     def __call__(self, viewer, data, anno_id=None, layermap=None, colormap=None ):
-        self.render_data(viewer, data, anno_id=None, layermap=None, colormap=None)
+        self.render_data(viewer, data, anno_id=anno_id, layermap=layermap, colormap=colormap)
 
     def render_data(self, viewer, data, anno_id=None, layermap=None, colormap=None ):
         """
@@ -40,10 +40,16 @@ class SchemaRenderer():
     def send_annotations_to_viewer(self, viewer, layermap=None, colormap=None):
         if colormap is None:
             colormap={layermap[layer]:None for layer in self.annotations}
+        annotation_ids = []
         for layer, anno_list in self.annotations.items():
             nl = layermap[layer]
             for anno in anno_list:
                 viewer.add_annotation(nl,anno,color=colormap[nl])
+                annotation_ids.append(anno.id)
+        return annotation_ids
+
+    def remove_annotations_from_viewer(self, viewer, layer, ngl_ids):
+        viewer.remove_annotation(layer, ngl_ids)
 
     def all_fields(self):
         return self.render_rule.fields
@@ -98,7 +104,10 @@ class RenderRule():
             def annotation_processor(ngr, data, anno_id=None):
                 for layer, rule_list in rule_category.items():
                     for rule in rule_list:
-                        rule_fields = [*rule]
+                        if isinstance(rule,str):
+                            rule_fields = [rule]
+                        else:
+                            rule_fields = [*rule]
                         anno_args = []
                         for field in rule_fields:
                             if isinstance(self.schema_fields[field], Nested):
