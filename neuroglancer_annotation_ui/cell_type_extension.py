@@ -9,12 +9,17 @@ for class_system, item_list in allowed_types.items():
 
 cell_types = ['chandelier', 'pyramidal']
 
+class CellTypeLocalWithRule( CellTypeLocal ):
+    @staticmethod
+    def render_rule():
+        return {'point':{'cell_type':['pt']}}
+
 class CellTypeExtension():
     def __init__(self, easy_viewer, annotation_client=None ):
         # General
         self.viewer = easy_viewer
         self.annotation_client = annotation_client
-        self.ngl_renderer = SchemaRenderer(CellTypeLocal)
+        self.ngl_renderer = SchemaRenderer(CellTypeLocalWithRule)
         self.allowed_layers = cell_types
 
         # Specific

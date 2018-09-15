@@ -3,24 +3,30 @@ from neuroglancer_annotation_ui.ngl_rendering import SchemaRenderer
 from neuroglancer_annotation_ui.annotation import point_annotation, line_annotation
 from emannotationschemas.synapse import SynapseSchema
 
+class SynapseSchemaWithRule( SynapseSchema ):
+    @staticmethod    
+    def render_rule():
+        return {'line': {'pre':[('pre_pt', 'ctr_pt')],
+                          'post':[('post_pt', 'ctr_pt')]},
+                'point': {'syn':['ctr_pt'] }
+                }
+
 class SynapseExtension():
     def __init__(self, easy_viewer, annotation_client=None):
         self.viewer = easy_viewer
         self.annotation_client = annotation_client
-        self.ngl_renderer = SchemaRenderer(SynapseSchema)
+        self.ngl_renderer = SchemaRenderer(SynapseSchemaWithRule)
         self.allowed_layers = ['synapses']
+
+        self.color_map =  {'synapses'     :'#000000',
+                           'synapses_pre' :'#ff0000',
+                           'synapses_post':'#00ffff',
+                           }
         self.create_synapse_layers(None)
 
         self.data = []
         self.synapse_points = {'pre_pt':None, 'post_pt':None, 'ctr_pt':None}
 
-        self.pre_lines = []
-        self.post_lines = []
-        self.color_map = {'pre_line':'#ff0000',
-                          'post_line':'#00ffff',
-                          'pre_pt':'#ff0000',
-                          'post_pt':'#00ffff',
-                          }
 
     @staticmethod
     def _default_key_bindings():
@@ -35,11 +41,11 @@ class SynapseExtension():
 
     @staticmethod
     def _defined_layers():
-        return ['synapses','pre_line','post_line','pre_point','post_point']
+        return ['synapses','synapses_pre','synapses_post']
 
     def create_synapse_layers( self, s):
         for layer in self._defined_layers():
-            self.viewer.add_annotation_layer(layer)
+            self.viewer.add_annotation_layer(layer, color=self.color_map[layer])
 
     @check_layer()
     def update_presynaptic_point( self, s):
@@ -53,21 +59,21 @@ class SynapseExtension():
         message_dict = {'pre_pt':'presynaptic point',
                         'post_pt':'postsynaptic point',
                         'ctr_pt': 'synapse'}
-        layer_dict = {'pre_pt':'pre_point',
-                      'post_pt':'post_point'}
+        layer_dict = {'pre_pt':'synapses_pre',
+                      'post_pt':'synapses_post'}
 
         if (point_type == 'pre_pt') or (point_type=='post_pt'):
             if self.synapse_points[point_type] is None:
                 message = 'Assigned {}'.format(message_dict[point_type])
             else:
-                self.ngl_renderer.remove_annotations_from_viewer(layer_dict[point_type],
+                self.ngl_renderer.remove_annotations_from_viewer(self.viewer,
+                                                                 layer_dict[point_type],
                                                                  self.synapse_points[point_type].id )
                 message = 'Re-assigned {}'.format(message_dict[point_type])
 
             self.synapse_points[point_type] = self.make_synapse_point(s)
             self.viewer.add_annotation( layer_dict[point_type],
-                                 [self.synapse_points[point_type]],
-                                 self.color_map[point_type] )
+                                 [self.synapse_points[point_type]] )
             self.viewer.update_message( message)
         else:
             message = 'Assigned {}'.format(message_dict[point_type])
@@ -86,12 +92,17 @@ class SynapseExtension():
         synapse_data = self.format_synapse_data()
         self.ngl_renderer(self.viewer,
                           synapse_data,
-                          layermap={'pre':'pre_line',
-                                    'post':'post_line'}
+                          layermap={'pre':'synapses_pre',
+                                    'post':'synapses_post',
+                                    'syn':'synapses'},
+                          replace_annotations={'synapses_pre':self.synapse_points['pre_pt'].id,
+                                               'synapses_post':self.synapse_points['post_pt'].id} 
                           )
         
         if self.annotation_client is not None:
-            self.annotation_client.post_data(synapse_data)
+            self.viewer.update_message('Here we would call self.annotation_client.post_data(synapse_data)')
+            #self.annotation_client.post_data(synapse_data)
+
         self.clear_segment(None)
 
     def make_synapse_point( self, s):

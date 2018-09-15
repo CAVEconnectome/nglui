@@ -19,10 +19,16 @@ class SchemaRenderer():
         self.reset_annotations()
         self.render_functions = self.render_rule.generate_processors()
 
-    def __call__(self, viewer, data, anno_id=None, layermap=None, colormap=None ):
-        self.render_data(viewer, data, anno_id=anno_id, layermap=layermap, colormap=colormap)
+    def __call__(self, 
+                 viewer,
+                 data,
+                 anno_id=None,
+                 layermap=None,
+                 colormap=None,
+                 replace_annotations=None):
+        self.render_data(viewer, data, anno_id=anno_id, layermap=layermap, colormap=colormap, replace_annotations=replace_annotations)
 
-    def render_data(self, viewer, data, anno_id=None, layermap=None, colormap=None ):
+    def render_data(self, viewer, data, anno_id=None, layermap=None, colormap=None, replace_annotations=None ):
         """
         Takes a formatted data point and returns annotation layers based on the schema's RenderRule
         """
@@ -31,6 +37,11 @@ class SchemaRenderer():
 
         self.apply(data, anno_id=anno_id)
         self.send_annotations_to_viewer(viewer, layermap=layermap, colormap=colormap)
+
+        if replace_annotations is not None:
+            for layer, ngl_id in replace_annotations.items():
+                self.remove_annotations_from_viewer(viewer, layer, ngl_id)
+
         self.reset_annotations()
 
     def apply(self, data, anno_id=None):

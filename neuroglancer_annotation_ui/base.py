@@ -169,7 +169,7 @@ class EasyViewer( neuroglancer.Viewer ):
     def url(self):
         return self.get_viewer_url()
 
-    def add_action( self, action_name, key_command, method ):
+    def _add_action( self, action_name, key_command, method ):
         self.actions.add( action_name, method )
         with self.config_state.txn() as s:
             s.input_event_bindings.viewer[key_command] = action_name
@@ -196,7 +196,7 @@ class EasyViewer( neuroglancer.Viewer ):
             return pos
 
 
-class ViewerManager():
+class AnnotationManager( ):
     def __init__(self, easy_viewer=None, annotation_client=None):
         if easy_viewer is None:
             self.viewer = EasyViewer()
@@ -218,9 +218,18 @@ class ViewerManager():
     def url(self):
         return self.viewer.get_viewer_url()
 
+    def add_image_layer(self, layer_name, image_source):
+        self.viewer.add_image_layer(layer_name, image_source)
+
+    def add_segmentation_layer(self, layer_name, seg_source):
+        self.viewer.add_segmentation_layer(layer_name, seg_source)
+
+    def add_annotation_layer(self, layer_name=None, layer_color=None):
+        self.viewer.add_annotation_layer(layer_name, layer_color)
+
     def add_extension( self, extension_name, ExtensionClass, bindings=None ):
         if not self.validate_extension( ExtensionClass ):
-            print("Note: {} was not added to ExtensionManager!".format(ExtensionClass))
+            print("Note: {} was not added to annotation manager!".format(ExtensionClass))
             return
 
         if bindings is None:
@@ -235,7 +244,7 @@ class ViewerManager():
                         for method_row in getmembers(self.extensions[extension_name], ismethod)}
 
         for method_name, key_command in bindings.items():
-            self.viewer.add_action(method_name,
+            self.viewer._add_action(method_name,
                                    key_command,
                                    bound_methods[method_name])
             self.key_bindings.append(key_command)
