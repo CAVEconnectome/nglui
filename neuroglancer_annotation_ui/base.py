@@ -223,7 +223,9 @@ class AnnotationManager( ):
         self.extensions = {}
 
         self.key_bindings = default_key_bindings
-        self.extension_layers = []
+        self.extension_layers = {}
+
+        self.annotation_rubbish_bin = None
 
     def __repr__(self):
         return self.viewer.get_viewer_url()
@@ -256,25 +258,63 @@ class AnnotationManager( ):
                 raise Exception('No bindings provided and no default bindings in {}!'.format(ExtensionClass)) 
 
         self.extensions[extension_name] = ExtensionClass( self.viewer, self.annotation_client )
-        
         bound_methods = {method_row[0]:method_row[1] \
                         for method_row in getmembers(self.extensions[extension_name], ismethod)}
+
+        for layer in ExtensionClass._defined_layers():
+            self.extension_layers[layer] = extension_name
 
         for method_name, key_command in bindings.items():
             self.viewer._add_action(method_name,
                                    key_command,
                                    bound_methods[method_name])
             self.key_bindings.append(key_command)
+        pass
+
 
     def list_extensions(self):
         return list(self.extensions.keys())
 
     def validate_extension( self, ExtensionClass ):
         validity = True
-        if len( set(self.extension_layers).intersection(set(ExtensionClass._defined_layers())) ) > 0:
+        if len( set( self.extension_layers.keys() ).intersection(set(ExtensionClass._defined_layers())) ) > 0:
             print('{} contains layers that conflict with the current ExtensionManager'.format(ExtensionClass))
             validity=False
         if len( set(self.key_bindings).intersection(set(ExtensionClass._default_key_bindings().values())) ) > 0:
             print('{} contains key bindings that conflict with the current ExtensionManager'.format(ExtensionClass))
             validity=False
         return validity
+
+    def delete_annotation( self, s):
+        """
+        A manager for deleting annotations.
+        """
+        selected_layer = self.viewer.get_selected_layer()
+        if selected_layer is None:
+            self.viewer.update_message('Please select a layer to delete an annotation')
+            return
+
+        curr_pos = self.viewer.state.position.voxel_coordinates
+        for annotation in self.viewer.state.layers[selected_layer]:
+            if all(annotation.point==curr_pos):
+                delete_confirmed = self.check_rubbish_bin( annotation.id )
+                ngl_id = annotation.id
+                break
+        else:
+            self.viewer.update_message('No annotation under point or in selected layer!')
+
+        if delete_confirmed:
+            bound_extension = self.extensions[ self.extension_layers[selected_layer] ]
+            try:
+                bound_extension._delete_annotation( ngl_id )
+            except:
+                self.viewer.update_message('Could not delete annotation!')
+        pass
+
+    def check_rubbish_bin( self, ngl_id ):
+        if ngl_id == self.annotation_rubbish_bin:
+            return True
+        else:
+            self.annotation_rubbish_bin = ngl_id
+            self.viewer.update_message( 'Confirm deletion!')
+            return False
