@@ -53,12 +53,13 @@ class SchemaRenderer():
     def send_annotations_to_viewer(self, viewer, layermap=None, colormap=None):
         if colormap is None:
             colormap={layermap[layer]:None for layer in self.annotations}
+            
         viewer_ids = defaultdict(list)
         for layer, anno_list in self.annotations.items():
             nl = layermap[layer]
             for anno in anno_list:
                 viewer.add_annotation(nl,anno,color=colormap[nl])
-                viewer_ids[layer].append(anno.id)
+                viewer_ids[nl].append(anno.id)
         return viewer_ids
 
     def all_fields(self):
