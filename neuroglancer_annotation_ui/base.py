@@ -162,6 +162,23 @@ class EasyViewer( neuroglancer.Viewer ):
         except:
             self.update_message('Could not remove annotation')
 
+    def update_description(self, layer_id_dict, new_description):
+        try:
+            with self.txn() as s:
+                for layer_name, id_list in layer_id_dict.items():
+                    for anno in s.layers[layer_name].annotations:
+                        if anno.id in id_list:
+                            if anno.description is None:
+                                anno.description = new_description
+                            else:
+                                anno.description = "{}; {}".format(anno.description, new_description)
+                            id_list.remove(anno.id)
+                            if len(id_list)==0:
+                                break                            
+        except:
+            self.update_message('Could not update annotations!')
+
+
     def set_state(self, new_state):
         return self.set_state(new_state)
 

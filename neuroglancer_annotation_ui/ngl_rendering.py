@@ -26,7 +26,8 @@ class SchemaRenderer():
                  layermap=None,
                  colormap=None,
                  replace_annotations=None):
-        self.render_data(viewer, data, anno_id=anno_id, layermap=layermap, colormap=colormap, replace_annotations=replace_annotations)
+        viewer_ids = self.render_data(viewer, data, anno_id=anno_id, layermap=layermap, colormap=colormap, replace_annotations=replace_annotations)
+        return viewer_ids
 
     def render_data(self, viewer, data, anno_id=None, layermap=None, colormap=None, replace_annotations=None ):
         """
@@ -36,13 +37,14 @@ class SchemaRenderer():
             layermap = {layer:layer for layer in self.all_layers() }
 
         self.apply(data, anno_id=anno_id)
-        self.send_annotations_to_viewer(viewer, layermap=layermap, colormap=colormap)
+        viewer_ids = self.send_annotations_to_viewer(viewer, layermap=layermap, colormap=colormap)
 
         if replace_annotations is not None:
             for layer, ngl_id in replace_annotations.items():
-                self.remove_annotations_from_viewer(viewer, layer, ngl_id)
+                viewer.remove_annotation(layer, ngl_id)
 
         self.reset_annotations()
+        return viewer_ids
 
     def apply(self, data, anno_id=None):
         for func in self.render_functions:
@@ -51,16 +53,13 @@ class SchemaRenderer():
     def send_annotations_to_viewer(self, viewer, layermap=None, colormap=None):
         if colormap is None:
             colormap={layermap[layer]:None for layer in self.annotations}
-        annotation_ids = []
+        viewer_ids = defaultdict(list)
         for layer, anno_list in self.annotations.items():
             nl = layermap[layer]
             for anno in anno_list:
                 viewer.add_annotation(nl,anno,color=colormap[nl])
-                annotation_ids.append(anno.id)
-        return annotation_ids
-
-    def remove_annotations_from_viewer(self, viewer, layer, ngl_ids):
-        viewer.remove_annotation(layer, ngl_ids)
+                viewer_ids[layer].append(anno.id)
+        return viewer_ids
 
     def all_fields(self):
         return self.render_rule.fields

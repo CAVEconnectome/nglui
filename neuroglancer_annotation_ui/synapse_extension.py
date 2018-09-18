@@ -17,6 +17,7 @@ class SynapseExtension():
         self.annotation_client = annotation_client
         self.ngl_renderer = SchemaRenderer(SynapseSchemaWithRule)
         self.allowed_layers = ['synapses']
+        self.anno_id_map = dict()
 
         self.color_map =  {'synapses'     :'#000000',
                            'synapses_pre' :'#ff0000',
@@ -41,7 +42,7 @@ class SynapseExtension():
 
     @staticmethod
     def _defined_layers():
-        return ['synapses','synapses_pre','synapses_post']
+        return ['synapses_pre','synapses_post','synapses']
 
     def create_synapse_layers( self, s):
         for layer in self._defined_layers():
@@ -66,9 +67,8 @@ class SynapseExtension():
             if self.synapse_points[point_type] is None:
                 message = 'Assigned {}'.format(message_dict[point_type])
             else:
-                self.ngl_renderer.remove_annotations_from_viewer(self.viewer,
-                                                                 layer_dict[point_type],
-                                                                 self.synapse_points[point_type].id )
+                self.viewer.remove_annotations(layer_dict[point_type],
+                                               self.synapse_points[point_type].id)
                 message = 'Re-assigned {}'.format(message_dict[point_type])
 
             self.synapse_points[point_type] = self.make_synapse_point(s)
@@ -90,20 +90,26 @@ class SynapseExtension():
 
         self.update_synapse_points( 'ctr_pt', s )
         synapse_data = self.format_synapse_data()
-        self.ngl_renderer(self.viewer,
-                          synapse_data,
-                          layermap={'pre':'synapses_pre',
-                                    'post':'synapses_post',
-                                    'syn':'synapses'},
-                          replace_annotations={'synapses_pre':self.synapse_points['pre_pt'].id,
-                                               'synapses_post':self.synapse_points['post_pt'].id} 
-                          )
-        
-        if self.annotation_client is not None:
-            self.viewer.update_message('Here we would call self.annotation_client.post_data(synapse_data)')
-            #self.annotation_client.post_data(synapse_data)
 
-        self.clear_segment(None)
+        viewer_ids = self.ngl_renderer(self.viewer,
+                                      synapse_data,
+                                      layermap={'pre':'synapses_pre',
+                                                'post':'synapses_post',
+                                                'syn':'synapses'},
+                                      replace_annotations={'synapses_pre':self.synapse_points['pre_pt'].id,
+                                                           'synapses_post':self.synapse_points['post_pt'].id}
+                                      )
+
+        self.clear_segment()
+
+        if self.annotation_client is not None:
+            annotation_id = self._post_data(synapse_data)
+            id_description = 'synapse_{}'.format(annotation_id[0])
+            self.viewer.update_description(viewer_ids, id_description)
+
+    def _post_data(self, synapse_data):
+        response = self.annotation_client.post_annotation('synapse', [synapse_data])
+        return response
 
     def make_synapse_point( self, s):
         pos = self.viewer.get_mouse_coordinates(s)
@@ -114,11 +120,13 @@ class SynapseExtension():
 
     def format_synapse_data(self):
         return {'type':'synapse',
-                'pre_pt':{'position':self.synapse_points['pre_pt'].point},
-                'ctr_pt':{'position':self.synapse_points['ctr_pt'].point},
-                'post_pt':{'position':self.synapse_points['post_pt'].point}}
+                'pre_pt':{'position':[int(x) for x in self.synapse_points['pre_pt'].point]},
+                'ctr_pt':{'position':[int(x) for x in self.synapse_points['ctr_pt'].point]},
+                'post_pt':{'position':[int(x) for x in self.synapse_points['post_pt'].point]}}
 
     @check_layer()
-    def clear_segment(self, s):
+    def clear_segment(self, s=None):
         self.synapse_points = {'pre_pt':None, 'post_pt':None, 'ctr_pt':None}
         self.viewer.update_message('Starting new synapse...')
+
+

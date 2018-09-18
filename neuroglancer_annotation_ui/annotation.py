@@ -28,7 +28,7 @@ def point_annotation(point, id=None, description=None):
     if id is None:
         id = neuroglancer.random_token.make_random_token()
     point = neuroglancer.PointAnnotation(
-        point=point,
+        point=[int(x) for x in point],
         id=id,
         description=description)
     return point
