@@ -1,4 +1,4 @@
-from neuroglancer_annotation_ui.base import check_layer
+from neuroglancer_annotation_ui.base import check_layer, AnnotationExtensionBaseClass
 from neuroglancer_annotation_ui.ngl_rendering import SchemaRenderer
 from neuroglancer_annotation_ui.annotation import point_annotation, \
                                                   line_annotation
@@ -15,10 +15,9 @@ class SynapseSchemaWithRule(SynapseSchema):
                 }
 
 
-class SynapseExtension():
+class SynapseExtension(AnnotationExtensionBaseClass):
     def __init__(self, easy_viewer, annotation_client=None):
-        self.viewer = easy_viewer
-        self.annotation_client = annotation_client
+        super(ExtensionBaseClass, self).__init__(easy_viewer, annotation_client)
         self.ngl_renderer = SchemaRenderer(SynapseSchemaWithRule)
         self.allowed_layers = ['synapses']
 
@@ -28,9 +27,6 @@ class SynapseExtension():
                           }
         self.create_synapse_layers(None)
         self.synapse_points = {'pre_pt': None, 'post_pt': None, 'ctr_pt': None}
-        self.annotation_df = DataFrame(columns=['ngl_id',
-                                                'layer',
-                                                'anno_id'])
 
     @staticmethod
     def _default_key_bindings():
@@ -133,23 +129,10 @@ class SynapseExtension():
         self.synapse_points = {'pre_pt':None, 'post_pt':None, 'ctr_pt':None}
         self.viewer.update_message('Starting new synapse...')
 
-    def _update_id_map(self, viewer_ids, id_description ):
-        for layer, id_list in viewer_ids.items():
-            for ngl_id in id_list:
-                self.annotation_df = self.annotation_df.append({'ngl_id': ngl_id,
-                                                                'layer': layer,
-                                                                'anno_id': id_description
-                                                                },
-                                                                ignore_index=True)
-
     @check_layer()
     def _delete_annotation( ngl_id ):
-
         anno_id = self.annotation_df[self.annotation_df.ngl_id==ngl_id].anno_id.values[0]
-        
-        anno_parser = re.search('(?P<type>\w*)_(?P<id>\d.*)$', anno_id)
-        ae_type = anno_parser.groupdict()['type']
-        ae_id = anno_parser.groupdict()['id']
+        ae_type, ae_id = self._parse_anno_id( anno_id )
         try:
             self.annotation_client.delete_annotation(annotation_type=ae_type,
                                                      oid=ae_id)
@@ -157,7 +140,7 @@ class SynapseExtension():
             self.viewer.update_message('Could not delete annotation!')
             return
 
-        for row in self.annotation_df[self.annotation_df.anno].iterrows():
+        for row in self._annotation_filtered_iterrows(anno_id=anno_id):
             self.viewer.remove_annotation(row['layer'].values[0], row['ngl_id'].values)
 
-        self.annotation_df.drop(index=self.annotation_df[self.annotation_df.anno_id==anno_id].index, inplace=True)
+        self._remove_anno_id(anno_id)    

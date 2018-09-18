@@ -3,6 +3,8 @@ from collections import OrderedDict
 from neuroglancer_annotation_ui import annotation
 from inspect import getmembers, ismethod
 from functools import wraps
+from pandas import DataFrame
+import re
 import json
 import os
 
@@ -148,6 +150,7 @@ class EasyViewer( neuroglancer.Viewer ):
         except Exception as e:
             raise e
 
+
     def remove_annotation(self, layer_name, aids):
         if isinstance(aids, str):
             aids = [aids]
@@ -161,6 +164,7 @@ class EasyViewer( neuroglancer.Viewer ):
                     raise Exception
         except:
             self.update_message('Could not remove annotation')
+
 
     def update_description(self, layer_id_dict, new_description):
         try:
@@ -182,9 +186,11 @@ class EasyViewer( neuroglancer.Viewer ):
     def set_state(self, new_state):
         return self.set_state(new_state)
 
+
     @property
     def url(self):
         return self.get_viewer_url()
+
 
     def _add_action( self, action_name, key_command, method ):
         self.actions.add( action_name, method )
@@ -192,10 +198,12 @@ class EasyViewer( neuroglancer.Viewer ):
             s.input_event_bindings.viewer[key_command] = action_name
         return self.config_state
 
+
     def update_message(self, message):
         with self.config_state.txn() as s:
             if message is not None:
                 s.status_messages['status'] = message
+
 
     def get_selected_layer( self ):
         state_json = self.state.to_json()
@@ -204,6 +212,7 @@ class EasyViewer( neuroglancer.Viewer ):
         except:
             selected_layer = None
         return selected_layer
+
 
     def get_mouse_coordinates(self, s):
         pos = s.mouse_voxel_coordinates
@@ -214,7 +223,7 @@ class EasyViewer( neuroglancer.Viewer ):
 
 
 class AnnotationManager( ):
-    def __init__(self, easy_viewer=None, annotation_client=None):
+    def __init__(self, easy_viewer=None, annotation_client=None, initialize_delete=True):
         if easy_viewer is None:
             self.viewer = EasyViewer()
         else:
@@ -226,25 +235,34 @@ class AnnotationManager( ):
         self.extension_layers = {}
 
         self.annotation_rubbish_bin = None
+        if initialize_delete:
+            delete_binding = {'delete_annotation': 'del'}
+
 
     def __repr__(self):
         return self.viewer.get_viewer_url()
 
+
     def _repr_html_(self):
         return '<a href="%s" target="_blank">Viewer</a>' % self.viewer.get_viewer_url()
+
 
     @property
     def url(self):
         return self.viewer.get_viewer_url()
 
+
     def add_image_layer(self, layer_name, image_source):
         self.viewer.add_image_layer(layer_name, image_source)
+
 
     def add_segmentation_layer(self, layer_name, seg_source):
         self.viewer.add_segmentation_layer(layer_name, seg_source)
 
+
     def add_annotation_layer(self, layer_name=None, layer_color=None):
         self.viewer.add_annotation_layer(layer_name, layer_color)
+
 
     def add_extension( self, extension_name, ExtensionClass, bindings=None ):
         if not self.validate_extension( ExtensionClass ):
@@ -275,6 +293,7 @@ class AnnotationManager( ):
     def list_extensions(self):
         return list(self.extensions.keys())
 
+
     def validate_extension( self, ExtensionClass ):
         validity = True
         if len( set( self.extension_layers.keys() ).intersection(set(ExtensionClass._defined_layers())) ) > 0:
@@ -284,6 +303,7 @@ class AnnotationManager( ):
             print('{} contains key bindings that conflict with the current ExtensionManager'.format(ExtensionClass))
             validity=False
         return validity
+
 
     def delete_annotation( self, s):
         """
@@ -318,3 +338,63 @@ class AnnotationManager( ):
             self.annotation_rubbish_bin = ngl_id
             self.viewer.update_message( 'Confirm deletion!')
             return False
+
+
+class ExtensionBaseClass():
+    """
+    Basic class that contains all of the objects that are expected
+    by the Extension Manager, but won't actually do anything.
+    """
+    def __init__(self, easy_viewer, annotation_client=None):
+        self.viewer = easy_viewer
+        self.annotation_client = annotation_client
+        self.ngl_renderer = None
+        self.allowed_layers = []
+
+    @staticmethod
+    def _default_key_bindings():
+    bindings = {}
+    return bindings
+
+    @staticmethod
+    def _defined_layers():
+        return []
+
+    @check_layer()
+    def _delete_annotation( ngl_id ):
+        pass
+
+class AnnotationExtensionBaseClass(ExtensionBaseClass):
+    """
+    Adds framework to interact with a mapping between layer, ngl_id, and anno_id on the
+    annotation engine side.
+    """
+    def __init__(self, easy_viewer, annotation_client=None):
+        super(ExtensionBaseClass, self).__init__(easy_viewer,annotation_client)
+        self.annotation_df = DataFrame(columns=['ngl_id',
+                                                'layer',
+                                                'anno_id'])
+
+    def _parse_anno_id(self, anno_id_description):
+        anno_parser = re.search('(?P<type>\w*)_(?P<id>\d.*)$', anno_id)
+        ae_type = anno_parser.groupdict()['type']
+        ae_id = anno_parser.groupdict()['id']
+        return ae_type, ae_id
+
+    def _remove_map_id(self, anno_id):
+        self.annotation_df.drop(index=self.annotation_df[self.annotation_df.anno_id==anno_id].index, inplace=True)
+
+    def _update_map_id(self, viewer_ids, id_description ):
+        for layer, id_list in viewer_ids.items():
+            for ngl_id in id_list:
+                self.annotation_df = self.annotation_df.append({'ngl_id': ngl_id,
+                                                                'layer': layer,
+                                                                'anno_id': id_description
+                                                                },
+                                                                ignore_index=True)
+
+    def _annotation_filtered_iterrows(self, anno_id=None, ngl_id=None, layer=None):
+        arg1 = True if anno_id is None else (self.annotation_df.anno_id == anno_id)
+        arg2 = True if ngl_id is None else (self.annotation_df.ngl_id == ngl_id)
+        arg3 = True if layer is None else (self.annotation_df.layer == layer)
+        return self.annotation_df[arg1 & arg2 & arg3].iterrows()
