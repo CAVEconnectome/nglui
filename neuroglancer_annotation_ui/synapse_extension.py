@@ -1,10 +1,8 @@
-from neuroglancer_annotation_ui.base import check_layer, AnnotationExtensionBaseClass
+from neuroglancer_annotation_ui.extension_core import check_layer, AnnotationExtensionBase
 from neuroglancer_annotation_ui.ngl_rendering import SchemaRenderer
 from neuroglancer_annotation_ui.annotation import point_annotation, \
                                                   line_annotation
 from emannotationschemas.synapse import SynapseSchema
-from pandas import DataFrame
-import re
 
 class SynapseSchemaWithRule(SynapseSchema):
     @staticmethod
@@ -14,10 +12,9 @@ class SynapseSchemaWithRule(SynapseSchema):
                 'point': {'syn': ['ctr_pt']}
                 }
 
-
-class SynapseExtension(AnnotationExtensionBaseClass):
+class SynapseExtension(AnnotationExtensionBase):
     def __init__(self, easy_viewer, annotation_client=None):
-        super(ExtensionBaseClass, self).__init__(easy_viewer, annotation_client)
+        super(SynapseExtension, self).__init__(easy_viewer, annotation_client)
         self.ngl_renderer = SchemaRenderer(SynapseSchemaWithRule)
         self.allowed_layers = ['synapses']
 
@@ -98,14 +95,13 @@ class SynapseExtension(AnnotationExtensionBaseClass):
                                       replace_annotations={'synapses_pre':self.synapse_points['pre_pt'].id,
                                                            'synapses_post':self.synapse_points['post_pt'].id}
                                       )
-
         self.clear_segment()
 
         if self.annotation_client is not None:
             annotation_id = self._post_data(synapse_data)
             id_description = 'synapse_{}'.format(annotation_id[0])
             self.viewer.update_description(viewer_ids, id_description)
-            self._update_id_map( viewer_ids, id_description )
+            self._update_map_id( viewer_ids, id_description )
 
     def _post_data(self, synapse_data):
         response = self.annotation_client.post_annotation('synapse', [synapse_data])
@@ -130,17 +126,17 @@ class SynapseExtension(AnnotationExtensionBaseClass):
         self.viewer.update_message('Starting new synapse...')
 
     @check_layer()
-    def _delete_annotation( ngl_id ):
-        anno_id = self.annotation_df[self.annotation_df.ngl_id==ngl_id].anno_id.values[0]
-        ae_type, ae_id = self._parse_anno_id( anno_id )
-        try:
-            self.annotation_client.delete_annotation(annotation_type=ae_type,
+    def _delete_annotation(self, ngl_id ):
+        anno_id = self.get_anno_id(ngl_id)
+        ae_type, ae_id = self.parse_anno_id(anno_id)
+        #try:
+        self.annotation_client.delete_annotation(annotation_type=ae_type,
                                                      oid=ae_id)
-        except:
-            self.viewer.update_message('Could not delete annotation!')
-            return
+        # except:
+        #     self.viewer.update_message('Could not delete annotation!')
+        #     return
 
-        for row in self._annotation_filtered_iterrows(anno_id=anno_id):
-            self.viewer.remove_annotation(row['layer'].values[0], row['ngl_id'].values)
+        for _, row in self._annotation_filtered_iterrows(anno_id=anno_id):
+            self.viewer.remove_annotation(row['layer'], row['ngl_id'])
 
-        self._remove_anno_id(anno_id)    
+        self._remove_map_id(anno_id)

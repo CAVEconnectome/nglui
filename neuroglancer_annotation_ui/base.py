@@ -2,32 +2,13 @@ import neuroglancer
 from collections import OrderedDict
 from neuroglancer_annotation_ui import annotation
 from inspect import getmembers, ismethod
-from functools import wraps
-from pandas import DataFrame
-import re
+import copy
 import json
 import os
 
 base_dir=os.path.dirname(os.path.dirname(__file__))
 with open(base_dir+"/data/default_key_bindings.json") as fid:
     default_key_bindings = json.load(fid)
-
-def check_layer(allowed_layer_key=None):
-    def specific_layer_wrapper( func ):
-        @wraps(func)
-        def layer_wrapper(self, *args, **kwargs):
-            if allowed_layer_key == None:
-                allowed_layers = self.allowed_layers
-            else:
-                allowed_layers = self.allowed_layers[allowed_layer_key]
-
-            curr_layer = self.viewer.get_selected_layer()
-            if curr_layer in allowed_layers:
-                func(self, *args, **kwargs)
-            else:
-                self.viewer.update_message( 'Select layer from amongst \"{}\"" to do that action!'.format(allowed_layers) )
-        return layer_wrapper
-    return specific_layer_wrapper
 
 class EasyViewer( neuroglancer.Viewer ):
     """
@@ -159,7 +140,6 @@ class EasyViewer( neuroglancer.Viewer ):
                 for ind, anno in enumerate( s.layers[layer_name].annotations ):
                     if anno.id in aids:
                         s.layers[layer_name].annotations.pop(ind)
-                        break
                 else:
                     raise Exception
         except:
@@ -167,6 +147,7 @@ class EasyViewer( neuroglancer.Viewer ):
 
 
     def update_description(self, layer_id_dict, new_description):
+        layer_id_dict = copy.deepcopy(layer_id_dict)
         try:
             with self.txn() as s:
                 for layer_name, id_list in layer_id_dict.items():
@@ -231,7 +212,7 @@ class AnnotationManager( ):
         self.annotation_client = annotation_client
         self.extensions = {}
 
-        self.key_bindings = default_key_bindings
+        self.key_bindings = copy.copy(default_key_bindings)
         self.extension_layers = {}
 
         self.annotation_rubbish_bin = None
@@ -315,86 +296,36 @@ class AnnotationManager( ):
             return
 
         curr_pos = self.viewer.state.position.voxel_coordinates
-        for annotation in self.viewer.state.layers[selected_layer]:
+        for annotation in self.viewer.state.layers[selected_layer].annotations:
             if all(annotation.point==curr_pos):
-                delete_confirmed = self.check_rubbish_bin( annotation.id )
                 ngl_id = annotation.id
+                delete_confirmed = self.check_rubbish_bin( ngl_id )
                 break
         else:
+            delete_confirmed = False
             self.viewer.update_message('No annotation under point or in selected layer!')
+            return
 
         if delete_confirmed:
             bound_extension = self.extensions[ self.extension_layers[selected_layer] ]
-            try:
-                bound_extension._delete_annotation( ngl_id )
-            except:
-                self.viewer.update_message('Could not delete annotation!')
+            #try:
+            bound_extension._delete_annotation( ngl_id )
+            #except Exception as err:
+            #    print(err)
+            #    self.viewer.update_message('Could not delete annotation!')
         pass
 
     def check_rubbish_bin( self, ngl_id ):
-        if ngl_id == self.annotation_rubbish_bin:
-            return True
-        else:
+        if self.annotation_rubbish_bin is None:
             self.annotation_rubbish_bin = ngl_id
             self.viewer.update_message( 'Confirm deletion!')
             return False
-
-
-class ExtensionBaseClass():
-    """
-    Basic class that contains all of the objects that are expected
-    by the Extension Manager, but won't actually do anything.
-    """
-    def __init__(self, easy_viewer, annotation_client=None):
-        self.viewer = easy_viewer
-        self.annotation_client = annotation_client
-        self.ngl_renderer = None
-        self.allowed_layers = []
-
-    @staticmethod
-    def _default_key_bindings():
-    bindings = {}
-    return bindings
-
-    @staticmethod
-    def _defined_layers():
-        return []
-
-    @check_layer()
-    def _delete_annotation( ngl_id ):
-        pass
-
-class AnnotationExtensionBaseClass(ExtensionBaseClass):
-    """
-    Adds framework to interact with a mapping between layer, ngl_id, and anno_id on the
-    annotation engine side.
-    """
-    def __init__(self, easy_viewer, annotation_client=None):
-        super(ExtensionBaseClass, self).__init__(easy_viewer,annotation_client)
-        self.annotation_df = DataFrame(columns=['ngl_id',
-                                                'layer',
-                                                'anno_id'])
-
-    def _parse_anno_id(self, anno_id_description):
-        anno_parser = re.search('(?P<type>\w*)_(?P<id>\d.*)$', anno_id)
-        ae_type = anno_parser.groupdict()['type']
-        ae_id = anno_parser.groupdict()['id']
-        return ae_type, ae_id
-
-    def _remove_map_id(self, anno_id):
-        self.annotation_df.drop(index=self.annotation_df[self.annotation_df.anno_id==anno_id].index, inplace=True)
-
-    def _update_map_id(self, viewer_ids, id_description ):
-        for layer, id_list in viewer_ids.items():
-            for ngl_id in id_list:
-                self.annotation_df = self.annotation_df.append({'ngl_id': ngl_id,
-                                                                'layer': layer,
-                                                                'anno_id': id_description
-                                                                },
-                                                                ignore_index=True)
-
-    def _annotation_filtered_iterrows(self, anno_id=None, ngl_id=None, layer=None):
-        arg1 = True if anno_id is None else (self.annotation_df.anno_id == anno_id)
-        arg2 = True if ngl_id is None else (self.annotation_df.ngl_id == ngl_id)
-        arg3 = True if layer is None else (self.annotation_df.layer == layer)
-        return self.annotation_df[arg1 & arg2 & arg3].iterrows()
+        elif ngl_id == self.annotation_rubbish_bin:
+            #Return True and reset rubbish bin
+            self.annotation_rubbish_bin = None
+            return True
+        else:
+            #Return False and reset rubbish bin with notice
+            self.annotation_rubbish_bin = None
+            self.viewer.update_message( 'Canceled deletion')
+            return False
