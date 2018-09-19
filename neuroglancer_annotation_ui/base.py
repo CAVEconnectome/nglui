@@ -139,10 +139,13 @@ class EasyViewer( neuroglancer.Viewer ):
             with self.txn() as s:
                 for ind, anno in enumerate( s.layers[layer_name].annotations ):
                     if anno.id in aids:
+                        aids.remove(anno.id)
                         s.layers[layer_name].annotations.pop(ind)
+                        if len(aids) == 0:
+                            break
                 else:
                     raise Exception
-        except:
+        except Exception:
             self.update_message('Could not remove annotation')
 
 
@@ -204,7 +207,7 @@ class EasyViewer( neuroglancer.Viewer ):
 
 
 class AnnotationManager( ):
-    def __init__(self, easy_viewer=None, annotation_client=None, initialize_delete=True):
+    def __init__(self, easy_viewer=None, annotation_client=None):
         if easy_viewer is None:
             self.viewer = EasyViewer()
         else:
@@ -216,9 +219,6 @@ class AnnotationManager( ):
         self.extension_layers = {}
 
         self.annotation_rubbish_bin = None
-        if initialize_delete:
-            delete_binding = {'delete_annotation': 'del'}
-
 
     def __repr__(self):
         return self.viewer.get_viewer_url()
