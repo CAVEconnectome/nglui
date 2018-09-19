@@ -42,7 +42,6 @@ class EasyViewer( neuroglancer.Viewer ):
         Attributes:
             layer_name (str): name of layer to be displayed in neuroglancer ui.
             segment_source (str): source of neuroglancer segment layer
-                e.g. :'precomputed://gs://neuroglancer/pinky40_v11/watershed_mst_trimmed_sem_remap'
         """
         try:
             with self.txn() as s:
