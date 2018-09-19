@@ -207,7 +207,7 @@ class EasyViewer( neuroglancer.Viewer ):
 
 
 class AnnotationManager( ):
-    def __init__(self, easy_viewer=None, annotation_client=None):
+    def __init__(self, easy_viewer=None, annotation_client=None, enable_delete=True):
         if easy_viewer is None:
             self.viewer = EasyViewer()
         else:
@@ -218,7 +218,15 @@ class AnnotationManager( ):
         self.key_bindings = copy.copy(default_key_bindings)
         self.extension_layers = {}
 
+        if enable_delete is True:
+            self.initialize_delete_action()
+
+    def initialize_delete_action(self):
         self.annotation_rubbish_bin = None
+        delete_binding = 'backspace'
+        self.viewer._add_action('Delete annotation (2x to confirm)',
+                                delete_binding,
+                                self.delete_annotation)
 
     def __repr__(self):
         return self.viewer.get_viewer_url()
@@ -227,11 +235,9 @@ class AnnotationManager( ):
     def _repr_html_(self):
         return '<a href="%s" target="_blank">Viewer</a>' % self.viewer.get_viewer_url()
 
-
     @property
     def url(self):
         return self.viewer.get_viewer_url()
-
 
     def add_image_layer(self, layer_name, image_source):
         self.viewer.add_image_layer(layer_name, image_source)
@@ -308,11 +314,11 @@ class AnnotationManager( ):
 
         if delete_confirmed:
             bound_extension = self.extensions[ self.extension_layers[selected_layer] ]
-            #try:
-            bound_extension._delete_annotation( ngl_id )
-            #except Exception as err:
-            #    print(err)
-            #    self.viewer.update_message('Could not delete annotation!')
+            try:
+                bound_extension._delete_annotation( ngl_id )
+            except Exception as err:
+               print(err)
+               self.viewer.update_message('Extension could not not delete annotation!')
         pass
 
     def check_rubbish_bin( self, ngl_id ):

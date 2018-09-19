@@ -1,4 +1,8 @@
-import neuroglancer
+from neuroglancer import LineAnnotation, \
+                         PointAnnotation, \
+                         EllipsoidAnnotation, \
+                         AxisAlignedBoundingBoxAnnotation, \
+                         random_token
 
 def line_annotation(a, b, id=None, description=None):
     """Returns line annotation object.
@@ -9,8 +13,8 @@ def line_annotation(a, b, id=None, description=None):
         description (str) : additional description of specific annotation.
     """
     if id is None:
-        id = neuroglancer.random_token.make_random_token()
-    line = neuroglancer.LineAnnotation(
+        id = random_token.make_random_token()
+    line = LineAnnotation(
         point_a=a,
         point_b=b,
         id=id,
@@ -26,8 +30,8 @@ def point_annotation(point, id=None, description=None):
         description (str) : additional description of specific annotation.
     """
     if id is None:
-        id = neuroglancer.random_token.make_random_token()
-    point = neuroglancer.PointAnnotation(
+        id = random_token.make_random_token()
+    point = PointAnnotation(
         point=[int(x) for x in point],
         id=id,
         description=description)
@@ -43,8 +47,8 @@ def ellipsoid_annotation(center, radii, id=None, description=None):
         description (str) : additional description of specific annotation.
     """
     if id is None:
-        id = neuroglancer.random_token.make_random_token()
-    ellipsoid = neuroglancer.EllipsoidAnnotation(
+        id = random_token.make_random_token()
+    ellipsoid = EllipsoidAnnotation(
         center=center,
         radii=radii,
         id=id,
@@ -61,8 +65,8 @@ def bounding_box_annotation(a, b, id=None, description=None):
         description (str) : additional description of specific annotation.
     """
     if id is None:
-        id = neuroglancer.random_token.make_random_token()
-    bounding_box = neuroglancer.AxisAlignedBoundingBoxAnnotation(
+        id = random_token.make_random_token()
+    bounding_box = AxisAlignedBoundingBoxAnnotation(
         point_a=point_a,
         point_b=point_b,
         id=id,

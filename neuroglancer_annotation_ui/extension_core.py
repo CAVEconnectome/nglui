@@ -65,7 +65,8 @@ class AnnotationExtensionBase(ExtensionBase):
         return ae_type, ae_id
 
     def _remove_map_id(self, anno_id):
-        self.annotation_df.drop(index=self.annotation_df[self.annotation_df.anno_id==anno_id].index, inplace=True)
+        self.annotation_df.drop(index=self.annotation_df[self.annotation_df.anno_id==anno_id].index,
+                                inplace=True)
 
     def _update_map_id(self, viewer_ids, id_description ):
         for layer, id_list in viewer_ids.items():
