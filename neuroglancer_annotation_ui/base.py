@@ -221,6 +221,15 @@ class EasyViewer( neuroglancer.Viewer ):
         else:
             return pos
 
+
+    def set_position(self, xyz, zoom_level=None):
+        if zoom_factor is None:
+            zoom_factor = self.state.navigation.zoom_factor
+        with self.txn() as s:
+            s.position.voxelCoordinates = xyz
+            s.navigation.zoomFactor = zoom_factor
+
+
     def set_view_options( self,
                           segmentation_layer=None,
                           show_slices = False,
