@@ -174,11 +174,6 @@ class EasyViewer( neuroglancer.Viewer ):
         except:
             self.update_message('Could not update annotations!')
 
-
-    def set_state(self, new_state):
-        return self.set_state(new_state)
-
-
     @property
     def url(self):
         return self.get_viewer_url()
@@ -205,6 +200,16 @@ class EasyViewer( neuroglancer.Viewer ):
             selected_layer = None
         return selected_layer
 
+    @property
+    def layer_names(self):
+        return [l.name for l in self.state.layers]
+
+    def set_selected_layer(self, layer_name):
+        if layer_name in self.layer_names:
+            with self.txn() as s:
+                s._json_data['selectedLayer'] = OrderedDict(layer=layer_name,visible=True)
+
+
     def add_selected_objects(self, segmentation_layer, oids):
         if issubdtype(type(oids), integer):
             oids = [oids]
@@ -212,7 +217,6 @@ class EasyViewer( neuroglancer.Viewer ):
         with self.txn() as s:
             for oid in oids:
                 s.layer[ln].segment.append(oid)
-
 
     def get_mouse_coordinates(self, s):
         pos = s.mouse_voxel_coordinates
@@ -329,6 +333,9 @@ class AnnotationManager( ):
         if issubclass(ExtensionClass, AnnotationExtensionBase):
             if self.extensions[extension_name].tables == 'MUST_BE_CONFIGURED':
                 raise Exception('Table map must be configured for an annotation extension')
+
+        if len(self.extensions[extension_name].allowed_layers) > 0:
+            self.viewer.set_selected_layer(self.extensions[extension_name].allowed_layers[0])
 
         pass
 
