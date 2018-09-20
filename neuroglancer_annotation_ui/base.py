@@ -1,6 +1,7 @@
 import neuroglancer
 from collections import OrderedDict
 from neuroglancer_annotation_ui import annotation
+from neuroglancer_annotation_ui.extension_core import AnnotationExtensionBase
 from inspect import getmembers, ismethod
 import copy
 import json
@@ -98,6 +99,7 @@ class EasyViewer( neuroglancer.Viewer ):
         else:
             pass
 
+
     def clear_annotation_layers( self, s ):
         all_layers = neuroglancer.json_wrappers.to_json( self.state.layers )
         new_layers = OrderedDict()
@@ -107,6 +109,7 @@ class EasyViewer( neuroglancer.Viewer ):
         
         with self.txn() as s2:
             s2.layers = neuroglancer.viewer_state.Layers(new_layers)
+
 
     def add_annotation(self, layer_name, annotation, color=None):
         """Add annotations to a viewer instance, the type is specified.
@@ -201,8 +204,34 @@ class EasyViewer( neuroglancer.Viewer ):
         pos = s.mouse_voxel_coordinates
         if (pos is None) or ( len(pos)!= 3):
             return None
-        else:  # FIXME: bad hack need to revisit
+        else:
             return pos
+
+    # def set_view_options( self,
+    #                       slices_on = False,
+    #                       layout='xy-3d',
+    #                       opacity=2d_opacity,
+
+    #                       ):
+
+    # def toggle_slices( self, slices_on=False ):
+    #     with self.viewer.txn() as s:
+    #         s.showSlices = slice_on
+
+    # def set_layout( self, layout='xy-3d'):
+    #     with self.viewer.txn() as s:
+    #         s.layout = layout
+
+    # def set_segmentation_opacity( self, opacity, layer_name=None ):
+    #     if layer_name is None:
+    #         layers = list(self.viewer.state.layers.keys())
+    #     else:
+    #         layers = [layer_name]
+
+    #     for ln in layers:
+    #         if self.viewer.state.layers[ln].type == 'segmentation':
+    #             with self.viewer.txn() as s:
+    #                 s.layers[ln].selectedAlpha = opacity
 
 
 class AnnotationManager( ):
@@ -273,6 +302,10 @@ class AnnotationManager( ):
                                    key_command,
                                    bound_methods[method_name])
             self.key_bindings.append(key_command)
+
+        if issubclass(ExtensionClass, AnnotationExtensionBase):
+            if self.extensions[extension_name].tables == 'MUST_BE_CONFIGURED':
+                raise Exception('Table map must be configured for an annotation extension')
         pass
 
 
@@ -296,8 +329,8 @@ class AnnotationManager( ):
         A manager for deleting annotations.
         """
         selected_layer = self.viewer.get_selected_layer()
-        if selected_layer is None:
-            self.viewer.update_message('Please select a layer to delete an annotation')
+        if (selected_layer is None) or (self.viewer.state.layers[selected_layer].type != 'annotation'):
+            self.viewer.update_message('Please select an annotation layer to delete an annotation')
             return
 
         curr_pos = self.viewer.state.position.voxel_coordinates

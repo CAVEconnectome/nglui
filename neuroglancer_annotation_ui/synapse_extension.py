@@ -18,12 +18,13 @@ class SynapseExtension(AnnotationExtensionBase):
         self.ngl_renderer = SchemaRenderer(SynapseSchemaWithRule)
         self.allowed_layers = ['synapses']
 
-        self.color_map = {'synapses': '#000000',
+        self.color_map = {'synapses': '#cccccc',
                           'synapses_pre': '#ff0000',
                           'synapses_post': '#00ffff',
                           }
         self.create_synapse_layers(None)
         self.synapse_points = {'pre_pt': None, 'post_pt': None, 'ctr_pt': None}
+
 
     @staticmethod
     def _default_key_bindings():
@@ -104,7 +105,7 @@ class SynapseExtension(AnnotationExtensionBase):
             self._update_map_id( viewer_ids, id_description )
 
     def _post_data(self, synapse_data):
-        response = self.annotation_client.post_annotation('synapse', [synapse_data])
+        response = self.annotation_client.post_annotation(self.tables['synapse'], [synapse_data])
         return response
 
     def make_synapse_point( self, s):

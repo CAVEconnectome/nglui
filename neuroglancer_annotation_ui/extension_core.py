@@ -48,9 +48,13 @@ class AnnotationExtensionBase(ExtensionBase):
     """
     Adds framework to interact with a mapping between layer, ngl_id, and anno_id on the
     annotation engine side.
+    Note that the table_map must be configured. This object is intended to relate annotations to
+    database tables. Currently, handling this via subclassing.
     """
     def __init__(self, easy_viewer, annotation_client=None):
         super(AnnotationExtensionBase, self).__init__(easy_viewer, annotation_client)
+
+        self.tables = 'MUST_BE_CONFIGURED'
         self.annotation_df = DataFrame(columns=['ngl_id',
                                                 'layer',
                                                 'anno_id'])
