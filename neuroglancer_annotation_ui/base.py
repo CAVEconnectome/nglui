@@ -226,7 +226,7 @@ class EasyViewer( neuroglancer.Viewer ):
             return pos
 
 
-    def set_position(self, xyz, zoom_level=None):
+    def set_position(self, xyz, zoom_factor=None):
         if zoom_factor is None:
             zoom_factor = self.state.navigation.zoom_factor
         with self.txn() as s:
