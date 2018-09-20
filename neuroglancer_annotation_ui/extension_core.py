@@ -62,8 +62,12 @@ class AnnotationExtensionBase(ExtensionBase):
     def get_anno_id(self, ngl_id):
         return self.annotation_df[self.annotation_df.ngl_id==ngl_id].anno_id.values[0]
 
-    def parse_anno_id(self, anno_id_description ):
-        anno_parser = re.search('(?P<type>\w*)_(?P<id>\d.*)$', anno_id_description)
+    def parse_anno_id(self, anno_id_description, regex_type_match=None ):
+        if regex_type_match is None:
+            anno_parser = re.search('(?P<type>\w*)_(?P<id>\d.*)$', anno_id_description)
+        else:
+            anno_parser = re.search('(?P<type>{})_(?P<id>\d.*)'.format(regex_type_match), anno_id_description)
+
         ae_type = anno_parser.groupdict()['type']
         ae_id = anno_parser.groupdict()['id']
         return ae_type, ae_id
@@ -86,3 +90,7 @@ class AnnotationExtensionBase(ExtensionBase):
         arg2 = True if ngl_id is None else (self.annotation_df.ngl_id == ngl_id)
         arg3 = True if layer is None else (self.annotation_df.layer == layer)
         return self.annotation_df[arg1 & arg2 & arg3].iterrows()
+
+    def _delete_annotation(self):
+        self.viewer.update_message('No delete function is configured for this extension')
+        pass

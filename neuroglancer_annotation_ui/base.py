@@ -19,14 +19,18 @@ class EasyViewer( neuroglancer.Viewer ):
     def __init__(self):
         super(EasyViewer, self).__init__()
 
+
     def __repr__(self):
         return self.get_viewer_url()
+
 
     def _repr_html_(self):
         return '<a href="%s" target="_blank">Viewer</a>' % self.get_viewer_url()
 
+
     def set_source_url(self, ngl_url):
         self.ngl_url = neuroglancer.set_server_bind_address(ngl_url)
+
 
     def load_url(self, url):
         """Load neuroglancer compatible url and updates viewer state
@@ -37,6 +41,7 @@ class EasyViewer( neuroglancer.Viewer ):
         """
         state = neuroglancer.parse_url(url)
         self.set_state(state)
+
 
     def add_segmentation_layer(self, layer_name, segmentation_source):
         """Add segmentation layer to viewer instance.
@@ -167,12 +172,13 @@ class EasyViewer( neuroglancer.Viewer ):
                             if anno.description is None:
                                 anno.description = new_description
                             else:
-                                anno.description = "{}; {}".format(anno.description, new_description)
+                                anno.description = "{}\n{}".format(anno.description, new_description)
                             id_list.remove(anno.id)
                             if len(id_list)==0:
                                 break                            
         except:
             self.update_message('Could not update annotations!')
+
 
     @property
     def url(self):
@@ -200,9 +206,11 @@ class EasyViewer( neuroglancer.Viewer ):
             selected_layer = None
         return selected_layer
 
+
     @property
     def layer_names(self):
         return [l.name for l in self.state.layers]
+
 
     def set_selected_layer(self, layer_name):
         if layer_name in self.layer_names:
@@ -217,6 +225,7 @@ class EasyViewer( neuroglancer.Viewer ):
         with self.txn() as s:
             for oid in oids:
                 s.layer[ln].segment.append(oid)
+
 
     def get_mouse_coordinates(self, s):
         pos = s.mouse_voxel_coordinates
@@ -260,6 +269,7 @@ class EasyViewer( neuroglancer.Viewer ):
                 s.layers[ln].objectAlpha = perspective_alpha
                 s.layers[ln].notSelectedAlpha = not_selected_alpha
 
+
 class AnnotationManager( ):
     def __init__(self, easy_viewer=None, annotation_client=None, enable_delete=True):
         if easy_viewer is None:
@@ -276,12 +286,14 @@ class AnnotationManager( ):
         if enable_delete is True:
             self.initialize_delete_action()
 
+
     def initialize_delete_action(self):
         self.annotation_rubbish_bin = None
         delete_binding = 'backspace'
         self.viewer._add_action('Delete annotation (2x to confirm)',
                                 delete_binding,
                                 self.delete_annotation)
+
 
     def __repr__(self):
         return self.viewer.get_viewer_url()
@@ -290,9 +302,11 @@ class AnnotationManager( ):
     def _repr_html_(self):
         return '<a href="%s" target="_blank">Viewer</a>' % self.viewer.get_viewer_url()
 
+
     @property
     def url(self):
         return self.viewer.get_viewer_url()
+
 
     def add_image_layer(self, layer_name, image_source):
         self.viewer.add_image_layer(layer_name, image_source)
@@ -383,6 +397,7 @@ class AnnotationManager( ):
                print(err)
                self.viewer.update_message('Extension could not not delete annotation!')
         pass
+
 
     def check_rubbish_bin( self, ngl_id ):
         if self.annotation_rubbish_bin is None:
