@@ -5,7 +5,7 @@ import json
 import urllib
 import copy
 from collections import OrderedDict
-from neuroglancer_annotation_ui import connections 
+from neuroglancer_annotation_ui import connections
 from neuroglancer_annotation_ui import annotation
 
 
@@ -13,6 +13,7 @@ class Interface(neuroglancer.Viewer):
     """Abstraction layer of neuroglancer.Viewer to quickly create
     custom ngl interfaces.
     """
+
     def __init__(self, ngl_url):
         super(Interface, self).__init__()
 
@@ -96,8 +97,7 @@ class Interface(neuroglancer.Viewer):
         except Exception as e:
             raise e
 
-
-    def add_annotation_layer(self, layer_name, color=None ):
+    def add_annotation_layer(self, layer_name, color=None):
         """Add annotation layer to the viewer instance.
 
         Attributes:
@@ -107,12 +107,12 @@ class Interface(neuroglancer.Viewer):
             pass
         else:
             with self.txn() as s:
-                s.layers.append( name=layer_name,
-                                 layer=neuroglancer.AnnotationLayer() )
+                s.layers.append(name=layer_name,
+                                layer=neuroglancer.AnnotationLayer())
                 if color is not None:
                     s.layers[layer_name].annotationColor = color
 
-    def set_annotation_layer_color( self, layer_name, color ):
+    def set_annotation_layer_color(self, layer_name, color):
         """Set the color for the annotation layer
 
         """
@@ -133,14 +133,15 @@ class Interface(neuroglancer.Viewer):
         if layer_name is None:
             layer_name = 'Annotations'
 
-        if issubclass(type(annotation), neuroglancer.viewer_state.AnnotationBase):
-            annotation = [ annotation ]
+        if issubclass(type(annotation),
+                      neuroglancer.viewer_state.AnnotationBase):
+            annotation = [annotation]
 
         try:
             self.add_annotation_layer(layer_name, color)
             with self.txn() as s:
                 for anno in annotation:
-                    s.layers[layer_name].annotations.append( anno )
+                    s.layers[layer_name].annotations.append(anno)
 
             # self.current_state = self.viewer.state
 
@@ -159,7 +160,6 @@ class Interface(neuroglancer.Viewer):
         with self.viewer.config_state.txn() as s:
             s.input_event_bindings.viewer[key_command] = action_name
         return self.viewer.config_state
-
 
     def load_state(self, state_name, state):
         """Load neuroglancer json state to current ngl viewer
@@ -225,7 +225,8 @@ class Connector(Interface):
         self.post_point = self.add_point(s, 2)
         self.update_message("Current postsynaptic process \
          is {}".format(self.post_id))
-        self.add_annotation('Post Synaptic Process', [self.post_point], '#ff0000')
+        self.add_annotation('Post Synaptic Process', [self.post_point],
+                            '#ff0000')
 
     def add_point(self, s, description=None):
         pos = s.mouse_voxel_coordinates
@@ -313,16 +314,16 @@ class Connector(Interface):
             self.index = self.data.set_active_pair(self.pre_id, self.post_id)
         return self.index
 
-    def _clear_annotation_layers( self, s ):
-        all_layers = neuroglancer.json_wrappers.to_json( self.viewer.state.layers )
+    def _clear_annotation_layers(self, s):
+        all_layers = neuroglancer.json_wrappers.to_json(
+            self.viewer.state.layers)
         new_layers = OrderedDict()
         for layer in all_layers:
             if all_layers[layer]['type'] != 'annotation':
                 new_layers[layer] = all_layers[layer]
-        
+
         with self.viewer.txn() as s:
             s.layers = neuroglancer.viewer_state.Layers(new_layers)
-
 
     def clear_all(self, s):
         self._clear_annotation_layers(s)

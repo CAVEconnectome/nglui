@@ -1,6 +1,8 @@
-import neuroglancer
-import secrets
-
+from neuroglancer import LineAnnotation, \
+                         PointAnnotation, \
+                         EllipsoidAnnotation, \
+                         AxisAlignedBoundingBoxAnnotation, \
+                         random_token
 
 def line_annotation(a, b, id=None, description=None):
     """Returns line annotation object.
@@ -11,8 +13,8 @@ def line_annotation(a, b, id=None, description=None):
         description (str) : additional description of specific annotation.
     """
     if id is None:
-        id = neuroglancer.random_token.make_random_token()
-    line = neuroglancer.LineAnnotation(
+        id = random_token.make_random_token()
+    line = LineAnnotation(
         point_a=a,
         point_b=b,
         id=id,
@@ -28,9 +30,9 @@ def point_annotation(point, id=None, description=None):
         description (str) : additional description of specific annotation.
     """
     if id is None:
-        id = neuroglancer.random_token.make_random_token()
-    point = neuroglancer.PointAnnotation(
-        point=point,
+        id = random_token.make_random_token()
+    point = PointAnnotation(
+        point=[int(x) for x in point],
         id=id,
         description=description)
     return point
@@ -45,8 +47,8 @@ def ellipsoid_annotation(center, radii, id=None, description=None):
         description (str) : additional description of specific annotation.
     """
     if id is None:
-        id = neuroglancer.random_token.make_random_token()
-    ellipsoid = neuroglancer.EllipsoidAnnotation(
+        id = random_token.make_random_token()
+    ellipsoid = EllipsoidAnnotation(
         center=center,
         radii=radii,
         id=id,
@@ -54,7 +56,7 @@ def ellipsoid_annotation(center, radii, id=None, description=None):
     return ellipsoid
 
 
-def bounding_box_annotaiton(a, b, id=None, description=None):
+def bounding_box_annotation(a, b, id=None, description=None):
     """returns axis aligned bounding box annotation object.
 
     Attributes:
@@ -63,33 +65,10 @@ def bounding_box_annotaiton(a, b, id=None, description=None):
         description (str) : additional description of specific annotation.
     """
     if id is None:
-        id = neuroglancer.random_token.make_random_token()
-    bounding_box = neuroglancer.AxisAlignedBoundingBoxAnnotation(
+        id = random_token.make_random_token()
+    bounding_box = AxisAlignedBoundingBoxAnnotation(
         point_a=point_a,
         point_b=point_b,
         id=id,
         description=description)
     return bounding_box
-
-
-def generate_id(nbytes=32):
-    """ Helper method to make random token hex byte string containing
-    nbytes number of bytes.
-
-    Attributes:
-        nbytes (int):  length of byte string containing nbytes.
-    """
-    id = secrets.token_hex(nbytes)
-    return id
-
-
-if __name__ == '__main__':
-    point_a = [150., 40., 65.]
-    point_b = [147., 38., 65.]
-    center = [38610.77, 29166.29, 512]
-    radii = [1900, 1900, 190]
-    des = 'This is a description string'
-    line = line_annotation(point_a, point_a, generate_id(), des)
-    point = point_annotation(point_a, generate_id(), des)
-    ellipsoid = ellipsoid_annotation(center=center, radii=radii, id=generate_id())
-    print(line, point, ellipsoid)
