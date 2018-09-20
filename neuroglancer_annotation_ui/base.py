@@ -3,6 +3,7 @@ from collections import OrderedDict
 from neuroglancer_annotation_ui import annotation
 from neuroglancer_annotation_ui.extension_core import AnnotationExtensionBase
 from inspect import getmembers, ismethod
+from numpy import issubdtype, integer
 import copy
 import json
 import os
@@ -52,6 +53,12 @@ class EasyViewer( neuroglancer.Viewer ):
                 self.segment_source = segmentation_source
         except Exception as e:
             raise e
+        self.set_view_options(segmentation_layer=layer_name,
+                      show_slices=self.state.showSlices,
+                      layout=self.state.layout.type,
+                      orthographic_projection=self.state.layout.orthographic_projection,
+                      show_axis_lines=self.state.showAxisLines,
+                      show_scale_bar=self.state.showScaleBar)
 
 
     def add_image_layer(self, layer_name, image_source):
@@ -88,7 +95,6 @@ class EasyViewer( neuroglancer.Viewer ):
             if color is not None:
                 s.layers[layer_name].annotationColor = color
 
-
     def set_annotation_layer_color( self, layer_name, color ):
         """Set the color for the annotation layer
 
@@ -120,7 +126,7 @@ class EasyViewer( neuroglancer.Viewer ):
             layer_type (str): can be: 'points, ellipse or line' only
         """
         if layer_name is None:
-            layer_name = 'Annotations'
+            layer_name = 'New Annotation'
         if issubclass(type(annotation), neuroglancer.viewer_state.AnnotationBase):
             annotation = [ annotation ]
         try:
@@ -199,6 +205,14 @@ class EasyViewer( neuroglancer.Viewer ):
             selected_layer = None
         return selected_layer
 
+    def add_selected_objects(self, segmentation_layer, oids):
+        if issubdtype(type(oids), integer):
+            oids = [oids]
+
+        with self.txn() as s:
+            for oid in oids:
+                s.layer[ln].segment.append(oid)
+
 
     def get_mouse_coordinates(self, s):
         pos = s.mouse_voxel_coordinates
@@ -207,37 +221,37 @@ class EasyViewer( neuroglancer.Viewer ):
         else:
             return pos
 
-    # def set_view_options( self,
-    #                       slices_on = False,
-    #                       layout='xy-3d',
-    #                       opacity=2d_opacity,
+    def set_view_options( self,
+                          segmentation_layer=None,
+                          show_slices = False,
+                          layout='xy-3d',
+                          show_axis_lines=True,
+                          show_scale_bar=False,
+                          orthographic_projection=False,
+                          selected_alpha=0.3,
+                          not_selected_alpha=0,
+                          perspective_alpha=0.8):
+        if segmentation_layer is None:
+            layers = [l for l in self.state.layers if l.type == 'segmentation']
+        else:
+            layers = [segmentation_layer]
 
-    #                       ):
-
-    # def toggle_slices( self, slices_on=False ):
-    #     with self.viewer.txn() as s:
-    #         s.showSlices = slice_on
-
-    # def set_layout( self, layout='xy-3d'):
-    #     with self.viewer.txn() as s:
-    #         s.layout = layout
-
-    # def set_segmentation_opacity( self, opacity, layer_name=None ):
-    #     if layer_name is None:
-    #         layers = list(self.viewer.state.layers.keys())
-    #     else:
-    #         layers = [layer_name]
-
-    #     for ln in layers:
-    #         if self.viewer.state.layers[ln].type == 'segmentation':
-    #             with self.viewer.txn() as s:
-    #                 s.layers[ln].selectedAlpha = opacity
-
+        with self.txn() as s:
+            s.showSlices = show_slices
+            s.layout.type = layout
+            s.layout.orthographic_projection = orthographic_projection
+            s.show_axis_lines = show_axis_lines
+            s.show_scale_bar = show_scale_bar
+            for ln in layers:
+                s.layers[ln].selectedAlpha = selected_alpha
+                s.layers[ln].objectAlpha = perspective_alpha
+                s.layers[ln].notSelectedAlpha = not_selected_alpha
 
 class AnnotationManager( ):
     def __init__(self, easy_viewer=None, annotation_client=None, enable_delete=True):
         if easy_viewer is None:
             self.viewer = EasyViewer()
+            self.viewer.set_view_options()
         else:
             self.viewer = easy_viewer
         self.annotation_client = annotation_client
@@ -306,6 +320,7 @@ class AnnotationManager( ):
         if issubclass(ExtensionClass, AnnotationExtensionBase):
             if self.extensions[extension_name].tables == 'MUST_BE_CONFIGURED':
                 raise Exception('Table map must be configured for an annotation extension')
+
         pass
 
 
