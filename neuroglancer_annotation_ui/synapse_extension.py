@@ -15,22 +15,26 @@ class SynapseSchemaWithRule(SynapseSchema):
 class SynapseExtension(AnnotationExtensionBase):
     def __init__(self, easy_viewer, annotation_client=None):
         super(SynapseExtension, self).__init__(easy_viewer, annotation_client)
-        self.ngl_renderer = SchemaRenderer(SynapseSchemaWithRule)
+        self.ngl_renderer = {'synapses':SchemaRenderer(SynapseSchemaWithRule)}
         self.allowed_layers = ['synapses']
 
         self.color_map = {'synapses': '#cccccc',
                           'synapses_pre': '#ff0000',
                           'synapses_post': '#00ffff',
                           }
-        self.create_synapse_layers(None)
-        self.synapse_points = {'pre_pt': None, 'post_pt': None, 'ctr_pt': None}
         self.message_dict = {'pre_pt': 'presynaptic point',
                              'post_pt': 'postsynaptic point',
                              'ctr_pt': 'synapse'}
         self.layer_dict = {'pre_pt': 'synapses_pre',
                            'post_pt': 'synapses_post',
                            'ctr_pt': 'synapses'}
+        self.render_map = {'pre':'synapses_pre',
+                           'post':'synapses_post',
+                           'syn':'synapses'}
 
+        self.create_synapse_layers(None)
+        self.synapse_points = {'pre_pt': None, 'post_pt': None, 'ctr_pt': None}
+ 
 
     @staticmethod
     def _default_key_bindings():
@@ -74,7 +78,7 @@ class SynapseExtension(AnnotationExtensionBase):
                                  [self.synapse_points[point_type]] )
             self.viewer.update_message( message)
         else:
-            message = 'Assigned {}'.format(message_dict[point_type])
+            message = 'Assigned {}'.format(self.message_dict[point_type])
             self.synapse_points[point_type] = self.make_synapse_point(s)
             self.viewer.update_message( message)
 
@@ -89,24 +93,23 @@ class SynapseExtension(AnnotationExtensionBase):
         self.update_synapse_points( 'ctr_pt', s )
         synapse_data = self.format_synapse_data()
 
-        viewer_ids = self.ngl_renderer(self.viewer,
-                                      synapse_data,
-                                      layermap={'pre':'synapses_pre',
-                                                'post':'synapses_post',
-                                                'syn':'synapses'},
-                                      replace_annotations={'synapses_pre':self.synapse_points['pre_pt'].id,
-                                                           'synapses_post':self.synapse_points['post_pt'].id}
-                                      )
+        viewer_ids = self.ngl_renderer['synapses'](
+                          self.viewer,
+                          synapse_data,
+                          layermap=self.render_map,
+                          replace_annotations={'synapses_pre':self.synapse_points['pre_pt'].id,
+                                               'synapses_post':self.synapse_points['post_pt'].id}
+                          )
         self.clear_segment()
 
         if self.annotation_client is not None:
             annotation_id = self._post_data(synapse_data)
-            id_description = '{}_{}'.format(self.tables['synapse'], annotation_id[0])
+            id_description = '{}_{}'.format(self.db_tables['synapse'], annotation_id[0])
             self.viewer.update_description(viewer_ids, id_description)
             self._update_map_id( viewer_ids, id_description )
 
     def _post_data(self, synapse_data):
-        response = self.annotation_client.post_annotation(self.tables['synapse'], [synapse_data])
+        response = self.annotation_client.post_annotation(self.db_tables['synapse'], [synapse_data])
         return response
 
     def make_synapse_point( self, s):
@@ -124,10 +127,8 @@ class SynapseExtension(AnnotationExtensionBase):
 
     @check_layer()
     def clear_segment(self, s=None, update_message = True):
-        print(self.synapse_points)
         for pt_type, point in self.synapse_points.items():
             if point is not None:
-                print(pt_type, point)
                 self.viewer.remove_annotation(self.layer_dict[pt_type], point.id)
 
         self.synapse_points = {'pre_pt':None, 'post_pt':None, 'ctr_pt':None}
@@ -137,15 +138,11 @@ class SynapseExtension(AnnotationExtensionBase):
     @check_layer()
     def _delete_annotation(self, ngl_id ):
         anno_id = self.get_anno_id(ngl_id)
-        ae_type, ae_id = self.parse_anno_id(anno_id, self.tables['synapse'])
+        ae_type, ae_id = self.parse_anno_id(anno_id, self.db_tables['synapse'])
         try:
-            self.annotation_client.delete_annotation(annotation_type=self.tables['synapse'],
+            self.annotation_client.delete_annotation(annotation_type=self.db_tables['synapse'],
                                                      oid=ae_id)
         except:
             self.viewer.update_message('AnnotationClient could not delete annotation!')
             return
-
-        for _, row in self._annotation_filtered_iterrows(anno_id=anno_id):
-            self.viewer.remove_annotation(row['layer'], row['ngl_id'])
-
-        self._remove_map_id(anno_id)
+        self.remove_associated_annotations(anno_id)

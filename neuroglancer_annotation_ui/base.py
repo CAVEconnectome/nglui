@@ -104,7 +104,7 @@ class EasyViewer( neuroglancer.Viewer ):
         """Set the color for the annotation layer
 
         """
-        if layer_name in [l.name for l in self.layers]:
+        if layer_name in [l.name for l in self.state.layers]:
             with self.txn() as s:
                 s.layers[layer_name].annotationColor = color
         else:
@@ -207,6 +207,23 @@ class EasyViewer( neuroglancer.Viewer ):
         return selected_layer
 
 
+    def get_annotation( self, layer_name, aid ):
+        if self.state.layers[layer_name].type == 'annotation':
+            for anno in self.state.layers[layer_name].annotations:
+                if anno.id == aid:
+                    return anno
+            else:
+                return None
+        else:
+            return None
+
+    def select_annotation( self, layer_name, aid):
+        if layer_name in self.layer_names:
+            with self.txn() as s:
+                s.layers[layer_name]._json_data['selectedAnnotation'] = aid
+        self.set_selected_layer(layer_name)
+
+
     @property
     def layer_names(self):
         return [l.name for l in self.state.layers]
@@ -307,7 +324,6 @@ class AnnotationManager( ):
     def url(self):
         return self.viewer.get_viewer_url()
 
-
     def add_image_layer(self, layer_name, image_source):
         self.viewer.add_image_layer(layer_name, image_source)
 
@@ -318,7 +334,6 @@ class AnnotationManager( ):
 
     def add_annotation_layer(self, layer_name=None, layer_color=None):
         self.viewer.add_annotation_layer(layer_name, layer_color)
-
 
     def add_extension( self, extension_name, ExtensionClass, bindings=None ):
         if not self.validate_extension( ExtensionClass ):
@@ -334,7 +349,6 @@ class AnnotationManager( ):
         self.extensions[extension_name] = ExtensionClass( self.viewer, self.annotation_client )
         bound_methods = {method_row[0]:method_row[1] \
                         for method_row in getmembers(self.extensions[extension_name], ismethod)}
-
         for layer in ExtensionClass._defined_layers():
             self.extension_layers[layer] = extension_name
 
@@ -342,10 +356,11 @@ class AnnotationManager( ):
             self.viewer._add_action(method_name,
                                    key_command,
                                    bound_methods[method_name])
+            print("added {}".format(method_name))
             self.key_bindings.append(key_command)
 
         if issubclass(ExtensionClass, AnnotationExtensionBase):
-            if self.extensions[extension_name].tables == 'MUST_BE_CONFIGURED':
+            if self.extensions[extension_name].db_tables == 'MUST_BE_CONFIGURED':
                 raise Exception('Table map must be configured for an annotation extension')
 
         if len(self.extensions[extension_name].allowed_layers) > 0:
@@ -398,7 +413,6 @@ class AnnotationManager( ):
                self.viewer.update_message('Extension could not not delete annotation!')
         pass
 
-
     def check_rubbish_bin( self, ngl_id ):
         if self.annotation_rubbish_bin is None:
             self.annotation_rubbish_bin = ngl_id
@@ -413,3 +427,17 @@ class AnnotationManager( ):
             self.annotation_rubbish_bin = None
             self.viewer.update_message( 'Canceled deletion')
             return False
+
+    def cancel_annotation( self, s):
+        """
+        A manager for canceling annotations in media res.
+        """
+        selected_layer = self.viewer.get_selected_layer()
+        if (selected_layer is None) or (self.viewer.state.layers[selected_layer].type != 'annotation'):
+            self.viewer.update_message('Please select relevent layer to cancel annotation')
+            return
+        
+        if issubclass(type(self.extensions[self.extension_layers[selected_layer]]),
+                      AnnotationExtensionBase):
+            self.extensions[self.extension_layers[selected_layer]]._cancel_annotation()
+        return

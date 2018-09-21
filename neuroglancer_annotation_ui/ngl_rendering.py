@@ -6,6 +6,7 @@ from emannotationschemas.base import SpatialPoint
 annotation_function_map = {'point': annotation.point_annotation,
                            'line': annotation.line_annotation,
                            'ellipsoid': annotation.ellipsoid_annotation,
+                           'sphere': annotation.sphere_annotation,
                            'bounding_box': annotation.bounding_box_annotation}
 
 class SchemaRenderer():
@@ -29,7 +30,13 @@ class SchemaRenderer():
         viewer_ids = self.render_data(viewer, data, anno_id=anno_id, layermap=layermap, colormap=colormap, replace_annotations=replace_annotations)
         return viewer_ids
 
-    def render_data(self, viewer, data, anno_id=None, layermap=None, colormap=None, replace_annotations=None ):
+    def render_data(self,
+                    viewer,
+                    data,
+                    anno_id=None,
+                    layermap=None,
+                    colormap=None,
+                    replace_annotations=None ):
         """
         Takes a formatted data point and returns annotation layers based on the schema's RenderRule
         """
@@ -121,10 +128,13 @@ class RenderRule():
                             rule_fields = [*rule]
                         anno_args = []
                         for field in rule_fields:
-                            if isinstance(self.schema_fields[field], Nested):
-                                anno_args.append( data[field]['position'] )
+                            if field in self.schema_fields:
+                                if isinstance(self.schema_fields[field], Nested):
+                                    anno_args.append( data[field]['position'] )
+                                else:
+                                    anno_args.append( data[field] )
                             else:
-                                anno_args.append( data[field] )
+                                anno_args.append(field)
                         ngr.annotations[layer].append(
                             annotation_function(*anno_args, description=anno_id))
         else:

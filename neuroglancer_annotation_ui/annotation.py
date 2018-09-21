@@ -37,6 +37,13 @@ def point_annotation(point, id=None, description=None):
         description=description)
     return point
 
+def sphere_annotation(center, radius, z_multiplier, id=None, description=None):
+    """
+    Assumes the z-axis is anistropic
+    """
+    unit_v = [1, 1, z_multiplier]
+    radii = [radius * x for x in unit_v]
+    return ellipsoid_annotation(center, radii)
 
 def ellipsoid_annotation(center, radii, id=None, description=None):
     """returns ellipsoid annotation object.
@@ -54,7 +61,6 @@ def ellipsoid_annotation(center, radii, id=None, description=None):
         id=id,
         description=description)
     return ellipsoid
-
 
 def bounding_box_annotation(a, b, id=None, description=None):
     """returns axis aligned bounding box annotation object.

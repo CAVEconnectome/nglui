@@ -1,4 +1,6 @@
 import re
+from collections import defaultdict
+from neuroglancer_annotation_ui.annotation import point_annotation
 from functools import wraps
 from pandas import DataFrame
 
@@ -19,6 +21,59 @@ def check_layer(allowed_layer_key=None):
         return layer_wrapper
     return specific_layer_wrapper
 
+
+class PointHolder():
+    def __init__(self, pt_types, trigger, layer_dict, viewer):
+        self.points = {k:None for k in pt_types}
+        self.trigger = trigger
+        self.layer_dict = layer_dict
+        self.viewer = viewer
+
+        if trigger not in pt_types:
+            raise Exception
+
+    def __call__(self):
+        return self.points
+
+    def reset_points( self, pts_to_reset=None):
+        if pts_to_reset is None:
+            pts_to_reset = list(self.points.keys())
+        for pt_type in pts_to_reset:
+            if pt_type is not self.trigger:
+                self.viewer.remove_annotation(self.layer_dict[pt_type],
+                                              self.points[pt_type].id
+                                              )
+            self.points[pt_type] = None
+
+    def _make_point( self, pos):
+        if pos is not None:
+            return point_annotation(pos)
+        else:
+            return None
+
+    def update_point( self, pos, pt_type, message_type=None):
+        if pt_type == self.trigger:
+            if any([v==None for k, v in self.points.items() if k != self.trigger]):
+                self.viewer.update_message('Cannot finish annotation until all other points are set')
+                return False
+
+        if message_type is None:
+            message_type = 'annotation'
+
+        if self.points[pt_type] is None:
+            message = 'Assigned {}'.format(message_type)
+        else:
+            self.viewer.remove_annotation(self.layer_dict[pt_type],
+                                     self.points[pt_type].id)
+            message = 'Re-assigned {}'.format(message_type)
+
+        self.points[pt_type] = self._make_point(pos)
+        if pt_type != self.trigger:
+            self.viewer.add_annotation(self.layer_dict[pt_type], [self.points[pt_type]])
+        self.viewer.update_message(message)
+        return self.points[pt_type].id
+
+
 class ExtensionBase():
     """
     Basic class that contains all of the objects that are expected
@@ -27,7 +82,6 @@ class ExtensionBase():
     def __init__(self, easy_viewer, annotation_client=None):
         self.viewer = easy_viewer
         self.annotation_client = annotation_client
-        self.ngl_renderer = None
         self.allowed_layers = []
 
     @staticmethod
@@ -48,13 +102,17 @@ class AnnotationExtensionBase(ExtensionBase):
     """
     Adds framework to interact with a mapping between layer, ngl_id, and anno_id on the
     annotation engine side.
-    Note that the table_map must be configured. This object is intended to relate annotations to
-    database tables. Currently, handling this via subclassing.
+    Note that `db_tables` must be configured. This object is intended to relate annotations to
+    database tables. Currently doing this via subclassing for project-targeted extensions.
     """
     def __init__(self, easy_viewer, annotation_client=None):
         super(AnnotationExtensionBase, self).__init__(easy_viewer, annotation_client)
 
-        self.tables = 'MUST_BE_CONFIGURED'
+        self.db_tables = 'MUST_BE_CONFIGURED'
+
+        self.render_map = dict()
+        self.ngl_renderer = defaultdict(lambda *args, **kwargs: self.viewer.update_message('No renderer configured'))
+
         self.annotation_df = DataFrame(columns=['ngl_id',
                                                 'layer',
                                                 'anno_id'])
@@ -91,6 +149,47 @@ class AnnotationExtensionBase(ExtensionBase):
         arg3 = True if layer is None else (self.annotation_df.layer == layer)
         return self.annotation_df[arg1 & arg2 & arg3].iterrows()
 
-    def _delete_annotation(self):
+    def _delete_annotation(self, ngl_id):
         self.viewer.update_message('No delete function is configured for this extension')
         pass
+
+    def _cancel_annotation(self):
+        self.viewer.update_message("No cancel annotation function is configured")
+        pass
+
+    def _update_annotation(self, ngl_id, new_annotation):
+        self.viewer.update_message('No update function is configured for this extension')
+
+    def load_annotation_by_aid(self, a_type, a_id, render_type):
+        if self.annotation_client is not None:
+            anno_dat = self.annotation_client.get(a_type, a_id)
+            viewer_ids = self.ngl_renderer[render_type](self.viewer,
+                                                        anno_dat,
+                                                        layermap=self.render_map)
+            annotation_id = anno_dat['id']
+            self._update_map_id(viewer_ids, '{}_{}'.format(a_type, a_id)) 
+
+    def remove_associated_annotations(self, anno_id ):
+        for _, row in self._annotation_filtered_iterrows(anno_id=anno_id):
+            self.viewer.remove_annotation(row['layer'], row['ngl_id'])
+        self._remove_map_id(anno_id)
+
+    def reload_annotation(self, ngl_id):
+        anno_id = self.get_anno_id(ngl_id)
+        a_type, a_id = self.parse_anno_id(anno_id)
+        self.load_annotation_by_aid(a_type, a_id)
+        self.remove_associated_annotations(a_id)
+
+    def render_and_post_annotation(self, data_formatter, render_name, anno_layer_dict, table_name):
+        data = data_formatter( self.points() )
+        viewer_ids = self.ngl_renderer[render_name](self.viewer,
+                                                    data,
+                                                    layermap=anno_layer_dict)
+
+        if self.annotation_client is not None:
+            aid = self._post_data(data)
+            id_description = '{}_{}'.format(self.db_tables[table_name], aid[0])
+            self.viewer.update_description(viewer_ids, id_description)
+            self._update_map_id(viewer_ids, id_description)
+
+        return viewer_ids
