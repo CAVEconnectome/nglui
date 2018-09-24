@@ -87,17 +87,21 @@ class CellTypeExtension(AnnotationExtensionBase):
                                             'cell_type')
             self.viewer.update_description(vids_p, cell_type)
 
+            print('\n')
+            print(self.format_sphere_data(self.points()))
             vids_s = self.render_and_post_annotation(self.format_sphere_data,
                                             'sphere',
                                             self.anno_layer_dict,
                                             'sphere')
             self.viewer.update_description(vids_s, cell_type)
-
             self.points.reset_points()
 
 
     def validate_cell_type_annotation(self, points):
-        ct_anno = self.format_cell_type_data( points )
+        ct_anno = self.format_cell_type_data(points)
+        schema = CellTypeLocal()
+        d = schema.load(ct_anno)
+        print(d)
         return ct_anno['cell_type']
 
 
@@ -111,11 +115,12 @@ class CellTypeExtension(AnnotationExtensionBase):
             cell_type = self.parse_cell_type_description(anno_point.description)
 
         datum = {'type':'cell_type_local',
-                 'pt':{'position':points['ctr_pt'].point},
+                 'pt':{'position':[int(x) for x in points['ctr_pt'].point]},
                  'cell_type':cell_type,
-                 'classification_scheme':'ivscc_m',
+                 'classification_system':'ivscc_m',
                  }
         return datum
+
 
     @staticmethod
     def parse_cell_type_description( description ):
@@ -132,7 +137,8 @@ class CellTypeExtension(AnnotationExtensionBase):
         for i in range(0,3):
             rsq += (points['ctr_pt'].point[i] - points['radius'].point[i])**2
         datum = {'type':'sphere',
-                 'ctr_pt':{'position':points['ctr_pt'].point},
+                 'ctr_pt':{'position':[float(x) for x in points['ctr_pt'].point]},
                  'radius': rsq**0.5
                  }
         return datum
+

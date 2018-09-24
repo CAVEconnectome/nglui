@@ -160,6 +160,7 @@ class AnnotationExtensionBase(ExtensionBase):
     def _update_annotation(self, ngl_id, new_annotation):
         self.viewer.update_message('No update function is configured for this extension')
 
+
     def load_annotation_by_aid(self, a_type, a_id, render_type):
         if self.annotation_client is not None:
             anno_dat = self.annotation_client.get(a_type, a_id)
@@ -169,16 +170,25 @@ class AnnotationExtensionBase(ExtensionBase):
             annotation_id = anno_dat['id']
             self._update_map_id(viewer_ids, '{}_{}'.format(a_type, a_id)) 
 
+
     def remove_associated_annotations(self, anno_id ):
         for _, row in self._annotation_filtered_iterrows(anno_id=anno_id):
             self.viewer.remove_annotation(row['layer'], row['ngl_id'])
         self._remove_map_id(anno_id)
+
 
     def reload_annotation(self, ngl_id):
         anno_id = self.get_anno_id(ngl_id)
         a_type, a_id = self.parse_anno_id(anno_id)
         self.load_annotation_by_aid(a_type, a_id)
         self.remove_associated_annotations(a_id)
+
+
+    def _post_data(self, data, table_name):
+        response = self.annotation_client.post_annotation(self.db_tables[table_name],
+                                                          data)
+        return response
+
 
     def render_and_post_annotation(self, data_formatter, render_name, anno_layer_dict, table_name):
         data = data_formatter( self.points() )
@@ -187,9 +197,19 @@ class AnnotationExtensionBase(ExtensionBase):
                                                     layermap=anno_layer_dict)
 
         if self.annotation_client is not None:
-            aid = self._post_data(data)
+            aid = self._post_data([data], table_name)
             id_description = '{}_{}'.format(self.db_tables[table_name], aid[0])
             self.viewer.update_description(viewer_ids, id_description)
             self._update_map_id(viewer_ids, id_description)
 
         return viewer_ids
+
+    @classmethod
+    def set_db_tables(cls, class_name, db_tables):
+        class ClassNew(cls):
+            def __init__(self, easy_viewer, annotation_client=None):
+                super(ClassNew, self).__init__(easy_viewer, annotation_client)
+                self.db_tables = db_tables
+        ClassNew.__name__ = class_name
+        ClassNew.__qualname__ = class_name
+        return ClassNew

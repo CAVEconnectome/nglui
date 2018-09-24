@@ -103,13 +103,13 @@ class SynapseExtension(AnnotationExtensionBase):
         self.clear_segment()
 
         if self.annotation_client is not None:
-            annotation_id = self._post_data(synapse_data)
+            annotation_id = self._post_data(synapse_data, 'synapse')
             id_description = '{}_{}'.format(self.db_tables['synapse'], annotation_id[0])
             self.viewer.update_description(viewer_ids, id_description)
             self._update_map_id( viewer_ids, id_description )
 
-    def _post_data(self, synapse_data):
-        response = self.annotation_client.post_annotation(self.db_tables['synapse'], [synapse_data])
+    def _post_data(self, synapse_data, table_name):
+        response = self.annotation_client.post_annotation(self.db_tables[table_name], [synapse_data])
         return response
 
     def make_synapse_point( self, s):
