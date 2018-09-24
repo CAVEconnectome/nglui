@@ -23,14 +23,20 @@ def check_layer(allowed_layer_key=None):
 
 
 class PointHolder():
-    def __init__(self, pt_types, trigger, layer_dict, viewer):
-        self.points = {k:None for k in pt_types}
-        self.trigger = trigger
-        self.layer_dict = layer_dict
-        self.viewer = viewer
+    def __init__(self, viewer, pt_types=None, trigger=None, layer_dict=None):
+        if pt_types is not None:
+            self.points = {k:None for k in pt_types}
+            self.trigger = trigger
+            self.layer_dict = layer_dict
+            self.viewer = viewer
+            if trigger not in pt_types:
+                raise Exception
+        else:
+            self.points = {}
+            self.trigger = ''
+            self.layer_dict = {}
+            self.viewer = viewer 
 
-        if trigger not in pt_types:
-            raise Exception
 
     def __call__(self):
         return self.points
@@ -103,7 +109,7 @@ class AnnotationExtensionBase(ExtensionBase):
     Adds framework to interact with a mapping between layer, ngl_id, and anno_id on the
     annotation engine side.
     Note that `db_tables` must be configured. This object is intended to relate annotations to
-    database tables. Currently doing this via subclassing for project-targeted extensions.
+    database tables, and can be set through the set_db_tables class method.
     """
     def __init__(self, easy_viewer, annotation_client=None):
         super(AnnotationExtensionBase, self).__init__(easy_viewer, annotation_client)
@@ -116,6 +122,20 @@ class AnnotationExtensionBase(ExtensionBase):
         self.annotation_df = DataFrame(columns=['ngl_id',
                                                 'layer',
                                                 'anno_id'])
+
+        self.points = PointHolder(viewer=easy_viewer, pt_types=None)
+
+        self.linked_annotations = dict()
+
+    @classmethod
+    def set_db_tables(cls, class_name, db_tables):
+        class ClassNew(cls):
+            def __init__(self, easy_viewer, annotation_client=None):
+                super(ClassNew, self).__init__(easy_viewer, annotation_client)
+                self.db_tables = db_tables
+        ClassNew.__name__ = class_name
+        ClassNew.__qualname__ = class_name
+        return ClassNew
 
     def get_anno_id(self, ngl_id):
         return self.annotation_df[self.annotation_df.ngl_id==ngl_id].anno_id.values[0]
@@ -149,13 +169,27 @@ class AnnotationExtensionBase(ExtensionBase):
         arg3 = True if layer is None else (self.annotation_df.layer == layer)
         return self.annotation_df[arg1 & arg2 & arg3].iterrows()
 
-    def _delete_annotation(self, ngl_id):
-        self.viewer.update_message('No delete function is configured for this extension')
-        pass
+    def _delete_annotation( self, base_ngl_id ):
+        rel_ngl_ids = self.linked_annotations[base_ngl_id]
+        for ngl_id in rel_ngl_ids:
+            anno_id = self.get_anno_id(ngl_id)
+            ae_type, ae_id = self.parse_anno_id(anno_id)
+            try:
+                self.annotation_client.delete_annotation(annotation_type=ae_type,
+                                                         oid=ae_id)
+                del self.linked_annotations[ngl_id]
+            except:
+                self.viewer.update_message('Annotation client could not delete annotation!')
+            self.remove_associated_annotations(anno_id)
 
-    def _cancel_annotation(self):
-        self.viewer.update_message("No cancel annotation function is configured")
-        pass
+    # def _cancel_annotation(self):
+    #     self.viewer.update_message("No cancel annotation function is configured")
+    #     pass
+
+    def _cancel_annotation( self ):
+        self.points.reset_points()
+        self.viewer.update_message('Canceled annotation! No active annotations.')
+
 
     def _update_annotation(self, ngl_id, new_annotation):
         self.viewer.update_message('No update function is configured for this extension')
@@ -204,12 +238,3 @@ class AnnotationExtensionBase(ExtensionBase):
 
         return viewer_ids
 
-    @classmethod
-    def set_db_tables(cls, class_name, db_tables):
-        class ClassNew(cls):
-            def __init__(self, easy_viewer, annotation_client=None):
-                super(ClassNew, self).__init__(easy_viewer, annotation_client)
-                self.db_tables = db_tables
-        ClassNew.__name__ = class_name
-        ClassNew.__qualname__ = class_name
-        return ClassNew

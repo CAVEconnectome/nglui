@@ -40,10 +40,10 @@ class CellTypeExtension(AnnotationExtensionBase):
 
         self.create_layers(None)
 
-        self.points = PointHolder(pt_types=['ctr_pt', 'radius'],
+        self.points = PointHolder(viewer=self.viewer,
+                                  pt_types=['ctr_pt', 'radius'],
                                   trigger='radius',
-                                  layer_dict=self.point_layer_dict,
-                                  viewer=self.viewer)
+                                  layer_dict=self.point_layer_dict)
 
 
     @staticmethod
@@ -78,7 +78,7 @@ class CellTypeExtension(AnnotationExtensionBase):
         if cell_type is None:
             self.points.reset_points(pts_to_reset=['radius'])
             self.update_message('Please change the description to a valid cell type')
-            return 
+            return
 
         if anno_done:
             vids_p = self.render_and_post_annotation(self.format_cell_type_data,
@@ -87,22 +87,33 @@ class CellTypeExtension(AnnotationExtensionBase):
                                             'cell_type')
             self.viewer.update_description(vids_p, cell_type)
 
-            print('\n')
-            print(self.format_sphere_data(self.points()))
             vids_s = self.render_and_post_annotation(self.format_sphere_data,
                                             'sphere',
                                             self.anno_layer_dict,
                                             'sphere')
             self.viewer.update_description(vids_s, cell_type)
+            
+            self.update_linked_annotations( [vids_s, vids_p] )
             self.points.reset_points()
+
+    def update_linked_annotations( self, viewer_id_list ):
+        all_ngl_ids = []
+        for vids in viewer_id_list:
+            for layer, id_list in vids.items():
+                for ngl_id in id_list:
+                    all_ngl_ids.append(ngl_id)
+        for ngl_id in all_ngl_ids:
+            self.linked_annotations[ngl_id] = all_ngl_ids
 
 
     def validate_cell_type_annotation(self, points):
         ct_anno = self.format_cell_type_data(points)
         schema = CellTypeLocal()
         d = schema.load(ct_anno)
-        print(d)
-        return ct_anno['cell_type']
+        if d.data['valid']:
+            return ct_anno['cell_type']
+        else:
+            return None
 
 
     def format_cell_type_data(self, points):
@@ -142,3 +153,19 @@ class CellTypeExtension(AnnotationExtensionBase):
                  }
         return datum
 
+    # def _delete_annotation( self, base_ngl_id ):
+    #     rel_ngl_ids = self.linked_annotations[base_ngl_id]
+    #     for ngl_id in rel_ngl_ids:
+    #         anno_id = self.get_anno_id(ngl_id)
+    #         ae_type, ae_id = self.parse_anno_id(anno_id)
+    #         try:
+    #             self.annotation_client.delete_annotation(annotation_type=ae_type,
+    #                                                      oid=ae_id)
+    #             del self.linked_annotations[ngl_id]
+    #         except:
+    #             self.viewer.update_message('Annotation client could not delete annotation!')
+    #         self.remove_associated_annotations(anno_id)
+
+    def _cancel_annotation( self ):
+        self.points.reset_points()
+        self.viewer.update_message('Canceled annotation! No active annotations.')

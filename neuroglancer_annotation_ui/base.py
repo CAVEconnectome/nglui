@@ -288,7 +288,7 @@ class EasyViewer( neuroglancer.Viewer ):
 
 
 class AnnotationManager( ):
-    def __init__(self, easy_viewer=None, annotation_client=None, enable_delete=True):
+    def __init__(self, easy_viewer=None, annotation_client=None, global_delete=True, global_cancel=True):
         if easy_viewer is None:
             self.viewer = EasyViewer()
             self.viewer.set_view_options()
@@ -300,8 +300,11 @@ class AnnotationManager( ):
         self.key_bindings = copy.copy(default_key_bindings)
         self.extension_layers = {}
 
-        if enable_delete is True:
+        if global_delete is True:
             self.initialize_delete_action()
+
+        if global_cancel is True:
+            self.initialize_cancel_action() 
 
 
     def initialize_delete_action(self):
@@ -311,6 +314,11 @@ class AnnotationManager( ):
                                 delete_binding,
                                 self.delete_annotation)
 
+    def initialize_cancel_action(self):
+        cancel_binding = 'shift+keyv',
+        self.viewer._add_action('Cancel current annotation',
+                                cancel_binding,
+                                self.cancel_annotation)
 
     def __repr__(self):
         return self.viewer.get_viewer_url()
@@ -441,3 +449,4 @@ class AnnotationManager( ):
                       AnnotationExtensionBase):
             self.extensions[self.extension_layers[selected_layer]]._cancel_annotation()
         return
+
