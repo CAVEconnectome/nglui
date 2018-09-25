@@ -161,7 +161,6 @@ class EasyViewer( neuroglancer.Viewer ):
         except Exception:
             self.update_message('Could not remove annotation')
 
-
     def update_description(self, layer_id_dict, new_description):
         layer_id_dict = copy.deepcopy(layer_id_dict)
         try:
@@ -421,17 +420,6 @@ class AnnotationManager( ):
         if (selected_layer is None) or (self.viewer.state.layers[selected_layer].type != 'annotation'):
             self.viewer.update_message('Please select an annotation layer to delete an annotation')
             return
-
-        # curr_pos = self.viewer.state.position.voxel_coordinates
-        # for annotation in self.viewer.state.layers[selected_layer].annotations:
-        #     if all(annotation.point==curr_pos):
-        #         ngl_id = annotation.id
-        #         delete_confirmed = self.check_rubbish_bin( ngl_id )
-        #         break
-        # else:
-        #     delete_confirmed = False
-        #     self.viewer.update_message('No annotation under point or in selected layer!')
-        #     return
 
         ngl_id = self.viewer.get_selected_annotation_id()
         if ngl_id is not None:

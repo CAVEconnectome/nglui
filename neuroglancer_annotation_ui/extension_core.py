@@ -170,14 +170,19 @@ class AnnotationExtensionBase(ExtensionBase):
         return self.annotation_df[arg1 & arg2 & arg3].iterrows()
 
     def _delete_annotation( self, base_ngl_id ):
-        rel_ngl_ids = self.linked_annotations[base_ngl_id]
+        if base_ngl_id in self.linked_annotations:
+            rel_ngl_ids = self.linked_annotations[base_ngl_id]
+        else:
+            rel_ngl_ids = [base_ngl_id]
+            
         for ngl_id in rel_ngl_ids:
             anno_id = self.get_anno_id(ngl_id)
             ae_type, ae_id = self.parse_anno_id(anno_id)
             try:
                 self.annotation_client.delete_annotation(annotation_type=ae_type,
                                                          oid=ae_id)
-                del self.linked_annotations[ngl_id]
+                if ngl_id in self.linked_annotations:
+                    del self.linked_annotations[ngl_id]
             except:
                 self.viewer.update_message('Annotation client could not delete annotation!')
 

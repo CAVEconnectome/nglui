@@ -49,8 +49,10 @@ class CellTypeExtension(AnnotationExtensionBase):
     @staticmethod
     def _default_key_bindings():
         bindings = {
-            'update_center_point': 'keyk',
-            'update_radius_point': 'keyj'}
+            'update_center_point_spiny': 'keyk',
+            'update_center_point_aspiny': 'keyj',
+            'update_center_point_blank': 'keyi',
+            'update_radius_point': 'keyu'}
         return bindings
 
     @staticmethod
@@ -62,11 +64,10 @@ class CellTypeExtension(AnnotationExtensionBase):
             self.viewer.add_annotation_layer(ln,
                                              self.color_map[ln])
 
-
-    @check_layer()
-    def update_center_point( self, s):
+    def update_center_point( self, description, s):
         pos = self.viewer.get_mouse_coordinates(s)
         new_id = self.points.update_point(pos, 'ctr_pt', message_type='cell type center point')
+        self.viewer.update_description({self.point_layer_dict['ctr_pt']:[new_id]}, description)
         self.viewer.select_annotation(self.point_layer_dict['ctr_pt'], new_id)
 
     @check_layer()
@@ -79,22 +80,34 @@ class CellTypeExtension(AnnotationExtensionBase):
             self.points.reset_points(pts_to_reset=['radius'])
             self.viewer.update_message('Please change the description to a valid cell type')
             return
-
         if anno_done:
-            vids_p = self.render_and_post_annotation(self.format_cell_type_data,
-                                            'cell_type',
-                                            self.anno_layer_dict,
-                                            'cell_type')
-            self.viewer.update_description(vids_p, cell_type)
-
             vids_s = self.render_and_post_annotation(self.format_sphere_data,
                                             'sphere',
                                             self.anno_layer_dict,
                                             'sphere')
             self.viewer.update_description(vids_s, cell_type)
-            
-            self.update_linked_annotations( [vids_s, vids_p] )
+            if cell_type != '':
+                vids_p = self.render_and_post_annotation(self.format_cell_type_data,
+                                                'cell_type',
+                                                self.anno_layer_dict,
+                                                'cell_type')
+                self.viewer.update_description(vids_p, cell_type)
+                self.update_linked_annotations( [vids_s, vids_p] )
+            else:
+                self.viewer.update_message('Annotated soma without cell type')
             self.points.reset_points()
+
+    @check_layer()
+    def update_center_point_spiny(self, s):
+        self.update_center_point(description='spiny_', s=s)
+
+    @check_layer()
+    def update_center_point_aspiny(self, s):
+        self.update_center_point(description='aspiny_s_', s=s)
+
+    @check_layer()
+    def update_center_point_blank(self, s):
+        self.update_center_point(description='', s=s)
 
     def update_linked_annotations( self, viewer_id_list ):
         all_ngl_ids = []
@@ -112,6 +125,8 @@ class CellTypeExtension(AnnotationExtensionBase):
         d = schema.load(ct_anno)
         if d.data['valid']:
             return ct_anno['cell_type']
+        elif ct_anno['cell_type'] == '':
+            return ''
         else:
             return None
 
@@ -152,19 +167,6 @@ class CellTypeExtension(AnnotationExtensionBase):
                  'radius': rsq**0.5
                  }
         return datum
-
-    # def _delete_annotation( self, base_ngl_id ):
-    #     rel_ngl_ids = self.linked_annotations[base_ngl_id]
-    #     for ngl_id in rel_ngl_ids:
-    #         anno_id = self.get_anno_id(ngl_id)
-    #         ae_type, ae_id = self.parse_anno_id(anno_id)
-    #         try:
-    #             self.annotation_client.delete_annotation(annotation_type=ae_type,
-    #                                                      oid=ae_id)
-    #             del self.linked_annotations[ngl_id]
-    #         except:
-    #             self.viewer.update_message('Annotation client could not delete annotation!')
-    #         self.remove_associated_annotations(anno_id)
 
     def _cancel_annotation( self ):
         self.points.reset_points()
