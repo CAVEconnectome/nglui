@@ -182,7 +182,7 @@ class AnnotationExtensionBase(ExtensionBase):
                 self.viewer.update_message('Annotation client could not delete annotation!')
 
             self.remove_associated_annotations(anno_id)
-            self.viewer.updated_message('Successfully deleted annotation')
+            self.viewer.update_message('Successfully deleted annotation')
 
 
     def _cancel_annotation( self ):

@@ -217,6 +217,15 @@ class EasyViewer( neuroglancer.Viewer ):
         else:
             return None
 
+    def get_selected_annotation_id( self ):
+        layer_name = self.get_selected_layer()
+        try:
+            aid = self.state.layers[layer_name]._json_data['selectedAnnotation']
+        except:
+            aid = None
+        return aid
+
+
     def select_annotation( self, layer_name, aid):
         if layer_name in self.layer_names:
             with self.txn() as s:
@@ -413,16 +422,32 @@ class AnnotationManager( ):
             self.viewer.update_message('Please select an annotation layer to delete an annotation')
             return
 
-        curr_pos = self.viewer.state.position.voxel_coordinates
-        for annotation in self.viewer.state.layers[selected_layer].annotations:
-            if all(annotation.point==curr_pos):
-                ngl_id = annotation.id
-                delete_confirmed = self.check_rubbish_bin( ngl_id )
-                break
+        # curr_pos = self.viewer.state.position.voxel_coordinates
+        # for annotation in self.viewer.state.layers[selected_layer].annotations:
+        #     if all(annotation.point==curr_pos):
+        #         ngl_id = annotation.id
+        #         delete_confirmed = self.check_rubbish_bin( ngl_id )
+        #         break
+        # else:
+        #     delete_confirmed = False
+        #     self.viewer.update_message('No annotation under point or in selected layer!')
+        #     return
+
+        ngl_id = self.viewer.get_selected_annotation_id()
+        if ngl_id is not None:
+            delete_confirmed = self.check_rubbish_bin(ngl_id)
         else:
-            delete_confirmed = False
-            self.viewer.update_message('No annotation under point or in selected layer!')
-            return
+            curr_pos = self.viewer.state.position.voxel_coordinates
+            for annotation in self.viewer.state.layers[selected_layer].annotations:
+                if all(annotation.point==curr_pos):
+                    ngl_id = annotation.id
+                    delete_confirmed = self.check_rubbish_bin( ngl_id )
+                    break
+            else:
+                delete_confirmed = False
+                self.viewer.update_message('Nothing to delete! No annotation selected or targeted!')
+                return
+
 
         if delete_confirmed:
             bound_extension = self.extensions[ self.extension_layers[selected_layer] ]
