@@ -180,11 +180,10 @@ class AnnotationExtensionBase(ExtensionBase):
                 del self.linked_annotations[ngl_id]
             except:
                 self.viewer.update_message('Annotation client could not delete annotation!')
-            self.remove_associated_annotations(anno_id)
 
-    # def _cancel_annotation(self):
-    #     self.viewer.update_message("No cancel annotation function is configured")
-    #     pass
+            self.remove_associated_annotations(anno_id)
+            self.viewer.updated_message('Successfully deleted annotation')
+
 
     def _cancel_annotation( self ):
         self.points.reset_points()

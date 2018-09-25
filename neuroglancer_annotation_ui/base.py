@@ -307,18 +307,30 @@ class AnnotationManager( ):
             self.initialize_cancel_action() 
 
 
-    def initialize_delete_action(self):
-        self.annotation_rubbish_bin = None
-        delete_binding = 'backspace'
-        self.viewer._add_action('Delete annotation (2x to confirm)',
-                                delete_binding,
-                                self.delete_annotation)
+    def initialize_delete_action(self, delete_binding=None):
+        if delete_binding == None:
+            delete_binding = 'backspace'
 
-    def initialize_cancel_action(self):
-        cancel_binding = 'shift+keyv',
-        self.viewer._add_action('Cancel current annotation',
-                                cancel_binding,
-                                self.cancel_annotation)
+        if delete_binding not in self.key_bindings:
+            self.annotation_rubbish_bin = None
+            self.viewer._add_action('Delete annotation (2x to confirm)',
+                                    delete_binding,
+                                    self.delete_annotation)
+            self.key_bindings.append(delete_binding)
+        else:
+            print('Could not add the delete action due to a key binding conflict.')
+
+
+    def initialize_cancel_action(self, cancel_binding=None):
+        if cancel_binding == None:
+            cancel_binding = "shift+keyc"
+        if cancel_binding not in self.key_bindings:
+            self.viewer._add_action('Cancel current annotation',
+                                    cancel_binding,
+                                    self.cancel_annotation)
+            self.key_bindings.append(cancel_binding)
+        else:
+            print('Could not add the cancel action due to a key binding conflict.')
 
     def __repr__(self):
         return self.viewer.get_viewer_url()

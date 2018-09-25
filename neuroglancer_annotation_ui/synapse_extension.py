@@ -43,7 +43,7 @@ class SynapseExtension(AnnotationExtensionBase):
             'update_synapse': 'shift+keyw',
             'update_postsynaptic_point': 'shift+keye',
             'create_synapse_layers': 'shift+control+keys',
-            'clear_segment': 'shift+keyv'}
+            'clear_segment': 'shift+keyx'}
         return bindings
 
     @staticmethod

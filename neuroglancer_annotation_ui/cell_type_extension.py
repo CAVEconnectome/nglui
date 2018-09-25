@@ -77,7 +77,7 @@ class CellTypeExtension(AnnotationExtensionBase):
         cell_type = self.validate_cell_type_annotation( self.points() )
         if cell_type is None:
             self.points.reset_points(pts_to_reset=['radius'])
-            self.update_message('Please change the description to a valid cell type')
+            self.viewer.update_message('Please change the description to a valid cell type')
             return
 
         if anno_done:
