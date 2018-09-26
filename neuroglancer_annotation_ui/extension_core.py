@@ -116,12 +116,17 @@ class AnnotationExtensionBase(ExtensionBase):
 
         self.db_tables = 'MUST_BE_CONFIGURED'
 
-        self.render_map = dict()
         self.ngl_renderer = defaultdict(lambda *args, **kwargs: self.viewer.update_message('No renderer configured'))
 
         self.annotation_df = DataFrame(columns=['ngl_id',
                                                 'layer',
                                                 'anno_id'])
+
+        # Which point (in the PointHolder names) goes to which layer
+        self.point_layer_dict = dict()
+
+        # Which annotation (key) goes to which layer (value)
+        self.anno_layer_dict = dict() 
 
         self.points = PointHolder(viewer=easy_viewer, pt_types=None)
 
@@ -163,18 +168,20 @@ class AnnotationExtensionBase(ExtensionBase):
                                                                 },
                                                                 ignore_index=True)
 
+
     def _annotation_filtered_iterrows(self, anno_id=None, ngl_id=None, layer=None):
         arg1 = True if anno_id is None else (self.annotation_df.anno_id == anno_id)
         arg2 = True if ngl_id is None else (self.annotation_df.ngl_id == ngl_id)
         arg3 = True if layer is None else (self.annotation_df.layer == layer)
         return self.annotation_df[arg1 & arg2 & arg3].iterrows()
 
+
     def _delete_annotation( self, base_ngl_id ):
         if base_ngl_id in self.linked_annotations:
             rel_ngl_ids = self.linked_annotations[base_ngl_id]
         else:
             rel_ngl_ids = [base_ngl_id]
-            
+
         for ngl_id in rel_ngl_ids:
             anno_id = self.get_anno_id(ngl_id)
             ae_type, ae_id = self.parse_anno_id(anno_id)
@@ -199,15 +206,18 @@ class AnnotationExtensionBase(ExtensionBase):
         self.viewer.update_message('No update function is configured for this extension')
 
 
-    def load_annotation_by_aid(self, a_type, a_id, render_type):
+    def load_annotation_by_aid(self, a_type, a_id, render_name):
         if self.annotation_client is not None:
-            anno_dat = self.annotation_client.get(a_type, a_id)
-            viewer_ids = self.ngl_renderer[render_type](self.viewer,
-                                                        anno_dat,
-                                                        layermap=self.render_map)
-            annotation_id = anno_dat['id']
-            self._update_map_id(viewer_ids, '{}_{}'.format(a_type, a_id)) 
+            anno_dat = self.annotation_client.get_annotation(a_type, a_id)
 
+            viewer_ids = self.ngl_renderer[render_name](self.viewer,
+                                                        anno_dat,
+                                                        layermap=self.anno_layer_dict)
+            self._update_map_id(viewer_ids, '{}_{}'.format(a_type, a_id))
+            self.viewer.update_description(viewer_ids, '{}_{}'.format(a_type, a_id))
+        else:
+            self.viewer.update_message('No annotation client is configured')
+            raise Exception
 
     def remove_associated_annotations(self, anno_id ):
         for _, row in self._annotation_filtered_iterrows(anno_id=anno_id):
@@ -218,9 +228,16 @@ class AnnotationExtensionBase(ExtensionBase):
     def reload_annotation(self, ngl_id):
         anno_id = self.get_anno_id(ngl_id)
         a_type, a_id = self.parse_anno_id(anno_id)
-        self.load_annotation_by_aid(a_type, a_id)
+        for gen_type, db_type in self.db_tables.items():
+            if db_type == a_type:
+                render_name = gen_type 
+                break
+        try:
+            self.load_annotation_by_aid(a_type, a_id, render_name)
+        except:
+            self.viewer.update_message('Could not load annotation')
+            raise Exception
         self.remove_associated_annotations(a_id)
-
 
     def _post_data(self, data, table_name):
         response = self.annotation_client.post_annotation(self.db_tables[table_name],
@@ -241,4 +258,3 @@ class AnnotationExtensionBase(ExtensionBase):
             self._update_map_id(viewer_ids, id_description)
 
         return viewer_ids
-

@@ -9,7 +9,8 @@ import re
 class CellTypeLocalWithRule( CellTypeLocal ):
     @staticmethod
     def render_rule():
-        return {'point': {'cell_type': ['pt']}}
+        return {'point': {'cell_type': ['pt']},
+                'description_field': ['cell_type']}
 
 def MakeBoundSphereWithRule( z_multiplier ):
     class BoundSphereWithRule( BoundSphere ):
@@ -85,13 +86,13 @@ class CellTypeExtension(AnnotationExtensionBase):
                                             'sphere',
                                             self.anno_layer_dict,
                                             'sphere')
-            self.viewer.update_description(vids_s, cell_type)
+            # self.viewer.update_description(vids_s, cell_type)
             if cell_type != '':
                 vids_p = self.render_and_post_annotation(self.format_cell_type_data,
                                                 'cell_type',
                                                 self.anno_layer_dict,
                                                 'cell_type')
-                self.viewer.update_description(vids_p, cell_type)
+                # self.viewer.update_description(vids_p, cell_type)
                 self.update_linked_annotations( [vids_s, vids_p] )
             else:
                 self.viewer.update_message('Annotated soma without cell type')

@@ -16,9 +16,13 @@ class SchemaRenderer():
             # Todo: Introduce a default point render rule
         else:
             self.render_rule = RenderRule(EMSchema, render_rule=render_rule)
+
+        self.apply_description_rule = self.render_rule.make_description_rule()
+
         self.annotations = {}
         self.reset_annotations()
         self.render_functions = self.render_rule.generate_processors()
+
 
     def __call__(self, 
                  viewer,
@@ -43,17 +47,17 @@ class SchemaRenderer():
         if layermap is None:
             layermap = {layer:layer for layer in self.all_layers() }
 
-        self.apply(data, anno_id=anno_id)
+        self.apply_render_rules(data, anno_id=anno_id)
         viewer_ids = self.send_annotations_to_viewer(viewer, layermap=layermap, colormap=colormap)
+        self.apply_description_rule(data, viewer_ids, viewer)
 
         if replace_annotations is not None:
             for layer, ngl_id in replace_annotations.items():
                 viewer.remove_annotation(layer, ngl_id)
-
         self.reset_annotations()
         return viewer_ids
 
-    def apply(self, data, anno_id=None):
+    def apply_render_rules(self, data, anno_id=None):
         for func in self.render_functions:
             func(self, data, anno_id=anno_id)
 
@@ -67,6 +71,7 @@ class SchemaRenderer():
             for anno in anno_list:
                 viewer.add_annotation(nl,anno,color=colormap[nl])
                 viewer_ids[nl].append(anno.id)
+
         return viewer_ids
 
     def all_fields(self):
@@ -91,10 +96,23 @@ class RenderRule():
         else:
             self.render_rule=render_rule
 
+    def make_description_rule(self):
+        description_keys = self.render_rule.get('description_field', [])
+        if len(description_keys) > 0:
+            def dr(data, viewer_ids, viewer):
+                added_description = '\n'.join(data[f] for f in description_keys)
+                viewer.update_description(viewer_ids, added_description)
+        else:
+            def dr(data, viewer_ids, viewer):
+                pass
+        return dr
+
     @property
     def layers( self ):
         all_layers = set()
         for anno_type, type_rule in self.render_rule.items():
+            if anno_type == 'description_field':
+                continue
             for layer in type_rule.keys():
                 all_layers.add(layer)
         return list(all_layers)
@@ -103,6 +121,8 @@ class RenderRule():
     def fields( self ):
         all_fields = set()
         for anno_type, type_rule in self.render_rule.items():
+            if anno_type == 'description_field':
+                continue
             for _, rule_list in type_rule.items():
                 for rule in rule_list:
                     for f in [*rule]:
@@ -112,6 +132,8 @@ class RenderRule():
     def generate_processors( self ):
         annotation_processor_list = []
         for anno_type in self.render_rule.keys():
+            if anno_type == 'description_field':
+                continue
             annotation_processor_list.append(
                 self._annotation_processor_factory(anno_type, annotation_function_map[anno_type]))
         return annotation_processor_list
@@ -141,6 +163,7 @@ class RenderRule():
             def annotation_processor(ngr, data, anno_id=None):
                 return
         return annotation_processor
+
 
     @classmethod
     def default_render_rule(EMSchema):
