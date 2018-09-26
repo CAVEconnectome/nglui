@@ -296,7 +296,13 @@ class EasyViewer( neuroglancer.Viewer ):
 
 
 class AnnotationManager( ):
-    def __init__(self, easy_viewer=None, annotation_client=None, global_delete=True, global_cancel=True):
+    def __init__(self,
+                 easy_viewer=None,
+                 annotation_client=None,
+                 global_delete=True,
+                 global_cancel=True,
+                 global_update=True, 
+                 global_reload=True):
         if easy_viewer is None:
             self.viewer = EasyViewer()
             self.viewer.set_view_options()
@@ -314,6 +320,11 @@ class AnnotationManager( ):
         if global_cancel is True:
             self.initialize_cancel_action() 
 
+        if global_update is True:
+            self.initialize_update_action()
+
+        if global_reload is True:
+            self.initialize_reload_action()
 
     def initialize_delete_action(self, delete_binding=None):
         if delete_binding == None:
@@ -329,16 +340,31 @@ class AnnotationManager( ):
             print('Could not add the delete action due to a key binding conflict.')
 
 
-    def initialize_cancel_action(self, cancel_binding=None):
-        if cancel_binding == None:
-            cancel_binding = "shift+keyc"
-        if cancel_binding not in self.key_bindings:
-            self.viewer._add_action('Cancel current annotation',
-                                    cancel_binding,
-                                    self.cancel_annotation)
-            self.key_bindings.append(cancel_binding)
+    def initialize_cancel_action(self, cancel_binding="shift+keyc"):
+        self._add_bound_action(cancel_binding,
+                               self.cancel_annotation,
+                               'Cancel current annotation')
+
+
+    def initialize_update_action(self, update_binding='shift+control+keyu'):
+        self._add_bound_action(update_binding,
+                               self.update_annotation,
+                               'Update selected annotation')
+
+
+    def initialize_reload_action( self, reload_binding='shift+control+keyr'):
+        self._add_bound_action(reload_binding,
+                               self.reload_all_annotations,
+                               'Reload all annotations from server')
+
+
+    def _add_bound_action(self, binding, method, method_name ):
+        if binding not in self.key_bindings:
+            self.viewer._add_action(method_name,
+                                    binding,
+                                    method)
         else:
-            print('Could not add the cancel action due to a key binding conflict.')
+            print('Could not add method {} due to key binding conflict'.format(method))
 
     def __repr__(self):
         return self.viewer.get_viewer_url()
@@ -475,3 +501,20 @@ class AnnotationManager( ):
             self.extensions[self.extension_layers[selected_layer]]._cancel_annotation()
         return
 
+    def update_annotation(self, s):
+        """
+            Manages updating a selected annotation.
+        """ 
+        selected_ngl_id = self.viewer.get_selected_annotation_id()
+        if selected_ngl_id is not None:
+            selected_layer = self.viewer.get_selected_layer()
+            self.extensions[self.extension_layers[selected_layer]]._update_annotation(selected_ngl_id)
+        else:
+            self.viewer.update_message('Please select an annotation to update it.')
+            return
+
+    def reload_all_annotations(self, s):
+        for ext_name, ext_class in self.extensions.items():
+            if issubclass(type(ext_class), AnnotationExtensionBase):
+                ext_class._reload_all_annotations()
+        self.viewer.update_message('Reloaded all annotations')

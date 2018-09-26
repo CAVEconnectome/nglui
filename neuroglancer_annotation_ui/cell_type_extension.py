@@ -3,6 +3,7 @@ from neuroglancer_annotation_ui.extension_core import check_layer, AnnotationExt
 from neuroglancer_annotation_ui.ngl_rendering import SchemaRenderer
 from emannotationschemas.cell_type_local import CellTypeLocal, allowed_types
 from emannotationschemas.bound_sphere import BoundSphere
+import copy
 import re
 
 
@@ -98,17 +99,21 @@ class CellTypeExtension(AnnotationExtensionBase):
                 self.viewer.update_message('Annotated soma without cell type')
             self.points.reset_points()
 
+
     @check_layer()
     def update_center_point_spiny(self, s):
         self.update_center_point(description='spiny_', s=s)
+
 
     @check_layer()
     def update_center_point_aspiny(self, s):
         self.update_center_point(description='aspiny_s_', s=s)
 
+
     @check_layer()
     def update_center_point_blank(self, s):
         self.update_center_point(description='', s=s)
+
 
     def update_linked_annotations( self, viewer_id_list ):
         all_ngl_ids = []
@@ -132,23 +137,6 @@ class CellTypeExtension(AnnotationExtensionBase):
             return None
 
 
-    def format_cell_type_data(self, points):
-        anno_point = self.viewer.get_annotation(self.point_layer_dict['ctr_pt'],
-                                                points['ctr_pt'].id
-                                                )
-        if anno_point.description is None:
-            cell_type = self.parse_cell_type_description('')
-        else:
-            cell_type = self.parse_cell_type_description(anno_point.description)
-
-        datum = {'type':'cell_type_local',
-                 'pt':{'position':[int(x) for x in points['ctr_pt'].point]},
-                 'cell_type':cell_type,
-                 'classification_system':'ivscc_m',
-                 }
-        return datum
-
-
     @staticmethod
     def parse_cell_type_description( description ):
         qry = re.search('(?P<cell_type>aspiny_d_[\d]+|aspiny_s_[\d]+|spiny_[\d]+)', description)
@@ -157,6 +145,24 @@ class CellTypeExtension(AnnotationExtensionBase):
         else:
             cell_type = ''
         return cell_type
+
+
+    def format_cell_type_data(self, points, cell_type=None):
+        anno_point = self.viewer.get_annotation(self.point_layer_dict['ctr_pt'],
+                                                points['ctr_pt'].id
+                                                )
+        if cell_type is None:
+            if anno_point.description is None:
+                cell_type = self.parse_cell_type_description('')
+            else:
+                cell_type = self.parse_cell_type_description(anno_point.description)
+
+        datum = {'type':'cell_type_local',
+                 'pt':{'position':[int(x) for x in points['ctr_pt'].point]},
+                 'cell_type':cell_type,
+                 'classification_system':'ivscc_m',
+                 }
+        return datum
 
 
     def format_sphere_data(self, points):
@@ -169,6 +175,62 @@ class CellTypeExtension(AnnotationExtensionBase):
                  }
         return datum
 
-    def _cancel_annotation( self ):
+
+    def _update_annotation(self, ngl_id):
+        #Upload new data
+        if self.annotation_client is not None:
+            if self.viewer.get_selected_layer() == 'ivscc_cell_type_point':
+                self.update_cell_type_annotation(ngl_id)
+            elif self.viewer.get_selected_layer() == 'somata':
+                self.update_soma_annotation(ngl_id)
+        else:
+            self.viewer.update_message('Cannot update because no annotation client configured')    
+
+
+    def update_cell_type_annotation(self, ngl_id):
+        # Read new position, read new description
+        ln = self.viewer.get_selected_layer()
+        for anno in self.viewer.state.layers[ln].annotations:
+            if anno.id == ngl_id:
+                pos = anno.point
+                desc = anno.description
+                break
+        
+        # Format into the schema
         self.points.reset_points()
-        self.viewer.update_message('Canceled annotation! No active annotations.')
+        self.points.update_point(pos, 'ctr_pt')
+        self.points.points['ctr_pt'].description = desc
+        print(self.points())
+        new_datum = self.format_cell_type_data(self.points(),
+                                               cell_type=self.parse_cell_type_description(desc)
+                                               )
+        print(new_datum)
+        self.points.reset_points()
+
+        # Upload to the server as an update.
+        ae_type, ae_id = self.parse_anno_id(self.get_anno_id(ngl_id))
+        self.annotation_client.update_annotation(ae_type, ae_id, new_datum)
+        self.viewer.update_message('Updated annotation')
+
+
+    def update_soma_annotation(self, ngl_id):
+        ln = self.get_selected_layer()
+        for anno in self.viewer.state.layers[ln].annotations:
+            if anno.id == ngl_id:
+                pos = anno.center
+                rad = copy.copy(anno.radii)
+                break
+
+        #Format into schema
+        self.points.reset_points()
+        self.points.update_point(pos, 'ctr_pt')
+        rad[1:]=0
+        rad_pt = pos+rad
+        self.points.update_point(rad_pt, 'radius')
+        new_datum = self.format_cell_type_data( self.points() )
+        self.points.reset_points()
+
+        # Upload to the server as an update
+        ae_type, ae_id = self.parse_anno_id(self.get_anno_id(ngl_id))
+        self.annotation_client.update_annotation(ae_type, ae_id, new_datum)
+        self.viewer.update_message('Updated')

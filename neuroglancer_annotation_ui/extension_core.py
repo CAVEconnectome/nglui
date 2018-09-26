@@ -45,7 +45,7 @@ class PointHolder():
         if pts_to_reset is None:
             pts_to_reset = list(self.points.keys())
         for pt_type in pts_to_reset:
-            if pt_type is not self.trigger:
+            if (self.points[pt_type] is not None) & (pt_type is not self.trigger):
                 self.viewer.remove_annotation(self.layer_dict[pt_type],
                                               self.points[pt_type].id
                                               )
@@ -159,6 +159,10 @@ class AnnotationExtensionBase(ExtensionBase):
         self.annotation_df.drop(index=self.annotation_df[self.annotation_df.anno_id==anno_id].index,
                                 inplace=True)
 
+    def _remove_ngl_id(self, ngl_id):
+        self.annotation_df.drop(index=self.annotation_df[self.annotation_df.ngl_id==ngl_id].index,
+                                inplace=True)
+
     def _update_map_id(self, viewer_ids, id_description ):
         for layer, id_list in viewer_ids.items():
             for ngl_id in id_list:
@@ -201,9 +205,39 @@ class AnnotationExtensionBase(ExtensionBase):
         self.points.reset_points()
         self.viewer.update_message('Canceled annotation! No active annotations.')
 
+    def remove_associated_annotations(self, anno_id ):
+        for _, row in self._annotation_filtered_iterrows(anno_id=anno_id):
+            self.viewer.remove_annotation(row['layer'], row['ngl_id'])
+        self._remove_map_id(anno_id)
+
+    def _post_data(self, data, table_name):
+        response = self.annotation_client.post_annotation(self.db_tables[table_name],
+                                                          data)
+        return response
+
+    def render_and_post_annotation(self, data_formatter, render_name, anno_layer_dict, table_name):
+        data = data_formatter( self.points() )
+        viewer_ids = self.ngl_renderer[render_name](self.viewer,
+                                                    data,
+                                                    layermap=anno_layer_dict)
+
+        if self.annotation_client is not None:
+            aid = self._post_data([data], table_name)
+            id_description = '{}_{}'.format(self.db_tables[table_name], aid[0])
+            self.viewer.update_description(viewer_ids, id_description)
+            self._update_map_id(viewer_ids, id_description)
+
+        return viewer_ids
+
 
     def _update_annotation(self, ngl_id, new_annotation):
         self.viewer.update_message('No update function is configured for this extension')
+
+
+    def _reload_all_annotations( self ):
+        anno_ids = set(self.annotation_df.anno_id)
+        for anno_id in anno_ids:
+            self.reload_annotation(anno_id)
 
 
     def load_annotation_by_aid(self, a_type, a_id, render_name):
@@ -219,42 +253,16 @@ class AnnotationExtensionBase(ExtensionBase):
             self.viewer.update_message('No annotation client is configured')
             raise Exception
 
-    def remove_associated_annotations(self, anno_id ):
-        for _, row in self._annotation_filtered_iterrows(anno_id=anno_id):
-            self.viewer.remove_annotation(row['layer'], row['ngl_id'])
-        self._remove_map_id(anno_id)
 
-
-    def reload_annotation(self, ngl_id):
-        anno_id = self.get_anno_id(ngl_id)
+    def reload_annotation(self, anno_id):
         a_type, a_id = self.parse_anno_id(anno_id)
         for gen_type, db_type in self.db_tables.items():
             if db_type == a_type:
                 render_name = gen_type 
                 break
         try:
+            self.remove_associated_annotations(anno_id)
             self.load_annotation_by_aid(a_type, a_id, render_name)
         except:
             self.viewer.update_message('Could not load annotation')
             raise Exception
-        self.remove_associated_annotations(a_id)
-
-    def _post_data(self, data, table_name):
-        response = self.annotation_client.post_annotation(self.db_tables[table_name],
-                                                          data)
-        return response
-
-
-    def render_and_post_annotation(self, data_formatter, render_name, anno_layer_dict, table_name):
-        data = data_formatter( self.points() )
-        viewer_ids = self.ngl_renderer[render_name](self.viewer,
-                                                    data,
-                                                    layermap=anno_layer_dict)
-
-        if self.annotation_client is not None:
-            aid = self._post_data([data], table_name)
-            id_description = '{}_{}'.format(self.db_tables[table_name], aid[0])
-            self.viewer.update_description(viewer_ids, id_description)
-            self._update_map_id(viewer_ids, id_description)
-
-        return viewer_ids
