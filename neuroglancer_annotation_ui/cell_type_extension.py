@@ -25,18 +25,18 @@ class CellTypeExtension(AnnotationExtensionBase):
         self.ngl_renderer = {'cell_type':SchemaRenderer(CellTypeLocalWithRule),
                              'sphere':SchemaRenderer(MakeBoundSphereWithRule(0.1))
                              }
-        self.allowed_layers = ['ivscc_cell_type']
+        self.allowed_layers = ['somata']
 
-        self.color_map = {'ivscc_cell_type': '#2222ff',
+        self.color_map = {'somata': '#2222ff',
                           'ivscc_cell_type_point': '#cccccc'}
 
         # Which point goes to which layer
-        self.point_layer_dict = {'ctr_pt': 'ivscc_cell_type',
-                                 'radius': 'ivscc_cell_type'}
+        self.point_layer_dict = {'ctr_pt': 'somata',
+                                 'radius': 'somata'}
 
         # Which annotation goes to which layer
-        self.anno_layer_dict = {'cell_type': 'ivscc_cell_type',
-                                'sphere': 'ivscc_cell_type_point'}
+        self.anno_layer_dict = {'sphere': 'somata',
+                                'cell_type': 'ivscc_cell_type_point'}
 
         self.create_layers(None)
 
@@ -57,7 +57,7 @@ class CellTypeExtension(AnnotationExtensionBase):
 
     @staticmethod
     def _defined_layers():
-        return ['ivscc_cell_type_point', 'ivscc_cell_type']
+        return ['ivscc_cell_type_point', 'somata']
 
     def create_layers(self, s):
         for ln in self._defined_layers():
