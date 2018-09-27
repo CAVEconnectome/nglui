@@ -200,11 +200,9 @@ class CellTypeExtension(AnnotationExtensionBase):
         self.points.reset_points()
         self.points.update_point(pos, 'ctr_pt')
         self.points.points['ctr_pt'].description = desc
-        print(self.points())
         new_datum = self.format_cell_type_data(self.points(),
                                                cell_type=self.parse_cell_type_description(desc)
                                                )
-        print(new_datum)
         self.points.reset_points()
 
         # Upload to the server as an update.

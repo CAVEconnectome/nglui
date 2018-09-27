@@ -197,6 +197,12 @@ class EasyViewer( neuroglancer.Viewer ):
                 s.status_messages['status'] = message
 
 
+    def set_selected_layer(self, layer_name):
+        if layer_name in self.layer_names:
+            with self.txn() as s:
+                s._json_data['selectedLayer'] = OrderedDict(layer=layer_name,visible=True)
+
+
     def get_selected_layer( self ):
         state_json = self.state.to_json()
         try:    
@@ -237,19 +243,13 @@ class EasyViewer( neuroglancer.Viewer ):
         return [l.name for l in self.state.layers]
 
 
-    def set_selected_layer(self, layer_name):
-        if layer_name in self.layer_names:
-            with self.txn() as s:
-                s._json_data['selectedLayer'] = OrderedDict(layer=layer_name,visible=True)
-
-
     def add_selected_objects(self, segmentation_layer, oids):
         if issubdtype(type(oids), integer):
             oids = [oids]
 
         with self.txn() as s:
             for oid in oids:
-                s.layer[ln].segment.append(oid)
+                s.layers[segmentation_layer].segments.add(oid)
 
 
     def get_mouse_coordinates(self, s):
@@ -363,6 +363,7 @@ class AnnotationManager( ):
             self.viewer._add_action(method_name,
                                     binding,
                                     method)
+            self.key_bindings.append(binding)
         else:
             print('Could not add method {} due to key binding conflict'.format(method))
 
@@ -389,6 +390,7 @@ class AnnotationManager( ):
     def add_annotation_layer(self, layer_name=None, layer_color=None):
         self.viewer.add_annotation_layer(layer_name, layer_color)
 
+
     def add_extension( self, extension_name, ExtensionClass, bindings=None ):
         if not self.validate_extension( ExtensionClass ):
             print("Note: {} was not added to annotation manager!".format(ExtensionClass))
@@ -407,11 +409,12 @@ class AnnotationManager( ):
             self.extension_layers[layer] = extension_name
 
         for method_name, key_command in bindings.items():
-            self.viewer._add_action(method_name,
-                                   key_command,
-                                   bound_methods[method_name])
+            self._add_bound_action(key_command, bound_methods[method_name], method_name)
+            # self.viewer._add_action(method_name,
+            #                        key_command,
+            #                        bound_methods[method_name])
             print("added {}".format(method_name))
-            self.key_bindings.append(key_command)
+            # self.key_bindings.append(key_command)
 
         if issubclass(ExtensionClass, AnnotationExtensionBase):
             if self.extensions[extension_name].db_tables == 'MUST_BE_CONFIGURED':
