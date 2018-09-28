@@ -87,3 +87,35 @@ class SynapseExtension(AnnotationExtensionBase):
                 'pre_pt':{'position':[int(x) for x in points['pre_pt'].point]},
                 'ctr_pt':{'position':[int(x) for x in points['ctr_pt'].point]},
                 'post_pt':{'position':[int(x) for x in points['post_pt'].point]}}
+
+    def _update_annotation(self, ngl_id):
+        anno_id = self.get_anno_id(ngl_id)
+        d_syn = self.annotation_df[self.annotation_df.anno_id==anno_id]
+        ngl_id_ctr = d_syn[d_syn.layer=='synapses'].ngl_id.values[0]
+        ngl_id_pre = d_syn[d_syn.layer=='synapses_pre'].ngl_id.values[0]
+        ngl_id_post = d_syn[d_syn.layer=='synapses_post'].ngl_id.values[0]
+        print(ngl_id_pre)
+        print(ngl_id_ctr)
+        print(ngl_id_post)
+
+        self.points.reset_points()
+        self.points.update_point(self._get_pt_pos('synapses_pre', ngl_id_pre), 'pre_pt')
+        self.points.update_point(self._get_pt_pos('synapses_post', ngl_id_post), 'post_pt')
+        self.points.update_point(self._get_pt_pos('synapses', ngl_id_ctr), 'ctr_pt')
+        print(self.points())
+        new_datum = self.format_synapse_data( self.points() )
+        self.points.reset_points()
+
+        ae_type, ae_id = self.parse_anno_id(anno_id)
+        self.annotation_client.update_annotation(ae_type, ae_id, new_datum)
+        self.viewer.update_message('Updated synapse annotation!')
+
+    def _get_pt_pos(self, ln, ngl_id):
+        for anno in self.viewer.state.layers[ln].annotations:
+            if anno.id == ngl_id:
+                if anno.type == 'point':
+                    return anno.point
+                elif anno.type == 'line':
+                    return anno.pointA
+        else:
+            return None

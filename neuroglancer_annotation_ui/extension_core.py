@@ -231,7 +231,7 @@ class AnnotationExtensionBase(ExtensionBase):
         return viewer_ids
 
 
-    def _update_annotation(self, ngl_id, new_annotation):
+    def _update_annotation(self, ngl_id):
         self.viewer.update_message('No update function is configured for this extension')
 
 
