@@ -141,4 +141,53 @@ def test_synapse_annotations(annotation_client, img_layer, seg_layer, s1, s2, s3
     except:
         assert True
 
-    ### Same things, without annotation client
+### Same things, without annotation client
+def test_local_only_annotations(img_layer, seg_layer, s1, s2, s3):
+    manager = AnnotationManager()
+    manager.add_image_layer('image', img_layer)
+    manager.add_segmentation_layer('seg', seg_layer)
+
+    # Use synapses as an example for using an annotation
+    manager.add_extension('synapse', SynapseExtension.set_db_tables('SynapseExtensionTest',
+                                                                    {'synapse':'synapse'}))
+    syn_ext = manager.extensions['synapse']
+
+    # Test adding a synapse correctly
+    syn_ext.update_presynaptic_point( s1 )
+    assert syn_ext.points.points['pre_pt'] is not None
+    syn_ext.update_postsynaptic_point( s3 )
+    syn_ext.update_center_synapse_point( s2 )
+
+    # Is the annotation now in the internal record?
+    assert len(syn_ext.annotation_df) == 3
+    
+    # Is the annotation in the viewer state?
+    assert len(manager.viewer.state.layers['synapses'].annotations) == 1
+    assert len(manager.viewer.state.layers['synapses_post'].annotations) == 1
+    assert len(manager.viewer.state.layers['synapses_pre'].annotations) == 1
+  
+    # Can we cancel an annotation?
+    syn_ext.update_presynaptic_point( s1 )
+    manager.cancel_annotation(None)
+    assert syn_ext.points.points['pre_pt'] == None
+
+    # Does synapse addition fail if we aren't on the right layer?
+    manager.viewer.set_selected_layer('seg')
+    syn_ext.update_presynaptic_point( s1 )
+    assert syn_ext.points.points['pre_pt'] == None
+    manager.viewer.set_selected_layer('synapses')
+
+    # Can we delete a synapse and have it propagate across all locations?
+    # (viewer state, annotation extension bucket, server)
+
+    manager.viewer.select_annotation('synapses', manager.viewer.state.layers['synapses'].annotations[0].id)
+
+    manager.delete_annotation(None)
+    assert len(manager.viewer.state.layers['synapses'].annotations) == 1
+    manager.delete_annotation(None)
+
+    assert len(manager.viewer.state.layers['synapses'].annotations) == 0
+    assert len(manager.viewer.state.layers['synapses_pre'].annotations) == 0
+    assert len(manager.viewer.state.layers['synapses_post'].annotations) == 0
+
+    assert len(syn_ext.annotation_df) == 0

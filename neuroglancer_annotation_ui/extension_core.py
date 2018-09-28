@@ -1,4 +1,5 @@
 import re
+from neuroglancer import random_token 
 from collections import defaultdict
 from neuroglancer_annotation_ui.annotation import point_annotation
 from functools import wraps
@@ -188,14 +189,15 @@ class AnnotationExtensionBase(ExtensionBase):
 
         for ngl_id in rel_ngl_ids:
             anno_id = self.get_anno_id(ngl_id)
-            ae_type, ae_id = self.parse_anno_id(anno_id)
             try:
+                ae_type, ae_id = self.parse_anno_id(anno_id)
                 self.annotation_client.delete_annotation(annotation_type=ae_type,
                                                          oid=ae_id)
-                if ngl_id in self.linked_annotations:
-                    del self.linked_annotations[ngl_id]
             except:
                 self.viewer.update_message('Annotation client could not delete annotation!')
+
+            if ngl_id in self.linked_annotations:
+                del self.linked_annotations[ngl_id]
 
             self.remove_associated_annotations(anno_id)
             self.viewer.update_message('Successfully deleted annotation')
@@ -227,7 +229,8 @@ class AnnotationExtensionBase(ExtensionBase):
             id_description = '{}_{}'.format(self.db_tables[table_name], aid[0])
             self.viewer.update_description(viewer_ids, id_description)
             self._update_map_id(viewer_ids, id_description)
-
+        else:
+            self._update_map_id(viewer_ids, random_token.make_random_token() )
         return viewer_ids
 
 
