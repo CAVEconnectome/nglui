@@ -61,10 +61,10 @@ def test_synapse_annotations(annotation_client, img_layer, seg_layer, s1, s2, s3
     manager = AnnotationManager(annotation_client=annotation_client)
     manager.add_image_layer('image', img_layer)
     manager.add_segmentation_layer('seg', seg_layer)
-    manager.add_extension('synapse', SynapseExtension.set_db_tables('SynapseExtensionTest',
-                                                                     {'synapse':'synapse'}))
 
-    # Use the synapses as an example for using an annotation
+    # Use synapses as an example for using an annotation
+    manager.add_extension('synapse', SynapseExtension.set_db_tables('SynapseExtensionTest',
+                                                                    {'synapse':'synapse'}))
     syn_ext = manager.extensions['synapse']
 
     # Test adding a synapse correctly
@@ -87,7 +87,7 @@ def test_synapse_annotations(annotation_client, img_layer, seg_layer, s1, s2, s3
     d = manager.annotation_client.get_annotation(a_type, a_id)
     assert d['type'] == 'synapse'
   
-    # Can we update the synapse?
+    # Can we update the synapse using local information?
     d = manager.annotation_client.get_annotation(a_type, a_id)
     assert d['ctr_pt']['position'] != [4,4,4]
     with manager.viewer.txn() as s:
@@ -97,7 +97,8 @@ def test_synapse_annotations(annotation_client, img_layer, seg_layer, s1, s2, s3
     d = manager.annotation_client.get_annotation(a_type, a_id)
     assert d['ctr_pt']['position'] == [4,4,4]
 
-    # Test reloading a synapse, make sure we have as many annotations as we started with
+    # Can we reload a synapse from the server and
+    # get as many annotations as we started with
     with manager.viewer.txn() as s:
         s.layers['synapses'].annotations[0].point = [1.,1.,1.]
     manager.reload_all_annotations(None)
@@ -105,18 +106,19 @@ def test_synapse_annotations(annotation_client, img_layer, seg_layer, s1, s2, s3
     assert len(syn_ext.annotation_df) == 3
     assert len(manager.viewer.state.layers['synapses'].annotations) == 1
 
-    # Test re-assigning pre/post points then adding the final point
+    # Can we cancel an annotation?
     syn_ext.update_presynaptic_point( s1 )
     manager.cancel_annotation(None)
     assert syn_ext.points.points['pre_pt'] == None
 
-    # Test trying to add a synapse on the incorrect layer
+    # Does synapse addition fail if we aren't on the right layer?
     manager.viewer.set_selected_layer('seg')
     syn_ext.update_presynaptic_point( s1 )
     assert syn_ext.points.points['pre_pt'] == None
     manager.viewer.set_selected_layer('synapses')
 
-    # Test deleting a synapse
+    # Can we delete a synapse and have it propagate across all locations?
+    # (viewer state, annotation extension bucket, server)
     anno_id = syn_ext.annotation_df.anno_id.values[0]
     a_type, a_id = syn_ext.parse_anno_id(anno_id)
     d = manager.annotation_client.get_annotation(a_type, a_id)
