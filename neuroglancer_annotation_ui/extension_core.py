@@ -218,7 +218,6 @@ class AnnotationExtensionBase(ExtensionBase):
         return response
 
     def render_and_post_annotation(self, data_formatter, render_name, anno_layer_dict, table_name):
-        print(self.points())
         data = data_formatter( self.points() )
         viewer_ids = self.ngl_renderer[render_name](self.viewer,
                                                     data,

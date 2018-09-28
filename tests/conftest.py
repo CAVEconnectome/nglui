@@ -137,9 +137,7 @@ def cv(chunkgraph_tuple, N=64, blockN=16):
         vol[x*chunk_size[0]:(x+1)*chunk_size[0],
             y*chunk_size[1]:(y+1)*chunk_size[1],
             z*chunk_size[2]:(z+1)*chunk_size[2]] = np.uint64(seg)
-
     yield path
-
     shutil.rmtree(tempdir)
 
 

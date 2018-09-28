@@ -1,4 +1,3 @@
-
 from neuroglancer_annotation_ui.extension_core import check_layer, AnnotationExtensionBase, PointHolder
 from neuroglancer_annotation_ui.ngl_rendering import SchemaRenderer
 from emannotationschemas.cell_type_local import CellTypeLocal, allowed_types
@@ -200,19 +199,22 @@ class CellTypeExtension(AnnotationExtensionBase):
         self.points.reset_points()
         self.points.update_point(pos, 'ctr_pt')
         self.points.points['ctr_pt'].description = desc
-        new_datum = self.format_cell_type_data(self.points(),
-                                               cell_type=self.parse_cell_type_description(desc)
-                                               )
+        if self.validate_cell_type_annotation(self.points()) is not None:
+            new_datum = self.format_cell_type_data(self.points(),
+                                                   cell_type=self.parse_cell_type_description(desc)
+                                  
+                                                   )
+            # Upload to the server as an update.
+            ae_type, ae_id = self.parse_anno_id(self.get_anno_id(ngl_id))
+            self.annotation_client.update_annotation(ae_type, ae_id, new_datum)
+            self.viewer.update_message('Updated annotation')
+
+        else:
+            self.viewer.update_message('Updated cell type not valid, please change or reload annotations')
         self.points.reset_points()
 
-        # Upload to the server as an update.
-        ae_type, ae_id = self.parse_anno_id(self.get_anno_id(ngl_id))
-        self.annotation_client.update_annotation(ae_type, ae_id, new_datum)
-        self.viewer.update_message('Updated annotation')
-
-
     def update_soma_annotation(self, ngl_id):
-        ln = self.get_selected_layer()
+        ln = self.viewer.get_selected_layer()
         for anno in self.viewer.state.layers[ln].annotations:
             if anno.id == ngl_id:
                 pos = anno.center
@@ -225,7 +227,7 @@ class CellTypeExtension(AnnotationExtensionBase):
         rad[1:]=0
         rad_pt = pos+rad
         self.points.update_point(rad_pt, 'radius')
-        new_datum = self.format_cell_type_data( self.points() )
+        new_datum = self.format_sphere_data( self.points() )
         self.points.reset_points()
 
         # Upload to the server as an update
