@@ -76,10 +76,10 @@ class SynapseExtension(AnnotationExtensionBase):
                                              message_type=self.message_dict[point_type])
 
         if anno_done:
-            viewer_ids = self.render_and_post_annotation(self.format_synapse_data,
-                                                         'synapse',
-                                                         self.anno_layer_dict,
-                                                         'synapse')
+            self.render_and_post_annotation(self.format_synapse_data,
+                                            'synapse',
+                                            self.anno_layer_dict,
+                                            'synapse')
             self.points.reset_points()
 
     def format_synapse_data(self, points):

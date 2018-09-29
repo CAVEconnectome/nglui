@@ -31,8 +31,8 @@ class SomaExtension(AnnotationExtensionBase):
 
     @staticmethod
     def _default_key_bindings():
-        bindings = {'update_center_point': 'keyi',
-                    'update_radius_point': 'keyu'}
+        bindings = {'update_center_point': 'keyq',
+                    'update_radius_point': 'keyw'}
         return bindings
 
 
@@ -50,7 +50,8 @@ class SomaExtension(AnnotationExtensionBase):
     @check_layer()
     def update_center_point( self, s):
         pos = self.viewer.get_mouse_coordinates(s)
-        new_id = self.points.update_point(pos, 'ctr_pt', message_type='soma center')
+        self.points.update_point(pos, 'ctr_pt', message_type='soma center')
+        new_id = self.points.points['ctr_pt'].id
         self.viewer.select_annotation(self.point_layer_dict['ctr_pt'], new_id)
 
 
@@ -67,7 +68,8 @@ class SomaExtension(AnnotationExtensionBase):
             self.points.reset_points()
 
 
-    def format_sphere_data(self, points):
+    @staticmethod
+    def format_sphere_data(points):
         rsq = 0
         for i in range(0,3):
             rsq += (points['ctr_pt'].point[i] - points['radius'].point[i])**2
@@ -80,11 +82,16 @@ class SomaExtension(AnnotationExtensionBase):
 
     def _update_annotation(self, ngl_id):
         ln = self.viewer.get_selected_layer()
-        for anno in self.viewer.state.layers[ln].annotations:
-            if anno.id == ngl_id:
-                pos = anno.center
-                rad = copy.copy(anno.radii)
-                break
+        self.update_soma_annotation(ln, ngl_id)
+
+    def update_soma_annotation(self, ln, ngl_id, pos=None, rad=None):
+        if rad == None:
+            for anno in self.viewer.state.layers[ln].annotations:
+                if anno.id == ngl_id:
+                    if pos == None:
+                        pos = anno.center
+                    rad = copy.copy(anno.radii)
+                    break
 
         #Format into schema
         self.points.reset_points()
@@ -99,3 +106,4 @@ class SomaExtension(AnnotationExtensionBase):
         ae_type, ae_id = self.parse_anno_id(self.get_anno_id(ngl_id))
         self.annotation_client.update_annotation(ae_type, ae_id, new_datum)
         self.viewer.update_message('Updated soma annotation!')
+        return pos

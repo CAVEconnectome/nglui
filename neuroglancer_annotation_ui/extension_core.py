@@ -269,3 +269,12 @@ class AnnotationExtensionBase(ExtensionBase):
         except:
             self.viewer.update_message('Could not load annotation')
             raise Exception
+
+    def update_linked_annotations( self, viewer_id_list ):
+        all_ngl_ids = []
+        for vids in viewer_id_list:
+            for layer, id_list in vids.items():
+                for ngl_id in id_list:
+                    all_ngl_ids.append(ngl_id)
+        for ngl_id in all_ngl_ids:
+            self.linked_annotations[ngl_id] = all_ngl_ids

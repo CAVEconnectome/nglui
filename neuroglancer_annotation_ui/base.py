@@ -456,7 +456,18 @@ class AnnotationManager( ):
         else:
             curr_pos = self.viewer.state.position.voxel_coordinates
             for annotation in self.viewer.state.layers[selected_layer].annotations:
-                if all(annotation.point==curr_pos):
+                process_ngl_id = False
+                if annotation.type == 'point':
+                    if all(annotation.point==curr_pos):
+                        process_ngl_id = True
+                elif annotation.type == 'line':
+                    if all(annotation.pointA==curr_pos) or all(annotation.pointB==curr_pos):
+                        process_ngl_id = True
+                elif annotation.type == 'ellipsoid':
+                    if all(annotation.center==curr_pos):
+                        process_ngl_id = True
+
+                if process_ngl_id:
                     ngl_id = annotation.id
                     delete_confirmed = self.check_rubbish_bin( ngl_id )
                     break
