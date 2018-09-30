@@ -59,7 +59,7 @@ class CellTypeExtension(AnnotationExtensionBase):
         for ln in self._defined_layers():
             self.viewer.add_annotation_layer(ln,
                                              self.color_map[ln])
-
+    @check_layer()
     def update_center_point( self, description, s):
         pos = self.viewer.get_mouse_coordinates(s)
         self.points.update_point(pos, 'ctr_pt', message_type='cell type center point')
