@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import re
 from neuroglancer_annotation_ui.base import EasyViewer, AnnotationManager
 from neuroglancer_annotation_ui.cell_type_point_extension import CellTypeExtension
 from neuroglancer_annotation_ui.annotation import point_annotation
@@ -94,10 +95,77 @@ def test_cell_type_point_extension(annotation_client, img_layer, seg_layer, s1, 
         assert True
 
     # Does the ivscc_m a_spiny_s_ work?
+    manager.viewer.set_selected_layer('cell_type_tool')
+    ct_ext.update_center_point_spiny(s1)
+    with manager.viewer.txn() as s:
+        s.layers['cell_type_tool'].annotations[0].description = '{}4'.format(
+            s.layers['cell_type_tool'].annotations[0].description)
+    ct_ext.trigger_upload(s2)
+    assert len(ct_ext.annotation_df) == 1
+    print(manager.viewer.state.layers['cell_types'].annotations[0].description)
+    assert re.search('spiny_4', manager.viewer.state.layers['cell_types'].annotations[0].description) != None
+
+    manager.viewer.select_annotation('cell_types',
+                                     manager.viewer.state.layers['cell_types'].annotations[0].id)
+    manager.delete_annotation(None)
+    manager.delete_annotation(None)
+
     # Does the ivscc_m a_spiny_d_ work?
+    manager.viewer.set_selected_layer('cell_type_tool')
+    ct_ext.update_center_point_aspiny(s1)
+    with manager.viewer.txn() as s:
+        s.layers['cell_type_tool'].annotations[0].description = '{}7'.format(
+            s.layers['cell_type_tool'].annotations[0].description)
+    ct_ext.trigger_upload(s2)
+    assert len(ct_ext.annotation_df) == 1
+    print(manager.viewer.state.layers['cell_types'].annotations[0].description)
+    assert re.search('aspiny_s_7', manager.viewer.state.layers['cell_types'].annotations[0].description) != None
+
+    manager.viewer.select_annotation('cell_types',
+                                     manager.viewer.state.layers['cell_types'].annotations[0].id)
+    manager.delete_annotation(None)
+    manager.delete_annotation(None)
+
     # Does the valence:e work?
+    manager.viewer.set_selected_layer('cell_type_tool')
+    ct_ext.update_center_point_e(s1)
+    ct_ext.trigger_upload(s2)
+    assert len(ct_ext.annotation_df) == 1
+    print(manager.viewer.state.layers['cell_types'].annotations[0].description)
+    assert re.search('e\n', manager.viewer.state.layers['cell_types'].annotations[0].description) != None
+
+    manager.viewer.select_annotation('cell_types',
+                                     manager.viewer.state.layers['cell_types'].annotations[0].id)
+    manager.delete_annotation(None)
+    manager.delete_annotation(None)
+
     # Does the valence:i work?
+    manager.viewer.set_selected_layer('cell_type_tool')
+    ct_ext.update_center_point_i(s1)
+    ct_ext.trigger_upload(s2)
+    assert len(ct_ext.annotation_df) == 1
+    print(manager.viewer.state.layers['cell_types'].annotations[0].description)
+    assert re.search('i\n', manager.viewer.state.layers['cell_types'].annotations[0].description) != None
+
+    manager.viewer.select_annotation('cell_types',
+                                     manager.viewer.state.layers['cell_types'].annotations[0].id)
+    manager.delete_annotation(None)
+    manager.delete_annotation(None)
+
     # Does the uncertain work?
+    manager.viewer.set_selected_layer('cell_type_tool')
+    ct_ext.update_center_point_uncertain(s1)
+    ct_ext.trigger_upload(s2)
+    assert len(ct_ext.annotation_df) == 1
+    print(manager.viewer.state.layers['cell_types'].annotations[0].description)
+    assert re.search('uncertain\n', manager.viewer.state.layers['cell_types'].annotations[0].description) != None
+
+    manager.viewer.select_annotation('cell_types',
+                                     manager.viewer.state.layers['cell_types'].annotations[0].id)
+    manager.delete_annotation(None)
+    manager.delete_annotation(None)
+
+
     # Does nonsense fail validation?
 
 

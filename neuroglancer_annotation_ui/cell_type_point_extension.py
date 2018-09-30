@@ -168,14 +168,9 @@ class CellTypeExtension(AnnotationExtensionBase):
         self.points.points['ctr_pt'] = self.viewer.get_annotation(ln,
                                                                   ngl_id
                                                                   )
-        print(self.points())
-        # print(self.parse_cell_type_description(self.points.points['ctr_pt'].description))
 
         if self.validate_cell_type_annotation(self.points()) is not None:
-            # print(self.points())
             new_datum = self.format_cell_type_data(self.points())
-            # print(new_datum)
-            # Upload to the server as an update.
             ae_type, ae_id = self.parse_anno_id(self.get_anno_id(ngl_id))
             self.annotation_client.update_annotation(ae_type, ae_id, new_datum)
             self.viewer.update_message('Updated annotation')
