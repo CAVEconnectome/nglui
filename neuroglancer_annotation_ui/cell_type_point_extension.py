@@ -72,6 +72,10 @@ class CellTypeExtension(AnnotationExtensionBase):
         pos = self.viewer.get_mouse_coordinates(s)
         anno_done = self.points.update_point(pos, 'trigger_pt', message_type='confirmation')
 
+        self.points.points['ctr_pt'] = self.viewer.get_annotation(self.point_layer_dict['ctr_pt'],
+                                                self.points.points['ctr_pt'].id
+                                                )
+
         cell_type = self.validate_cell_type_annotation( self.points() )
         if cell_type is None:
             self.points.reset_points(pts_to_reset=['trigger_pt'])
@@ -115,8 +119,6 @@ class CellTypeExtension(AnnotationExtensionBase):
         ct_anno = self.format_cell_type_data(points)
         schema = CellTypeLocal()
         d = schema.load(ct_anno)
-        print(ct_anno)
-        print(d)
         if d.data.get('valid', False):
             return ct_anno['cell_type']
         else:
@@ -140,9 +142,7 @@ class CellTypeExtension(AnnotationExtensionBase):
 
 
     def format_cell_type_data(self, points, cell_type=None, class_system=None):
-        anno_point = self.viewer.get_annotation(self.point_layer_dict['ctr_pt'],
-                                                points['ctr_pt'].id
-                                                )
+        anno_point = self.points.points['ctr_pt']
         if (cell_type is None) or (class_system is None):
             if anno_point.description is None:
                 cell_type, class_system = self.parse_cell_type_description('')
@@ -162,20 +162,19 @@ class CellTypeExtension(AnnotationExtensionBase):
     def update_cell_type_annotation(self, ngl_id):
         # Read new position, read new description
         ln = self.viewer.get_selected_layer()
-        for anno in self.viewer.state.layers[ln].annotations:
-            if anno.id == ngl_id:
-                pos = anno.point
-                desc = anno.description
-                break
-        
+
         # Format into the schema
         self.points.reset_points()
-        self.points.update_point(pos, 'ctr_pt')
-        self.points.points['ctr_pt'].description = desc
+        self.points.points['ctr_pt'] = self.viewer.get_annotation(ln,
+                                                                  ngl_id
+                                                                  )
+        print(self.points())
+        # print(self.parse_cell_type_description(self.points.points['ctr_pt'].description))
+
         if self.validate_cell_type_annotation(self.points()) is not None:
-            new_datum = self.format_cell_type_data(self.points(),
-                                                   cell_type=self.parse_cell_type_description(desc) 
-                                                   )
+            # print(self.points())
+            new_datum = self.format_cell_type_data(self.points())
+            # print(new_datum)
             # Upload to the server as an update.
             ae_type, ae_id = self.parse_anno_id(self.get_anno_id(ngl_id))
             self.annotation_client.update_annotation(ae_type, ae_id, new_datum)
