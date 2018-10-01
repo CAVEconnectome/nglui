@@ -1,6 +1,7 @@
 var/*
 *.pyc
 *.ipynb
+.pytest_cache
 .pytest_cache/v/cache/nodeids
 .pytest_cache/v/cache/lastfailed
 **.egg-info
