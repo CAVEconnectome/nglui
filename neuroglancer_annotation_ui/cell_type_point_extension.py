@@ -43,13 +43,13 @@ class CellTypeExtension(AnnotationExtensionBase):
     @staticmethod
     def _default_key_bindings():
         bindings = {
-            'update_center_point_spiny': 'keyk',
-            'update_center_point_aspiny': 'keyj',
-            'update_center_point_e': 'shift+keyk',
-            'update_center_point_i': 'shift+keyj',
-            'update_center_point_blank': 'keyi',
-            'update_center_point_uncertain': 'shift+keyi',
-            'trigger_upload': 'keyu'}
+            'update_center_point_spiny': 'keyq',
+            'update_center_point_aspiny': 'keyw',
+            'update_center_point_e': 'shift+keyq',
+            'update_center_point_i': 'shift+keyw',
+            'update_center_point_blank': 'shift+keyu',
+            'update_center_point_uncertain': 'keyu',
+            'trigger_upload': 'keyt'}
         return bindings
 
     @staticmethod
@@ -116,7 +116,6 @@ class CellTypeExtension(AnnotationExtensionBase):
     def update_center_point_uncertain(self, s):
         self.update_center_point(description='ivscc_m:uncertain', s=s)
 
-
     def validate_cell_type_annotation(self, points):
         ct_anno = self.format_cell_type_data(points)
         schema = CellTypeLocal()
@@ -144,7 +143,7 @@ class CellTypeExtension(AnnotationExtensionBase):
             class_system = ''
         return cell_type, class_system
 
-    
+
     def format_cell_type_data(self, points, cell_type=None, class_system=None):
         anno_point = points['ctr_pt']
         if (cell_type is None) or (class_system is None):

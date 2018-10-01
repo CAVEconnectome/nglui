@@ -346,7 +346,7 @@ class AnnotationManager( ):
                                'Cancel current annotation')
 
 
-    def initialize_update_action(self, update_binding='shift+control+keyu'):
+    def initialize_update_action(self, update_binding='shift+enter'):
         self._add_bound_action(update_binding,
                                self.update_annotation,
                                'Update selected annotation')
@@ -434,9 +434,11 @@ class AnnotationManager( ):
         validity = True
         if len( set( self.extension_layers.keys() ).intersection(set(ExtensionClass._defined_layers())) ) > 0:
             print('{} contains layers that conflict with the current ExtensionManager'.format(ExtensionClass))
+            print(set( self.extension_layers.keys() ).intersection(set(ExtensionClass._defined_layers())) )
             validity=False
         if len( set(self.key_bindings).intersection(set(ExtensionClass._default_key_bindings().values())) ) > 0:
             print('{} contains key bindings that conflict with the current ExtensionManager'.format(ExtensionClass))
+            print(set(self.key_bindings).intersection(set(ExtensionClass._default_key_bindings().values())))
             validity=False
         return validity
 
@@ -532,3 +534,4 @@ class AnnotationManager( ):
             if issubclass(type(ext_class), AnnotationExtensionBase):
                 ext_class._reload_all_annotations()
         self.viewer.update_message('Reloaded all annotations')
+

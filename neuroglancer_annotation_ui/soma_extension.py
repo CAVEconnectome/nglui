@@ -31,8 +31,8 @@ class SomaExtension(AnnotationExtensionBase):
 
     @staticmethod
     def _default_key_bindings():
-        bindings = {'update_center_point': 'keyq',
-                    'update_radius_point': 'keyw'}
+        bindings = {'update_center_point': 'keyj',
+                    'update_radius_point': 'keyk'}
         return bindings
 
 
