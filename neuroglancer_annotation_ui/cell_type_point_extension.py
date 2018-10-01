@@ -102,7 +102,7 @@ class CellTypeExtension(AnnotationExtensionBase):
 
     @check_layer()
     def update_center_point_blank(self, s):
-        self.update_center_point(description='freeform:', s=s)
+        self.update_center_point(description='', s=s)
 
     @check_layer()
     def update_center_point_e(self, s):
@@ -134,7 +134,8 @@ class CellTypeExtension(AnnotationExtensionBase):
         qry = re.search('(?P<csys>{}){}(?P<ct>{})'.format(class_sys_qry_str,
                                                           binding_char,
                                                           cell_type_qry_str),
-                        description)
+                        description,
+                        re.MULTILINE)
         if qry is not None:
             class_system = qry.groupdict()['csys']
             cell_type = qry.groupdict()['ct']
@@ -143,9 +144,9 @@ class CellTypeExtension(AnnotationExtensionBase):
             class_system = ''
         return cell_type, class_system
 
-
+    
     def format_cell_type_data(self, points, cell_type=None, class_system=None):
-        anno_point = self.points.points['ctr_pt']
+        anno_point = points['ctr_pt']
         if (cell_type is None) or (class_system is None):
             if anno_point.description is None:
                 cell_type, class_system = self.parse_cell_type_description('')
@@ -159,25 +160,24 @@ class CellTypeExtension(AnnotationExtensionBase):
                  }
         return datum
 
+
     def _update_annotation(self, ngl_id):
         self.update_cell_type_annotation( ngl_id )
+
 
     def update_cell_type_annotation(self, ngl_id):
         # Read new position, read new description
         ln = self.viewer.get_selected_layer()
 
         # Format into the schema
-        self.points.reset_points()
-        self.points.points['ctr_pt'] = self.viewer.get_annotation(ln,
-                                                                  ngl_id
-                                                                  )
+        new_data_points = dict(ctr_pt=self.viewer.get_annotation(ln,ngl_id),
+                               trigger_pt=None)
 
-        if self.validate_cell_type_annotation(self.points()) is not None:
-            new_datum = self.format_cell_type_data(self.points())
+        if self.validate_cell_type_annotation(new_data_points) is not None:
+            new_datum = self.format_cell_type_data(new_data_points)
             ae_type, ae_id = self.parse_anno_id(self.get_anno_id(ngl_id))
             self.annotation_client.update_annotation(ae_type, ae_id, new_datum)
             self.viewer.update_message('Updated annotation')
 
         else:
             self.viewer.update_message('Updated cell type not valid, please change or reload annotations')
-        self.points.reset_points()
