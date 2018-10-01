@@ -8,7 +8,7 @@ import copy
 import json
 import os
 
-base_dir=os.path.dirname(os.path.dirname(__file__))
+base_dir=os.path.dirname(__file__)
 with open(base_dir+"/data/default_key_bindings.json") as fid:
     default_key_bindings = json.load(fid)
 

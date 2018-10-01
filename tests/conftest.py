@@ -138,8 +138,8 @@ def cv(chunkgraph_tuple, N=64, blockN=16):
             y*chunk_size[1]:(y+1)*chunk_size[1],
             z*chunk_size[2]:(z+1)*chunk_size[2]] = np.uint64(seg)
     yield path
-    shutil.rmtree(tempdir)
 
+    shutil.rmtree(tempdir)
 
 @pytest.fixture(scope='session')
 def test_dataset():
