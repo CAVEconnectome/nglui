@@ -41,7 +41,7 @@ def test_manager(annotation_client):
 
     assert "backspace" in manager.key_bindings
     assert "shift+keyc" in manager.key_bindings
-    assert "shift+control+keyu" in manager.key_bindings
+    assert "shift+enter" in manager.key_bindings
     assert "shift+control+keyr" in manager.key_bindings
 
     manager.add_extension('synapse',SynapseExtension.set_db_tables('SynapseExtensionTest',
