@@ -1,6 +1,7 @@
 from neuroglancer_annotation_ui.extension_core import check_layer, AnnotationExtensionBase, PointHolder
 from neuroglancer_annotation_ui.ngl_rendering import SchemaRenderer
-from emannotationschemas.cell_type_local import CellTypeLocal, allowed_types
+from emannotationschemas.cell_type_local import CellTypeLocal, allowed_types, allowed_classification_systems
+from itertools import chain
 import copy
 import re
 
@@ -11,7 +12,7 @@ class CellTypeLocalWithRule( CellTypeLocal ):
     @staticmethod
     def render_rule():
         return {'point': {'cell_type': ['pt']},
-                'description_field': ['cell_type']}
+                'description_field': ['classification_system','cell_type']}
 
 class CellTypeExtension(AnnotationExtensionBase):
     def __init__(self, easy_viewer, annotation_client=None):
@@ -26,10 +27,10 @@ class CellTypeExtension(AnnotationExtensionBase):
 
         self.ngl_renderer = {'cell_type':SchemaRenderer(CellTypeLocalWithRule),
                              }
-        # Which annotation goes to which layer
+        # Which annotation goes to which layer from a finished annotation
         self.anno_layer_dict = {'cell_type': CELL_TYPE_DISPLAY_LAYER}
 
-        # Which point goes to which layer
+        # Which point goes to which layer while building annotation
         self.point_layer_dict = {'ctr_pt': CELL_TYPE_TOOL_LAYER,
                                  'trigger_pt': CELL_TYPE_TOOL_LAYER}
 
@@ -59,6 +60,7 @@ class CellTypeExtension(AnnotationExtensionBase):
         for ln in self._defined_layers():
             self.viewer.add_annotation_layer(ln,
                                              self.color_map[ln])
+
     @check_layer()
     def update_center_point( self, description, s):
         pos = self.viewer.get_mouse_coordinates(s)
@@ -92,15 +94,15 @@ class CellTypeExtension(AnnotationExtensionBase):
 
     @check_layer()
     def update_center_point_spiny(self, s):
-        self.update_center_point(description='spiny_', s=s)
+        self.update_center_point(description='ivscc_m:spiny_', s=s)
 
     @check_layer()
     def update_center_point_aspiny(self, s):
-        self.update_center_point(description='aspiny_s_', s=s)
+        self.update_center_point(description='ivscc_m:aspiny_s_', s=s)
 
     @check_layer()
     def update_center_point_blank(self, s):
-        self.update_center_point(description='', s=s)
+        self.update_center_point(description='freeform:', s=s)
 
     @check_layer()
     def update_center_point_e(self, s):
@@ -112,7 +114,7 @@ class CellTypeExtension(AnnotationExtensionBase):
 
     @check_layer()
     def update_center_point_uncertain(self, s):
-        self.update_center_point(description='uncertain', s=s)
+        self.update_center_point(description='ivscc_m:uncertain', s=s)
 
 
     def validate_cell_type_annotation(self, points):
@@ -126,18 +128,19 @@ class CellTypeExtension(AnnotationExtensionBase):
 
 
     @staticmethod
-    def parse_cell_type_description( description ):
-        cell_type = ''
-        class_system = ''
-        qry_ivscc = re.search('(?P<cell_type>aspiny_d_[\d]+|aspiny_s_[\d]+|spiny_[\d]+|uncertain)', description)
-        if qry_ivscc is not None:
-            cell_type = qry_ivscc.group()
-            class_system = 'ivscc_m'
+    def parse_cell_type_description( description, binding_char='\:' ):
+        class_sys_qry_str = '|'.join(allowed_classification_systems)
+        cell_type_qry_str = '|'.join(['{}$'.format(x) for x in chain.from_iterable(allowed_types.values())])
+        qry = re.search('(?P<csys>{}){}(?P<ct>{})'.format(class_sys_qry_str,
+                                                          binding_char,
+                                                          cell_type_qry_str),
+                        description)
+        if qry is not None:
+            class_system = qry.groupdict()['csys']
+            cell_type = qry.groupdict()['ct']
         else:
-            qry_valence = re.search('valence\:(?P<cell_type>[eiEI]|uncertain)', description)
-            if qry_valence is not None:
-                cell_type = qry_valence.groupdict()['cell_type']
-                class_system = 'valence'
+            cell_type = ''
+            class_system = ''
         return cell_type, class_system
 
 

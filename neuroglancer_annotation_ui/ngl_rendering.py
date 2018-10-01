@@ -96,11 +96,11 @@ class RenderRule():
         else:
             self.render_rule=render_rule
 
-    def make_description_rule(self):
+    def make_description_rule(self, spacing_character=':'):
         description_keys = self.render_rule.get('description_field', [])
         if len(description_keys) > 0:
             def dr(data, viewer_ids, viewer):
-                added_description = '\n'.join(data[f] for f in description_keys)
+                added_description = spacing_character.join(data[f] for f in description_keys)
                 viewer.update_description(viewer_ids, added_description)
         else:
             def dr(data, viewer_ids, viewer):

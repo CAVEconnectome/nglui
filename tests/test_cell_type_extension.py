@@ -15,7 +15,7 @@ def test_cell_type_point_extension(annotation_client, img_layer, seg_layer, s1, 
     ct_ext = manager.extensions['cell_type']
 
     # Add a cell type correctly with a correct description field
-    ct_ext.update_center_point('spiny_4', s1)
+    ct_ext.update_center_point('ivscc_m:spiny_4', s1)
     assert ct_ext.points.points['ctr_pt'] is not None
     assert len(manager.viewer.state.layers['cell_type_tool'].annotations) == 1
     ct_ext.trigger_upload(s2)
@@ -37,7 +37,7 @@ def test_cell_type_point_extension(annotation_client, img_layer, seg_layer, s1, 
     d = manager.annotation_client.get_annotation(a_type, a_id)
     assert d['cell_type'] == 'spiny_4'
     with manager.viewer.txn() as s:
-        s.layers['cell_types'].annotations[0].description = 'aspiny_s_1'
+        s.layers['cell_types'].annotations[0].description = 'ivscc_m:aspiny_s_1'
 
     manager.viewer.set_selected_layer('cell_types')
     manager.viewer.select_annotation('cell_types',
@@ -60,7 +60,7 @@ def test_cell_type_point_extension(annotation_client, img_layer, seg_layer, s1, 
         == np.array([1.,1.,1.]))
 
     # Can we cancel an annotation in media res?
-    ct_ext.update_center_point( 'spiny_4', s2 )
+    ct_ext.update_center_point( 'ivscc_m:spiny_4', s2 )
     manager.cancel_annotation(None)
     assert ct_ext.points.points['ctr_pt'] == None
 
@@ -103,7 +103,7 @@ def test_cell_type_point_extension(annotation_client, img_layer, seg_layer, s1, 
     ct_ext.trigger_upload(s2)
     assert len(ct_ext.annotation_df) == 1
     print(manager.viewer.state.layers['cell_types'].annotations[0].description)
-    assert re.search('spiny_4', manager.viewer.state.layers['cell_types'].annotations[0].description) != None
+    assert re.search('ivscc_m:spiny_4', manager.viewer.state.layers['cell_types'].annotations[0].description) != None
 
     manager.viewer.select_annotation('cell_types',
                                      manager.viewer.state.layers['cell_types'].annotations[0].id)
@@ -119,7 +119,7 @@ def test_cell_type_point_extension(annotation_client, img_layer, seg_layer, s1, 
     ct_ext.trigger_upload(s2)
     assert len(ct_ext.annotation_df) == 1
     print(manager.viewer.state.layers['cell_types'].annotations[0].description)
-    assert re.search('aspiny_s_7', manager.viewer.state.layers['cell_types'].annotations[0].description) != None
+    assert re.search('ivscc_m:aspiny_s_7', manager.viewer.state.layers['cell_types'].annotations[0].description) != None
 
     manager.viewer.select_annotation('cell_types',
                                      manager.viewer.state.layers['cell_types'].annotations[0].id)
@@ -132,7 +132,7 @@ def test_cell_type_point_extension(annotation_client, img_layer, seg_layer, s1, 
     ct_ext.trigger_upload(s2)
     assert len(ct_ext.annotation_df) == 1
     print(manager.viewer.state.layers['cell_types'].annotations[0].description)
-    assert re.search('e\n', manager.viewer.state.layers['cell_types'].annotations[0].description) != None
+    assert re.search('valence:e\n', manager.viewer.state.layers['cell_types'].annotations[0].description) != None
 
     manager.viewer.select_annotation('cell_types',
                                      manager.viewer.state.layers['cell_types'].annotations[0].id)
@@ -145,14 +145,14 @@ def test_cell_type_point_extension(annotation_client, img_layer, seg_layer, s1, 
     ct_ext.trigger_upload(s2)
     assert len(ct_ext.annotation_df) == 1
     print(manager.viewer.state.layers['cell_types'].annotations[0].description)
-    assert re.search('i\n', manager.viewer.state.layers['cell_types'].annotations[0].description) != None
+    assert re.search('valence:i\n', manager.viewer.state.layers['cell_types'].annotations[0].description) != None
 
     manager.viewer.select_annotation('cell_types',
                                      manager.viewer.state.layers['cell_types'].annotations[0].id)
     manager.delete_annotation(None)
     manager.delete_annotation(None)
 
-    # Does the uncertain work?
+    # Does the uncertain annotation work?
     manager.viewer.set_selected_layer('cell_type_tool')
     ct_ext.update_center_point_uncertain(s1)
     ct_ext.trigger_upload(s2)
@@ -167,8 +167,36 @@ def test_cell_type_point_extension(annotation_client, img_layer, seg_layer, s1, 
 
 
     # Does nonsense fail validation?
+    assert len(ct_ext.annotation_df) == 0
+    manager.viewer.set_selected_layer('cell_type_tool')
+    ct_ext.update_center_point_aspiny(s1)
+    with manager.viewer.txn() as s:
+        s.layers['cell_type_tool'].annotations[0].description = '{}999'.format(
+            s.layers['cell_type_tool'].annotations[0].description)
+    ct_ext.trigger_upload(s2)
 
+    assert len(ct_ext.annotation_df) == 0
+    manager.cancel_annotation(None)
 
 
     # Does updating also validate?
- 
+    manager.viewer.set_selected_layer('cell_type_tool')
+
+    ct_ext.update_center_point('ivscc_m:spiny_4', s1)
+    ct_ext.trigger_upload(s2)
+
+    anno_id = ct_ext.annotation_df.anno_id.values[0]
+    a_type, a_id = ct_ext.parse_anno_id(anno_id)
+    d = manager.annotation_client.get_annotation(a_type, a_id)
+
+    assert d['cell_type'] == 'spiny_4'
+    with manager.viewer.txn() as s:
+        s.layers['cell_types'].annotations[0].description = 'ivscc_m:aspiny_s_999'
+
+    manager.viewer.set_selected_layer('cell_types')
+    manager.viewer.select_annotation('cell_types',
+                    manager.viewer.state.layers['cell_types'].annotations[0].id)
+    manager.update_annotation(None)
+
+    d = manager.annotation_client.get_annotation(a_type, a_id)
+    assert d['cell_type'] == 'spiny_4'
