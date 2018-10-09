@@ -110,9 +110,7 @@ def cv(N=64, blockN=16):
     vol[:] = np.uint64(seg)
 
     yield TEST_PATH
-
     shutil.rmtree(tempdir)
-
 
 @pytest.fixture(scope='session')
 def test_dataset():

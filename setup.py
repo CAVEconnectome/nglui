@@ -11,6 +11,7 @@ setup(
    author_email='caseysm@gmail.com',
    url="https://github.com/seung-lab/NeuroglancerAnnotationUI",
    packages=['neuroglancer_annotation_ui'],
+   package_data={'neuroglancer_annotation_ui':['data/*.json']},
    install_requires=[
                 'neuroglancer',
                 'numpy',
@@ -25,7 +26,6 @@ setup(
                 'requests',
                 'marshmallow',
                 'protobuf',
-                'grpc',
                 'tornado==4.5.3',
                 ],  # external packages as dependencies
 )

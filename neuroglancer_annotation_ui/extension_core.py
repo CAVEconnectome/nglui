@@ -218,20 +218,25 @@ class AnnotationExtensionBase(ExtensionBase):
         return response
 
     def render_and_post_annotation(self, data_formatter, render_name, anno_layer_dict, table_name):
-        data = data_formatter( self.points() )
+        viewer_ids, data = self.render_annotation(self.points(), data_formatter, render_name, anno_layer_dict)
+        if self.annotation_client is not None:
+            self.post_annotation(viewer_ids, data, table_name)
+        return viewer_ids
+
+    def render_annotation(self, points, data_formatter, render_name, anno_layer_dict):
+        data = data_formatter( points )
         viewer_ids = self.ngl_renderer[render_name](self.viewer,
                                                     data,
                                                     layermap=anno_layer_dict)
-
-        if self.annotation_client is not None:
-            aid = self._post_data([data], table_name)
-            id_description = '{}_{}'.format(self.db_tables[table_name], aid[0])
-            self.viewer.update_description(viewer_ids, id_description)
-            self._update_map_id(viewer_ids, id_description)
-        else:
+        if self.annotation_client is None:
             self._update_map_id(viewer_ids, random_token.make_random_token() )
-        return viewer_ids
+        return viewer_ids, data
 
+    def post_annotation(self, viewer_ids, data, table_name):
+        aid = self._post_data([data], table_name)
+        id_description = '{}_{}'.format(self.db_tables[table_name], aid[0])
+        self.viewer.update_description(viewer_ids, id_description)
+        self._update_map_id(viewer_ids, id_description)
 
     def _update_annotation(self, ngl_id):
         self.viewer.update_message('No update function is configured for this extension')
