@@ -7,6 +7,9 @@ from numpy import issubdtype, integer
 import copy
 import json
 import os
+from annotationinfoservice.infoserviceclient import InfoServiceClient
+from annotationengine.annotationclient import AnnotationClient
+
 
 base_dir=os.path.dirname(__file__)
 with open(base_dir+"/data/default_key_bindings.json") as fid:
@@ -42,8 +45,11 @@ class EasyViewer( neuroglancer.Viewer ):
         state = neuroglancer.parse_url(url)
         self.set_state(state)
 
+    def set_chunkgraph_endpoint(self, layer_name, chunkgraph_endpoint):
+        with self.txn() as s:
+            s.layers[layer_name].chunkedGraph=chunkgraph_endpoint
 
-    def add_segmentation_layer(self, layer_name, segmentation_source):
+    def add_segmentation_layer(self, layer_name, segmentation_source, chunkgraph_endpoint=None):
         """Add segmentation layer to viewer instance.
 
         Attributes:
@@ -54,17 +60,10 @@ class EasyViewer( neuroglancer.Viewer ):
             with self.txn() as s:
                 s.layers[layer_name] = neuroglancer.SegmentationLayer(
                     source=segmentation_source)
-                self.segment_layer_name = layer_name
-                self.segment_source = segmentation_source
+                if chunkgraph_endpoint is not None:
+                    self.set_chunkgraph_endpoint(layer_name,chunkgraph_endpoint)
         except Exception as e:
             raise e
-        self.set_view_options(segmentation_layer=layer_name,
-                      show_slices=self.state.showSlices,
-                      layout=self.state.layout.type,
-                      orthographic_projection=self.state.layout.orthographic_projection,
-                      show_axis_lines=self.state.showAxisLines,
-                      show_scale_bar=self.state.showScaleBar)
-
 
     def add_image_layer(self, layer_name, image_source):
         """Add segmentation layer to viewer instance.
@@ -243,6 +242,10 @@ class EasyViewer( neuroglancer.Viewer ):
         return [l.name for l in self.state.layers]
 
 
+    def selected_objects(self, segmentation_layer):
+        return list(viewer.state.layers[segmentation_layer]].segments)
+ 
+
     def add_selected_objects(self, segmentation_layer, oids):
         if issubdtype(type(oids), integer):
             oids = [oids]
@@ -325,6 +328,25 @@ class AnnotationManager( ):
 
         if global_reload is True:
             self.initialize_reload_action()
+
+    @classmethod
+    def from_info_service(cls,
+                          info_client=None,
+                          info_endpoint=None,
+                          dataset_name=None,
+                          global_delete=True,
+                          global_cancel=True,
+                          global_update=True,
+                          global_reload=True):
+        if info_client is None:
+            info_client = InfoServiceClient(info_endpoint=info_endpoint, dataset_name=dataset_name)
+        anno_client = AnnotationClient.from_info_service(info_client=info_client)
+        anno_manager - cls(annotation_client=anno_client,
+                           global_delete=global_delete,
+                           global_cancel=global_cancel,
+                           global_update=global_update,
+                           global_reload=global_reload)
+        return anno_manager
 
     def initialize_delete_action(self, delete_binding=None):
         if delete_binding == None:
