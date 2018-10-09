@@ -14,16 +14,23 @@ from pychunkedgraph.backend import chunkedgraph
 from itertools import product
 from annotationengine import create_app
 from annotationengine.annotationclient import AnnotationClient
+import requests_mock
 
-### Fixtures for building an annotation engine instance
+INFOSERVICE_ENDPOINT = "http://infoservice"
+TEST_DATASET_NAME = 'test'
+tempdir = tempfile.mkdtemp()
+TEST_PATH = "file:/{}".format(tempdir)
+
+
 @pytest.fixture(scope='session')
-def cg_settings():
+def bigtable_settings():
     return 'anno_test', 'cg_test'
 
-@pytest.fixture(scope='session',autouse=True)
-def bigtable_client(request, cg_settings):
+
+@pytest.fixture(scope='session', autouse=True)
+def bigtable_client(request, bigtable_settings):
     # setup Emulator
-    cg_project, cg_table = cg_settings
+    cg_project, cg_table = bigtable_settings
     bt_emul_host = "localhost:8086"
     os.environ["BIGTABLE_EMULATOR_HOST"] = bt_emul_host
     bigtables_emulator = subprocess.Popen(["gcloud",
@@ -72,41 +79,12 @@ def bigtable_client(request, cg_settings):
         print('BigTable stopped')
     request.addfinalizer(fin)
 
-@pytest.fixture(scope='session')
-def chunkgraph_tuple(request,
-                     bigtable_client,
-                     cg_settings,
-                     fan_out=2,
-                     n_layers=3):
-    cg_project, cg_table = cg_settings
-    print('creating table {}'.format(cg_project))
-    graph = chunkedgraph.ChunkedGraph(cg_table,
-                                      client=bigtable_client,
-                                      project_id=cg_project,
-                                      is_new=True, fan_out=fan_out,
-                                      n_layers=n_layers, cv_path="",
-                                      chunk_size=(32, 32, 32))
-
-    yield graph, cg_table
-
-    def fin():
-        graph.table.delete()
-    request.addfinalizer(fin)
-    print("\n\nTABLE DELETED")
-
-
-def to_label(cgraph, l, x, y, z, segment_id):
-    return cgraph.get_node_id(np.uint64(segment_id), layer=l, x=x, y=y, z=z)
-
 
 @pytest.fixture(scope='session')
-def cv(chunkgraph_tuple, N=64, blockN=16):
-    cgraph, cg_table = chunkgraph_tuple
+def cv(N=64, blockN=16):
 
     block_per_row = int(N / blockN)
 
-    tempdir = tempfile.mkdtemp()
-    path = "file:/{}".format(tempdir)
     chunk_size = [32, 32, 32]
     num_chunks = [int(N/cs) for cs in chunk_size]
     info = cloudvolume.CloudVolume.create_new_info(
@@ -121,53 +99,80 @@ def cv(chunkgraph_tuple, N=64, blockN=16):
         chunk_size=chunk_size,  # units are voxels
         volume_size=[N, N, N],
     )
-    vol = cloudvolume.CloudVolume(path, info=info)
+    vol = cloudvolume.CloudVolume(TEST_PATH, info=info)
     vol.commit_info()
-    xx, yy, zz = np.meshgrid(*[np.arange(0, cs) for cs in chunk_size])
+    xx, yy, zz = np.meshgrid(*[np.arange(0, N) for cs in chunk_size])
+    id_ind = (np.uint64(xx / blockN),
+                np.uint64(yy / blockN),
+                np.uint64(zz / blockN))
+    id_shape = (block_per_row, block_per_row, block_per_row)
+    seg = np.ravel_multi_index(id_ind, id_shape)
+    vol[:] = np.uint64(seg)
 
-    for x, y, z in product(*[range(nc) for nc in num_chunks]):
-        seg = np.uint64(xx / blockN) + \
-            block_per_row * np.uint64(yy / blockN) + \
-            block_per_row * block_per_row * np.uint64(zz / blockN)
-        for seg_id in np.unique(seg):
-            new_id = to_label(cgraph, 1, x, y, z, seg_id)
-            is_id = seg == seg_id
-            seg[is_id] = new_id
+    yield TEST_PATH
 
-        vol[x*chunk_size[0]:(x+1)*chunk_size[0],
-            y*chunk_size[1]:(y+1)*chunk_size[1],
-            z*chunk_size[2]:(z+1)*chunk_size[2]] = np.uint64(seg)
-    yield path
     shutil.rmtree(tempdir)
 
 
 @pytest.fixture(scope='session')
 def test_dataset():
-    return 'test'
+    return TEST_DATASET_NAME
 
 
 @pytest.fixture(scope='session')
-def app(cv, test_dataset, cg_settings):
-    cg_project, cg_table = cg_settings
+def app(cv, test_dataset, bigtable_settings):
+    cg_project, cg_table = bigtable_settings
 
-    app = create_app(
-        {
-            'project_id': cg_project,
-            'emulate': True,
-            'TESTING': True,
-            'DATASETS': [
-                {
-                    'name': test_dataset,
-                    'CV_SEGMENTATION_PATH': cv
-                }
-            ],
-            'BIGTABLE_CONFIG': {
-                'emulate': True
-            },
-            'CHUNKGRAPH_TABLE_ID': cg_table
+    with requests_mock.Mocker() as m:
+        dataset_url = os.path.join(INFOSERVICE_ENDPOINT, 'api/datasets')
+        m.get(dataset_url, json=[test_dataset])
+        dataset_info_url = os.path.join(INFOSERVICE_ENDPOINT,
+                                        'api/dataset/{}'.format(test_dataset))
+        dataset_d = {
+            "annotation_engine_endpoint": "http://35.237.200.246",
+            "flat_segmentation_source": cv,
+            "id": 1,
+            "image_source": cv,
+            "name": test_dataset,
+            "pychunkgraph_endpoint": "http://pcg/segmentation",
+            "pychunkgraph_segmentation_source": cv
         }
-    )
+        m.get(dataset_info_url, json=dataset_d)
+        app = create_app(
+            {
+                'project_id': cg_project,
+                'emulate': True,
+                'TESTING': True,
+                'INFOSERVICE_ENDPOINT':  INFOSERVICE_ENDPOINT,
+                'BIGTABLE_CONFIG': {
+                    'emulate': True
+                },
+                'CHUNKGRAPH_TABLE_ID': cg_table
+            }
+        )
+
     yield app
+
+
+@pytest.fixture(scope='session')
+def client(app):
+    return app.test_client()
+
+def mock_info_service(requests_mock):
+    dataset_url = os.path.join(INFOSERVICE_ENDPOINT, 'api/datasets')
+    requests_mock.get(dataset_url, json=[TEST_DATASET_NAME])
+    dataset_info_url = os.path.join(INFOSERVICE_ENDPOINT,
+                                    'api/dataset/{}'.format(TEST_DATASET_NAME))
+    dataset_d = {
+        "annotation_engine_endpoint": "http://35.237.200.246",
+        "flat_segmentation_source": TEST_PATH,
+        "id": 1,
+        "image_source": TEST_PATH,
+        "name": TEST_DATASET_NAME,
+        "pychunkgraph_endpoint": "http://pcg/segmentation",
+        "pychunkgraph_segmentation_source": TEST_PATH
+    }
+    requests_mock.get(dataset_info_url, json=dataset_d)
 
 
 @pytest.fixture(scope='session')
@@ -267,7 +272,6 @@ class TestAnnotationClient(AnnotationClient):
         response = self.session.delete(url)
         assert(response.status_code == 200)
         return response.json
-
 
 @pytest.fixture(scope='session')
 def annotation_client(test_dataset, client):
