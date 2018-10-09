@@ -8,10 +8,13 @@ PRESYN_LN = 'asyn_pre'
 POSTSYN_LN = 'asyn_pre'
 CTRSYN_LN = 'synapses'
 
+DB_ANNO_NAME = 'synapse'
+RENDER_ANNO_NAME = 'synapse'
+
 class SynapseGetterExtension(AnnotationExtensionBase):
     def __init__(self, easy_viewer, annotation_client=None):
         super(SynapseGetterExtension, self).__init__(easy_viewer, annotation_client)
-        self.ngl_renderer = {'synapse':SchemaRenderer(SynapseSchemaWithRule)}
+        self.ngl_renderer = {RENDER_ANNO_NAME: SchemaRenderer(SynapseSchemaWithRule)}
         self.allowed_layers = [ln.name for ln in easy_viewer.layers if ln.type == 'segmentation']
         self.color_map = {PRESYN_LN:'#ff0000',
                           POSTSYN_LN:'#00ffff'}
@@ -46,12 +49,12 @@ class SynapseGetterExtension(AnnotationExtensionBase):
         oids = self.viewer.selected_objects(ln)
         annos = list()
         for oid in oids:
-            synapse_anno_ids = self.annotation_client.get_annotations_of_root_id(self.db_tables['synapse'],
+            synapse_anno_ids = self.annotation_client.get_annotations_of_root_id(self.db_tables[DB_ANNO_NAME],
                                                                                  oid)
             for aid in synapse_anno_ids:
                 annos.append(aid)
         for anno in annos:
-            self.load_annotation_by_aid(self.db_tables['synapse'], anno, 'synapse')
+            self.load_annotation_by_aid(self.db_tables[DB_ANNO_NAME], anno, RENDER_ANNO_NAME)
         return            
 
 
