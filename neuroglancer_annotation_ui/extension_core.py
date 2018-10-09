@@ -148,9 +148,9 @@ class AnnotationExtensionBase(ExtensionBase):
 
     def parse_anno_id(self, anno_id_description, regex_type_match=None ):
         if regex_type_match is None:
-            anno_parser = re.search('(?P<type>\w*)_(?P<id>\d.*)$', anno_id_description)
+            anno_parser = re.search(r'(?P<type>\w*)_(?P<id>\d.*)$', anno_id_description)
         else:
-            anno_parser = re.search('(?P<type>{})_(?P<id>\d.*)'.format(regex_type_match), anno_id_description)
+            anno_parser = re.search(r'(?P<type>{})_(?P<id>\d.*)'.format(regex_type_match), anno_id_description)
 
         ae_type = anno_parser.groupdict()['type']
         ae_id = anno_parser.groupdict()['id']

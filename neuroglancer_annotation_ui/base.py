@@ -243,7 +243,7 @@ class EasyViewer( neuroglancer.Viewer ):
 
 
     def selected_objects(self, segmentation_layer):
-        return list(viewer.state.layers[segmentation_layer]].segments)
+        return list(viewer.state.layers[segmentation_layer].segments)
  
 
     def add_selected_objects(self, segmentation_layer, oids):
