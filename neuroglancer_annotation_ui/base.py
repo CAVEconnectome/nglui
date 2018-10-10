@@ -7,9 +7,6 @@ from numpy import issubdtype, integer
 import copy
 import json
 import os
-from annotationinfoservice.infoserviceclient import InfoServiceClient
-from annotationengine.annotationclient import AnnotationClient
-
 
 base_dir=os.path.dirname(__file__)
 with open(base_dir+"/data/default_key_bindings.json") as fid:
@@ -327,24 +324,6 @@ class AnnotationManager( ):
         if global_reload is True:
             self.initialize_reload_action()
 
-    @classmethod
-    def from_info_service(cls,
-                          info_client=None,
-                          info_endpoint=None,
-                          dataset_name=None,
-                          global_delete=True,
-                          global_cancel=True,
-                          global_update=True,
-                          global_reload=True):
-        if info_client is None:
-            info_client = InfoServiceClient(info_endpoint=info_endpoint, dataset_name=dataset_name)
-        anno_client = AnnotationClient.from_info_service(info_client=info_client)
-        anno_manager - cls(annotation_client=anno_client,
-                           global_delete=global_delete,
-                           global_cancel=global_cancel,
-                           global_update=global_update,
-                           global_reload=global_reload)
-        return anno_manager
 
     def initialize_delete_action(self, delete_binding=None):
         if delete_binding == None:
