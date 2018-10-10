@@ -1,12 +1,12 @@
-import neuroglancer
-from collections import OrderedDict
-from neuroglancer_annotation_ui import annotation
-from neuroglancer_annotation_ui.extension_core import AnnotationExtensionBase
-from inspect import getmembers, ismethod
-from numpy import issubdtype, integer
 import copy
 import json
 import os
+import neuroglancer
+from collections import OrderedDict
+from inspect import getmembers, ismethod
+from numpy import issubdtype, integer
+from neuroglancer_annotation_ui import annotation
+from neuroglancer_annotation_ui.extension_core import AnnotationExtensionBase
 
 base_dir=os.path.dirname(__file__)
 with open(base_dir+"/data/default_key_bindings.json") as fid:
@@ -18,6 +18,12 @@ class EasyViewer( neuroglancer.Viewer ):
     """
     def __init__(self):
         super(EasyViewer, self).__init__()
+        self.set_view_options(segmentation_layer=layer_name,
+                      show_slices=self.state.showSlices,
+                      layout=self.state.layout.type,
+                      orthographic_projection=self.state.layout.orthographic_projection,
+                      show_axis_lines=self.state.showAxisLines,
+                      show_scale_bar=self.state.showScaleBar)
 
 
     def __repr__(self):
@@ -43,47 +49,51 @@ class EasyViewer( neuroglancer.Viewer ):
         self.set_state(state)
 
 
-    def add_segmentation_layer(self, layer_name, segmentation_source):
+    def add_segmentation_layer(self, segmentation_source, layer_name=None):
         """Add segmentation layer to viewer instance.
 
         Attributes:
             layer_name (str): name of layer to be displayed in neuroglancer ui.
             segment_source (str): source of neuroglancer segment layer
         """
-        try:
-            with self.txn() as s:
-                s.layers[layer_name] = neuroglancer.SegmentationLayer(
-                    source=segmentation_source)
-                self.segment_layer_name = layer_name
-                self.segment_source = segmentation_source
-        except Exception as e:
-            raise e
-        self.set_view_options(segmentation_layer=layer_name,
-                      show_slices=self.state.showSlices,
-                      layout=self.state.layout.type,
-                      orthographic_projection=self.state.layout.orthographic_projection,
-                      show_axis_lines=self.state.showAxisLines,
-                      show_scale_bar=self.state.showScaleBar)
+        qry = re.search("^gs://", segmentation_source)
+        if qry is not None:
+            segmentation_source='precomputed://{}'.format(segmentation_source)
+
+        if layer_name is None:
+            layer_name = 'seg'    
+
+        with self.txn() as s:
+            s.layers[layer_name] = neuroglancer.SegmentationLayer(
+                source=segmentation_source)
+            self.segment_layer_name = layer_name
+            self.segment_source = segmentation_source
 
 
-    def add_image_layer(self, layer_name, image_source):
+    def selected_objects(self, segmentation_layer):
+        return list(viewer.state.layers[segmentation_layer].segments)
+
+
+    def add_image_layer(self, image_source, layer_name=None):
         """Add segmentation layer to viewer instance.
 
         Attributes:
             layer_name (str): name of layer to be displayed in neuroglancer ui.
             image_source (str): source of neuroglancer image layer
         """
+        qry = re.search("^gs://", image_source)
+        if qry is not None:
+            image_source='precomputed://{}'.format(segmentation_source)
+
         if layer_name is None:
-            layer_name = 'ImageLayer'
-        try:
-            with self.txn() as s:
-                s.layers[layer_name] = neuroglancer.ImageLayer(
-                    source=image_source)
-        except Exception as e:
-            raise e
+            layer_name = 'img'
+
+        with self.txn() as s:
+            s.layers[layer_name] = neuroglancer.ImageLayer(
+                source=image_source)
 
 
-    def add_annotation_layer(self, layer_name=None, color=None ):
+    def add_annotation_layer(self, layer_name=None, color=None):
         """Add annotation layer to the viewer instance.
 
         Attributes:
@@ -99,6 +109,7 @@ class EasyViewer( neuroglancer.Viewer ):
                              layer=neuroglancer.AnnotationLayer() )
             if color is not None:
                 s.layers[layer_name].annotationColor = color
+
 
     def set_annotation_layer_color( self, layer_name, color ):
         """Set the color for the annotation layer

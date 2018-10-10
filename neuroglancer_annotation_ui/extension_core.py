@@ -148,9 +148,9 @@ class AnnotationExtensionBase(ExtensionBase):
 
     def parse_anno_id(self, anno_id_description, regex_type_match=None ):
         if regex_type_match is None:
-            anno_parser = re.search('(?P<type>\w*)_(?P<id>\d.*)$', anno_id_description)
+            anno_parser = re.search(r'(?P<type>\w*)_(?P<id>\d.*)$', anno_id_description)
         else:
-            anno_parser = re.search('(?P<type>{})_(?P<id>\d.*)'.format(regex_type_match), anno_id_description)
+            anno_parser = re.search(r'(?P<type>{})_(?P<id>\d.*)'.format(regex_type_match), anno_id_description)
 
         ae_type = anno_parser.groupdict()['type']
         ae_id = anno_parser.groupdict()['id']
@@ -218,19 +218,25 @@ class AnnotationExtensionBase(ExtensionBase):
         return response
 
     def render_and_post_annotation(self, data_formatter, render_name, anno_layer_dict, table_name):
-        data = data_formatter( self.points() )
-        viewer_ids = self.ngl_renderer[render_name](self.viewer,
-                                                    data,
-                                                    layermap=anno_layer_dict)
-
+        viewer_ids, data = self.render_annotation(self.points(), data_formatter, render_name, anno_layer_dict)
         if self.annotation_client is not None:
-            aid = self._post_data([data], table_name)
-            id_description = '{}_{}'.format(self.db_tables[table_name], aid[0])
-            self.viewer.update_description(viewer_ids, id_description)
-            self._update_map_id(viewer_ids, id_description)
-        else:
-            self._update_map_id(viewer_ids, random_token.make_random_token() )
+            self.post_annotation(viewer_ids, data, table_name)
         return viewer_ids
+
+    def render_annotation(self, points, data_formatter, render_name, anno_layer_dict):
+        data = data_formatter( points )
+        viewer_ids = self.ngl_renderer[render_name](self.viewer,
+                                                     data,
+                                                     layermap=anno_layer_dict)
+        if self.annotation_client is None:
+            self._update_map_id(viewer_ids, random_token.make_random_token() )
+        return viewer_ids, data
+
+    def post_annotation(self, viewer_ids, data, table_name):
+        aid = self._post_data([data], table_name)
+        id_description = '{}_{}'.format(self.db_tables[table_name], aid[0])
+        self.viewer.update_description(viewer_ids, id_description)
+        self._update_map_id(viewer_ids, id_description)
 
 
     def _update_annotation(self, ngl_id):
