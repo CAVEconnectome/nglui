@@ -13,7 +13,8 @@ from signal import SIGTERM
 from pychunkedgraph.backend import chunkedgraph
 from itertools import product
 from annotationengine import create_app
-from annotationengine.annotationclient import AnnotationClient
+from annotationframeworkclient.annotationengine import AnnotationClient
+from annotationframeworkclient.endpoints import annotationengine_endpoints as ae
 import requests_mock
 
 INFOSERVICE_ENDPOINT = "http://infoservice"
@@ -182,49 +183,76 @@ class TestAnnotationClient(AnnotationClient):
         super(TestAnnotationClient, self).__init__('', dataset_name)
         self.session = test_client
 
+    @property
+    def dataset_name(self):
+        return self._dataset_name
+
+    @property
+    def server_address(self):
+        return self._server_address
+
+    @property
+    def default_url_mapping(self):
+        return self._default_url_mapping.copy()
+
     def get_datasets(self):
         """ Returns existing datasets
 
         :return: list
         """
-        url = "{}/dataset".format(self.endpoint)
+        url = ae["datasets"].format_map(self.default_url_mapping)
         response = self.session.get(url)
         assert(response.status_code == 200)
         return response.json
 
-    def get_dataset(self, dataset_name=None):
-        """ Returns information about the dataset
-
-        :return: dict
-        """
+    def get_annotation_types(self, dataset_name=None):
         if dataset_name is None:
             dataset_name = self.dataset_name
-        url = "{}/dataset/{}".format(self.endpoint, dataset_name)
+        endpoint_mapping = self.default_url_mapping
+        endpoint_mapping['dataset_name'] = dataset_name
+        url = ae["annotation_types"].format_map(endpoint_mapping)
+
         response = self.session.get(url)
-        assert(response.status_code == 200)
+        assert(response.status_code==200)
         return response.json
 
-    def get_annotation(self, annotation_type, oid, dataset_name=None):
-        """
-        Returns information about one specific annotation
+    # def get_dataset(self, dataset_name=None):
+    #     """ Returns information about the dataset
+    #
+    #     :return: dict
+    #     """
+    #     if dataset_name is None:
+    #         dataset_name = self.dataset_name
+    #     url = "{}/dataset/{}".format(self.server_address, dataset_name)
+    #     response = self.session.get(url, verify=False)
+    #     assert(response.status_code == 200)
+    #     return response.json()
+
+    def get_annotation(self, annotation_type, annotation_id, dataset_name=None):
+        """ Returns information about one specific annotation
+
         :param dataset_name: str
         :param annotation_type: str
-        :param oid: int
+        :param annotation_id: np.uint64
         :return dict
         """
         if dataset_name is None:
             dataset_name = self.dataset_name
-        url = "{}/annotation/dataset/{}/{}/{}".format(self.endpoint,
-                                                   dataset_name,
-                                                   annotation_type,
-                                                   oid)
+
+        endpoint_mapping = self.default_url_mapping
+        endpoint_mapping["dataset_name"] = dataset_name
+        endpoint_mapping["annotation_type"] = annotation_type
+        endpoint_mapping["annotation_id"] = annotation_id
+
+        url = ae["existing_annotation"].format_map(endpoint_mapping)
+
         response = self.session.get(url)
         assert(response.status_code == 200)
         return response.json
 
     def post_annotation(self, annotation_type, data, dataset_name=None):
-        """
-        Post an annotation to the annotationEngine.
+        """ Post an annotation to the AnnotationEngine
+
         :param dataset_name: str
         :param annotation_type: str
         :param data: dict
@@ -232,44 +260,66 @@ class TestAnnotationClient(AnnotationClient):
         """
         if dataset_name is None:
             dataset_name = self.dataset_name
-        if isinstance(data,dict):
-            data=[data]
+        if isinstance(data, dict):
+            data = [data]
 
-        url = "{}/annotation/dataset/{}/{}".format(self.endpoint,
-                                                   dataset_name,
-                                                   annotation_type)
+        endpoint_mapping = self.default_url_mapping
+        endpoint_mapping["dataset_name"] = dataset_name
+        endpoint_mapping["annotation_type"] = annotation_type
+
+        url = ae["new_annotation"].format_map(endpoint_mapping)
+
         response = self.session.post(url, json=data)
         assert(response.status_code == 200)
         return response.json
 
-    def update_annotation(self, annotation_type, oid, data, dataset_name=None):
+    def update_annotation(self, annotation_type, annotation_id, data,
+                          dataset_name=None):
+        """ Updates an existing annotation
+
+        :param annotation_type: str
+        :param annotation_id: np.uint64
+        :param data: dict
+        :param dataset_name: str
+        :return: dict
+        """
         if dataset_name is None:
             dataset_name = self.dataset_name
-        url = "{}/annotation/dataset/{}/{}/{}".format(self.endpoint,
-                                                   dataset_name,
-                                                   annotation_type,
-                                                   oid)
+
+        endpoint_mapping = self.default_url_mapping
+        endpoint_mapping["dataset_name"] = dataset_name
+        endpoint_mapping["annotation_type"] = annotation_type
+        endpoint_mapping["annotation_id"] = annotation_id
+
+        url = ae["existing_annotation"].format_map(endpoint_mapping)
+
         response = self.session.put(url, json=data)
         assert(response.status_code == 200)
         return response.json
 
-    def delete_annotation(self, annotation_type, oid, dataset_name=None):
-        """
-        Delete an existing annotation
+    def delete_annotation(self, annotation_type, annotation_id,
+                          dataset_name=None):
+        """ Delete an existing annotation
+
         :param dataset_name: str
         :param annotation_type: str
-        :param oid: int
+        :param annotation_id: int
         :return dict
         """
         if dataset_name is None:
             dataset_name = self.dataset_name
-        url = "{}/annotation/dataset/{}/{}/{}".format(self.endpoint,
-                                                   dataset_name,
-                                                   annotation_type,
-                                                   oid)
+
+        endpoint_mapping = self.default_url_mapping
+        endpoint_mapping["dataset_name"] = dataset_name
+        endpoint_mapping["annotation_type"] = annotation_type
+        endpoint_mapping["annotation_id"] = annotation_id
+
+        url = ae["existing_annotation"].format_map(endpoint_mapping)
+
         response = self.session.delete(url)
         assert(response.status_code == 200)
         return response.json
+
 
 @pytest.fixture(scope='session')
 def annotation_client(test_dataset, client):
