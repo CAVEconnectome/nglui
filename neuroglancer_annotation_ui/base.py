@@ -45,9 +45,9 @@ class EasyViewer( neuroglancer.Viewer ):
         state = neuroglancer.parse_url(url)
         self.set_state(state)
 
-    def set_chunkgraph_endpoint(self, layer_name, chunkgraph_endpoint):
-        with self.txn() as s:
-            s.layers[layer_name].chunkedGraph=chunkgraph_endpoint
+    # def set_chunkgraph_endpoint(self, layer_name, chunkgraph_endpoint):
+    #     with self.txn() as s:
+    #         s.layers[layer_name].chunkedGraph=chunkgraph_endpoint
 
     def add_segmentation_layer(self, layer_name, segmentation_source, chunkgraph_endpoint=None):
         """Add segmentation layer to viewer instance.
@@ -56,14 +56,12 @@ class EasyViewer( neuroglancer.Viewer ):
             layer_name (str): name of layer to be displayed in neuroglancer ui.
             segment_source (str): source of neuroglancer segment layer
         """
-        try:
-            with self.txn() as s:
-                s.layers[layer_name] = neuroglancer.SegmentationLayer(
-                    source=segmentation_source)
-                if chunkgraph_endpoint is not None:
-                    self.set_chunkgraph_endpoint(layer_name,chunkgraph_endpoint)
-        except Exception as e:
-            raise e
+        with self.txn() as s:
+            s.layers[layer_name] = neuroglancer.SegmentationLayer(
+                source=segmentation_source)
+            # if chunkgraph_endpoint is not None:
+            #     self.set_chunkgraph_endpoint(layer_name,chunkgraph_endpoint)
+
 
     def add_image_layer(self, layer_name, image_source):
         """Add segmentation layer to viewer instance.
@@ -243,7 +241,7 @@ class EasyViewer( neuroglancer.Viewer ):
 
 
     def selected_objects(self, segmentation_layer):
-        return list(viewer.state.layers[segmentation_layer]].segments)
+        return list(viewer.state.layers[segmentation_layer].segments)
  
 
     def add_selected_objects(self, segmentation_layer, oids):

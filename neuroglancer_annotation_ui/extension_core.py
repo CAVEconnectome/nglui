@@ -1,9 +1,9 @@
 import re
 from neuroglancer import random_token 
 from collections import defaultdict
-from neuroglancer_annotation_ui.annotation import point_annotation
 from functools import wraps
 from pandas import DataFrame
+from .annotation import point_annotation
 
 def check_layer(allowed_layer_key=None):
     def specific_layer_wrapper( func ):
