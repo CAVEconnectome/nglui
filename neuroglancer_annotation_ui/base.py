@@ -9,7 +9,7 @@ import json
 import os
 
 base_dir=os.path.dirname(__file__)
-with open(base_dir+"/data/default_key_bindings.json") as fid:
+with open(base_dir+"/data/default_key_bindings.json",'r') as fid:
     default_key_bindings = json.load(fid)
 
 class EasyViewer( neuroglancer.Viewer ):
@@ -277,7 +277,7 @@ class EasyViewer( neuroglancer.Viewer ):
                           not_selected_alpha=0,
                           perspective_alpha=0.8):
         if segmentation_layer is None:
-            layers = [l for l in self.state.layers if l.type == 'segmentation']
+            layers = [l.name for l in self.state.layers if l.type == 'segmentation']
         else:
             layers = [segmentation_layer]
 
