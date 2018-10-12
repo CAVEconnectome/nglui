@@ -1,4 +1,6 @@
 var/*
+htmlcov/*
+test-reports/*
 *.pyc
 *.ipynb
 .pytest_cache
