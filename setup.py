@@ -7,7 +7,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 def read(*parts):
     with codecs.open(os.path.join(here, *parts), 'r') as fp:
-    return fp.read()
+    	return fp.read()
 
 def find_version(*file_paths):
     version_file = read(*file_paths)
@@ -20,8 +20,9 @@ def find_version(*file_paths):
 with open('requirements.txt','r') as f:
     required = f.read().splitlines()
 
-with open('test_requirements.txt', 'r') as f:
-    test_required = f.read().splitlines()
+#with open('test_requirements.txt', 'r') as f:
+#    test_required = f.read().splitlines()
+test_required=[]
 
 setup(
     version=find_version("neuroglancer_annotation_ui", "__init__.py"),
