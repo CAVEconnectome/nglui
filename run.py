@@ -1,4 +1,4 @@
-from ngAnnotationServer import create_app
+from neuroglancer_annotation_server import create_app
 
 application = create_app()
 

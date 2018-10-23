@@ -29,7 +29,7 @@ with open('test_requirements.txt', 'r') as f:
 
 setup(
    name='neuroglancer_annotation_ui',
-   version='0.1',
+   version=find_version('src','neuroglancer_annotation_ui','__init__.py'),
    description='Neuroglancer python annotation UI framework.',
    long_description=open('README.md').read(),
    author='Derrick Brittain, Casey Schneider-Mizell, Forrest Collman',

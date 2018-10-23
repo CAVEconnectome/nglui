@@ -5,3 +5,4 @@ COPY requirements.txt /app/.
 RUN pip install numpy && \
     pip install -r requirements.txt
 COPY . /app
+RUN python setup.py install
