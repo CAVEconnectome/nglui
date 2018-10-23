@@ -12,6 +12,12 @@ base_dir=os.path.dirname(__file__)
 with open(base_dir+"/data/default_key_bindings.json",'r') as fid:
     default_key_bindings = json.load(fid)
 
+def stop_ngl_server():
+    """
+    Shuts down the neuroglancer tornado server
+    """
+    neuroglancer.server.stop()
+
 class EasyViewer( neuroglancer.Viewer ):
     """
     Extends the neuroglancer Viewer object to make simple operations simple.
@@ -339,7 +345,7 @@ class AnnotationManager( ):
             print('Could not add the delete action due to a key binding conflict.')
 
 
-    def initialize_cancel_action(self, cancel_binding="shift+keyc"):
+    def initialize_cancel_action(self, cancel_binding="escape"):
         self._add_bound_action(cancel_binding,
                                self.cancel_annotation,
                                'Cancel current annotation')
@@ -533,4 +539,3 @@ class AnnotationManager( ):
             if issubclass(type(ext_class), AnnotationExtensionBase):
                 ext_class._reload_all_annotations()
         self.viewer.update_message('Reloaded all annotations')
-
