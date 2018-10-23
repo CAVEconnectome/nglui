@@ -2,7 +2,7 @@ from neuroglancer_annotation_ui.synapse_extension import SynapseExtension
 from neuroglancer_annotation_ui.cell_type_point_extension import CellTypeExtension
 # from neuroglancer_annotation_ui.soma_extension import SomaExtension
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 extension_mapping = {
     'synapse_ai_manual': SynapseExtension.set_db_tables('SynapseAIManual',
