@@ -11,9 +11,9 @@ mod = Blueprint('nglaunch', 'nglaunch')
 __version__ = "0.0.1"
 def setup_manager(d, client=None):
     manager = AnnotationManager(annotation_client=client)
-    manager.add_image_layer('img', d['image_source'])
+    manager.add_image_layer('img', 'precomputed://'+ d['image_source'])
     manager.add_segmentation_layer('seg',
-                                   d['flat_segmentation_source'])
+                                   'precomputed://'+ d['flat_segmentation_source'])
     return manager
 
 

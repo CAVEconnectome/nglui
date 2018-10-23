@@ -5,4 +5,6 @@ COPY requirements.txt /app/.
 RUN pip install numpy && \
     pip install -r requirements.txt
 COPY . /app
+ENV FLASK_APP=run.py
 RUN python setup.py install
+CMD ["flask","run","--port","9898","--host","0.0.0.0"]
