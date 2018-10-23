@@ -1,0 +1,42 @@
+
+{% block header %}
+<h1>{% block title %}{{title}}{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<h2>Launch Neuroglancer Annotation Tool:</h2>
+<form method="post" action="{{url}}">
+    {{form.hidden_tag()}}
+    {{form.csrf_token}}
+    <table><tr><td>
+    <table>
+    <tr>
+      <td>
+        Dataset
+      </td>
+      </tr>
+      {% for choice in form.dataset %}
+      <tr>
+        <td>{{choice}} <a href="{{info_url+"/dataset/{}".format(choice.data)}}"
+        {{choice.label}} </a></td>
+      </tr>
+      {% endfor %}
+    </tr>
+  </table></td>
+  <td><table>
+      <tr>
+          <td>
+              Extensions
+          </td>
+      </tr>
+      {% for ext in form.extensions %}
+      <tr>
+          <td>{{ext}} {{ext.label}}</td>
+      </tr>
+      {% endfor %}
+  </table></td>
+</tr></table>
+
+<input type="submit" value="Launch">
+</form>
+{% endblock %}
