@@ -9,7 +9,7 @@ from neuroglancer_annotation_ui import get_extensions, extension_mapping
 mod = Blueprint('nglaunch', 'nglaunch')
 
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 def setup_manager(d, client=None):
     manager = AnnotationManager(annotation_client=client)
     manager.add_image_layer('img', 'precomputed://'+ d['image_source'])
