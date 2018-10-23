@@ -2,7 +2,6 @@ import neuroglancer
 from flask import redirect, jsonify, Response, abort, Blueprint, current_app, render_template, url_for, request
 import requests
 from neuroglancer_annotation_ui.base import AnnotationManager
-from annotationengine.annotationclient import AnnotationClient
 import os
 from .forms import NgDataSetExtensionForm
 from neuroglancer_annotation_ui import get_extensions, extension_mapping

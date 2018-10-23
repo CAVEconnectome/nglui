@@ -10,7 +10,7 @@ class BaseConfig(object):
 
     NEUROGLANCER_URL = "https://neuroglancer-demo.appspot.com"
     NEUROGLANCER_PORT = 9000
-    ANNOTATION_INFO_SERVICE_URL = 'http://localhost:5000'
+    ANNOTATION_INFO_SERVICE_URL = 'https://www.dynamicannotationframework.com/info'
     ANNOTATION_ENGINE_URL = 'http://35.185.22.247'
     # Enable protection agains *Cross-site Request Forgery (CSRF)*
     CSRF_ENABLED = True
@@ -24,9 +24,9 @@ class BaseConfig(object):
 
 
 config = {
-    "development": "ngAnnotationServer.config.BaseConfig",
-    "testing": "ngAnnotationServer.config.BaseConfig",
-    "default": "ngAnnotationServer.config.BaseConfig"
+    "development": "neuroglancer_annotation_server.config.BaseConfig",
+    "testing": "neuroglancer_annotation_server.config.BaseConfig",
+    "default": "neuroglancer_annotation_server.config.BaseConfig"
 }
 
 
