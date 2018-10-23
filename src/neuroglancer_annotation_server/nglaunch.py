@@ -4,6 +4,7 @@ import requests
 from neuroglancer_annotation_ui.base import AnnotationManager
 import os
 from .forms import NgDataSetExtensionForm
+from urllib.parse import urlparse
 from neuroglancer_annotation_ui import get_extensions, extension_mapping
 mod = Blueprint('nglaunch', 'nglaunch')
 
@@ -52,7 +53,11 @@ def index():
             for extension in form.extensions:
                 if extension.data:
                     manager.add_extension(extension.id, extension_mapping[extension.id])
-            return redirect(manager.url)
+            url = manager.url
+            o1 = urlparse(manager.url)
+            o = urlparse(request.url)
+            new_url = o.scheme + "://" + o.netloc.split(':')[0] + ":{}".format(o1.port) + o1.path
+            return redirect(new_url)
 
 
 @mod.route('/dataset/<dataset>')
