@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import sys
 sys.path.append('./src/')
 from src.neuroglancer_annotation_ui.base import EasyViewer, AnnotationManager
 from src.neuroglancer_annotation_ui.soma_extension import SomaExtension
