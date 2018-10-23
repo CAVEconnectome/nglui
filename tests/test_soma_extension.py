@@ -1,8 +1,9 @@
 import pytest
 import numpy as np
-from neuroglancer_annotation_ui.base import EasyViewer, AnnotationManager
-from neuroglancer_annotation_ui.soma_extension import SomaExtension
-from neuroglancer_annotation_ui.annotation import point_annotation
+sys.path.append('./src/')
+from src.neuroglancer_annotation_ui.base import EasyViewer, AnnotationManager
+from src.neuroglancer_annotation_ui.soma_extension import SomaExtension
+from src.neuroglancer_annotation_ui.annotation import point_annotation
 
 
 def test_soma_extension(annotation_client, img_layer, seg_layer, s1, s2):

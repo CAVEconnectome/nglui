@@ -1,5 +1,7 @@
 import pytest
 import numpy as np
+import sys
+sys.path.append('./src/')
 from neuroglancer_annotation_ui.base import EasyViewer, AnnotationManager
 from neuroglancer_annotation_ui.synapse_extension import SynapseExtension
 

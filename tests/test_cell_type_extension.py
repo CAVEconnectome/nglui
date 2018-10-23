@@ -1,6 +1,8 @@
 import pytest
 import numpy as np
 import re
+import sys
+sys.path.append('./src/')
 from neuroglancer_annotation_ui.base import EasyViewer, AnnotationManager
 from neuroglancer_annotation_ui.cell_type_point_extension import CellTypeExtension
 from neuroglancer_annotation_ui.annotation import point_annotation
