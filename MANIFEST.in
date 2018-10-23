@@ -1,2 +1,4 @@
 include requirements.txt
 include test_requirements.txt
+include src/neuroglancer_annotation_ui/data/default_key_bindings.json
+include src/neuroglancer_annotation_server/templates/*.html
