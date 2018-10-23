@@ -106,7 +106,6 @@ venv.bak/
 .DS_Store
 test-reports/
 var/
-data/
 .vscode
 *.orig
 *.sublime-workspace
