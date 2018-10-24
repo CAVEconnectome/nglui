@@ -17,6 +17,9 @@ def setup_manager(d, client=None):
                                    'precomputed://'+ d['flat_segmentation_source'])
     return manager
 
+@mod.route('/version')
+def version():
+    return "Neurglancer Annotation UI Server -- version {} ".format(__version__)
 
 @mod.route('/', methods=['GET', 'POST'])
 def index():
