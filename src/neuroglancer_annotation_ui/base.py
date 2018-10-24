@@ -4,7 +4,7 @@ from neuroglancer_annotation_ui import annotation
 from neuroglancer_annotation_ui.extension_core import AnnotationExtensionBase
 from inspect import getmembers, ismethod
 from numpy import issubdtype, integer
-import copy
+from copy import copy
 import json
 import os
 
@@ -62,8 +62,6 @@ class EasyViewer( neuroglancer.Viewer ):
         with self.txn() as s:
             s.layers[layer_name] = neuroglancer.SegmentationLayer(
                 source=segmentation_source)
-            # if chunkgraph_endpoint is not None:
-            #     self.set_chunkgraph_endpoint(layer_name,chunkgraph_endpoint)
 
 
     def add_image_layer(self, layer_name, image_source):
@@ -73,14 +71,9 @@ class EasyViewer( neuroglancer.Viewer ):
             layer_name (str): name of layer to be displayed in neuroglancer ui.
             image_source (str): source of neuroglancer image layer
         """
-        if layer_name is None:
-            layer_name = 'ImageLayer'
-        try:
-            with self.txn() as s:
-                s.layers[layer_name] = neuroglancer.ImageLayer(
-                    source=image_source)
-        except Exception as e:
-            raise e
+        with self.txn() as s:
+            s.layers[layer_name] = neuroglancer.ImageLayer(
+                source=image_source)
 
 
     def add_annotation_layer(self, layer_name=None, color=None ):
@@ -90,7 +83,7 @@ class EasyViewer( neuroglancer.Viewer ):
             layer_name (str): name of layer to be created
         """
         if layer_name is None:
-            layer_name = 'new_annotation_layer'
+            layer_name = 'annos'
         if layer_name in [l.name for l in self.state.layers]:
             return
 
@@ -111,15 +104,15 @@ class EasyViewer( neuroglancer.Viewer ):
             pass
 
 
-    def clear_annotation_layers( self, s ):
+    def clear_annotation_layers( self ):
         all_layers = neuroglancer.json_wrappers.to_json( self.state.layers )
         new_layers = OrderedDict()
         for layer in all_layers:
             if all_layers[layer]['type'] != 'annotation':
                 new_layers[layer] = all_layers[layer]
         
-        with self.txn() as s2:
-            s2.layers = neuroglancer.viewer_state.Layers(new_layers)
+        with self.txn() as s:
+            s.layers = neuroglancer.viewer_state.Layers(new_layers)
 
 
     def add_annotation(self, layer_name, annotation, color=None):
@@ -130,8 +123,6 @@ class EasyViewer( neuroglancer.Viewer ):
             layer_name (str): name of layer to be displayed in neuroglancer ui.
             layer_type (str): can be: 'points, ellipse or line' only
         """
-        if layer_name is None:
-            layer_name = 'New Annotation'
         if issubclass(type(annotation), neuroglancer.viewer_state.AnnotationBase):
             annotation = [ annotation ]
         try:
@@ -258,10 +249,7 @@ class EasyViewer( neuroglancer.Viewer ):
 
     def get_mouse_coordinates(self, s):
         pos = s.mouse_voxel_coordinates
-        if (pos is None) or ( len(pos)!= 3):
-            return None
-        else:
-            return pos
+        return pos
 
 
     def set_position(self, xyz, zoom_factor=None):
@@ -312,11 +300,17 @@ class AnnotationManager( ):
             self.viewer.set_view_options()
         else:
             self.viewer = easy_viewer
+       
         self.annotation_client = annotation_client
         self.extensions = {}
 
-        self.key_bindings = copy.copy(default_key_bindings)
+        self._key_bindings = copy(default_key_bindings)
         self.extension_layers = {}
+
+        self._watched_segmentation_layer = None
+        self._selected_segments = frozenset()
+        self.viewer.shared_state.add_changed_callback(
+            lambda: self.viewer.defer_callback(self.on_selection_change))
 
         if global_delete is True:
             self.initialize_delete_action()
@@ -330,6 +324,9 @@ class AnnotationManager( ):
         if global_reload is True:
             self.initialize_reload_action()
 
+    @property
+    def key_bindings(self):
+        return copy(self._key_bindings)
 
     def initialize_delete_action(self, delete_binding=None):
         if delete_binding == None:
@@ -388,9 +385,10 @@ class AnnotationManager( ):
         self.viewer.add_image_layer(layer_name, image_source)
 
 
-    def add_segmentation_layer(self, layer_name, seg_source):
-        self.viewer.add_segmentation_layer(layer_name, seg_source)
-
+    def add_segmentation_layer(self, layer_name, segmentation_source, watched=False):
+        self.viewer.add_segmentation_layer(layer_name, segmentation_source)
+        if watched:
+            self._watched_segmentation_layer = layer_name
 
     def add_annotation_layer(self, layer_name=None, layer_color=None):
         self.viewer.add_annotation_layer(layer_name, layer_color)
@@ -415,11 +413,7 @@ class AnnotationManager( ):
 
         for method_name, key_command in bindings.items():
             self._add_bound_action(key_command, bound_methods[method_name], method_name)
-            # self.viewer._add_action(method_name,
-            #                        key_command,
-            #                        bound_methods[method_name])
-            print("added {}".format(method_name))
-            # self.key_bindings.append(key_command)
+            #print("added {}".format(method_name))
 
         if issubclass(ExtensionClass, AnnotationExtensionBase):
             if self.extensions[extension_name].db_tables == 'MUST_BE_CONFIGURED':
@@ -539,3 +533,20 @@ class AnnotationManager( ):
             if issubclass(type(ext_class), AnnotationExtensionBase):
                 ext_class._reload_all_annotations()
         self.viewer.update_message('Reloaded all annotations')
+
+    @property
+    def watched_segmentation_layer(self):
+        return copy(self._watched_segmentation_layer)
+
+    def on_selection_change(self):
+        if self.watched_segmentation_layer in self.viewer.layer_names:
+            curr_segments = self.viewer.state.layers[self.watched_segmentation_layer].segments
+            if curr_segments != self._selected_segments:
+                added_ids = list(curr_segments.difference(self._selected_segments))
+                removed_ids = list(self._selected_segments.difference(curr_segments))
+                for _,ext in self.extensions.items():
+                    try:
+                        ext._on_selection_change(added_ids, removed_ids)
+                    except:
+                        continue
+                self._selected_segments = curr_segments

@@ -283,3 +283,7 @@ class AnnotationExtensionBase(ExtensionBase):
                     all_ngl_ids.append(ngl_id)
         for ngl_id in all_ngl_ids:
             self.linked_annotations[ngl_id] = all_ngl_ids
+
+    def _on_selection_change(self, new_oids, removed_oids):
+        print('New: {} | Removed: {}\n--------\n'.format(new_oids, removed_oids))
+        return
