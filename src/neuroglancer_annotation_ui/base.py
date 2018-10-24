@@ -384,7 +384,7 @@ class AnnotationManager( ):
     def add_image_layer(self, layer_name, image_source):
         self.viewer.add_image_layer(layer_name, image_source)
 
-
+        
     def add_segmentation_layer(self, layer_name, segmentation_source, watched=False):
         self.viewer.add_segmentation_layer(layer_name, segmentation_source)
         if watched:

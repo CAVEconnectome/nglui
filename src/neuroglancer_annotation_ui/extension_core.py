@@ -121,7 +121,12 @@ class AnnotationExtensionBase(ExtensionBase):
 
         self.annotation_df = DataFrame(columns=['ngl_id',
                                                 'layer',
-                                                'anno_id'])
+                                                'anno_id',
+                                                ])
+        self._watched_annotations = dict()
+        self._watched_ngl_ids = set()
+        self.viewer.shared_state.add_changed_callback(
+            lambda: self.viewer.defer_callback(self.check_watched_annotations))
 
         # Which point (in the PointHolder names) goes to which layer
         self.point_layer_dict = dict()
@@ -132,6 +137,62 @@ class AnnotationExtensionBase(ExtensionBase):
         self.points = PointHolder(viewer=easy_viewer, pt_types=None)
 
         self.linked_annotations = dict()
+
+    def check_watched_annotations(self):
+        new_annos = list()
+        changed_annos = list()
+        curr_ngl_ids = set()
+        for ln in self.allowed_layers:
+            curr_annotations = self.viewer.state.layers[ln].annotations
+            for anno in curr_annotations:
+                curr_ngl_ids.add(anno.id)
+                old_anno = self._watched_annotations.get(anno.id, None)
+                if old_anno == None:
+                    new_annos.append((ln, anno))
+                else:
+                    anno_dict = anno.to_json()
+                    for k, v in old_anno.items():
+                        if anno_dict.get(k, None) != v:
+                            changed_annos.append( (ln,anno) )
+                            break
+
+        removed_ids = self._watched_ngl_ids.difference(curr_ngl_ids)
+        for ngl_id in removed_ids:
+            del self._watched_annotations[ngl_id]
+        self._watched_ngl_ids = curr_ngl_ids
+
+        if len(new_annos)+len(changed_annos)+len(removed_ids)>0:
+            self._on_changed_annotations(new_annos,changed_annos, removed_ids)
+
+    def _on_changed_annotations(self, new_annos, changed_annos, removed_ids):
+        '''
+            new_annos : list of (layer_name, annotation)
+            changed_annos : list of (layer_name, annotation)
+            removed_ids : set of ngl_ids
+        '''
+        print('New annotations: {}\n'
+              'Changed annotations: {}\n'
+              'Removed Annotations: {}'.format(new_annos,changed_annos, removed_ids))
+        for row in new_annos:
+            self._update_watched_annotations(row[1])
+        for row in changed_annos:
+            self._update_watched_annotations(row[1])
+        return
+
+
+    def _update_watched_annotations(self, annotation):
+        if annotation.type == 'point':
+            self._watched_annotations[annotation.id] = {'point':annotation.point.tolist(),
+                                                        'description':annotation.description}
+        elif annotation.type == 'line' or annotation.type == 'axis_aligned_bounding_box':
+            self._watched_annotations[annotation.id] = {'pointA':annotation.pointA.tolist(),
+                                                        'pointB':annotation.pointB.tolist(),
+                                                        'description':annotation.description}
+        elif annotation.type == 'ellipsoid':
+            self._watched_annotations[annotation.id] = {'center':annotation.center.tolist(),
+                                                        'radii':annotation.radii.tolist(),
+                                                        'description':annotation.description}
+
 
     @classmethod
     def set_db_tables(cls, class_name, db_tables):
@@ -238,6 +299,7 @@ class AnnotationExtensionBase(ExtensionBase):
         self.viewer.update_description(viewer_ids, id_description)
         self._update_map_id(viewer_ids, id_description)
 
+
     def _update_annotation(self, ngl_id):
         self.viewer.update_message('No update function is configured for this extension')
 
@@ -287,3 +349,6 @@ class AnnotationExtensionBase(ExtensionBase):
     def _on_selection_change(self, new_oids, removed_oids):
         print('New: {} | Removed: {}\n--------\n'.format(new_oids, removed_oids))
         return
+
+    # def _annotation_watcher(self):
+    #     self.allowed_layers
