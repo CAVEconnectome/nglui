@@ -10,16 +10,20 @@ mod = Blueprint('nglaunch', 'nglaunch', url_prefix='/annotationui')
 
 
 __version__ = "0.0.6"
+
+
 def setup_manager(d, client=None):
     manager = AnnotationManager(annotation_client=client)
-    manager.add_image_layer('img', 'precomputed://'+ d['image_source'])
+    manager.add_image_layer('img', 'precomputed://' + d['image_source'])
     manager.add_segmentation_layer('seg',
-                                   'precomputed://'+ d['flat_segmentation_source'])
+                                   'precomputed://' + d['flat_segmentation_source'])
     return manager
+
 
 @mod.route('/version')
 def version():
-    return "Neurglancer Annotation UI Server -- version {} ".format(__version__)
+    return "Neurglancer Annotation UI Server -- version {} \n {}".format(__version__, current_app.config)
+
 
 @mod.route('/', methods=['GET', 'POST'])
 def index():
