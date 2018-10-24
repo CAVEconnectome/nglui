@@ -19,6 +19,6 @@ def create_app(test_config=None):
     else:
         app.config.update(test_config)
     # register blueprints
-    app.register_blueprint(mod, url_prefix='/')
+    app.register_blueprint(mod)
 
     return app

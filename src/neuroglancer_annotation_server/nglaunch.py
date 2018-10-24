@@ -6,7 +6,7 @@ import os
 from .forms import NgDataSetExtensionForm
 from urllib.parse import urlparse
 from neuroglancer_annotation_ui import get_extensions, extension_mapping
-mod = Blueprint('nglaunch', 'nglaunch')
+mod = Blueprint('nglaunch', 'nglaunch', url_prefix='/annotationui')
 
 
 __version__ = "0.0.3"
