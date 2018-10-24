@@ -9,7 +9,7 @@ from neuroglancer_annotation_ui import get_extensions, extension_mapping
 mod = Blueprint('nglaunch', 'nglaunch', url_prefix='/annotationui')
 
 
-__version__ = "0.0.6"
+__version__ = "0.0.7"
 
 
 def setup_manager(d, client=None):
