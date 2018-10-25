@@ -67,11 +67,13 @@ class OneShotHolder(object):
 
 
 class PointHolder(object):
-    def __init__(self, viewer, pt_types=None, trigger=None, layer_dict=None):
+    def __init__(self, viewer, pt_types=None, trigger=None, layer_dict=None, message_dict={}):
         if pt_types is not None:
             self.points = {k:None for k in pt_types}
             self.trigger = trigger
             self.layer_dict = layer_dict
+            self.message_dict = message_dict
+
             self.viewer = viewer
             if trigger not in pt_types:
                 raise Exception
@@ -80,11 +82,10 @@ class PointHolder(object):
             self.trigger = ''
             self.layer_dict = {}
             self.viewer = viewer 
-
+            self.message_dict = {}
 
     def __call__(self):
         return self.points
-
 
     def reset_points( self, pts_to_reset=None):
         if pts_to_reset is None:
@@ -109,7 +110,7 @@ class PointHolder(object):
                 return False
 
         if message_type is None:
-            message_type = 'annotation'
+            message_type = self.message_dict.get(pt_type, 'annotation')
 
         if self.points[pt_type] is None:
             message = 'Assigned {}'.format(message_type)
@@ -123,6 +124,38 @@ class PointHolder(object):
             self.viewer.add_annotation(self.layer_dict[pt_type], [self.points[pt_type]])
         self.viewer.update_message(message)
         return pt_type==self.trigger
+
+
+class OrderedPointHolder(PointHolder):
+    def __init__(self, viewer, pt_type_dict=None, trigger=None, layer_dict=None, message_dict={}):
+        pt_types = list(pt_type_dict.values())
+        super(OrderedPointHolder, self).__init__(viewer, pt_types, trigger, layer_dict, message_dict)
+        self.pt_type_dict = pt_type_dict
+        self._next_point_type = 0
+
+    def _reset_point_type(self):
+        self._next_point_type = 0
+
+    def _increment_point_type(self):
+        self._next_point_type = (self._next_point_type + 1) % len(self.pt_type_dict)
+
+    def add_next_point( self, pos, message_type=None):
+        anno_done = self.update_point(pos,
+                                      self.pt_type_dict[self._next_point_type],
+                                      message_type=message_type,
+                                      )
+        self._increment_point_type()
+        return anno_done
+
+    def reset_points(self):
+        pts_to_reset = list(self.points.keys())
+        for pt_type in pts_to_reset:
+            if (self.points[pt_type] is not None) & (pt_type is not self.trigger):
+                self.viewer.remove_annotation(self.layer_dict[pt_type],
+                                              self.points[pt_type].id
+                                              )
+            self.points[pt_type] = None
+        self._reset_point_type()    
 
 
 class ExtensionBase():
@@ -349,9 +382,24 @@ class AnnotationExtensionStateResponsive(AnnotationExtensionBase):
         self._watched_annotations = dict()
         self._watched_ngl_ids = set()
         self.viewer.shared_state.add_changed_callback(
-            lambda: self.viewer.defer_callback(self.check_watched_annotations))
+            lambda: self.viewer.defer_callback(self._check_watched_annotations))
 
-    def check_watched_annotations(self):
+
+    def on_changed_annotations(self, new_annos, changed_annos, removed_ids):
+        '''
+            This is the function deployed when the annotation state changes. 
+            new_annos : list of (layer_name, annotation)
+            changed_annos : list of (layer_name, annotation)
+            removed_ids : set of ngl_ids
+        '''
+        print('\rNew annotations: {}\n'
+              '\rChanged annotations: {}\n'
+              '\rRemoved Annotations: {}'.format(new_annos,changed_annos, removed_ids)
+              )
+        return        
+
+
+    def _check_watched_annotations(self):
         new_annos = list()
         changed_annos = list()
         curr_ngl_ids = set()
@@ -379,25 +427,15 @@ class AnnotationExtensionStateResponsive(AnnotationExtensionBase):
         self._watched_ngl_ids = curr_ngl_ids
 
         if len(new_annos)+len(changed_annos)+len(removed_ids)>0:
+            # Do a thing
             self.on_changed_annotations(new_annos, changed_annos, removed_ids)
+            
+            # Bookkeeping
             for row in new_annos + changed_annos:
                 self._update_watched_annotations(row[1])
             for ngl_id in removed_ids:
-                del self._watched_annotations[ngl_id]
+                self._watched_annotations.pop(ngl_id, None)
             self.viewer._expected_ids.difference(removed_ids)
-
-
-    def on_changed_annotations(self, new_annos, changed_annos, removed_ids):
-        '''
-            This is the function deployed when the annotation state changes. 
-            new_annos : list of (layer_name, annotation)
-            changed_annos : list of (layer_name, annotation)
-            removed_ids : set of ngl_ids
-        '''
-        print('\rNew annotations: {}\n'
-              '\rChanged annotations: {}\n'
-              '\rRemoved Annotations: {}'.format(new_annos,changed_annos, removed_ids), flush=True)
-        return        
 
 
     def _update_watched_annotations(self, annotation):

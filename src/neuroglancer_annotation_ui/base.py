@@ -22,7 +22,7 @@ class EasyViewer( neuroglancer.Viewer ):
     """
     Extends the neuroglancer Viewer object to make simple operations simple.
     """
-    def __init__(self, allow_responsive_annotations=False):
+    def __init__(self):
         super(EasyViewer, self).__init__()
         self._expected_ids = OneShotHolder()
 

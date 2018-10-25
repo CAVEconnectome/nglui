@@ -19,7 +19,6 @@ if __name__ == '__main__':
     manager = AnnotationManager()
     manager.add_image_layer(layer_name='img',image_source=img_src)
     manager.add_segmentation_layer(layer_name='seg',segmentation_source=seg_src, watched=True)
-    manager.add_annotation_layer(layer_name='anno')
     manager.add_extension(extension_name='synapse_ai_manual',
                           ExtensionClass=extension_mapping['synapse_ai_manual']) 
 
