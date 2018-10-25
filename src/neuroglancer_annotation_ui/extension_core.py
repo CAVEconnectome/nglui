@@ -123,6 +123,8 @@ class AnnotationExtensionBase(ExtensionBase):
                                                 'layer',
                                                 'anno_id',
                                                 ])
+
+        # Elements for responding to state changes.
         self._watched_annotations = dict()
         self._watched_ngl_ids = set()
         self.viewer.shared_state.add_changed_callback(
@@ -137,59 +139,6 @@ class AnnotationExtensionBase(ExtensionBase):
         self.points = PointHolder(viewer=easy_viewer, pt_types=None)
 
         self.linked_annotations = dict()
-
-    def check_watched_annotations(self):
-        new_annos = list()
-        changed_annos = list()
-        curr_ngl_ids = set()
-        for ln in self._defined_layers():
-            curr_annotations = self.viewer.state.layers[ln].annotations
-            for anno in curr_annotations:
-                curr_ngl_ids.add(anno.id)
-                old_anno = self._watched_annotations.get(anno.id, None)
-                if old_anno == None:
-                    new_annos.append((ln, anno))
-                else:
-                    anno_dict = anno.to_json()
-                    for k, v in old_anno.items():
-                        if anno_dict.get(k, None) != v:
-                            changed_annos.append( (ln,anno) )
-                            break
-
-        removed_ids = self._watched_ngl_ids.difference(curr_ngl_ids)
-        self._watched_ngl_ids = curr_ngl_ids
-
-        if len(new_annos)+len(changed_annos)+len(removed_ids)>0:
-            self._on_changed_annotations(new_annos, changed_annos, removed_ids)
-
-    def _on_changed_annotations(self, new_annos, changed_annos, removed_ids):
-        '''
-            new_annos : list of (layer_name, annotation)
-            changed_annos : list of (layer_name, annotation)
-            removed_ids : set of ngl_ids
-        '''
-        print('New annotati∏ons: {}\n'
-              'Changed annotations: {}\n'
-              'Removed Annotations: {}'.format(new_annos,changed_annos, removed_ids))
-        for row in new_annos+changed_annos:
-            self._update_watched_annotations(row[1])
-        for ngl_id in removed_ids:
-            del self._watched_annotations[ngl_id]
-        return
-
-
-    def _update_watched_annotations(self, annotation):
-        if annotation.type == 'point':
-            self._watched_annotations[annotation.id] = {'point':annotation.point.tolist(),
-                                                        'description':annotation.description}
-        elif annotation.type == 'line' or annotation.type == 'axis_aligned_bounding_box':
-            self._watched_annotations[annotation.id] = {'pointA':annotation.pointA.tolist(),
-                                                        'pointB':annotation.pointB.tolist(),
-                                                        'description':annotation.description}
-        elif annotation.type == 'ellipsoid':
-            self._watched_annotations[annotation.id] = {'center':annotation.center.tolist(),
-                                                        'radii':annotation.radii.tolist(),
-                                                        'description':annotation.description}
 
 
     @classmethod
@@ -344,9 +293,62 @@ class AnnotationExtensionBase(ExtensionBase):
         for ngl_id in all_ngl_ids:
             self.linked_annotations[ngl_id] = all_ngl_ids
 
+
     def _on_selection_change(self, new_oids, removed_oids):
         print('New: {} | Removed: {}\n--------\n'.format(new_oids, removed_oids))
         return
 
-    # def _annotation_watcher(self):
-    #     self.allowed_layers
+    def check_watched_annotations(self):
+        new_annos = list()
+        changed_annos = list()
+        curr_ngl_ids = set()
+        for ln in self._defined_layers():
+            curr_annotations = self.viewer.state.layers[ln].annotations
+            for anno in curr_annotations:
+                curr_ngl_ids.add(anno.id)
+                old_anno = self._watched_annotations.get(anno.id, None)
+                if old_anno == None:
+                    new_annos.append((ln, anno))
+                else:
+                    anno_dict = anno.to_json()
+                    for k, v in old_anno.items():
+                        if anno_dict.get(k, None) != v:
+                            changed_annos.append( (ln,anno) )
+                            break
+
+        removed_ids = self._watched_ngl_ids.difference(curr_ngl_ids)
+        self._watched_ngl_ids = curr_ngl_ids
+
+        if len(new_annos)+len(changed_annos)+len(removed_ids)>0:
+            self.on_changed_annotations(new_annos, changed_annos, removed_ids)
+            for row in new_annos + changed_annos:
+                self._update_watched_annotations(row[1])
+            for ngl_id in removed_ids:
+                del self._watched_annotations[ngl_id]
+
+
+    def on_changed_annotations(self, new_annos, changed_annos, removed_ids):
+        '''
+            This is the function deployed when the annotation state changes. 
+            new_annos : list of (layer_name, annotation)
+            changed_annos : list of (layer_name, annotation)
+            removed_ids : set of ngl_ids
+        '''
+        # print('New annotations: {}\n'
+        #       'Changed annotations: {}\n'
+        #       'Removed Annotations: {}'.format(new_annos,changed_annos, removed_ids))
+        return        
+
+
+    def _update_watched_annotations(self, annotation):
+        if annotation.type == 'point':
+            self._watched_annotations[annotation.id] = {'point':annotation.point.tolist(),
+                                                        'description':annotation.description}
+        elif annotation.type == 'line' or annotation.type == 'axis_aligned_bounding_box':
+            self._watched_annotations[annotation.id] = {'pointA':annotation.pointA.tolist(),
+                                                        'pointB':annotation.pointB.tolist(),
+                                                        'description':annotation.description}
+        elif annotation.type == 'ellipsoid':
+            self._watched_annotations[annotation.id] = {'center':annotation.center.tolist(),
+                                                        'radii':annotation.radii.tolist(),
+                                                        'description':annotation.description}
