@@ -23,7 +23,50 @@ def check_layer(allowed_layer_key=None):
     return specific_layer_wrapper
 
 
-class PointHolder():
+class OneShotHolder(object):
+    # 'Class that's like a set, but when an object is in it, it gets removed.
+    # If it is not activated when initialized, 
+    def __init__(self, active=False, things=[]):
+        self._things = set(things)
+        self._active = active
+
+    def make_active(self):
+        self._active = True
+
+    def make_inactive(self):
+        self._active = False
+
+    def add(self, val):
+        if self._active:
+            self._things.add(val)
+
+    def remove(self, val):
+        if self._active:
+            self._things.remove(val)
+
+    def difference(self, val_set):
+        if self._active:
+            self._things.difference_update(val_set)
+
+    def __str__(self):
+        return str(self._things)
+
+    def __iter__(self):
+        return self._things.__iter__()
+
+    def __repr__(self):
+        return self._things
+
+    def __contains__(self, val):
+        if self._active:
+            if val in self._things:
+                print('About to remove {}\n'.format(val))
+                self._things.remove(val)
+                return True
+        return False
+
+
+class PointHolder(object):
     def __init__(self, viewer, pt_types=None, trigger=None, layer_dict=None):
         if pt_types is not None:
             self.points = {k:None for k in pt_types}
@@ -41,6 +84,7 @@ class PointHolder():
 
     def __call__(self):
         return self.points
+
 
     def reset_points( self, pts_to_reset=None):
         if pts_to_reset is None:
@@ -123,12 +167,6 @@ class AnnotationExtensionBase(ExtensionBase):
                                                 'layer',
                                                 'anno_id',
                                                 ])
-
-        # Elements for responding to state changes.
-        self._watched_annotations = dict()
-        self._watched_ngl_ids = set()
-        self.viewer.shared_state.add_changed_callback(
-            lambda: self.viewer.defer_callback(self.check_watched_annotations))
 
         # Which point (in the PointHolder names) goes to which layer
         self.point_layer_dict = dict()
@@ -298,22 +336,43 @@ class AnnotationExtensionBase(ExtensionBase):
         print('New: {} | Removed: {}\n--------\n'.format(new_oids, removed_oids))
         return
 
+
+class AnnotationExtensionStateResponsive(AnnotationExtensionBase):
+    """
+        Adds machinery to watch state changes in the managed annotation layers.
+    """
+    def __init__(self, easy_viewer, annotation_client=None):
+        super(AnnotationExtensionStateResponsive, self).__init__(easy_viewer, annotation_client)
+
+        # Elements for responding to state changes.
+        self.viewer.track_expected_annotations()
+        self._watched_annotations = dict()
+        self._watched_ngl_ids = set()
+        self.viewer.shared_state.add_changed_callback(
+            lambda: self.viewer.defer_callback(self.check_watched_annotations))
+
     def check_watched_annotations(self):
         new_annos = list()
         changed_annos = list()
         curr_ngl_ids = set()
         for ln in self._defined_layers():
             curr_annotations = self.viewer.state.layers[ln].annotations
+            print('\rB: {} | {}'.format([anno.id for anno in curr_annotations], self.viewer._expected_ids._things))
             for anno in curr_annotations:
                 curr_ngl_ids.add(anno.id)
-                old_anno = self._watched_annotations.get(anno.id, None)
-                if old_anno == None:
-                    new_annos.append((ln, anno))
+                if anno.id in self.viewer._expected_ids:
+                    self._update_watched_annotations(anno)
+                    print('\rA: {} | {}'.format(anno.id, self.viewer._expected_ids._things))
+                    continue
                 else:
-                    anno_dict = anno.to_json()
-                    for k, v in old_anno.items():
-                        if anno_dict.get(k, None) != v:
-                            changed_annos.append( (ln,anno) )
+                    old_anno = self._watched_annotations.get(anno.id, None)
+                    if old_anno == None:
+                        new_annos.append((ln, anno))
+                    else:
+                        anno_dict = anno.to_json()
+                        for k, v in old_anno.items():
+                            if anno_dict.get(k, None) != v:
+                                changed_annos.append( (ln, anno) )
                             break
 
         removed_ids = self._watched_ngl_ids.difference(curr_ngl_ids)
@@ -325,6 +384,7 @@ class AnnotationExtensionBase(ExtensionBase):
                 self._update_watched_annotations(row[1])
             for ngl_id in removed_ids:
                 del self._watched_annotations[ngl_id]
+            self.viewer._expected_ids.difference(removed_ids)
 
 
     def on_changed_annotations(self, new_annos, changed_annos, removed_ids):
@@ -334,9 +394,9 @@ class AnnotationExtensionBase(ExtensionBase):
             changed_annos : list of (layer_name, annotation)
             removed_ids : set of ngl_ids
         '''
-        # print('New annotations: {}\n'
-        #       'Changed annotations: {}\n'
-        #       'Removed Annotations: {}'.format(new_annos,changed_annos, removed_ids))
+        print('\rNew annotations: {}\n'
+              '\rChanged annotations: {}\n'
+              '\rRemoved Annotations: {}'.format(new_annos,changed_annos, removed_ids), flush=True)
         return        
 
 

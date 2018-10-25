@@ -1,8 +1,13 @@
-from neuroglancer_annotation_ui.extension_core import check_layer, AnnotationExtensionBase, PointHolder
+from neuroglancer_annotation_ui.extension_core import check_layer, AnnotationExtensionStateResponsive, PointHolder
 from neuroglancer_annotation_ui.ngl_rendering import SchemaRenderer
 from neuroglancer_annotation_ui.annotation import point_annotation, \
                                                   line_annotation
 from emannotationschemas.synapse import SynapseSchema
+
+# This should eventually go along in renderrule, I think.
+point_type_order = {0:'pre_pt',
+                    1:'post_pt',
+                    2:'ctr_pt'}
 
 class SynapseSchemaWithRule(SynapseSchema):
     @staticmethod
@@ -13,7 +18,7 @@ class SynapseSchemaWithRule(SynapseSchema):
                 }
 
 
-class SynapseExtension(AnnotationExtensionBase):
+class SynapseExtension(AnnotationExtensionStateResponsive):
     def __init__(self, easy_viewer, annotation_client=None):
         super(SynapseExtension, self).__init__(easy_viewer, annotation_client)
         self.ngl_renderer = {'synapse':SchemaRenderer(SynapseSchemaWithRule)}
@@ -39,6 +44,14 @@ class SynapseExtension(AnnotationExtensionBase):
                                   trigger='ctr_pt',
                                   layer_dict=self.point_layer_dict)
 
+        self.next_point_type = 0
+
+    def _reset_point_type(self):
+        self.next_point_type = 0
+
+    def _increment_point_type(self):
+        self.next_point_type = (self.next_point_type+1) % 3
+
     @staticmethod
     def _default_key_bindings():
         bindings = {
@@ -56,6 +69,22 @@ class SynapseExtension(AnnotationExtensionBase):
         for layer in self._defined_layers():
             self.viewer.add_annotation_layer(layer,
                                              color=self.color_map[layer])
+
+    # def on_changed_annotations(self, new_annos, changed_annos, removed_ids):
+    #     '''
+    #         This is the function deployed when the annotation state changes. 
+    #         new_annos : list of (layer_name, annotation)
+    #         changed_annos : list of (layer_name, annotation)
+    #         removed_ids : set of ngl_ids
+    #     '''
+    #     for row in new_annos:
+    #         if row[1].id in self._expected_ids:
+
+    #         if row[0] in self.allowed_layers:
+    #             if row[1].type=='point':
+    #                 self.update_synapse_points(point_type_order[self.next_point_type],
+    #                                            row[1].point)
+
 
     @check_layer()
     def update_presynaptic_point(self, s):
