@@ -142,7 +142,7 @@ class AnnotationExtensionBase(ExtensionBase):
         new_annos = list()
         changed_annos = list()
         curr_ngl_ids = set()
-        for ln in self.allowed_layers:
+        for ln in self._defined_layers():
             curr_annotations = self.viewer.state.layers[ln].annotations
             for anno in curr_annotations:
                 curr_ngl_ids.add(anno.id)
@@ -157,12 +157,10 @@ class AnnotationExtensionBase(ExtensionBase):
                             break
 
         removed_ids = self._watched_ngl_ids.difference(curr_ngl_ids)
-        for ngl_id in removed_ids:
-            del self._watched_annotations[ngl_id]
         self._watched_ngl_ids = curr_ngl_ids
 
         if len(new_annos)+len(changed_annos)+len(removed_ids)>0:
-            self._on_changed_annotations(new_annos,changed_annos, removed_ids)
+            self._on_changed_annotations(new_annos, changed_annos, removed_ids)
 
     def _on_changed_annotations(self, new_annos, changed_annos, removed_ids):
         '''
@@ -170,13 +168,13 @@ class AnnotationExtensionBase(ExtensionBase):
             changed_annos : list of (layer_name, annotation)
             removed_ids : set of ngl_ids
         '''
-        print('New annotations: {}\n'
+        print('New annotati∏ons: {}\n'
               'Changed annotations: {}\n'
               'Removed Annotations: {}'.format(new_annos,changed_annos, removed_ids))
-        for row in new_annos:
+        for row in new_annos+changed_annos:
             self._update_watched_annotations(row[1])
-        for row in changed_annos:
-            self._update_watched_annotations(row[1])
+        for ngl_id in removed_ids:
+            del self._watched_annotations[ngl_id]
         return
 
 
