@@ -66,7 +66,7 @@ class SynapseExtension(AnnotationExtensionStateResponsive):
                                          layer_dict=self.point_layer_dict,
                                          message_dict=MESSAGE_DICT)
         self.create_synapse_layers()
-        # TODO Select layer and activate node tool
+        self.viewer.set_selected_layer(SYN_LAYER, tool='annotatePoint')
 
     @staticmethod
     def _default_key_bindings():

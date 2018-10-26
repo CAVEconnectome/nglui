@@ -190,11 +190,12 @@ class EasyViewer( neuroglancer.Viewer ):
                 s.status_messages['status'] = message
 
 
-    def set_selected_layer(self, layer_name):
+    def set_selected_layer(self, layer_name, tool=None):
         if layer_name in self.layer_names:
             with self.txn() as s:
                 s._json_data['selectedLayer'] = OrderedDict(layer=layer_name,visible=True)
-
+                if tool is not None:
+                    s.layers[layer_name]._json_data['tool'] = tool 
 
     def get_selected_layer( self ):
         state_json = self.state.to_json()

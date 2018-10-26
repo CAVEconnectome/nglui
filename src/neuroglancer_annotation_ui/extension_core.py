@@ -60,7 +60,6 @@ class OneShotHolder(object):
     def __contains__(self, val):
         if self._active:
             if val in self._things:
-                print('About to remove {}\n'.format(val))
                 self._things.remove(val)
                 return True
         return False
@@ -405,12 +404,10 @@ class AnnotationExtensionStateResponsive(AnnotationExtensionBase):
         curr_ngl_ids = set()
         for ln in self._defined_layers():
             curr_annotations = self.viewer.state.layers[ln].annotations
-            print('\rB: {} | {}'.format([anno.id for anno in curr_annotations], self.viewer._expected_ids._things))
             for anno in curr_annotations:
                 curr_ngl_ids.add(anno.id)
                 if anno.id in self.viewer._expected_ids:
                     self._update_watched_annotations(anno)
-                    print('\rA: {} | {}'.format(anno.id, self.viewer._expected_ids._things))
                     continue
                 else:
                     old_anno = self._watched_annotations.get(anno.id, None)
