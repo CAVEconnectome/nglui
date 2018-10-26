@@ -1,5 +1,4 @@
 import sys
-sys.path.append('./src')
 from neuroglancer_annotation_ui import extension_mapping
 from neuroglancer_annotation_ui.base import AnnotationManager, stop_ngl_server
 from annotationframeworkclient.annotationengine import AnnotationClient

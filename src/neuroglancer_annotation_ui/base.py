@@ -219,7 +219,11 @@ class EasyViewer( neuroglancer.Viewer ):
     def get_selected_annotation_id( self ):
         layer_name = self.get_selected_layer()
         try:
-            aid = self.state.layers[layer_name]._json_data['selectedAnnotation']
+            aid_data = self.state.layers[layer_name]._json_data['selectedAnnotation']
+            if isinstance(aid_data, OrderedDict):
+                aid = aid_data['id']
+            else:
+                aid = aid
         except:
             aid = None
         return aid
@@ -484,6 +488,7 @@ class AnnotationManager( ):
         if delete_confirmed:
             bound_extension = self.extensions[ self.extension_layers[selected_layer] ]
             try:
+                print(ngl_id)
                 bound_extension._delete_annotation( ngl_id )
             except Exception as err:
                print(err)

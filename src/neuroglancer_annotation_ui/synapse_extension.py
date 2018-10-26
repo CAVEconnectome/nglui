@@ -112,8 +112,7 @@ class SynapseExtension(AnnotationExtensionStateResponsive):
 
     def _cancel_annotation( self ):
         self.points.reset_points()
-        self._reset_point_type()
-        self.viewer.update_message('Canceled annotation! No active annotations.')
+        self.viewer.update_message('Canceled annotation! Cntl-click to set a new presynaptic point')
 
 
     def format_synapse_data(self, points):
