@@ -26,7 +26,7 @@ def check_layer(allowed_layer_key=None):
 class OneShotHolder(object):
     # 'Class that's like a set, but when an object is in it, it gets removed.
     # If it is not activated when initialized, can be turned on when needed.
-    
+
     def __init__(self, active=False, things=[]):
         self._things = set(things)
         self._active = active
@@ -179,7 +179,16 @@ class ExtensionBase():
         return []
 
     @check_layer()
-    def _delete_annotation( ngl_id ):
+    def _delete_annotation(self, ngl_id ):
+    # Function to be called when an annotation is set to be deleted
+        pass
+
+    def _update_annotation(self, ngl_id):
+    # Function to be called on a generic update call
+        pass
+
+    def _on_selection_change(added_ids, removed_ids):
+    # Function to be called when the set of selected objects is changed.   
         pass
 
 

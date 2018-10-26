@@ -4,7 +4,7 @@ from neuroglancer_annotation_ui import annotation
 from .extension_core import AnnotationExtensionBase, OneShotHolder
 from inspect import getmembers, ismethod
 from numpy import issubdtype, integer
-from copy import copy
+import copy 
 import json
 import os
 
@@ -160,7 +160,7 @@ class EasyViewer( neuroglancer.Viewer ):
                     for anno in s.layers[layer_name].annotations:
                         if anno.id in id_list:
                             if ignore:
-                                self._expected_ids.add()
+                                self._expected_ids.add(anno.id)
                             if anno.description is None:
                                 anno.description = new_description
                             else:
@@ -168,8 +168,9 @@ class EasyViewer( neuroglancer.Viewer ):
                             id_list.remove(anno.id)
                             if len(id_list)==0:
                                 break                            
-        except:
-            self.update_message('Could not update annotations!')
+        except Exception as e:
+            print(e)
+            self.update_message('Could not update descriptions!')
 
 
     @property
@@ -311,7 +312,7 @@ class AnnotationManager( ):
         self.annotation_client = annotation_client
         self.extensions = {}
 
-        self._key_bindings = copy(default_key_bindings)
+        self._key_bindings = copy.copy(default_key_bindings)
         self.extension_layers = {}
 
         self._watched_segmentation_layer = None
@@ -333,7 +334,7 @@ class AnnotationManager( ):
 
     @property
     def key_bindings(self):
-        return copy(self._key_bindings)
+        return copy.copy(self._key_bindings)
 
     def initialize_delete_action(self, delete_binding=None):
         if delete_binding == None:
@@ -484,7 +485,6 @@ class AnnotationManager( ):
                 self.viewer.update_message('Nothing to delete! No annotation selected or targeted!')
                 return
 
-
         if delete_confirmed:
             bound_extension = self.extensions[ self.extension_layers[selected_layer] ]
             try:
@@ -543,8 +543,8 @@ class AnnotationManager( ):
 
     @property
     def watched_segmentation_layer(self):
-        return copy(self._watched_segmentation_layer)
-
+        return copy.copy(self._watched_segmentation_layer)
+    
     def on_selection_change(self):
         if self.watched_segmentation_layer in self.viewer.layer_names:
             curr_segments = self.viewer.state.layers[self.watched_segmentation_layer].segments
