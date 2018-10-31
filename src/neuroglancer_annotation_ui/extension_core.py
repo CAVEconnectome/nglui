@@ -25,7 +25,7 @@ def check_layer(allowed_layer_key=None):
 
 class OneShotHolder(object):
     # 'Class that's like a set, but when an object is in it, it gets removed.
-    # If it is not activated when initialized, can be turned on when needed.
+    #  Can be turned on or off when needed.
 
     def __init__(self, active=False, things=[]):
         self._things = set(things)

@@ -75,7 +75,7 @@ class EasyViewer( neuroglancer.Viewer ):
                 source=image_source)
 
 
-    def add_annotation_layer(self, layer_name=None, color=None ):
+    def add_annotation_layer(self, layer_name=None, color=None, linked_segmentation_layer=None):
         """Add annotation layer to the viewer instance.
 
         Attributes:
@@ -87,8 +87,9 @@ class EasyViewer( neuroglancer.Viewer ):
             return
 
         with self.txn() as s:
+            new_layer = neuroglancer.AnnotationLayer(linked_segmentation_layer=linked_segmentation_layer)    
             s.layers.append( name=layer_name,
-                             layer=neuroglancer.AnnotationLayer() )
+                             layer=new_layer )
             if color is not None:
                 s.layers[layer_name].annotationColor = color
 
@@ -138,18 +139,28 @@ class EasyViewer( neuroglancer.Viewer ):
             aids = [aids]
         try:
             with self.txn() as s:
-                for ind, anno in enumerate( s.layers[layer_name].annotations ):
+                el = len(s.layers[layer_name].annotations)
+                for anno in reversed( s.layers[layer_name].annotations ):
+                    el -= 1
                     if anno.id in aids:
                         aids.remove(anno.id)
                         if ignore:
                             self._expected_ids.add(anno.id)
-                        s.layers[layer_name].annotations.pop(ind)
+                        s.layers[layer_name].annotations.pop(el)
                         if len(aids) == 0:
                             break
-                else:
-                    raise Exception
-        except Exception:
+        except Exception as e:
             self.update_message('Could not remove annotation')
+
+    def remove_annotation_by_linked_oids(self, layer_names, oids_to_remove):
+        oids_to_remove = set(oids_to_remove)
+        with self.txn() as s:
+            for ln in layer_names:
+                el = len(s.layers[ln].annotations)
+                for anno in reversed( s.layers[ln].annotations ):
+                    el -= 1
+                    if oids_to_remove.issuperset(anno.segments):
+                        s.layers[ln].annotations.pop(el)
 
 
     def update_description(self, layer_id_dict, new_description, ignore=True):
@@ -398,8 +409,8 @@ class AnnotationManager( ):
         if watched:
             self._watched_segmentation_layer = layer_name
 
-    def add_annotation_layer(self, layer_name=None, layer_color=None):
-        self.viewer.add_annotation_layer(layer_name, layer_color)
+    def add_annotation_layer(self, layer_name=None, layer_color=None, linked_annotation_layer=None):
+        self.viewer.add_annotation_layer(layer_name, layer_color, linked_annotation_layer=linked_annotation_layer)
 
 
     def add_extension( self, extension_name, ExtensionClass, bindings=None ):
@@ -552,8 +563,9 @@ class AnnotationManager( ):
                 added_ids = list(curr_segments.difference(self._selected_segments))
                 removed_ids = list(self._selected_segments.difference(curr_segments))
                 for _,ext in self.extensions.items():
-                    try:
-                        ext._on_selection_change(added_ids, removed_ids)
-                    except:
-                        continue
+                    #try:
+                    ext._on_selection_change(added_ids, removed_ids)
+                    # except Exception as e:
+                    #     print(e)
+                    #     continue
                 self._selected_segments = curr_segments

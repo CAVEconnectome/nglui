@@ -41,19 +41,15 @@ COLOR_MAP = {SYN_LAYER: '#cccccc',
              POST_LAYER: '#00ffff'}
 
 
-class SynapseSchemaWithRule(SynapseSchema):
-    @staticmethod
-    def render_rule():
-        return {'line': {PRE_ANNO: [(PRE_PT, SYN_PT)],
-                         POST_ANNO: [(POST_PT, SYN_PT)]},
-                'point': {SYN_ANNO: [SYN_PT]}
-                }
-
+synapse_render_rule = {'line': {PRE_ANNO: [(PRE_PT, SYN_PT)],
+                                POST_ANNO: [(POST_PT, SYN_PT)]},
+                       'point': {SYN_ANNO: [SYN_PT]}
+                       }
 
 class SynapseExtension(AnnotationExtensionStateResponsive):
     def __init__(self, easy_viewer, annotation_client=None):
         super(SynapseExtension, self).__init__(easy_viewer, annotation_client)
-        self.ngl_renderer = {SYNAPSE_RENDERER: SchemaRenderer(SynapseSchemaWithRule)}
+        self.ngl_renderer = {SYNAPSE_RENDERER: SchemaRenderer(SynapseSchema, synapse_render_rule)}
         self.allowed_layers = [SYN_LAYER]
 
         self.color_map = COLOR_MAP
@@ -77,6 +73,11 @@ class SynapseExtension(AnnotationExtensionStateResponsive):
     @staticmethod
     def _defined_layers():
         return [PRE_LAYER, POST_LAYER, SYN_LAYER]
+
+    @staticmethod
+    def _schema_map():
+        # Dict mapping output type to schema
+        return {'synapse': 'synapse_schema'}
 
     def create_synapse_layers(self):
         for layer in self._defined_layers():
