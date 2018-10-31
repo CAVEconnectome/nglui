@@ -113,8 +113,8 @@ def SynapseGetterFactory(config):
             if len(added_ids) > 0:
                 new_pre_annos = self._get_presynaptic_synapses(added_ids)
                 new_post_annos = self._get_postsynaptic_synapses(added_ids)
-                self.viewer.add_annotation(PRE_LAYER, new_pre_annos)
-                self.viewer.add_annotation(POST_LAYER, new_post_annos)
+                self.viewer.add_annotation_one_shot({PRE_LAYER: new_pre_annos,
+                                                     POST_LAYER: new_post_annos})
 
             if len(removed_ids)>0:
                 self._remove_synapse_annotations(removed_ids)
@@ -140,6 +140,6 @@ def SynapseGetterFactory(config):
             return annos
 
         def _remove_synapse_annotations( self, oids):
-            self.viewer.remove_annotation_by_linked_oids(self._defined_layers(), oids)
+            self.viewer.remove_annotation_by_linked_oids_one_shot(self._defined_layers(), oids)
 
     return SynapseGetterExtension

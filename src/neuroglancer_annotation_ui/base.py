@@ -114,6 +114,17 @@ class EasyViewer( neuroglancer.Viewer ):
         with self.txn() as s:
             s.layers = neuroglancer.viewer_state.Layers(new_layers)
 
+    def add_annotation_one_shot( self, ln_anno_dict, ignore=True):
+        '''
+        ln_anno_dict is a layer_name to annotation list dict.
+        '''
+        if ignore is True:
+            for ln, annos in ln_anno_dict.items():
+                for anno in annos:
+                    self._expected_ids.add(anno.id)
+        with self.txn() as s:
+            for ln, annos in ln_anno_dict.items():
+                s.layers[ln].annotations._data += annos
 
     def add_annotation(self, layer_name, annotation, color=None, ignore=True):
         """Add annotations to a viewer instance, the type is specified.
@@ -162,6 +173,16 @@ class EasyViewer( neuroglancer.Viewer ):
                     if oids_to_remove.issuperset(anno.segments):
                         s.layers[ln].annotations.pop(el)
 
+    def remove_annotation_by_linked_oids_one_shot(self, layer_names, oids):
+
+        oids_to_remove = set(oids)
+        new_layer_data = {}
+        for ln in layer_names:
+            new_layer_data[ln] = [a for a in self.state.layers[ln].annotations._data if not oids_to_remove.issuperset(a.segments)]
+
+        with self.txn() as s:
+            for ln, new_data in new_layer_data.items():
+                s.layers[ln].annotations._data = new_data
 
     def update_description(self, layer_id_dict, new_description, ignore=True):
         layer_id_dict = copy.deepcopy(layer_id_dict)
