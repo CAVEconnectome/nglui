@@ -159,7 +159,6 @@ def SynapseGetterFactory(config):
             if self.selection_mode == 'all':
                 self._unrestricted_synapses(added_ids, removed_ids)
             elif self.selection_mode == 'restricted':
-                print('using restricted mode')
                 self._restricted_synapses()
 
         def _unrestricted_synapses(self, added_ids, removed_ids):
