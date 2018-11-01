@@ -190,9 +190,8 @@ def SynapseGetterFactory(config):
             selected_oids = [int(oid) for oid in selected_oids]
             self.viewer.clear_annotation_layers(self._defined_layers())
 
-            synapses_df = self.dl.query_synapses_by_id('synapse', pre_ids=selected_oids, post_ids=selected_oids)
-            common_synapses_df = synapses_df[ (synapses_df['pre_pt_root_id'].isin(selected_oids)) & 
-                                              (synapses_df['post_pt_root_id'].isin(selected_oids)) ]
+            common_synapses_df = self.dl.query_synapses_by_id('synapse', pre_ids=selected_oids, post_ids=selected_oids)
+
             annos = synapse_annotations_from_df(common_synapses_df, linked_side='both')
 
             self.viewer.add_annotation_one_shot({PRE_LAYER:annos['pre'],
