@@ -103,16 +103,10 @@ class EasyViewer( neuroglancer.Viewer ):
         else:
             pass
 
-
-    def clear_annotation_layers( self ):
-        all_layers = neuroglancer.json_wrappers.to_json( self.state.layers )
-        new_layers = OrderedDict()
-        for layer in all_layers:
-            if all_layers[layer]['type'] != 'annotation':
-                new_layers[layer] = all_layers[layer]
-        
+    def clear_annotation_layers( self, layer_names ):
         with self.txn() as s:
-            s.layers = neuroglancer.viewer_state.Layers(new_layers)
+            for ln in layer_names:
+                s.layers[ln].annotations._data = []
 
     def add_annotation_one_shot( self, ln_anno_dict, ignore=True):
         '''
@@ -183,6 +177,18 @@ class EasyViewer( neuroglancer.Viewer ):
         with self.txn() as s:
             for ln, new_data in new_layer_data.items():
                 s.layers[ln].annotations._data = new_data
+
+
+    def filter_annotations_by_linked_oids(self, layer_names, oids_to_keep):
+        oids_to_keep = set(oids)
+        new_layer_data = {}
+        for ln in layer_names:
+            new_layer_data[ln] = [a for a in self.state.layers[ln].annotations._data if oids_to_keep.issuperset(a.segments)]
+        with self.txn() as s:
+            for ln, new_data in new_layer_data.items():
+                s.layers[ln].annotations._data = new_data
+
+
 
     def update_description(self, layer_id_dict, new_description, ignore=True):
         layer_id_dict = copy.deepcopy(layer_id_dict)
@@ -275,7 +281,7 @@ class EasyViewer( neuroglancer.Viewer ):
 
 
     def selected_objects(self, segmentation_layer):
-        return list(viewer.state.layers[segmentation_layer].segments)
+        return list(self.state.layers[segmentation_layer].segments)
  
 
     def add_selected_objects(self, segmentation_layer, oids):
