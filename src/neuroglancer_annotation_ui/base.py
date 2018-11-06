@@ -120,6 +120,18 @@ class EasyViewer( neuroglancer.Viewer ):
             for ln, annos in ln_anno_dict.items():
                 s.layers[ln].annotations._data += annos
 
+    def set_annotation_one_shot( self, ln_anno_dict, ignore=True):
+        '''
+        ln_anno_dict is a layer_name to annotation list dict.
+        '''
+        if ignore is True:
+            for ln, annos in ln_anno_dict.items():
+                for anno in annos:
+                    self._expected_ids.add(anno.id)
+        with self.txn() as s:
+            for ln, annos in ln_anno_dict.items():
+                s.layers[ln].annotations._data = annos
+
     def add_annotation(self, layer_name, annotation, color=None, ignore=True):
         """Add annotations to a viewer instance, the type is specified.
            If layer name does not exist, add the layer
@@ -171,8 +183,9 @@ class EasyViewer( neuroglancer.Viewer ):
 
         oids_to_remove = set(oids)
         new_layer_data = {}
+        layers = self.state.layers
         for ln in layer_names:
-            new_layer_data[ln] = [a for a in self.state.layers[ln].annotations._data if not oids_to_remove.issuperset(a.segments)]
+            new_layer_data[ln] = [a for a in layers[ln].annotations._data if not oids_to_remove.issuperset(a.segments)]
 
         with self.txn() as s:
             for ln, new_data in new_layer_data.items():

@@ -187,7 +187,7 @@ class ExtensionBase():
     # Function to be called on a generic update call
         pass
 
-    def _on_selection_change(added_ids, removed_ids):
+    def _on_selection_change(self, added_ids, removed_ids):
     # Function to be called when the set of selected objects is changed.   
         pass
 
