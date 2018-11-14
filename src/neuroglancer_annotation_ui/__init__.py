@@ -17,6 +17,7 @@ extension_mapping = {
 def get_extensions():
     return [k for k in extension_mapping.keys()]
 
+
 """
 Thoughts below for how to make this more generic going forward
 

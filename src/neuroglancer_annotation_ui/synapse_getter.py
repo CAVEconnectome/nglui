@@ -2,7 +2,7 @@ from neuroglancer_annotation_ui.extension_core import check_layer, \
                                                       AnnotationExtensionBase, \
                                                       OrderedPointHolder
 from neuroglancer_annotation_ui.ngl_rendering import SchemaRenderer
-from neuroglancer_annotation_ui.annotation import line_annotation
+from neuroglancer_annotation_ui.annotation import line_annotation, point_annotation
 from emannotationschemas.synapse import SynapseSchema
 from analysisdatalink.datalink import DataLink
 from collections import defaultdict
@@ -45,9 +45,6 @@ synapse_render_rule = {'line': {PRE_ANNO: [(PRE_PT, SYN_PT)],
                        'point': {SYN_ANNO: [SYN_PT]}
                        }
 
-def pre_post_list():
-    return {PRE_LAYER:[], POST_LAYER:[]}
-
 def SynapseGetterFactory(config): 
     """
     Builds an extension that retrieves synapses from a given data table.
@@ -69,6 +66,7 @@ def SynapseGetterFactory(config):
             self.anno_layer_dict = ANNO_LAYER_DICT
             self.selection_mode = 'all'
             self.watched_layer = None
+            self.anno_type = 'line'
 
             self.points = OrderedPointHolder(viewer=self.viewer,
                                              pt_type_dict=POINT_TYPE_ORDER,
@@ -77,14 +75,10 @@ def SynapseGetterFactory(config):
                                              message_dict=MESSAGE_DICT)
             self.create_synapse_layers()
 
-            # Maps oid to annotations per layer
-            self.annotation_store = defaultdict(pre_post_list)
-
             self.dl = DataLink(dataset=dataset, version=data_version, database_uri=database_uri)
             self.dl.add_annotation_model('synapse',
                                          synapse_schema_name,
                                          synapse_table_name)
-
 
 
         def change_selection_mode(self, s):
@@ -98,13 +92,11 @@ def SynapseGetterFactory(config):
                 self.viewer.update_message('Synapse restriction off')
                 self.reset_all()
 
+
         def reset_all(self):
             self.viewer.clear_annotation_layers(self._defined_layers())
             selected_oids = self.viewer.selected_objects(self.watched_layer)
             selected_oids = [int(oid) for oid in selected_oids]
-
-            self.annotation_store = defaultdict(pre_post_list)
-
             self._unrestricted_synapses(selected_oids, [])
 
 
@@ -127,12 +119,12 @@ def SynapseGetterFactory(config):
                     break
             else:
                 print('No segmentation layer found for linking')
-
             self.watched_layer = linked_seg_layer
             for layer in self._defined_layers():
                 self.viewer.add_annotation_layer(layer,
                                                  color=self.color_map[layer],
                                                  linked_segmentation_layer=linked_seg_layer)
+
 
         def _on_selection_change(self, added_ids, removed_ids):
             added_ids = [int(oid) for oid in added_ids]
@@ -143,13 +135,14 @@ def SynapseGetterFactory(config):
             elif self.selection_mode == 'restricted':
                 self._restricted_synapses()
 
+
         def _unrestricted_synapses(self, added_ids, removed_ids):
             if len(added_ids) > 0:
                 new_pre_annos = self._get_presynaptic_synapses(added_ids)
                 new_post_annos = self._get_postsynaptic_synapses(added_ids)
                 self.viewer.add_annotation_one_shot({PRE_LAYER: new_pre_annos['pre']+new_post_annos['pre'],
                                                      POST_LAYER: new_pre_annos['post']+new_post_annos['post']})
-
+            
             if len(removed_ids)>0:
                 self._remove_synapse_annotations(removed_ids)
 
@@ -159,25 +152,18 @@ def SynapseGetterFactory(config):
             annos = self.synapse_annotations_from_df(pre_synapses_df, linked_side='pre', half_synapse=True)
             return annos
 
+
         def _get_postsynaptic_synapses( self, oids ):
             post_synapses_df = self.dl.query_synapses_by_id('synapse', post_ids=oids)
             annos = self.synapse_annotations_from_df(post_synapses_df, linked_side='post', half_synapse=True)
             return annos
 
-        def _remove_synapse_annotations( self, oids):
-            # push_annos = {PRE_LAYER:[], POST_LAYER:[]}
-            # for oid in oids:
-            #     print(self.annotation_store.keys())
-            #     del self.annotation_store[oid]
-            # for _, anno_per_layer in self.annotation_store.items():
-            #     for ln in anno_per_layer:
-            #         push_annos[ln].append(anno_per_layer[ln])
 
-            # self.viewer.clear_annotation_layers(self._defined_layers())
-            # self.viewer.add_annotation_one_shot(push_annos)
+        def _remove_synapse_annotations( self, oids):
             self.viewer.remove_annotation_by_linked_oids_one_shot(self._defined_layers(), oids)
 
-        def _restricted_synapses( self, omit_autapses=True ):
+
+        def _restricted_synapses( self ):
             selected_oids = self.viewer.selected_objects(self.watched_layer)
             selected_oids = [int(oid) for oid in selected_oids]
 
@@ -204,19 +190,18 @@ def SynapseGetterFactory(config):
 
             for row in syn_df[['pre_pt_position', 'ctr_pt_position', 'post_pt_position', 'pre_pt_root_id', 'post_pt_root_id']].values:
                 linked_seg = row[link_ind]
-                #store_anno = len(linked_seg) == 1
-                store_anno = False
                 if do_sides['pre']:
-                    new_anno = line_annotation(a=row[2], b=row[1], linked_segmentation=linked_seg)
-                    if store_anno:
-                        self.annotation_store[ int(linked_seg[0]) ][PRE_LAYER].append(new_anno)
+                    if self.anno_type=='line':
+                        new_anno = line_annotation(a=row[2], b=row[1], linked_segmentation=linked_seg)
+                    elif self.anno_type=='point':
+                        new_anno = point_annotation(point=row[1], linked_segmentation=linked_seg)
                     annos['pre'].append( new_anno )
                 if do_sides['post']:
-                    new_anno = line_annotation(a=row[0], b=row[1], linked_segmentation=linked_seg)
-                    if store_anno:
-                        self.annotation_store[ int(linked_seg[0]) ][POST_LAYER].append(new_anno)
+                    if self.anno_type=='line':
+                        new_anno = line_annotation(a=row[0], b=row[1], linked_segmentation=linked_seg)
+                    elif self.anno_type=='point':
+                        new_anno = point_annotation(point=row[1], linked_segmentation=linked_seg)
                     annos['post'].append( new_anno )
             return annos
-
 
     return SynapseGetterExtension

@@ -3,8 +3,8 @@ from neuroglancer_annotation_ui import extension_mapping
 from neuroglancer_annotation_ui.base import AnnotationManager, stop_ngl_server
 from annotationframeworkclient.annotationengine import AnnotationClient
 from annotationframeworkclient.infoservice import InfoServiceClient
-from synapse_getter_extension import SynapseGetterFactory
-from cell_type_getter import cell_type_extension_factory
+from neuroglancer_annotation_ui.synapse_getter import SynapseGetterFactory
+from neuroglancer_annotation_ui.cell_type_getter import cell_type_extension_factory
 
 import click
 from time import sleep

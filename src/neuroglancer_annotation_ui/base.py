@@ -3,7 +3,7 @@ from collections import OrderedDict
 from neuroglancer_annotation_ui import annotation
 from .extension_core import AnnotationExtensionBase, OneShotHolder
 from inspect import getmembers, ismethod
-from numpy import issubdtype, integer
+from numpy import issubdtype, integer, uint64
 import copy 
 import json
 import os
@@ -303,7 +303,7 @@ class EasyViewer( neuroglancer.Viewer ):
 
         with self.txn() as s:
             for oid in oids:
-                s.layers[segmentation_layer].segments.add(oid)
+                s.layers[segmentation_layer].segments.add(uint64(oid))
 
 
     def get_mouse_coordinates(self, s):

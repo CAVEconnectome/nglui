@@ -77,7 +77,8 @@ class SynapseExtension(AnnotationExtensionStateResponsive):
     @staticmethod
     def _schema_map():
         # Dict mapping output type to schema
-        return {'synapse': 'synapse_schema'}
+        # Assumes, for the moment, that the synapse schema has a defined name. Eventually should use the service for consistency.
+        return {'synapse': 'SynapseSchema'}
 
     def create_synapse_layers(self):
         for layer in self._defined_layers():
