@@ -13,7 +13,7 @@ from secret_config import config
 
 info_url = 'https://www.dynamicannotationframework.com'
 dataset = 'pinky100'
-
+cleft_src = 'precomputed://gs://neuroglancer/pinky100_v0/clefts/mip1_d2_1175k'
 infoclient = InfoServiceClient(server_address=info_url,
                                dataset_name=dataset)
 img_src = infoclient.image_source(format_for='neuroglancer')
@@ -27,11 +27,13 @@ if __name__ == '__main__':
 
     manager = AnnotationManager()
     manager.add_image_layer(layer_name='img',image_source=img_src)
-    sleep(0.25)
-    
     manager.add_segmentation_layer(layer_name='seg',segmentation_source=seg_src, watched=True)
+    manager.add_segmentation_layer(layer_name='clefts', segmentation_source=cleft_src)
     manager.viewer.set_view_options()
     
+    with manager.viewer.txn() as s:
+        s.voxel_size = [4,4,40]
+ 
     SynapseGetterExtension = SynapseGetterFactory(config)
     manager.add_extension(extension_name='syns',
                           ExtensionClass=SynapseGetterExtension)
