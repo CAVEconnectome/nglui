@@ -13,7 +13,7 @@ from secret_config import config
 
 info_url = 'https://www.dynamicannotationframework.com'
 dataset = 'pinky100'
-cleft_src = 'precomputed://gs://neuroglancer/pinky100_v0/clefts/mip1_d2_1175k'
+cleft_src = secret_config['cleft_src']
 infoclient = InfoServiceClient(server_address=info_url,
                                dataset_name=dataset)
 img_src = infoclient.image_source(format_for='neuroglancer')
