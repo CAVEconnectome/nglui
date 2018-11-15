@@ -6,16 +6,21 @@ from .forms import NgDataSetExtensionForm
 from urllib.parse import urlparse
 from neuroglancer_annotation_ui import get_extensions, get_extension_configs, extension_mapping, AnnotationManager
 from annotationframeworkclient.infoservice import InfoServiceClient
+mod = Blueprint('nglaunch', 'nglaunch', url_prefix='/annotationui')
 
-mod = Blueprint('nglaunch', 'nglaunch')
+__version__ = "0.0.7"
 
-__version__ = "0.0.3"
 def setup_manager(info_client, anno_client=None):
     manager = AnnotationManager(annotation_client=anno_client)
     manager.add_layers(image_layers={'img':{'source': info_client.image_source(format_for='neuroglancer')}},
                        segmentation_layers={'seg':{'source':info_client.pychunkgraph_segmentation_source(format_for='neuroglancer')}})
     manager.watched_segmentation_layer = 'seg'
     return manager
+
+
+@mod.route('/version')
+def version():
+    return "Neurglancer Annotation UI Server -- version {} \n {}".format(__version__, current_app.config)
 
 
 @mod.route('/', methods=['GET', 'POST'])
