@@ -39,7 +39,6 @@ class EasyViewer( neuroglancer.Viewer ):
     def set_source_url(self, ngl_url):
         self.ngl_url = neuroglancer.set_server_bind_address(ngl_url)
 
-
     def load_url(self, url):
         """Load neuroglancer compatible url and updates viewer state
 
@@ -50,8 +49,19 @@ class EasyViewer( neuroglancer.Viewer ):
         state = neuroglancer.parse_url(url)
         self.set_state(state)
 
+    def add_layers(self, image_layers={}, segmentation_layers={}, annotation_layers={}, resolution=None):
+        with self.txn() as s:
+            for ln, kws in image_layers.items():
+                s.layers[ln] = neuroglancer.ImageLayer(**kws)
+            for ln, kws in segmentation_layers.items():
+                s.layers[ln] = neuroglancer.SegmentationLayer(**kws)
+            for ln, kws in annotation_layers.items():
+                s.layers[ln] = neuroglancer.AnnotationLayer(**kws)
+            if resolution is not None:
+                s.voxel_size = resolution
+        pass
 
-    def add_segmentation_layer(self, layer_name, segmentation_source, chunkgraph_endpoint=None):
+    def add_segmentation_layer(self, layer_name, segmentation_source):
         """Add segmentation layer to viewer instance.
 
         Attributes:
@@ -440,6 +450,9 @@ class AnnotationManager( ):
     def url(self):
         return self.viewer.get_viewer_url()
 
+    def add_layers(self, image_layers={}, segmentation_layers={}, annotation_layers={}, resolution=None):
+        self.viewer.add_layers(image_layers, segmentation_layers, annotation_layers, resolution)
+
     def add_image_layer(self, layer_name, image_source):
         self.viewer.add_image_layer(layer_name, image_source)
 
@@ -447,7 +460,7 @@ class AnnotationManager( ):
     def add_segmentation_layer(self, layer_name, segmentation_source, watched=False):
         self.viewer.add_segmentation_layer(layer_name, segmentation_source)
         if watched:
-            self._watched_segmentation_layer = layer_name
+            self.watched_segmentation_layer = layer_name
 
     def add_annotation_layer(self, layer_name=None, layer_color=None, linked_annotation_layer=None):
         self.viewer.add_annotation_layer(layer_name, layer_color, linked_annotation_layer=linked_annotation_layer)
@@ -596,6 +609,11 @@ class AnnotationManager( ):
     def watched_segmentation_layer(self):
         return copy.copy(self._watched_segmentation_layer)
     
+    @watched_segmentation_layer.setter
+    def watched_segmentation_layer(self, watched_layer):
+        if watched_layer in [l.name for l in self.viewer.state.layers if l.type == 'segmentation']:
+            self._watched_segmentation_layer=watched_layer
+
     def on_selection_change(self):
         if self.watched_segmentation_layer in self.viewer.layer_names:
             curr_segments = self.viewer.state.layers[self.watched_segmentation_layer].segments

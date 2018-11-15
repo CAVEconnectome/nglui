@@ -45,15 +45,16 @@ synapse_render_rule = {'line': {PRE_ANNO: [(PRE_PT, SYN_PT)],
                        'point': {SYN_ANNO: [SYN_PT]}
                        }
 
-def SynapseGetterFactory(config): 
+def SynapseGetterFactory(table_name, schema_name, db_config): 
     """
     Builds an extension that retrieves synapses from a given data table.
     """
-    database_uri = config['uri']
-    data_version = config['data_version']
-    synapse_schema_name = config['synapse_schema_name']
-    synapse_table_name = config['synapse_table_name']
-    dataset = config['dataset']
+    synapse_table_name = table_name
+    synapse_schema_name = schema_name
+
+    database_uri = db_config['uri']
+    data_version = db_config['data_version']
+    dataset = db_config['dataset']
 
     class SynapseGetterExtension(AnnotationExtensionBase):
         def __init__(self, easy_viewer, annotation_client=None):

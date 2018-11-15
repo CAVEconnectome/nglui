@@ -3,16 +3,15 @@ from neuroglancer_annotation_ui.annotation import point_annotation, sphere_annot
 from analysisdatalink.datalink import DataLink
 import numpy as np
 from collections import defaultdict
-from matplotlib.pyplot import get_cmap
-from matplotlib.colors import to_hex
+from palettable.colorbrewer.qualitative import Dark2_8
 from itertools import cycle
 
-def cell_type_extension_factory(table_name,
-                                schema_name,
-                                db_config,
-                                colorset='Dark2',
-                                use_points = True,
-                                radius = 1000):
+def CellTypeGetterFactory(table_name,
+                          schema_name,
+                          db_config,
+                          colorset=Dark2_8,
+                          use_points = True,
+                          radius = 1000):
     
     database_uri = db_config['uri']
     dataset = db_config['dataset']
@@ -22,8 +21,8 @@ def cell_type_extension_factory(table_name,
     annos = dl.query_cell_type('cell_type')
     defined_layer_names = list(np.unique(annos.cell_type))
 
-    clrs = cycle( get_cmap(colorset).colors )
-    color_map = {ln: to_hex(next(clrs)).upper() for ln in defined_layer_names}
+    clrs = cycle( colorset.hex_colors )
+    color_map = {ln: next(clrs) for ln in defined_layer_names}
 
     class CellTypeGetterExtension(ExtensionBase):
         def __init__(self, easy_viewer, annotation_client=None):

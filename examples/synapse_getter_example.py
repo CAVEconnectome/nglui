@@ -4,7 +4,7 @@ from neuroglancer_annotation_ui.base import AnnotationManager, stop_ngl_server
 from annotationframeworkclient.annotationengine import AnnotationClient
 from annotationframeworkclient.infoservice import InfoServiceClient
 from neuroglancer_annotation_ui.synapse_getter import SynapseGetterFactory
-from neuroglancer_annotation_ui.cell_type_getter import cell_type_extension_factory
+from neuroglancer_annotation_ui.cell_type_getter import CellTypeGetterFactory
 
 import click
 from time import sleep
@@ -13,7 +13,7 @@ from secret_config import config
 
 info_url = 'https://www.dynamicannotationframework.com'
 dataset = 'pinky100'
-cleft_src = secret_config['cleft_src']
+cleft_src = config['cleft_src']
 infoclient = InfoServiceClient(server_address=info_url,
                                dataset_name=dataset)
 img_src = infoclient.image_source(format_for='neuroglancer')
@@ -34,11 +34,13 @@ if __name__ == '__main__':
     with manager.viewer.txn() as s:
         s.voxel_size = [4,4,40]
  
-    SynapseGetterExtension = SynapseGetterFactory(config)
+    SynapseGetterExtension = SynapseGetterFactory(config['synapse_table_name'],
+                                                  config['synapse_schema_name'],
+                                                  config)
     manager.add_extension(extension_name='syns',
                           ExtensionClass=SynapseGetterExtension)
 
-    CellTypeExtension = cell_type_extension_factory(cell_type_table,
+    CellTypeExtension = CellTypeGetterFactory(cell_type_table,
                                                     cell_type_schema,
                                                     config)
     manager.add_extension(extension_name='ct',

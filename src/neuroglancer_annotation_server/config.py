@@ -10,7 +10,7 @@ class BaseConfig(object):
 
     NEUROGLANCER_URL = "https://neuroglancer-demo.appspot.com"
     NEUROGLANCER_PORT = 9000
-    ANNOTATION_INFO_SERVICE_URL = 'https://www.dynamicannotationframework.com/info'
+    INFOSERVICE_ENDPOINT = 'https://www.dynamicannotationframework.com'
     ANNOTATION_ENGINE_URL = 'http://35.185.22.247'
     # Enable protection agains *Cross-site Request Forgery (CSRF)*
     CSRF_ENABLED = True
