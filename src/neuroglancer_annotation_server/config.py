@@ -40,5 +40,5 @@ def configure_app(app):
         # instance-folders configuration
         app.config.from_pyfile('config.cfg', silent=True)
     neuroglancer.set_server_bind_address('0.0.0.0', bind_port=app.config['NEUROGLANCER_PORT'])
-
+    print('config',app.config)
     return app
