@@ -8,7 +8,7 @@ from collections import namedtuple
 
 __version__ = "0.0.3"
 
-db_config = dict(uri="postgresql://postgres:welcometothematrix@35.196.105.34/postgres",
+db_config = dict(uri="postgresql://analysis_user:connectallthethings@35.196.105.34/postgres",
                  data_version=36,
                  dataset='pinky100',
                  )
