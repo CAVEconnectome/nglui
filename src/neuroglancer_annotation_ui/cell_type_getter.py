@@ -16,6 +16,7 @@ def CellTypeGetterFactory(table_name,
     database_uri = db_config['uri']
     dataset = db_config['dataset']
     data_version = db_config['data_version']
+
     dl = DataLink(dataset=dataset, version=data_version, database_uri=database_uri)
     dl.add_annotation_model('cell_type', table_name=table_name, schema_name=schema_name)
     annos = dl.query_cell_type('cell_type')

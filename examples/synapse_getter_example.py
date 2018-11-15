@@ -41,8 +41,8 @@ if __name__ == '__main__':
                           ExtensionClass=SynapseGetterExtension)
 
     CellTypeExtension = CellTypeGetterFactory(cell_type_table,
-                                                    cell_type_schema,
-                                                    config)
+                                              cell_type_schema,
+                                              config)
     manager.add_extension(extension_name='ct',
                           ExtensionClass=CellTypeExtension)
 

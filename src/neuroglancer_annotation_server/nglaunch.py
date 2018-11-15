@@ -4,11 +4,10 @@ from flask import redirect, jsonify, Response, abort, Blueprint, current_app, re
 import os
 from .forms import NgDataSetExtensionForm
 from urllib.parse import urlparse
-from neuroglancer_annotation_ui import get_extensions, extension_mapping, AnnotationManager
+from neuroglancer_annotation_ui import get_extensions, get_extension_configs, extension_mapping, AnnotationManager
 from annotationframeworkclient.infoservice import InfoServiceClient
 
 mod = Blueprint('nglaunch', 'nglaunch')
-
 
 __version__ = "0.0.3"
 def setup_manager(info_client, anno_client=None):
@@ -26,6 +25,7 @@ def index():
     datasets = info_client.get_datasets()
 
     extensions = get_extensions()
+    extension_configs = get_extension_configs()
 
     form = NgDataSetExtensionForm()
     form.dataset.choices = [(d, d) for d in datasets]
@@ -51,7 +51,7 @@ def index():
                                     None)
             for extension in form.extensions:
                 if extension.data:
-                    manager.add_extension(extension.id, extension_mapping[extension.id])
+                    manager.add_extension(extension.id, extension_mapping[extension.id](**extension_configs[extension.id]))
             url = manager.url
             o1 = urlparse(manager.url)
             o = urlparse(request.url)
