@@ -6,6 +6,7 @@ from .forms import build_extension_forms
 from urllib.parse import urlparse
 from neuroglancer_annotation_ui import get_extensions, get_extension_configs, extension_mapping, AnnotationManager
 from annotationframeworkclient.infoservice import InfoServiceClient
+
 mod = Blueprint('nglaunch', 'nglaunch', url_prefix='/annotationui')
 
 __version__ = "0.0.8"
@@ -44,13 +45,13 @@ def index():
         if form.validate_on_submit():
             dataset = form.dataset.data
             ann_engine_url = current_app.config['ANNOTATION_ENGINE_URL']
-            client = AnnotationClient(endpoint=ann_engine_url, dataset_name=dataset)
+            #client = AnnotationClient(endpoint=ann_engine_url, dataset_name=dataset)
             manager = setup_manager(InfoServiceClient(server_address=info_url, dataset_name=dataset),None)
             for f in form:
                 if (f.label.text == 'extension') and (f.data is True):
                     ext_config = extension_configs[f.id]
                     ext_config['db_config'] = {'uri': current_app.config['MATERIALIZED_DB_URI'],
-                                               'data_version': current_app.config['MATERAILIZED_DB_DATA_VERSION'],
+                                               'data_version': current_app.config['MATERIALIZED_DB_DATA_VERSION'],
                                                'dataset': dataset}
                     manager.add_extension(f.id, extension_mapping[f.id](**ext_config))
             url = manager.url

@@ -13,7 +13,7 @@ class BaseConfig(object):
     INFOSERVICE_ENDPOINT = 'https://www.dynamicannotationframework.com'
     ANNOTATION_ENGINE_URL = 'http://35.185.22.247'
     MATERIALIZED_DB_URI = "postgresql://analysis_user:connectallthethings@35.196.105.34/postgres"
-    MATERAILIZED_DB_VERSION = 36
+    MATERIALIZED_DB_DATA_VERSION = 36
     # Enable protection agains *Cross-site Request Forgery (CSRF)*
     CSRF_ENABLED = True
 
