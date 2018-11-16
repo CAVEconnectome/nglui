@@ -6,4 +6,5 @@ flask_wtf
 wtforms
 pandas
 emannotationschemas
+analysisdatalink
 palettable

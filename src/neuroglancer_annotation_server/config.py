@@ -12,6 +12,8 @@ class BaseConfig(object):
     NEUROGLANCER_PORT = 9000
     INFOSERVICE_ENDPOINT = 'https://www.dynamicannotationframework.com'
     ANNOTATION_ENGINE_URL = 'http://35.185.22.247'
+    MATERIALIZED_DB_URI = "postgresql://analysis_user:connectallthethings@35.196.105.34/postgres"
+    MATERAILIZED_DB_VERSION = 36
     # Enable protection agains *Cross-site Request Forgery (CSRF)*
     CSRF_ENABLED = True
 
@@ -40,5 +42,4 @@ def configure_app(app):
         # instance-folders configuration
         app.config.from_pyfile('config.cfg', silent=True)
     neuroglancer.set_server_bind_address('0.0.0.0', bind_port=app.config['NEUROGLANCER_PORT'])
-    print('config',app.config)
     return app

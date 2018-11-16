@@ -22,8 +22,6 @@ synapse_config = {'table_name': 'pni_synapses_i2',
                   'db_config': db_config}
 
 extension_mapping = {
-    # 'SynapsePlacer': SynapseExtension.set_config,
-    # 'CellTypePlacer': CellTypeExtension.set_config,
     'AutomaticSynapseViewer': SynapseGetterFactory,
     'CellTypeViewer': CellTypeGetterFactory,
     }

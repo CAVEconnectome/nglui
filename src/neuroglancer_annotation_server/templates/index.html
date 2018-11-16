@@ -29,9 +29,9 @@
               Extensions
           </td>
       </tr>
-      {% for ext in form.extensions %}
+      {% for ext in form if ext.label.text == 'extension' %}
       <tr>
-          <td>{{ext}} {{ext.label}}</td>
+          <td>{{ext}} {{ext.id}}</td>
       </tr>
       {% endfor %}
   </table></td>

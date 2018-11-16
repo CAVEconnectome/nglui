@@ -2,7 +2,7 @@ import requests
 import neuroglancer
 from flask import redirect, jsonify, Response, abort, Blueprint, current_app, render_template, url_for, request
 import os
-from .forms import NgDataSetExtensionForm
+from .forms import build_extension_forms
 from urllib.parse import urlparse
 from neuroglancer_annotation_ui import get_extensions, get_extension_configs, extension_mapping, AnnotationManager
 from annotationframeworkclient.infoservice import InfoServiceClient
@@ -13,14 +13,15 @@ __version__ = "0.0.8"
 def setup_manager(info_client, anno_client=None):
     manager = AnnotationManager(annotation_client=anno_client)
     manager.add_layers(image_layers={'img':{'source': info_client.image_source(format_for='neuroglancer')}},
-                       segmentation_layers={'seg':{'source':info_client.pychunkgraph_segmentation_source(format_for='neuroglancer')}})
+                       segmentation_layers={'seg':{'source':info_client.pychunkgraph_segmentation_source(format_for='neuroglancer')}},
+                       resolution=[4,4,40])
     manager.watched_segmentation_layer = 'seg'
     return manager
 
 
 @mod.route('/version')
 def version():
-    return "Neurglancer Annotation UI Server -- version {} \n {}".format(__version__, current_app.config)
+    return "Neuroglancer Annotation UI Server -- version {} \n {}".format(__version__, current_app.config)
 
 
 @mod.route('/', methods=['GET', 'POST'])
@@ -28,18 +29,10 @@ def index():
     info_url = current_app.config['INFOSERVICE_ENDPOINT']
     info_client = InfoServiceClient(server_address=info_url)
     datasets = info_client.get_datasets()
-
     extensions = get_extensions()
     extension_configs = get_extension_configs()
 
-    form = NgDataSetExtensionForm()
-    form.dataset.choices = [(d, d) for d in datasets]
-
-    for ext in extensions:
-        form.extensions.append_entry()
-    for ext, entry in zip(extensions, form.extensions.entries):
-        entry.label.text = ext
-        entry.id = ext
+    form = build_extension_forms(datasets, extensions)
 
     if request.method == 'GET':
         return render_template('index.html',
@@ -50,13 +43,16 @@ def index():
     if request.method == 'POST':
         if form.validate_on_submit():
             dataset = form.dataset.data
-            # ann_engine_url = current_app.config['ANNOTATION_ENGINE_URL']
-            #client = AnnotationClient(endpoint=ann_engine_url, dataset_name=dataset)
-            manager = setup_manager(InfoServiceClient(server_address=info_url, dataset_name=dataset),
-                                    None)
-            for extension in form.extensions:
-                if extension.data:
-                    manager.add_extension(extension.id, extension_mapping[extension.id](**extension_configs[extension.id]))
+            ann_engine_url = current_app.config['ANNOTATION_ENGINE_URL']
+            client = AnnotationClient(endpoint=ann_engine_url, dataset_name=dataset)
+            manager = setup_manager(InfoServiceClient(server_address=info_url, dataset_name=dataset),None)
+            for f in form:
+                if (f.label.text == 'extension') and (f.data is True):
+                    ext_config = extension_configs[f.id]
+                    ext_config['db_config'] = {'uri': current_app.config['MATERIALIZED_DB_URI'],
+                                               'data_version': current_app.config['MATERAILIZED_DB_DATA_VERSION'],
+                                               'dataset': dataset}
+                    manager.add_extension(f.id, extension_mapping[f.id](**ext_config))
             url = manager.url
             o1 = urlparse(manager.url)
             o = urlparse(request.url)
