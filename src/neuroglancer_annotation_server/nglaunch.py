@@ -50,9 +50,9 @@ def index():
             for f in form:
                 if (f.label.text == 'extension') and (f.data is True):
                     ext_config = extension_configs[f.id]
-                    ext_config['db_config'] = {'uri': current_app.config['MATERIALIZED_DB_URI'],
-                                               'data_version': current_app.config['MATERIALIZED_DB_DATA_VERSION'],
-                                               'dataset': dataset}
+                    ext_config['db_config'] = {'sqlalchemy_database_uri': current_app.config['MATERIALIZED_DB_URI'],
+                                               'materialization_version': current_app.config['MATERIALIZED_DB_DATA_VERSION'],
+                                               'dataset_name': dataset}
                     manager.add_extension(f.id, extension_mapping[f.id](**ext_config))
             url = manager.url
             o1 = urlparse(manager.url)
