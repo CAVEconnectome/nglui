@@ -6,7 +6,7 @@ from neuroglancer_annotation_ui.cell_type_getter import CellTypeGetterFactory
 from collections import namedtuple
 # from neuroglancer_annotation_ui.soma_extension import SomaExtension
 
-__version__ = "0.0.14"
+__version__ = "0.0.15"
 
 db_config = dict(uri="postgresql://analysis_user:connectallthethings@35.196.105.34/postgres",
                  data_version=36,
