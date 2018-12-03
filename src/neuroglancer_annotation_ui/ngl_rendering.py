@@ -20,8 +20,9 @@ class SchemaRenderer():
         self.apply_description_rule = self.render_rule.make_description_rule()
 
         self.annotations = {}
-        self.reset_annotations()
         self.render_functions = self.render_rule.generate_processors()
+
+        self.reset_annotations()
 
 
     def __call__(self, 

@@ -7,3 +7,5 @@ wtforms
 pandas
 emannotationschemas
 analysisdatalink>=0.1.2
+annotationframeworkclient
+palettable
