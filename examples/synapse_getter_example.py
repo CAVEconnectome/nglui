@@ -21,7 +21,7 @@ img_src = infoclient.image_source(format_for='neuroglancer')
 seg_src = config['correct_seg_src']
 
 cell_type_table = 'soma_valence'
-cell_type_schema = 'cell_type_local'
+synapse_table = 'pni_synapses_i3'
 
 if __name__ == '__main__':
 
@@ -34,14 +34,12 @@ if __name__ == '__main__':
     with manager.viewer.txn() as s:
         s.voxel_size = [4,4,40]
  
-    SynapseGetterExtension = SynapseGetterFactory(config['synapse_table_name'],
-                                                  config['synapse_schema_name'],
+    SynapseGetterExtension = SynapseGetterFactory(synapse_table,
                                                   config)
     manager.add_extension(extension_name='syns',
                           ExtensionClass=SynapseGetterExtension)
 
     CellTypeExtension = CellTypeGetterFactory(cell_type_table,
-                                              cell_type_schema,
                                               config)
     manager.add_extension(extension_name='ct',
                           ExtensionClass=CellTypeExtension)

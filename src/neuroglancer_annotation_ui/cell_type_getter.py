@@ -1,25 +1,29 @@
 from neuroglancer_annotation_ui.extension_core import ExtensionBase
 from neuroglancer_annotation_ui.annotation import point_annotation, sphere_annotation
-from analysisdatalink.datalink import DataLink
+from analysisdatalink.datalink_ext import AnalysisDataLinkExt as AnalysisDataLink
 import numpy as np
 from collections import defaultdict
 from palettable.colorbrewer.qualitative import Dark2_8
 from itertools import cycle
 
-def CellTypeGetterFactory(table_name,
-                          schema_name,
+def CellTypeGetterFactory(cell_type_table,
                           db_config,
                           colorset=Dark2_8,
                           use_points = True,
                           radius = 1000):
     
-    database_uri = db_config['uri']
-    dataset = db_config['dataset']
-    data_version = db_config['data_version']
+    database_uri = db_config['sqlalchemy_database_uri']
+    materialization_version = db_config['materialization_version']
+    dataset_name = db_config['dataset_name']
 
-    dl = DataLink(dataset=dataset, version=data_version, database_uri=database_uri)
-    dl.add_annotation_model('cell_type', table_name=table_name, schema_name=schema_name)
-    annos = dl.query_cell_type('cell_type')
+    dl = AnalysisDataLink(dataset_name=dataset_name,
+                          sqlalchemy_database_uri=database_uri,
+                          materialization_version=materialization_version,
+                          verbose=False
+                          )
+
+
+    annos = dl.query_cell_types(cell_type_table)
     defined_layer_names = list(np.unique(annos.cell_type))
 
     clrs = cycle( colorset.hex_colors )
@@ -29,6 +33,7 @@ def CellTypeGetterFactory(table_name,
         def __init__(self, easy_viewer, annotation_client=None):
             super(CellTypeGetterExtension, self).__init__(easy_viewer, None)
             self.dl = dl
+            self.cell_type_table = cell_type_table
             self.use_points = use_points
             self.allowed_layers = self._defined_layers()
             self.radius = radius
@@ -51,7 +56,7 @@ def CellTypeGetterFactory(table_name,
         def _reload_all_annotations(self):
             self.viewer.clear_annotation_layers(self._defined_layers())
             if self.anno_df is None:
-                anno_df = self.dl.query_cell_type('cell_type')
+                anno_df = self.dl.query_cell_types(self.cell_type_table)
             anno_layer_map = self.annotations_from_df(anno_df)
             self.viewer.add_annotation_one_shot(anno_layer_map)
 
