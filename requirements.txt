@@ -1,11 +1,10 @@
 neuroglancer
 numpy
-requests==2.19.1
 flask
 flask_wtf
 wtforms
 pandas
 emannotationschemas
-analysisdatalink==0.1.1
-annotationframeworkclient
+analysisdatalink>=0.1.2
+annotationframeworkclient>=0.0.4
 palettable
