@@ -6,3 +6,4 @@ flask_wtf
 wtforms
 pandas
 emannotationschemas
+analysisdatalink>=0.1.2
