@@ -9,16 +9,14 @@ from collections import namedtuple
 __version__ = "0.0.15"
 
 db_config = dict(uri="postgresql://analysis_user:connectallthethings@35.196.105.34/postgres",
-                 data_version=36,
+                 data_version=39,
                  dataset='pinky100',
                  )
 
 cell_type_config = {'table_name': 'soma_valence',
-                    'schema_name': 'cell_type_local',
                     'db_config': db_config}
 
 synapse_config = {'table_name': 'pni_synapses_i2',
-                  'schema_name': 'synapse',
                   'db_config': db_config}
 
 extension_mapping = {

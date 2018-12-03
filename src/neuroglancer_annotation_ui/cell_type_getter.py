@@ -6,7 +6,7 @@ from collections import defaultdict
 from palettable.colorbrewer.qualitative import Dark2_8
 from itertools import cycle
 
-def CellTypeGetterFactory(cell_type_table,
+def CellTypeGetterFactory(table_name,
                           db_config,
                           colorset=Dark2_8,
                           use_points = True,
@@ -23,7 +23,7 @@ def CellTypeGetterFactory(cell_type_table,
                           )
 
 
-    annos = dl.query_cell_types(cell_type_table)
+    annos = dl.query_cell_types(table_name)
     defined_layer_names = list(np.unique(annos.cell_type))
 
     clrs = cycle( colorset.hex_colors )
@@ -33,7 +33,7 @@ def CellTypeGetterFactory(cell_type_table,
         def __init__(self, easy_viewer, annotation_client=None):
             super(CellTypeGetterExtension, self).__init__(easy_viewer, None)
             self.dl = dl
-            self.cell_type_table = cell_type_table
+            self.cell_type_table = table_name
             self.use_points = use_points
             self.allowed_layers = self._defined_layers()
             self.radius = radius

@@ -45,7 +45,7 @@ synapse_render_rule = {'line': {PRE_ANNO: [(PRE_PT, SYN_PT)],
                        'point': {SYN_ANNO: [SYN_PT]}
                        }
 
-def SynapseGetterFactory(synapse_table_name, db_config):
+def SynapseGetterFactory(table_name, db_config):
     """
     Builds an extension that retrieves synapses from a given data table.
     """
@@ -78,7 +78,7 @@ def SynapseGetterFactory(synapse_table_name, db_config):
                                        materialization_version=materialization_version,
                                        verbose=False
                                        )
-            self.synapse_table = synapse_table_name
+            self.synapse_table = table_name
 
         def change_selection_mode(self, s):
             if self.selection_mode == 'all':
