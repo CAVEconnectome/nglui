@@ -16,7 +16,7 @@ db_config = dict(uri="postgresql://analysis_user:connectallthethings@35.196.105.
 cell_type_config = {'table_name': 'soma_valence',
                     'db_config': db_config}
 
-synapse_config = {'table_name': 'pni_synapses_i2',
+synapse_config = {'table_name': 'pni_synapses_i3',
                   'db_config': db_config}
 
 extension_mapping = {
