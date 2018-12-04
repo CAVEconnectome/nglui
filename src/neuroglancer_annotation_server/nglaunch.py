@@ -9,13 +9,14 @@ from annotationframeworkclient.infoservice import InfoServiceClient
 
 mod = Blueprint('nglaunch', 'nglaunch', url_prefix='/annotationui')
 
-__version__ = "0.0.17"
+__version__ = "0.0.18"
 
 def setup_manager(info_client, anno_client=None, ngl_url = None):
     manager = AnnotationManager(annotation_client=anno_client)
     manager.add_layers(image_layers={'img':{'source': info_client.image_source(format_for='neuroglancer')}},
                        segmentation_layers={'seg':{'source':info_client.pychunkgraph_segmentation_source(format_for='neuroglancer')}},
                        resolution=[4,4,40])
+    manager.watched_segmentation_layer = 'seg'
     if ngl_url is not None:
         manager.viewer.set_
     return manager
