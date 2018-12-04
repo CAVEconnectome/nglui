@@ -15,11 +15,13 @@ def CellTypeGetterFactory(table_name,
     database_uri = db_config['sqlalchemy_database_uri']
     materialization_version = db_config['materialization_version']
     dataset_name = db_config['dataset_name']
+    annotation_endpoint = db_config.get('annotation_endpoint', None)
 
     dl = AnalysisDataLink(dataset_name=dataset_name,
                           sqlalchemy_database_uri=database_uri,
                           materialization_version=materialization_version,
-                          verbose=False
+                          verbose=False,
+                          annotation_endpoint=annotation_endpoint
                           )
 
 

@@ -55,7 +55,8 @@ def index():
                     ext_config = extension_configs[f.id]
                     ext_config['db_config'] = {'sqlalchemy_database_uri': current_app.config['MATERIALIZED_DB_URI'],
                                                'materialization_version': current_app.config['MATERIALIZED_DB_DATA_VERSION'],
-                                               'dataset_name': dataset}
+                                               'dataset_name': dataset,
+                                               'annotation_endpoint': current_app.config['ANNOTATION_ENGINE_URL']}
                     manager.add_extension(f.id, extension_mapping[f.id](**ext_config))
             url = manager.url
             o1 = urlparse(manager.url)

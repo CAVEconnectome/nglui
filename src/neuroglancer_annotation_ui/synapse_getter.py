@@ -51,7 +51,8 @@ def SynapseGetterFactory(table_name, db_config):
     """
     database_uri = db_config['sqlalchemy_database_uri']
     materialization_version = db_config['materialization_version']
-    dataset_name = db_config['dataset_name']
+    annotation_endpoint = db_config['annotation_endpoint']
+    dataset_name = db_config.get('dataset_name', None)
 
     class SynapseGetterExtension(AnnotationExtensionBase):
         def __init__(self, easy_viewer, annotation_client=None):
@@ -76,7 +77,8 @@ def SynapseGetterFactory(table_name, db_config):
             self.dl = AnalysisDataLink(dataset_name=dataset_name,
                                        sqlalchemy_database_uri=database_uri,
                                        materialization_version=materialization_version,
-                                       verbose=False
+                                       verbose=False,
+                                       annotation_endpoint=annotation_endpoint
                                        )
             self.synapse_table = table_name
 
