@@ -61,7 +61,13 @@ def index():
             url = manager.url
             o1 = urlparse(manager.url)
             o = urlparse(request.url)
-            new_url = o.scheme + "://" + o.netloc.split(':')[0] + ":{}".format(o1.port) + o1.path
+            port_replace = current_app.config.get('NEUROGLANCER_FORWARD_PORT', o1.port)
+            if port_replace is not None:
+                port_string = ":{}".format(port_replace)
+            else:
+                port_string = ""
+
+            new_url = o.scheme + "://" + o.netloc.split(':')[0] + port_string + o1.path
             return redirect(new_url)
 
 

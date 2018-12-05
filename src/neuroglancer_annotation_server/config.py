@@ -10,6 +10,7 @@ class BaseConfig(object):
 
     NEUROGLANCER_URL = "https://nkem-multicut-dot-neuromancer-seung-import.appspot.com"
     NEUROGLANCER_PORT = 9000
+    # NEUROGLANCER_FORWARD_PORT = None
     INFOSERVICE_ENDPOINT = 'https://www.dynamicannotationframework.com'
     ANNOTATION_ENGINE_URL = 'http://www.dynamicannotationframework.com/annotation'
     MATERIALIZED_DB_URI = "postgresql://analysis_user:connectallthethings@35.196.105.34/postgres"
