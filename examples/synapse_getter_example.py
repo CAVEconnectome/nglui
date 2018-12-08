@@ -17,8 +17,7 @@ cleft_src = config['cleft_src']
 infoclient = InfoServiceClient(server_address=info_url,
                                dataset_name=dataset)
 img_src = infoclient.image_source(format_for='neuroglancer')
-#seg_src = infoclient.pychunkgraph_segmentation_source(format_for='neuroglancer')
-seg_src = config['correct_seg_src']
+seg_src = infoclient.pychunkgraph_viewer_source(format_for='neuroglancer')
 
 cell_type_table = 'soma_valence'
 synapse_table = 'pni_synapses_i3'
