@@ -9,7 +9,7 @@ from annotationframeworkclient.infoservice import InfoServiceClient
 
 mod = Blueprint('nglaunch', 'nglaunch', url_prefix='/annotationui')
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 def setup_manager(info_client, anno_client=None, ngl_url = None):
     manager = AnnotationManager(annotation_client=anno_client)
