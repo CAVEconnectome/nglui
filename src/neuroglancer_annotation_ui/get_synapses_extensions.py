@@ -40,7 +40,8 @@ class SynapseGetterExtension(AnnotationExtensionBase):
     def create_synapse_layers(self, s):
         for layer in self._defined_layers():
             self.viewer.add_annotation_layer(layer,
-                                             color=self.color_map[layer])
+                                             color=self.color_map[layer],
+                                             filter_by_segmentation=True)
 
 
     @check_layer()

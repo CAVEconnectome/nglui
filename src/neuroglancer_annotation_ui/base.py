@@ -12,6 +12,11 @@ base_dir=os.path.dirname(__file__)
 with open(base_dir+"/data/default_key_bindings.json",'r') as fid:
     default_key_bindings = json.load(fid)
 
+default_static_content_source='https://nkem-multicut-dot-neuromancer-seung-import.appspot.com/'
+
+def set_static_content_source(source=default_static_content_source):
+    neuroglancer.set_static_content_source(url=source)
+
 def stop_ngl_server():
     """
     Shuts down the neuroglancer tornado server
@@ -28,7 +33,6 @@ class EasyViewer( neuroglancer.Viewer ):
 
     def __repr__(self):
         return self.get_viewer_url()
-
 
     def _repr_html_(self):
         return '<a href="%s" target="_blank">Viewer</a>' % self.get_viewer_url()
@@ -61,7 +65,7 @@ class EasyViewer( neuroglancer.Viewer ):
                 s.voxel_size = resolution
         pass
 
-    def add_segmentation_layer(self, layer_name, segmentation_source):
+    def add_segmentation_layer(self, layer_name, segmentation_source, **kwargs):
         """Add segmentation layer to viewer instance.
 
         Attributes:
@@ -70,10 +74,10 @@ class EasyViewer( neuroglancer.Viewer ):
         """
         with self.txn() as s:
             s.layers[layer_name] = neuroglancer.SegmentationLayer(
-                source=segmentation_source)
+                source=segmentation_source, **kwargs)
 
 
-    def add_image_layer(self, layer_name, image_source):
+    def add_image_layer(self, layer_name, image_source, **kwargs):
         """Add segmentation layer to viewer instance.
 
         Attributes:
@@ -82,10 +86,14 @@ class EasyViewer( neuroglancer.Viewer ):
         """
         with self.txn() as s:
             s.layers[layer_name] = neuroglancer.ImageLayer(
-                source=image_source)
+                source=image_source, **kwargs)
+
+    def set_resolution(self, resolution):
+        with self.txn() as s:
+            s.voxel_size = resolution
 
 
-    def add_annotation_layer(self, layer_name=None, color=None, linked_segmentation_layer=None):
+    def add_annotation_layer(self, layer_name=None, color=None, linked_segmentation_layer=None, filter_by_segmentation=True):
         """Add annotation layer to the viewer instance.
 
         Attributes:
@@ -96,8 +104,12 @@ class EasyViewer( neuroglancer.Viewer ):
         if layer_name in [l.name for l in self.state.layers]:
             return
 
+        if linked_segmentation_layer is None:
+            filter_by_segmentation = None
+
         with self.txn() as s:
-            new_layer = neuroglancer.AnnotationLayer(linked_segmentation_layer=linked_segmentation_layer)    
+            new_layer = neuroglancer.AnnotationLayer(linked_segmentation_layer=linked_segmentation_layer,
+                                                     filter_by_segmentation=filter_by_segmentation)    
             s.layers.append( name=layer_name,
                              layer=new_layer )
             if color is not None:
@@ -627,3 +639,7 @@ class AnnotationManager( ):
                     #     print(e)
                     #     continue
                 self._selected_segments = curr_segments
+
+    @staticmethod
+    def set_static_content_source(url=default_static_content_source):
+        set_static_content_source(url)
