@@ -3,8 +3,9 @@ import neuroglancer
 from flask import redirect, jsonify, Response, abort, Blueprint, current_app, render_template, url_for, request
 import os
 from .forms import build_extension_forms
+from .ui_tool_setup import get_extensions, get_extension_configs, extension_mapping
 from urllib.parse import urlparse
-from neuroglancer_annotation_ui import get_extensions, get_extension_configs, extension_mapping, AnnotationManager
+from neuroglancer_annotation_ui import AnnotationManager
 from annotationframeworkclient.infoservice import InfoServiceClient
 
 mod = Blueprint('nglaunch', 'nglaunch', url_prefix='/annotationui')
