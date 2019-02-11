@@ -13,8 +13,9 @@ class BaseConfig(object):
     # NEUROGLANCER_FORWARD_PORT = None
     INFOSERVICE_ENDPOINT = 'https://www.dynamicannotationframework.com'
     ANNOTATION_ENGINE_URL = 'http://www.dynamicannotationframework.com/annotation'
-    MATERIALIZED_DB_URI = "postgresql://analysis_user:connectallthethings@35.196.105.34/postgres"
-    MATERIALIZED_DB_DATA_VERSION = 58
+    MATERIALIZED_DB_URI = None
+    MATERIALIZED_DB_DATA_VERSION = 0
+
     # Enable protection agains *Cross-site Request Forgery (CSRF)*
     CSRF_ENABLED = True
 
@@ -25,13 +26,11 @@ class BaseConfig(object):
     # Secret key for signing cookies
     SECRET_KEY = b'SECRETKEY'
 
-
 config = {
     "development": "neuroglancer_annotation_server.config.BaseConfig",
     "testing": "neuroglancer_annotation_server.config.BaseConfig",
     "default": "neuroglancer_annotation_server.config.BaseConfig"
 }
-
 
 def configure_app(app):
     config_name = os.getenv('FLASK_CONFIGURATION', 'default')

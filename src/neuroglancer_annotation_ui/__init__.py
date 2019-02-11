@@ -8,16 +8,20 @@ from collections import namedtuple
 
 __version__ = "0.1.2"
 
-default_db_config = dict(uri="postgresql://analysis_user:connectallthethings@35.196.105.34/postgres",
-                 data_version=39,
-                 dataset='pinky100',
-                 )
+dummy_db_config = {
+    'sqlalchemy_database_uri': None,
+    'materialization_version': None,
+    'dataset_name': None,
+    'annotation_endpoint': None,
+}
 
 cell_type_config = {'table_name': 'soma_valence',
-                    'db_config': default_db_config}
+                    'db_config': dummy_db_config,
+                    }
 
 synapse_config = {'table_name': 'pni_synapses_i3',
-                  'db_config': default_db_config}
+                  'db_config': dummy_db_config,
+                  }
 
 extension_mapping = {
     'AutomaticSynapseViewer': SynapseGetterFactory,

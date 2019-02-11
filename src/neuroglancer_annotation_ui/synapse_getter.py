@@ -13,45 +13,48 @@ PRE_ANNO, POST_ANNO, SYN_ANNO = 'pre', 'post', 'syn'
 
 SYNAPSE_RENDERER = 'synapse'
 
-# Key in db_tables, most useful if multiple tables come from the same 
-DB_TABLE_KEY = 'synapse'
+synapse_render_rule = {'line': {PRE_ANNO: [(PRE_PT, SYN_PT)],
+                                POST_ANNO: [(POST_PT, SYN_PT)]},
+                       'point': {SYN_ANNO: [SYN_PT]},
+                       }
 
 # Sets the order of points created by clicking
 POINT_TYPE_ORDER = {0: PRE_PT,
                     1: POST_PT,
-                    2: SYN_PT}
+                    2: SYN_PT,
+                    }
 
 # Assigns names in the message field on creation of point types
 MESSAGE_DICT = {PRE_PT: 'presynaptic point',
                 POST_PT: 'postsynaptic point',
-                SYN_PT: 'synapse'}
+                SYN_PT: 'synapse',
+                }
 
 # Assigns rendered annotation names (from render_rule) to layers
 ANNO_LAYER_DICT = {PRE_ANNO: PRE_LAYER,
                    POST_ANNO: POST_LAYER,
-                   SYN_ANNO: SYN_LAYER}
+                   SYN_ANNO: SYN_LAYER,
+                   }
 
 # Assigns point types to different layers
 POINT_LAYER_MAP = {PRE_PT: PRE_LAYER,
                    POST_PT: POST_LAYER,
-                   SYN_PT: SYN_LAYER}
+                   SYN_PT: SYN_LAYER,
+                   }
 
 # Assigns colors to layers
-COLOR_MAP = {PRE_LAYER: '#ff0000',
-             POST_LAYER: '#00ffff'}
+DEFAULT_COLOR_MAP = {PRE_LAYER: '#ff0000',
+                     POST_LAYER: '#00ffff',
+                     }
 
-synapse_render_rule = {'line': {PRE_ANNO: [(PRE_PT, SYN_PT)],
-                                POST_ANNO: [(POST_PT, SYN_PT)]},
-                       'point': {SYN_ANNO: [SYN_PT]}
-                       }
 
 def SynapseGetterFactory(table_name, db_config):
     """
     Builds an extension that retrieves synapses from a given data table.
     """
-    database_uri = db_config['sqlalchemy_database_uri']
-    materialization_version = db_config['materialization_version']
-    annotation_endpoint = db_config['annotation_endpoint']
+    database_uri = db_config.get('sqlalchemy_database_uri', None)
+    materialization_version = db_config.get('materialization_version', None)
+    annotation_endpoint = db_config.get('annotation_endpoint', None)
     dataset_name = db_config.get('dataset_name', None)
 
     class SynapseGetterExtension(AnnotationExtensionBase):
@@ -60,7 +63,7 @@ def SynapseGetterFactory(table_name, db_config):
             self.ngl_renderer = {SYNAPSE_RENDERER: SchemaRenderer(SynapseSchema, synapse_render_rule)}
             self.allowed_layers = []
             self.db_tables = {}
-            self.color_map = COLOR_MAP
+            self.color_map = DEFAULT_COLOR_MAP
             self.point_layer_dict = POINT_LAYER_MAP
             self.anno_layer_dict = ANNO_LAYER_DICT
             self.selection_mode = 'all'
@@ -71,14 +74,15 @@ def SynapseGetterFactory(table_name, db_config):
                                              pt_type_dict=POINT_TYPE_ORDER,
                                              trigger=SYN_PT,
                                              layer_dict=self.point_layer_dict,
-                                             message_dict=MESSAGE_DICT)
+                                             message_dict=MESSAGE_DICT
+                                             )
             self.create_synapse_layers()
 
             self.dl = AnalysisDataLink(dataset_name=dataset_name,
                                        sqlalchemy_database_uri=database_uri,
                                        materialization_version=materialization_version,
                                        verbose=False,
-                                       annotation_endpoint=annotation_endpoint
+                                       annotation_endpoint=annotation_endpoint,
                                        )
             self.synapse_table = table_name
 
