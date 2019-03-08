@@ -223,7 +223,8 @@ class AnnotationExtensionBase(ExtensionBase):
 
 
     @classmethod
-    def set_db_tables(cls, class_name, db_tables):
+    def set_config(cls, config):
+        class_name, db_tables = config['class_name'], config['db_tables']
         class ClassNew(cls):
             def __init__(self, easy_viewer, annotation_client=None):
                 super(ClassNew, self).__init__(easy_viewer, annotation_client)

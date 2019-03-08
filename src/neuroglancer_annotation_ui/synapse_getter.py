@@ -4,7 +4,7 @@ from neuroglancer_annotation_ui.extension_core import check_layer, \
 from neuroglancer_annotation_ui.ngl_rendering import SchemaRenderer
 from neuroglancer_annotation_ui.annotation import line_annotation, point_annotation
 from emannotationschemas.synapse import SynapseSchema
-from analysisdatalink.datalink import DataLink
+from analysisdatalink.datalink_ext import AnalysisDataLinkExt as AnalysisDataLink
 from collections import defaultdict
 
 PRE_LAYER, POST_LAYER, SYN_LAYER = 'synapses_pre', 'synapses_post', 'synapses'
@@ -13,47 +13,49 @@ PRE_ANNO, POST_ANNO, SYN_ANNO = 'pre', 'post', 'syn'
 
 SYNAPSE_RENDERER = 'synapse'
 
-# Key in db_tables, most useful if multiple tables come from the same 
-DB_TABLE_KEY = 'synapse'
+synapse_render_rule = {'line': {PRE_ANNO: [(PRE_PT, SYN_PT)],
+                                POST_ANNO: [(POST_PT, SYN_PT)]},
+                       'point': {SYN_ANNO: [SYN_PT]},
+                       }
 
 # Sets the order of points created by clicking
 POINT_TYPE_ORDER = {0: PRE_PT,
                     1: POST_PT,
-                    2: SYN_PT}
+                    2: SYN_PT,
+                    }
 
 # Assigns names in the message field on creation of point types
 MESSAGE_DICT = {PRE_PT: 'presynaptic point',
                 POST_PT: 'postsynaptic point',
-                SYN_PT: 'synapse'}
+                SYN_PT: 'synapse',
+                }
 
 # Assigns rendered annotation names (from render_rule) to layers
 ANNO_LAYER_DICT = {PRE_ANNO: PRE_LAYER,
                    POST_ANNO: POST_LAYER,
-                   SYN_ANNO: SYN_LAYER}
+                   SYN_ANNO: SYN_LAYER,
+                   }
 
 # Assigns point types to different layers
 POINT_LAYER_MAP = {PRE_PT: PRE_LAYER,
                    POST_PT: POST_LAYER,
-                   SYN_PT: SYN_LAYER}
+                   SYN_PT: SYN_LAYER,
+                   }
 
 # Assigns colors to layers
-COLOR_MAP = {PRE_LAYER: '#ff0000',
-             POST_LAYER: '#00ffff'}
+DEFAULT_COLOR_MAP = {PRE_LAYER: '#ff0000',
+                     POST_LAYER: '#00ffff',
+                     }
 
-synapse_render_rule = {'line': {PRE_ANNO: [(PRE_PT, SYN_PT)],
-                                POST_ANNO: [(POST_PT, SYN_PT)]},
-                       'point': {SYN_ANNO: [SYN_PT]}
-                       }
 
-def SynapseGetterFactory(config): 
+def SynapseGetterFactory(table_name, db_config):
     """
     Builds an extension that retrieves synapses from a given data table.
     """
-    database_uri = config['uri']
-    data_version = config['data_version']
-    synapse_schema_name = config['synapse_schema_name']
-    synapse_table_name = config['synapse_table_name']
-    dataset = config['dataset']
+    database_uri = db_config.get('sqlalchemy_database_uri', None)
+    materialization_version = db_config.get('materialization_version', None)
+    annotation_endpoint = db_config.get('annotation_endpoint', None)
+    dataset_name = db_config.get('dataset_name', None)
 
     class SynapseGetterExtension(AnnotationExtensionBase):
         def __init__(self, easy_viewer, annotation_client=None):
@@ -61,7 +63,7 @@ def SynapseGetterFactory(config):
             self.ngl_renderer = {SYNAPSE_RENDERER: SchemaRenderer(SynapseSchema, synapse_render_rule)}
             self.allowed_layers = []
             self.db_tables = {}
-            self.color_map = COLOR_MAP
+            self.color_map = DEFAULT_COLOR_MAP
             self.point_layer_dict = POINT_LAYER_MAP
             self.anno_layer_dict = ANNO_LAYER_DICT
             self.selection_mode = 'all'
@@ -72,14 +74,17 @@ def SynapseGetterFactory(config):
                                              pt_type_dict=POINT_TYPE_ORDER,
                                              trigger=SYN_PT,
                                              layer_dict=self.point_layer_dict,
-                                             message_dict=MESSAGE_DICT)
+                                             message_dict=MESSAGE_DICT
+                                             )
             self.create_synapse_layers()
 
-            self.dl = DataLink(dataset=dataset, version=data_version, database_uri=database_uri)
-            self.dl.add_annotation_model('synapse',
-                                         synapse_schema_name,
-                                         synapse_table_name)
-
+            self.dl = AnalysisDataLink(dataset_name=dataset_name,
+                                       sqlalchemy_database_uri=database_uri,
+                                       materialization_version=materialization_version,
+                                       verbose=False,
+                                       annotation_endpoint=annotation_endpoint,
+                                       )
+            self.synapse_table = table_name
 
         def change_selection_mode(self, s):
             if self.selection_mode == 'all':
@@ -148,13 +153,13 @@ def SynapseGetterFactory(config):
 
 
         def _get_presynaptic_synapses( self, oids ):
-            pre_synapses_df = self.dl.query_synapses_by_id('synapse', pre_ids=oids)
+            pre_synapses_df = self.dl.query_synapses(self.synapse_table, pre_ids=oids, compartment_table=None)
             annos = self.synapse_annotations_from_df(pre_synapses_df, linked_side='pre', half_synapse=True)
             return annos
 
 
         def _get_postsynaptic_synapses( self, oids ):
-            post_synapses_df = self.dl.query_synapses_by_id('synapse', post_ids=oids)
+            post_synapses_df = self.dl.query_synapses(self.synapse_table, post_ids=oids, compartment_table=None)
             annos = self.synapse_annotations_from_df(post_synapses_df, linked_side='post', half_synapse=True)
             return annos
 
@@ -167,7 +172,7 @@ def SynapseGetterFactory(config):
             selected_oids = self.viewer.selected_objects(self.watched_layer)
             selected_oids = [int(oid) for oid in selected_oids]
 
-            common_synapses_df = self.dl.query_synapses_by_id('synapse', pre_ids=selected_oids, post_ids=selected_oids)
+            common_synapses_df = self.dl.query_synapses(self.synapse_table, pre_ids=selected_oids, post_ids=selected_oids, compartment_table=None)
             annos = self.synapse_annotations_from_df(common_synapses_df, linked_side='both')
             
             self.viewer.set_annotation_one_shot({PRE_LAYER:annos['pre'],

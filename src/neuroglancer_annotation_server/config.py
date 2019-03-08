@@ -8,10 +8,14 @@ class BaseConfig(object):
     # Statement for enabling the development environment
     DEBUG = True
 
-    NEUROGLANCER_URL = "https://neuroglancer-demo.appspot.com"
+    NEUROGLANCER_URL = "https://fcc-fix2-dot-neuromancer-seung-import.appspot.com"
     NEUROGLANCER_PORT = 9000
-    ANNOTATION_INFO_SERVICE_URL = 'https://www.dynamicannotationframework.com/info'
-    ANNOTATION_ENGINE_URL = 'http://35.185.22.247'
+    # NEUROGLANCER_FORWARD_PORT = None
+    INFOSERVICE_ENDPOINT = 'https://www.dynamicannotationframework.com'
+    ANNOTATION_ENGINE_URL = 'http://www.dynamicannotationframework.com/annotation'
+    MATERIALIZED_DB_URI = None
+    MATERIALIZED_DB_DATA_VERSION = 0
+
     # Enable protection agains *Cross-site Request Forgery (CSRF)*
     CSRF_ENABLED = True
 
@@ -22,13 +26,11 @@ class BaseConfig(object):
     # Secret key for signing cookies
     SECRET_KEY = b'SECRETKEY'
 
-
 config = {
     "development": "neuroglancer_annotation_server.config.BaseConfig",
     "testing": "neuroglancer_annotation_server.config.BaseConfig",
     "default": "neuroglancer_annotation_server.config.BaseConfig"
 }
-
 
 def configure_app(app):
     config_name = os.getenv('FLASK_CONFIGURATION', 'default')
@@ -40,5 +42,4 @@ def configure_app(app):
         # instance-folders configuration
         app.config.from_pyfile('config.cfg', silent=True)
     neuroglancer.set_server_bind_address('0.0.0.0', bind_port=app.config['NEUROGLANCER_PORT'])
-
     return app

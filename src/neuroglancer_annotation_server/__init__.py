@@ -4,7 +4,7 @@ from .config import configure_app
 from .utils import get_instance_folder_path
 from .nglaunch import mod
 
-__version__ = '0.0.3'
+__version__ = '0.2.0'
 
 
 def create_app(test_config=None):
@@ -19,6 +19,6 @@ def create_app(test_config=None):
     else:
         app.config.update(test_config)
     # register blueprints
-    app.register_blueprint(mod, url_prefix='/')
+    app.register_blueprint(mod)
 
     return app
