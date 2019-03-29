@@ -8,7 +8,7 @@ class BaseConfig(object):
     # Statement for enabling the development environment
     DEBUG = True
 
-    NEUROGLANCER_URL = "https://nkem-multicut-dot-neuromancer-seung-import.appspot.com"
+    NEUROGLANCER_URL = "https://fcc-fix2-dot-neuromancer-seung-import.appspot.com"
     NEUROGLANCER_PORT = 9000
     # NEUROGLANCER_FORWARD_PORT = None
     INFOSERVICE_ENDPOINT = 'https://www.dynamicannotationframework.com'
