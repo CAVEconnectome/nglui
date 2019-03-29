@@ -37,6 +37,72 @@ class EasyViewer( neuroglancer.Viewer ):
     def _repr_html_(self):
         return '<a href="%s" target="_blank">Viewer</a>' % self.get_viewer_url()
 
+    @classmethod
+    def from_info_client_graphene(cls,
+                                  info_client,
+                                  annotation_layers=[],
+                                  image_layer_name='img',
+                                  seg_layer_name='seg',
+                                  set_default_view=True,
+                                  position=None,
+                                  resolution=[4,4,40],
+                                  ):
+        source_type = 'pychunkedgraph_viewer_source'
+        return cls._from_info_client(source_type,
+                                     info_client,
+                                     annotation_layers,
+                                     image_layer_name,
+                                     seg_layer_name,
+                                     set_default_view,
+                                     position,
+                                     resolution
+                                     )
+
+    @classmethod
+    def from_info_client_precomputed(cls,
+                                     info_client,
+                                     annotation_layers=[],
+                                     image_layer_name='img',
+                                     seg_layer_name='seg',
+                                     set_default_view=True,
+                                     position=None,
+                                     resolution=[4,4,40],
+                                     ):
+        source_type = 'flat_segmentation_source'
+        return cls._from_info_client(source_type,
+                                     info_client,
+                                     annotation_layers,
+                                     image_layer_name,
+                                     seg_layer_name,
+                                     set_default_view,
+                                     position,
+                                     resolution
+                                     )
+
+    @classmethod
+    def _from_info_client(cls,
+                          source_type,
+                          info_client,
+                          annotation_layers,
+                          image_layer_name,
+                          seg_layer_name,
+                          set_default_view,
+                          position,
+                          resolution):
+        viewer = cls()
+        seg_src = getattr(info_client, source_type)(format_for='neuroglancer')
+        img_src = info_client.image_source(format_for='neuroglancer')
+        viewer.add_layers(segmentation_layers={'seg': {'source': seg_src}},
+                          image_layers={'img': {'source': img_src}},
+                          annotation_layers={x:{} for x in annotation_layers},
+                          resolution=resolution)
+        if set_default_view:
+            viewer.set_view_options()
+        if position is not None:
+            viewer.set_position(position)
+        return viewer
+
+
     def track_expected_annotations(self):
         self._expected_ids.make_active()
 

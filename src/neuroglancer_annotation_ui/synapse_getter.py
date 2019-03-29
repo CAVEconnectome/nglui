@@ -153,13 +153,13 @@ def SynapseGetterFactory(table_name, db_config):
 
 
         def _get_presynaptic_synapses( self, oids ):
-            pre_synapses_df = self.dl.query_synapses(self.synapse_table, pre_ids=oids, compartment_table=None)
+            pre_synapses_df = self.dl.query_synapses(self.synapse_table, pre_ids=oids)
             annos = self.synapse_annotations_from_df(pre_synapses_df, linked_side='pre', half_synapse=True)
             return annos
 
 
         def _get_postsynaptic_synapses( self, oids ):
-            post_synapses_df = self.dl.query_synapses(self.synapse_table, post_ids=oids, compartment_table=None)
+            post_synapses_df = self.dl.query_synapses(self.synapse_table, post_ids=oids)
             annos = self.synapse_annotations_from_df(post_synapses_df, linked_side='post', half_synapse=True)
             return annos
 
@@ -172,7 +172,7 @@ def SynapseGetterFactory(table_name, db_config):
             selected_oids = self.viewer.selected_objects(self.watched_layer)
             selected_oids = [int(oid) for oid in selected_oids]
 
-            common_synapses_df = self.dl.query_synapses(self.synapse_table, pre_ids=selected_oids, post_ids=selected_oids, compartment_table=None)
+            common_synapses_df = self.dl.query_synapses(self.synapse_table, pre_ids=selected_oids, post_ids=selected_oids)
             annos = self.synapse_annotations_from_df(common_synapses_df, linked_side='both')
             
             self.viewer.set_annotation_one_shot({PRE_LAYER:annos['pre'],
