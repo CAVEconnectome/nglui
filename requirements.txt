@@ -8,3 +8,4 @@ emannotationschemas
 analysisdatalink>=0.1.4
 annotationframeworkclient>=0.1.0
 palettable
+tornado==5.1.1
