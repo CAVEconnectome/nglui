@@ -31,7 +31,7 @@ def launch_ngl(radius, previous_point_state_id, filename, working_file):
     manager.add_segmentation_layer(layer_name='seg', segmentation_source=seg_src)
 
     if working_file is not None and filename is None:
-        filename = working_file.replace()
+        filename = working_file
     SphereDropperExtension = SphereDropperFactory(radius=radius,
                                                   layer_names=('new', 'existing'),
                                                   annotation_layer_colors=('#2dfee7', '#e7298a'),
