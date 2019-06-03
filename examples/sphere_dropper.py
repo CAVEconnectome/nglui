@@ -18,7 +18,7 @@ infoclient = InfoServiceClient(server_address=info_url,
 img_src = infoclient.image_source(format_for='neuroglancer')
 seg_src = infoclient.flat_segmentation_source(format_for='neuroglancer')
 
-set_static_content_source('https://nkem-multicut-dot-neuromancer-seung-import.appspot.com')
+set_static_content_source('https://fcc-fix2-dot-neuromancer-seung-import.appspot.com')
 
 @click.command()
 @click.option('-r', '--radius', required=False, default=10000)
