@@ -4,7 +4,7 @@ from .config import configure_app
 from .utils import get_instance_folder_path
 from .nglaunch import mod
 
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 
 def create_app(test_config=None):
