@@ -12,7 +12,7 @@ base_dir=os.path.dirname(__file__)
 with open(base_dir+"/data/default_key_bindings.json",'r') as fid:
     default_key_bindings = json.load(fid)
 
-default_static_content_source='https://nkem-multicut-dot-neuromancer-seung-import.appspot.com/'
+default_static_content_source='https://neuromancer-seung-import.appspot.com/'
 
 def set_static_content_source(source=default_static_content_source):
     neuroglancer.set_static_content_source(url=source)
@@ -27,9 +27,11 @@ class EasyViewer( neuroglancer.Viewer ):
     """
     Extends the neuroglancer Viewer object to make simple operations simple.
     """
-    def __init__(self):
+    def __init__(self, interactive=False):
         super(EasyViewer, self).__init__()
-        self._expected_ids = OneShotHolder()
+        self.is_interactive = interactive
+        if interactive:
+            self._expected_ids = OneShotHolder()
 
     def __repr__(self):
         return self.get_viewer_url()
@@ -38,7 +40,10 @@ class EasyViewer( neuroglancer.Viewer ):
         return '<a href="%s" target="_blank">Viewer</a>' % self.get_viewer_url()
 
     def track_expected_annotations(self):
-        self._expected_ids.make_active()
+        if self.is_interactive:
+            self._expected_ids.make_active()
+        else:
+            print('Viewer not set to interactive mode')
 
     def set_source_url(self, ngl_url):
         self.ngl_url = neuroglancer.set_server_bind_address(ngl_url)
