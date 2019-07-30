@@ -1,5 +1,5 @@
-from neuroglancer_annotation_ui.extension_core import check_layer, AnnotationExtensionBase, PointHolder
-from neuroglancer_annotation_ui.ngl_rendering import SchemaRenderer
+from neuroglancer_annotation_ui.dynamicstate.extension_core import check_layer, AnnotationExtensionBase, PointHolder
+from neuroglancer_annotation_ui.dynamicstate.ngl_rendering import SchemaRenderer
 from emannotationschemas.cell_type_local import CellTypeLocal, allowed_types, allowed_classification_systems
 from itertools import chain
 import copy

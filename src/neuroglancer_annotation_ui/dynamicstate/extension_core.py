@@ -3,7 +3,7 @@ from neuroglancer import random_token
 from collections import defaultdict
 from functools import wraps
 from pandas import DataFrame
-from .annotation import point_annotation
+from neuroglancer_annotation_ui.annotation import point_annotation
 
 def check_layer(allowed_layer_key=None):
     def specific_layer_wrapper( func ):
@@ -24,7 +24,7 @@ def check_layer(allowed_layer_key=None):
 
 
 class OneShotHolder(object):
-    # 'Class that's like a set, but when an object is in it, it gets removed.
+    #  Class that's like a set, but removes an element if it's checked and found to be present..
     #  Can be turned on or off when needed.
 
     def __init__(self, active=False, things=[]):
@@ -68,6 +68,9 @@ class OneShotHolder(object):
 
 
 class PointHolder(object):
+    """
+    A class for holding a named collection of points and triggering an action when all have been set.
+    """
     def __init__(self, viewer, pt_types=None, trigger=None, layer_dict=None, message_dict={}):
         if pt_types is not None:
             self.points = {k:None for k in pt_types}
@@ -128,6 +131,10 @@ class PointHolder(object):
 
 
 class OrderedPointHolder(PointHolder):
+    """
+    A class for holding a collection of points, assigning them in a defined order, and triggering an action
+    when all points have been created.
+    """
     def __init__(self, viewer, pt_type_dict=None, trigger=None, layer_dict=None, message_dict={}):
         pt_types = list(pt_type_dict.values())
         super(OrderedPointHolder, self).__init__(viewer, pt_types, trigger, layer_dict, message_dict)

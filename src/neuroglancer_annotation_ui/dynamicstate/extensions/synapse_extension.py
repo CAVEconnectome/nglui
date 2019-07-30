@@ -1,7 +1,7 @@
-from neuroglancer_annotation_ui.extension_core import check_layer, \
+from neuroglancer_annotation_ui.dynamicstate.extension_core import check_layer, \
                                                       AnnotationExtensionStateResponsive, \
                                                       OrderedPointHolder
-from neuroglancer_annotation_ui.ngl_rendering import SchemaRenderer
+from neuroglancer_annotation_ui.dynamicstate.ngl_rendering import SchemaRenderer
 from neuroglancer_annotation_ui.annotation import point_annotation, \
                                                   line_annotation
 from emannotationschemas.synapse import SynapseSchema

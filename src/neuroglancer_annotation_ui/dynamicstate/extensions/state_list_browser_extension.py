@@ -1,4 +1,4 @@
-from neuroglancer_annotation_ui.extension_core import ExtensionBase
+from neuroglancer_annotation_ui.dynamicstate.extension_core import ExtensionBase
 import numpy as np
 import json
 from collections import defaultdict

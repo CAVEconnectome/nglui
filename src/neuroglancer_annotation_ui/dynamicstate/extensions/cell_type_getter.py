@@ -1,4 +1,4 @@
-from neuroglancer_annotation_ui.extension_core import ExtensionBase
+from neuroglancer_annotation_ui.dynamicstate.extension_core import ExtensionBase
 from neuroglancer_annotation_ui.annotation import point_annotation, sphere_annotation
 from analysisdatalink.datalink_ext import AnalysisDataLinkExt as AnalysisDataLink
 import numpy as np

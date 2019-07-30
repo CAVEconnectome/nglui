@@ -1,4 +1,4 @@
-from neuroglancer_annotation_ui.extension_core import check_layer, AnnotationExtensionBase, PointHolder
+from neuroglancer_annotation_ui.dynamicstate.extension_core import check_layer, AnnotationExtensionBase, PointHolder
 from neuroglancer_annotation_ui.ngl_rendering import SchemaRenderer
 from emannotationschemas.bound_sphere import BoundSphere
 import copy

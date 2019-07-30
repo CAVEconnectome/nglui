@@ -1,7 +1,5 @@
 from collections import defaultdict
 from neuroglancer_annotation_ui import annotation
-from marshmallow.fields import Nested
-from emannotationschemas.base import SpatialPoint
 
 annotation_function_map = {'point': annotation.point_annotation,
                            'line': annotation.line_annotation,
@@ -13,7 +11,6 @@ class SchemaRenderer():
     def __init__(self, EMSchema, render_rule=None):
         if render_rule is None:
             self.render_rule = RenderRule(EMSchema)
-            # Todo: Introduce a default point render rule
         else:
             self.render_rule = RenderRule(EMSchema, render_rule=render_rule)
 
@@ -164,17 +161,3 @@ class RenderRule():
             def annotation_processor(ngr, data, anno_id=None):
                 return
         return annotation_processor
-
-
-    @classmethod
-    def default_render_rule(EMSchema):
-        render_rule = {'point':{'annotations':[]}}
-        schema_fields = EMSchema().fields
-        for field_name, field in schema_fields.items():
-            if issubclass(type(field), SpatialPoint):
-                render_rule['point']['annotations'].append(field_name)
-            elif isinstance(type(field), Nested):
-                is_spatial = [issubtype(subfield) for _x, subfield in field.nested._declared_fields.items()]
-                if any(is_spatial):
-                    render_rule['point']['annotations'].append(field_name)
-        return cls(render_rule)

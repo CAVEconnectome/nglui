@@ -1,7 +1,6 @@
 import neuroglancer
 from collections import OrderedDict
 from neuroglancer_annotation_ui import annotation
-from .extension_core import AnnotationExtensionBase, OneShotHolder
 from inspect import getmembers, ismethod
 from numpy import issubdtype, integer, uint64
 import copy 
@@ -9,42 +8,19 @@ import json
 import os
 import re
 
-base_dir=os.path.dirname(__file__)
-with open(base_dir+"/data/default_key_bindings.json",'r') as fid:
-    default_key_bindings = json.load(fid)
-
-default_static_content_source='https://neuromancer-seung-import.appspot.com/'
-
-def set_static_content_source(source=default_static_content_source):
-    neuroglancer.set_static_content_source(url=source)
-
-def stop_ngl_server():
-    """
-    Shuts down the neuroglancer tornado server
-    """
-    neuroglancer.server.stop()
 
 class EasyViewer( neuroglancer.Viewer ):
     """
     Extends the neuroglancer Viewer object to make simple operations simple.
     """
-    def __init__(self, interactive=False):
+    def __init__(self):
         super(EasyViewer, self).__init__()
-        self.is_interactive = interactive
-        if interactive:
-            self._expected_ids = OneShotHolder()
 
     def __repr__(self):
         return self.get_viewer_url()
 
     def _repr_html_(self):
         return '<a href="%s" target="_blank">Viewer</a>' % self.get_viewer_url()
-
-    def track_expected_annotations(self):
-        if self.is_interactive:
-            self._expected_ids.make_active()
-        else:
-            print('Viewer not set to interactive mode')
 
     def set_source_url(self, ngl_url):
         self.ngl_url = neuroglancer.set_server_bind_address(ngl_url)
@@ -135,7 +111,7 @@ class EasyViewer( neuroglancer.Viewer ):
         if tags is not None:
             self.add_annotation_tags(layer_name=layer_name, tags=tags)
 
-    def set_annotation_layer_color( self, layer_name, color ):
+    def set_annotation_layer_color(self, layer_name, color):
         """Set the color for the annotation layer
 
         """
@@ -145,49 +121,36 @@ class EasyViewer( neuroglancer.Viewer ):
         else:
             pass
 
-    def clear_annotation_layers( self, layer_names ):
+    def clear_annotation_layers(self, layer_names):
         with self.txn() as s:
             for ln in layer_names:
                 s.layers[ln].annotations._data = []
 
-    def set_annotation_one_shot( self, ln_anno_dict, ignore=True):
+    def set_annotation_one_shot(self, ln_anno_dict):
         '''
         ln_anno_dict is a layer_name to annotation list dict.
         '''
-        if self.is_interactive:
-            if ignore is True:
-                for ln, annos in ln_anno_dict.items():
-                    for anno in annos:
-                        self._expected_ids.add(anno.id)
         with self.txn() as s:
             for ln, annos in ln_anno_dict.items():
                 s.layers[ln].annotations._data = annos
 
-    def add_annotations(self, layer_name, annotations, ignore=True):
+    def add_annotations(self, layer_name, annotations):
         """Add annotations to a viewer instance, the type is specified.
            If layer name does not exist, add the layer
-           If ignore is True, add to expected_ngl_ids
 
         Attributes:
             layer_name (str): name of layer to be displayed in neuroglancer ui.
             layer_type (str): can be: 'points, ellipse or line' only
         """
-        if issubclass(type(annotation), neuroglancer.viewer_state.AnnotationBase):
-            annotation = [ annotation ]
-        if layer_name not in self.state.layers:
-            raise ValueError('{} not in existing layers'.format(layer_name))
         with self.txn() as s:
             for anno in annotations:
-                if self.is_interactive:
-                    if ignore:
-                        self._expected_ids.add(anno.id)
-                s.layers[layer_name].annotations.append( anno )
+                s.layers[layer_name].annotations.append(anno)
 
-    def add_annotation(self, layer_name, annotation, color=None, ignore=True):
+    def add_annotation(self, layer_name, annotation, color=None):
         raise DeprecationWarning('This function is depreciated. Use ''add_annotation'' instead.')
-        self.add_annotations(layer_name, annotation, color=color, ignore=ignore)
+        self.add_annotations(layer_name, annotation, color=color)
 
-    def remove_annotations(self, layer_name, anno_ids, ignore=True):
+    def remove_annotations(self, layer_name, anno_ids):
         if isinstance(anno_ids, str):
             anno_ids = [anno_ids]
         try:
@@ -197,17 +160,15 @@ class EasyViewer( neuroglancer.Viewer ):
                     el -= 1
                     if anno.id in anno_ids:
                         anno_ids.remove(anno.id)
-                        if ignore:
-                            self._expected_ids.add(anno.id)
                         s.layers[layer_name].annotations.pop(el)
                         if len(anno_ids) == 0:
                             break
         except Exception as e:
             self.update_message('Could not remove annotation')
 
-    def remove_annotation(self, layer_name, aids, ignore=True):
+    def remove_annotation(self, layer_name, aids):
         raise DeprecationWarning('This function is depreciated. Use ''remove_annotations'' instead.')
-        self.remove_annotations(self, layer_name, aids, ignore=ignore)
+        self.remove_annotations(self, layer_name, aids)
 
 
     def remove_annotation_by_linked_oids_one_shot(self, layer_names, oids):
@@ -220,7 +181,6 @@ class EasyViewer( neuroglancer.Viewer ):
         with self.txn() as s:
             for ln, new_data in new_layer_data.items():
                 s.layers[ln].annotations._data = new_data
-
 
     def filter_annotations_by_linked_oids(self, layer_names, oids_to_keep):
         oids_to_keep = set(oids)
@@ -241,22 +201,19 @@ class EasyViewer( neuroglancer.Viewer ):
         with self.txn() as s:
             s.layers[layer_name]._json_data['annotationTags'] = tag_list
 
-    def update_description(self, layer_id_dict, new_description, ignore=True):
+    def update_description(self, layer_id_dict, new_description):
         layer_id_dict = copy.deepcopy(layer_id_dict)
         try:
-            with self.txn() as s:
-                for layer_name, id_list in layer_id_dict.items():
-                    for anno in s.layers[layer_name].annotations:
-                        if anno.id in id_list:
-                            if ignore:
-                                self._expected_ids.add(anno.id)
-                            if anno.description is None:
-                                anno.description = new_description
-                            else:
-                                anno.description = "{}\n{}".format(anno.description, new_description)
-                            id_list.remove(anno.id)
-                            if len(id_list)==0:
-                                break                            
+            for layer_name, id_list in layer_id_dict.items():
+                for anno in s.layers[layer_name].annotations:
+                    if anno.id in id_list:
+                        if anno.description is None:
+                            anno.description = new_description
+                        else:
+                            anno.description = "{}\n{}".format(anno.description, new_description)
+                        id_list.remove(anno.id)
+                        if len(id_list)==0:
+                            break                            
         except Exception as e:
             print(e)
             self.update_message('Could not update descriptions!')
@@ -384,279 +341,3 @@ class EasyViewer( neuroglancer.Viewer ):
                 s.layers[ln].objectAlpha = perspective_alpha
                 s.layers[ln].notSelectedAlpha = not_selected_alpha
 
-
-class AnnotationManager( ):
-    def __init__(self,
-                 easy_viewer=None,
-                 annotation_client=None,
-                 global_delete=True,
-                 global_cancel=True,
-                 global_update=True, 
-                 global_reload=True):
-        if easy_viewer is None:
-            self.viewer = EasyViewer()
-            self.viewer.set_view_options()
-        else:
-            self.viewer = easy_viewer
-       
-        self.annotation_client = annotation_client
-        self.extensions = {}
-
-        self._key_bindings = copy.copy(default_key_bindings)
-        self.extension_layers = {}
-
-        self._watched_segmentation_layer = None
-        self._selected_segments = frozenset()
-        self.viewer.shared_state.add_changed_callback(
-            lambda: self.viewer.defer_callback(self.on_selection_change))
-
-        if global_delete is True:
-            self.initialize_delete_action()
-
-        if global_cancel is True:
-            self.initialize_cancel_action() 
-
-        if global_update is True:
-            self.initialize_update_action()
-
-        if global_reload is True:
-            self.initialize_reload_action()
-
-    @property
-    def key_bindings(self):
-        return copy.copy(self._key_bindings)
-
-    def initialize_delete_action(self, delete_binding=None):
-        if delete_binding == None:
-            delete_binding = 'backspace'
-
-        if delete_binding not in self.key_bindings:
-            self.annotation_rubbish_bin = None
-            self.viewer._add_action('Delete annotation (2x to confirm)',
-                                    delete_binding,
-                                    self.delete_annotation)
-            self.key_bindings.append(delete_binding)
-        else:
-            print('Could not add the delete action due to a key binding conflict.')
-
-
-    def initialize_cancel_action(self, cancel_binding="escape"):
-        self._add_bound_action(cancel_binding,
-                               self.cancel_annotation,
-                               'Cancel current annotation')
-
-
-    def initialize_update_action(self, update_binding='shift+enter'):
-        self._add_bound_action(update_binding,
-                               self.update_annotation,
-                               'Update selected annotation')
-
-
-    def initialize_reload_action( self, reload_binding='shift+control+keyr'):
-        self._add_bound_action(reload_binding,
-                               self.reload_all_annotations,
-                               'Reload all annotations from server')
-
-
-    def _add_bound_action(self, binding, method, method_name ):
-        if binding not in self.key_bindings:
-            self.viewer._add_action(method_name,
-                                    binding,
-                                    method)
-            self.key_bindings.append(binding)
-        else:
-            print('Could not add method {} due to key binding conflict'.format(method))
-
-    def __repr__(self):
-        return self.viewer.get_viewer_url()
-
-
-    def _repr_html_(self):
-        return '<a href="%s" target="_blank">Viewer</a>' % self.viewer.get_viewer_url()
-
-
-    @property
-    def url(self):
-        return self.viewer.get_viewer_url()
-
-    def add_layers(self, image_layers={}, segmentation_layers={}, annotation_layers={}, resolution=None):
-        self.viewer.add_layers(image_layers, segmentation_layers, annotation_layers, resolution)
-
-    def add_image_layer(self, layer_name, image_source):
-        self.viewer.add_image_layer(layer_name, image_source)
-
-
-    def add_segmentation_layer(self, layer_name, segmentation_source, watched=False):
-        self.viewer.add_segmentation_layer(layer_name, segmentation_source)
-        if watched:
-            self.watched_segmentation_layer = layer_name
-
-    def add_annotation_layer(self, layer_name=None, layer_color=None, linked_annotation_layer=None):
-        self.viewer.add_annotation_layer(layer_name, layer_color, linked_annotation_layer=linked_annotation_layer)
-
-
-    def add_extension( self, extension_name, ExtensionClass, bindings=None ):
-        if not self.validate_extension( ExtensionClass ):
-            print("Note: {} was not added to annotation manager!".format(ExtensionClass))
-            return
-
-        if bindings is None:
-            try:
-                bindings = ExtensionClass._default_key_bindings()
-            except:
-                raise Exception('No bindings provided and no default bindings in {}!'.format(ExtensionClass)) 
-
-        self.extensions[extension_name] = ExtensionClass( self.viewer, self.annotation_client )
-        bound_methods = {method_row[0]:method_row[1] \
-                        for method_row in getmembers(self.extensions[extension_name], ismethod)}
-        for layer in ExtensionClass._defined_layers():
-            self.extension_layers[layer] = extension_name
-
-        for method_name, key_command in bindings.items():
-            self._add_bound_action(key_command, bound_methods[method_name], method_name)
-            #print("added {}".format(method_name))
-
-        if issubclass(ExtensionClass, AnnotationExtensionBase):
-            if self.extensions[extension_name].db_tables == 'MUST_BE_CONFIGURED':
-                raise Exception('Table map must be configured for an annotation extension')
-
-        if len(self.extensions[extension_name].allowed_layers) > 0:
-            self.viewer.set_selected_layer(self.extensions[extension_name].allowed_layers[0])
-
-        pass
-
-
-    def list_extensions(self):
-        return list(self.extensions.keys())
-
-
-    def validate_extension( self, ExtensionClass ):
-        validity = True
-        if len( set( self.extension_layers.keys() ).intersection(set(ExtensionClass._defined_layers())) ) > 0:
-            print('{} contains layers that conflict with the current ExtensionManager'.format(ExtensionClass))
-            print(set( self.extension_layers.keys() ).intersection(set(ExtensionClass._defined_layers())) )
-            validity=False
-        if len( set(self.key_bindings).intersection(set(ExtensionClass._default_key_bindings().values())) ) > 0:
-            print('{} contains key bindings that conflict with the current ExtensionManager'.format(ExtensionClass))
-            print(set(self.key_bindings).intersection(set(ExtensionClass._default_key_bindings().values())))
-            validity=False
-        return validity
-
-
-    def delete_annotation( self, s):
-        """
-        A manager for deleting annotations.
-        """
-        selected_layer = self.viewer.get_selected_layer()
-        if (selected_layer is None) or (self.viewer.state.layers[selected_layer].type != 'annotation'):
-            self.viewer.update_message('Please select an annotation layer to delete an annotation')
-            return
-
-        ngl_id = self.viewer.get_selected_annotation_id()
-        if ngl_id is not None:
-            delete_confirmed = self.check_rubbish_bin(ngl_id)
-        else:
-            curr_pos = self.viewer.state.position.voxel_coordinates
-            for annotation in self.viewer.state.layers[selected_layer].annotations:
-                process_ngl_id = False
-                if annotation.type == 'point':
-                    if all(annotation.point==curr_pos):
-                        process_ngl_id = True
-                elif annotation.type == 'line':
-                    if all(annotation.pointA==curr_pos) or all(annotation.pointB==curr_pos):
-                        process_ngl_id = True
-                elif annotation.type == 'ellipsoid':
-                    if all(annotation.center==curr_pos):
-                        process_ngl_id = True
-
-                if process_ngl_id:
-                    ngl_id = annotation.id
-                    delete_confirmed = self.check_rubbish_bin( ngl_id )
-                    break
-            else:
-                delete_confirmed = False
-                self.viewer.update_message('Nothing to delete! No annotation selected or targeted!')
-                return
-
-        if delete_confirmed:
-            bound_extension = self.extensions[ self.extension_layers[selected_layer] ]
-            try:
-                bound_extension._delete_annotation( ngl_id )
-            except Exception as err:
-               print(err)
-               self.viewer.update_message('Extension could not not delete annotation!')
-        pass
-
-    def check_rubbish_bin( self, ngl_id ):
-        if self.annotation_rubbish_bin is None:
-            self.annotation_rubbish_bin = ngl_id
-            self.viewer.update_message( 'Confirm deletion!')
-            return False
-        elif ngl_id == self.annotation_rubbish_bin:
-            #Return True and reset rubbish bin
-            self.annotation_rubbish_bin = None
-            return True
-        else:
-            #Return False and reset rubbish bin with notice
-            self.annotation_rubbish_bin = None
-            self.viewer.update_message( 'Canceled deletion')
-            return False
-
-    def cancel_annotation( self, s):
-        """
-        A manager for canceling annotations in media res.
-        """
-        selected_layer = self.viewer.get_selected_layer()
-        if (selected_layer is None) or (self.viewer.state.layers[selected_layer].type != 'annotation'):
-            self.viewer.update_message('Please select relevent layer to cancel annotation')
-            return
-        
-        if issubclass(type(self.extensions[self.extension_layers[selected_layer]]),
-                      AnnotationExtensionBase):
-            self.extensions[self.extension_layers[selected_layer]]._cancel_annotation()
-        return
-
-    def update_annotation(self, s):
-        """
-            Manages updating a selected annotation.
-        """ 
-        selected_ngl_id = self.viewer.get_selected_annotation_id()
-        if selected_ngl_id is not None:
-            selected_layer = self.viewer.get_selected_layer()
-            self.extensions[self.extension_layers[selected_layer]]._update_annotation(selected_ngl_id)
-        else:
-            self.viewer.update_message('Please select an annotation to update it.')
-            return
-
-    def reload_all_annotations(self, s):
-        for ext_name, ext_class in self.extensions.items():
-            if issubclass(type(ext_class), AnnotationExtensionBase):
-                ext_class._reload_all_annotations()
-        self.viewer.update_message('Reloaded all annotations')
-
-    @property
-    def watched_segmentation_layer(self):
-        return copy.copy(self._watched_segmentation_layer)
-    
-    @watched_segmentation_layer.setter
-    def watched_segmentation_layer(self, watched_layer):
-        if watched_layer in [l.name for l in self.viewer.state.layers if l.type == 'segmentation']:
-            self._watched_segmentation_layer=watched_layer
-
-    def on_selection_change(self):
-        if self.watched_segmentation_layer in self.viewer.layer_names:
-            curr_segments = self.viewer.state.layers[self.watched_segmentation_layer].segments
-            if curr_segments != self._selected_segments:
-                added_ids = list(curr_segments.difference(self._selected_segments))
-                removed_ids = list(self._selected_segments.difference(curr_segments))
-                for _,ext in self.extensions.items():
-                    #try:
-                    ext._on_selection_change(added_ids, removed_ids)
-                    # except Exception as e:
-                    #     print(e)
-                    #     continue
-                self._selected_segments = curr_segments
-
-    @staticmethod
-    def set_static_content_source(url=default_static_content_source):
-        set_static_content_source(url)
