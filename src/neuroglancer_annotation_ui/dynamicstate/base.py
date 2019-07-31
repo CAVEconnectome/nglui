@@ -20,6 +20,13 @@ class EasyViewerInteractive(EasyViewer):
     def ignore_expected_annotations(self):
         self._expected_ids.make_inactive()
 
+    def _add_action( self, action_name, key_command, method ):
+        if self.is_interactive:
+            self.actions.add( action_name, method )
+            with self.config_state.txn() as s:
+                s.input_event_bindings.viewer[key_command] = action_name
+            return self.config_state
+
     def set_annotation_one_shot( self, ln_anno_dict, ignore=True):
         '''
         ln_anno_dict is a layer_name to annotation list dict.

@@ -72,7 +72,7 @@ def ellipsoid_annotation(center, radii, id=None, description=None, linked_segmen
         ellipsoid._json_data['tag_ids'] = tag_ids
     return ellipsoid
 
-def bounding_box_annotation(a, b, id=None, description=None, linked_segmentation=None, tag_ids=None):
+def bounding_box_annotation(point_a, point_b, id=None, description=None, linked_segmentation=None, tag_ids=None):
     """returns axis aligned bounding box annotation object.
 
     Attributes:

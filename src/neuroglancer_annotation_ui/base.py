@@ -8,8 +8,13 @@ import json
 import os
 import re
 
+neuroglancer.viewer_state.layer_types['segmentation_with_graph'] = utils.ChunkedgraphSegmentationLayer
 
-class EasyViewer( neuroglancer.Viewer ):
+class Viewer(neuroglancer.Viewer):
+    def __init__(self):
+        super(Viewer, self).__init__()
+
+class EasyViewer( Viewer ):
     """
     Extends the neuroglancer Viewer object to make simple operations simple.
     """
@@ -38,9 +43,9 @@ class EasyViewer( neuroglancer.Viewer ):
     @staticmethod
     def _smart_add_segmentation_layer(s, layer_name, source, **kwargs):
         if re.search('^graphene:\/\/', source) is not None:
-            s.layers[layer_name] = neuroglancer.ChunkedgraphSegmentationLayer(source=source, **kwargs)
+            s.layers[layer_name] = utils.ChunkedgraphSegmentationLayer(source=source, **kwargs)
         elif re.search('^precomputed:\/\/', source) is not None:
-            s.layers[layer_name] = neuroglancer.SegmentationLayer(source=source, **kwargs)
+            s.layers[layer_name] = utils.PrecomputedSegmentationLayer(source=source, **kwargs)
 
 
     def add_layers(self, image_layers={}, segmentation_layers={}, annotation_layers={}, resolution=None):
@@ -203,20 +208,21 @@ class EasyViewer( neuroglancer.Viewer ):
 
     def update_description(self, layer_id_dict, new_description):
         layer_id_dict = copy.deepcopy(layer_id_dict)
-        try:
-            for layer_name, id_list in layer_id_dict.items():
-                for anno in s.layers[layer_name].annotations:
-                    if anno.id in id_list:
-                        if anno.description is None:
-                            anno.description = new_description
-                        else:
-                            anno.description = "{}\n{}".format(anno.description, new_description)
-                        id_list.remove(anno.id)
-                        if len(id_list)==0:
-                            break                            
-        except Exception as e:
-            print(e)
-            self.update_message('Could not update descriptions!')
+        with self.txn() as s:
+            try:
+                for layer_name, id_list in layer_id_dict.items():
+                    for anno in s.layers[layer_name].annotations:
+                        if anno.id in id_list:
+                            if anno.description is None:
+                                anno.description = new_description
+                            else:
+                                anno.description = "{}\n{}".format(anno.description, new_description)
+                            id_list.remove(anno.id)
+                            if len(id_list)==0:
+                                break                            
+            except Exception as e:
+                print(e)
+                self.update_message('Could not update descriptions!')
 
 
     @property
@@ -231,15 +237,6 @@ class EasyViewer( neuroglancer.Viewer ):
             return '<a href="{}" target="_blank">Neuroglancer link</a>'.format(ngl_url)
         else:
             return ngl_url
-
-
-    def _add_action( self, action_name, key_command, method ):
-        if self.is_interactive:
-            self.actions.add( action_name, method )
-            with self.config_state.txn() as s:
-                s.input_event_bindings.viewer[key_command] = action_name
-            return self.config_state
-
 
     def update_message(self, message):
         with self.config_state.txn() as s:
