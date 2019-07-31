@@ -1,6 +1,6 @@
 import neuroglancer
 from collections import OrderedDict
-from neuroglancer_annotation_ui import annotation
+from neuroglancer_annotation_ui import annotation, utils
 from inspect import getmembers, ismethod
 from numpy import issubdtype, integer, uint64
 import copy 
@@ -52,7 +52,7 @@ class EasyViewer( neuroglancer.Viewer ):
             for ln, kws in annotation_layers.items():
                 s.layers[ln] = neuroglancer.AnnotationLayer(**kws)
             if resolution is not None:
-                s.voxel_size = resolution
+                s.voxel_size = resolutionP
         pass
 
 
@@ -222,6 +222,15 @@ class EasyViewer( neuroglancer.Viewer ):
     @property
     def url(self):
         return self.get_viewer_url()
+
+    def as_url(self, prefix=None, as_html=False):
+        if prefix is None:
+            prefix=utils.default_static_content_source
+        ngl_url = neuroglancer.to_url(self.state, prefix=prefix)
+        if as_html:
+            return '<a href="{}" target="_blank">Neuroglancer link</a>'.format(ngl_url)
+        else:
+            return ngl_url
 
 
     def _add_action( self, action_name, key_command, method ):
