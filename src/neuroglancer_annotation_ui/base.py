@@ -332,8 +332,10 @@ class EasyViewer( neuroglancer.Viewer ):
                           show_scale_bar=False,
                           orthographic_projection=False,
                           selected_alpha=0.3,
+                          zoom_factor=4,
                           not_selected_alpha=0,
-                          perspective_alpha=0.8):
+                          perspective_alpha=0.8,
+                          perspective_zoom=5000):
         if segmentation_layer is None:
             layers = [l.name for l in self.state.layers if l.type == 'segmentation']
         else:
@@ -345,6 +347,8 @@ class EasyViewer( neuroglancer.Viewer ):
             s.layout.orthographic_projection = orthographic_projection
             s.show_axis_lines = show_axis_lines
             s.show_scale_bar = show_scale_bar
+            s.perspectiveZoom = perspective_zoom
+            s.navigation.zoomFactor = zoom_factor
             for ln in layers:
                 s.layers[ln].selectedAlpha = selected_alpha
                 s.layers[ln].objectAlpha = perspective_alpha

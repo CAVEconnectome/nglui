@@ -7,7 +7,7 @@ class DataStateMaker():
     def __init__(self, base_state=None,
                  image_sources={}, seg_sources={},
                  selected_ids={}, annotation_layers={},
-                 resolution=[4,4,40]):
+                 resolution=[4,4,40], url_prefix=None):
         """
         Class for turning data frames into neuroglancer states 
         """
@@ -17,6 +17,7 @@ class DataStateMaker():
         self._resolution = resolution
         self._selected_ids = selected_ids
         self._annotation_layers = annotation_layers
+        self._url_prefix = url_prefix
         self._data_columns = self._compute_data_columns()
         self.initialize_state()
 
@@ -30,7 +31,7 @@ class DataStateMaker():
                 for colpair in kws['lines']:
                     data_columns.extend(colpair)
             if 'spheres' in kws:
-                for colpair in kws['lines']:
+                for colpair in kws['spheres']:
                     data_columns.extend(colpair)
 
         for ln, idcols in self._selected_ids.items():
@@ -38,15 +39,15 @@ class DataStateMaker():
 
         return data_columns
 
-    @property
-    def data_columns(self):
-        return self._data_columns
     
-    def _reset_state(self):
+    def _reset_state(self, base_state=None):
         """
-        Resets the neuroglancer state status to a blank viewer.
+        Resets the neuroglancer state status to a default viewer.
         """
+        if base_state is None:
+            base_state = self._base_state
         self._temp_viewer = EasyViewer()
+        self._temp_viewer.set_state(base_state)
 
     def _validate_dataframe(self, data):
         '''
@@ -105,19 +106,34 @@ class DataStateMaker():
 
             self._temp_viewer.add_annotations(ln, annos)
 
+    @property
+    def data_columns(self):
+        return self._data_columns
 
     def initialize_state(self, base_state=None):
-        if base_state is None:
-            base_state = self._base_state
-        self._reset_state()
-        self._temp_viewer.set_state(base_state)
+        self._reset_state(base_state)
         self._temp_viewer.set_resolution(self._resolution)
         self._add_layers()
         self._temp_viewer.set_view_options()
 
     def render_state(self, data=None, base_state=None, return_as='url', url_prefix=None):
+        """
+        Use the render rules to make a neuroglancer state out of a dataframe.
+        Parameters
+            data : DataFrame. Source of data for the rendering rules. Optional, default is None.
+                   If no data given, only the base state, image layers, and segmentation layers are generated.
+            base_state : JSON neuroglancer state (optional, default is None).
+                         Used as a base state for adding to.
+            return_as: ['url', 'viewer', 'html', 'json']. optional, default='url'.
+                       Sets how the state is returned. Note that if a viewer is returned,
+                       the state is not reset to default.
+            url_prefix: string, optional (default=None). Overrides the default neuroglancer url for url generation.
+        """
         if base_state is not None:
             self.initialize_state(base_state=base_state)
+
+        if url_prefix is None:
+            url_prefix = self._url_prefix
 
         if data is not None:
             self._validate_dataframe(data)
@@ -150,11 +166,25 @@ class FilteredDataStateMaker(DataStateMaker):
 
     def render_state(self, indices=None, data=None,
                      base_state=None, return_as='url', url_prefix=None):
+        """
+        Use the render rules to make a neuroglancer state out of a dataframe and a set of indices
+        Parameters
+            indices : Collection of index values to filter the data dataframe. Optional, default=None.
+                      Optional, default is None. If None, all data is used.
+            data : DataFrame. Source of data for the rendering rules. Optional, default is None.
+                   If no data given, only the base state, image layers, and segmentation layers are generated.
+            base_state : JSON neuroglancer state (optional, default is None).
+                         Used as a base state for adding to.
+            return_as: ['url', 'viewer', 'html', 'json']. optional, default='url'.
+                       Sets how the state is returned. Note that if a viewer is returned,
+                       the state is not reset to default.
+            url_prefix: string, optional (default=None). Overrides the default neuroglancer url for url generation.
+        """
+
         if data is not None:
             if indices is None:
                 data_render = data
             else:
-                print(indices)
                 data_render = data.loc[indices]
         else:
             data_render = None
