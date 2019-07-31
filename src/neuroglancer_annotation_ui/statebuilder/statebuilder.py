@@ -1,7 +1,7 @@
 from neuroglancer_annotation_ui import EasyViewer, annotation
 import pandas as pd
 import numpy as np
-
+from .utils import bucket_of_values
 
 class DataStateMaker():
     def __init__(self, base_state=None,
@@ -77,9 +77,9 @@ class DataStateMaker():
     def _add_selected_ids(self, data):
         for ln, cols in self._selected_ids.items():
             for col in cols:
-                self._temp_viewer.add_selected_objects(ln, data[col])
+                oids = bucket_of_values(col, data)
+                self._temp_viewer.add_selected_objects(ln, oids)
 
-    # TODO ALLOW COLUMNS THAT ARE LISTS OF POINTS
     def _add_annotations(self, data):
         if len(data)==0:
             return
@@ -87,31 +87,20 @@ class DataStateMaker():
         for ln, kws in self._annotation_layers.items():
             annos = []
             for pt_column in kws.get('points', []):
-                if len(data)>1:
-                    pts = np.vstack(data[pt_column].values)
-                else:
-                    pts = data[pt_column].values
+                pts = bucket_of_values(pt_column, data, item_is_array=True)
                 annos.extend([annotation.point_annotation(pt) for pt in pts])
 
             for pt_column_pair in kws.get('lines', []):
                 pt_col_a, pt_col_b = pt_column_pair
-                if len(data)>1:
-                    pts_a = np.vstack(data[pt_col_a].values)
-                    pts_b = np.vstack(data[pt_col_b].values)
-                else:
-                    pts_a = data[pt_col_a]
-                    pts_b = data[pt_col_b]
+                pts_a = bucket_of_values(pt_col_a, data, item_is_array=True)
+                pts_b = bucket_of_values(pt_col_b, data, item_is_array=True)
                 annos.extend([annotation.line_annotation(ptA, ptB) for ptA, ptB in zip(pts_a, pts_b)])
 
             for pt_column_pair in kws.get('spheres', []):
                 z_factor = self._resolution[0]/self._resolution[2]
                 pt_col, radius_col = pt_column_pair
-                if len(data)>1:
-                    pts = np.vstack(data[pt_col].values)
-                    rads = np.vstack(data[radius_col].values)
-                else:
-                    pts = data[pt_col]
-                    rads = data[radius_col]
+                pts = bucket_of_values(pt_col, data, item_is_array=True)
+                rads = bucket_of_values(radius_col, data, item_is_array=False)
                 annos.extend([annotation.sphere_annotation(pt, radius, z_factor) for pt, radius in zip(pts, rads)])
 
             self._temp_viewer.add_annotations(ln, annos)
@@ -126,7 +115,6 @@ class DataStateMaker():
         self._add_layers()
         self._temp_viewer.set_view_options()
 
-
     def render_state(self, data=None, base_state=None, return_as='url', url_prefix=None):
         if base_state is not None:
             self.initialize_state(base_state=base_state)
@@ -138,19 +126,23 @@ class DataStateMaker():
         if return_as == 'viewer':
             return self.viewer
         elif return_as == 'url':
-            return self._temp_viewer.as_url(prefix=url_prefix)
+            out = self._temp_viewer.as_url(prefix=url_prefix)
+            self.initialize_state()
+            return out
         elif return_as == 'html':
-            return self._temp_viewer.as_url(prefix=url_prefix, as_html=True)
+            out = self._temp_viewer.as_url(prefix=url_prefix, as_html=True)
+            self.initialize_state()
+            return out
         elif return_as == 'json':
-            return self._temp_viewer.state.to_json()
+            out = self._temp_viewer.state.to_json()
+            self.initialize_state()
+            return out
         else:
             raise ValueError('No appropriate return type selected')
 
     @property
     def viewer(self):
         return self._temp_viewer
-
-
 
 class FilteredDataStateMaker(DataStateMaker):
     def __init__(self, *args, **kwargs):
@@ -162,6 +154,7 @@ class FilteredDataStateMaker(DataStateMaker):
             if indices is None:
                 data_render = data
             else:
+                print(indices)
                 data_render = data.loc[indices]
         else:
             data_render = None
