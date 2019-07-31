@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from .utils import bucket_of_values
 
-class DataStateMaker():
+class DataStateBuilder():
     def __init__(self, base_state=None,
                  image_sources={}, seg_sources={},
                  selected_ids={}, annotation_layers={},
@@ -160,9 +160,9 @@ class DataStateMaker():
     def viewer(self):
         return self._temp_viewer
 
-class FilteredDataStateMaker(DataStateMaker):
+class FilteredDataStateBuilder(DataStateBuilder):
     def __init__(self, *args, **kwargs):
-        super(FilteredDataStateMaker, self).__init__( *args, **kwargs)
+        super(FilteredDataStateBuilder, self).__init__( *args, **kwargs)
 
     def render_state(self, indices=None, data=None,
                      base_state=None, return_as='url', url_prefix=None):
@@ -188,6 +188,6 @@ class FilteredDataStateMaker(DataStateMaker):
                 data_render = data.loc[indices]
         else:
             data_render = None
-        return super(FilteredDataStateMaker, self).render_state(
+        return super(FilteredDataStateBuilder, self).render_state(
                      data=data_render, base_state=base_state,
                      return_as=return_as, url_prefix=url_prefix)
