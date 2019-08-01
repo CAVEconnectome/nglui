@@ -17,7 +17,7 @@ class StateBuilder():
         self._seg_sources = seg_sources
         self._resolution = resolution
         self._selected_ids = selected_ids
-        self.fixed_selection = fixed_selection
+        self._fixed_selection = fixed_selection
         self._annotation_layers = annotation_layers
         self._url_prefix = url_prefix
         self._data_columns = self._compute_data_columns()
@@ -80,7 +80,7 @@ class StateBuilder():
     def _add_selected_ids(self, data):
         for ln, oids in self._fixed_selection.items():
             self._temp_viewer.add_selected_objects(ln, oids)
-            
+
         for ln, cols in self._selected_ids.items():
             for col in cols:
                 oids = bucket_of_values(col, data)
@@ -196,3 +196,44 @@ class FilteredDataStateBuilder(StateBuilder):
         return super(FilteredDataStateBuilder, self).render_state(
                      data=data_render, base_state=base_state,
                      return_as=return_as, url_prefix=url_prefix)
+
+
+class ChainedStateBuilder():
+    '''
+    A chain of state builders can render states by passing their output to the base state of the next.
+    Parameters:
+        statebuilders: Collection of StateBuilder objects
+    '''
+    def __init__(self, statebuilders=[]):
+        self._statebuilders = statebuilders
+
+    def render_state(self, data_list=None, base_state=None, return_as='url', url_prefix=None):
+        """
+        Generate a single neuroglancer state by applying an ordered collection of dataframes to
+        an collection of StateBuilder renders.
+        Parameters
+            data_list : Collection of DataFrame. The order must match the order of StateBuilders
+                        contained in the class on creation.
+            base_state : JSON neuroglancer state (optional, default is None).
+                         Used as a base state for adding everything else to.
+            return_as: ['url', 'viewer', 'html', 'json']. optional, default='url'.
+                       Sets how the state is returned. Note that if a viewer is returned,
+                       the state is not reset to default.
+            url_prefix: string, optional (default=None). Overrides the default neuroglancer url for url generation.
+        """
+        if data_list is None:
+            data_list = len(self._statebuilders) * [None]
+
+        if len(data_list) != len(self._statebuilders):
+            raise ValueError('Must have as many dataframes as statebuilders')
+
+        temp_state = base_state
+        for builder, data in zip(self._statebuilders[:-1], data_list[:-1]):
+            temp_state = builder.render_state(data=data,
+                                              base_state=temp_state,
+                                              return_as='json')
+        last_builder = self._statebuilders[-1]
+        return last_builder.render_state(data = data_list[-1],
+                                         base_state=temp_state,
+                                         return_as=return_as,
+                                         url_prefix=url_prefix)
