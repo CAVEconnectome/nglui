@@ -213,6 +213,8 @@ class ChainedStateBuilder():
     '''
     def __init__(self, statebuilders=[]):
         self._statebuilders = statebuilders
+        if len(self._statebuilders) == 0:
+            raise ValueError('Must have at least one statebuilder')
 
     def render_state(self, data_list=None, base_state=None, return_as='url', url_prefix=None):
         """
