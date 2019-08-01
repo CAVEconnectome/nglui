@@ -13,6 +13,7 @@ def bucket_of_values(col, data, item_is_array=False):
         return []
 
     dataseries = data[col]
+    dataseries = dataseries[~dataseries.isnull()]
 
     if item_is_array:
         # If already an m x n array, just vstack. Else, need to stack every element first.        

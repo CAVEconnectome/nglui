@@ -7,7 +7,8 @@ class StateBuilder():
     def __init__(self, base_state=None,
                  image_sources={}, seg_sources={},
                  selected_ids={}, annotation_layers={},
-                 resolution=[4,4,40], url_prefix=None):
+                 resolution=[4,4,40], fixed_selection={},
+                 url_prefix=None):
         """
         Class for turning data frames into neuroglancer states 
         """
@@ -16,6 +17,7 @@ class StateBuilder():
         self._seg_sources = seg_sources
         self._resolution = resolution
         self._selected_ids = selected_ids
+        self.fixed_selection = fixed_selection
         self._annotation_layers = annotation_layers
         self._url_prefix = url_prefix
         self._data_columns = self._compute_data_columns()
@@ -76,6 +78,9 @@ class StateBuilder():
         self._add_annotations(data)
 
     def _add_selected_ids(self, data):
+        for ln, oids in self._fixed_selection.items():
+            self._temp_viewer.add_selected_objects(ln, oids)
+            
         for ln, cols in self._selected_ids.items():
             for col in cols:
                 oids = bucket_of_values(col, data)
