@@ -1,5 +1,5 @@
-from neuroglancer_annotation_ui.dynamicstate.extension_core import check_layer, AnnotationExtensionBase, PointHolder
-from neuroglancer_annotation_ui.dynamicstate.ngl_rendering import SchemaRenderer
+from neuroglancer_annotation_ui.extension_core import check_layer, AnnotationExtensionBase, PointHolder
+from neuroglancer_annotation_ui.ngl_rendering import SchemaRenderer
 from emannotationschemas.cell_type_local import CellTypeLocal, allowed_types, allowed_classification_systems
 from itertools import chain
 import copy
@@ -8,13 +8,22 @@ import re
 CELL_TYPE_TOOL_LAYER = 'cell_type_tool'
 CELL_TYPE_DISPLAY_LAYER = 'cell_types'
 
-class CellTypeLocalWithRule( CellTypeLocal ):
-    @staticmethod
-    def render_rule():
-        return {'point': {'cell_type': ['pt']},
-                'description_field': ['classification_system','cell_type']}
+ANNO_NAME = 'cell_type'
+CTR_PT, RADIUS_PT = 'pt', 'trigger_pt'
+TYPE_RENDERER='cell_type'
 
-class CellTypeExtension(AnnotationExtensionBase):
+def CellTypeExtensionFactory(CellTypeSchema):
+    render_rule =  {'point': {ANNO_NAME: [PT_NAME]},
+                    'description_field': ['classification_system','cell_type']}
+    class CellTypeExtension(CellTypeExtensionUnspecified):
+        def __init__ (easy_viewer, annotation_client=None):
+            super(CellTypeExtension, self).__init__(easy_viewer, annotation_client=None)
+            self.ngl_renderer = {TYPE_RENDERER: SchemaRenderer(CellTypeSchema, render_rule=render_rule)}
+            self.schema = CellTypeSchema
+
+    return CellTypeExtension
+
+class CellTypeExtensionUnspecified(AnnotationExtensionBase):
     def __init__(self, easy_viewer, annotation_client=None):
         super(CellTypeExtension, self).__init__(easy_viewer, annotation_client)
 
@@ -25,29 +34,23 @@ class CellTypeExtension(AnnotationExtensionBase):
         self.create_layers(None)
         self.allowed_layers = [CELL_TYPE_TOOL_LAYER]
 
-        self.ngl_renderer = {'cell_type':SchemaRenderer(CellTypeLocalWithRule),
-                             }
         # Which annotation goes to which layer from a finished annotation
-        self.anno_layer_dict = {'cell_type': CELL_TYPE_DISPLAY_LAYER}
+        self.anno_layer_dict = {ANNO_NAME: CELL_TYPE_DISPLAY_LAYER}
 
         # Which point goes to which layer while building annotation
-        self.point_layer_dict = {'ctr_pt': CELL_TYPE_TOOL_LAYER,
-                                 'trigger_pt': CELL_TYPE_TOOL_LAYER}
+        self.point_layer_dict = {CTR_PT: CELL_TYPE_TOOL_LAYER,
+                                 RADIUS_PT: CELL_TYPE_TOOL_LAYER}
 
         self.points = PointHolder(viewer=self.viewer,
-                                  pt_types=['ctr_pt', 'trigger_pt'],
-                                  trigger='trigger_pt',
+                                  pt_types=[CTR_PT, RADIUS_PT],
+                                  trigger=RADIUS_PT,
                                   layer_dict=self.point_layer_dict)
-
 
     @staticmethod
     def _default_key_bindings():
         bindings = {
             'update_center_point_spiny': 'keyq',
             'update_center_point_aspiny': 'keyw',
-            'update_center_point_e': 'shift+keyq',
-            'update_center_point_i': 'shift+keyw',
-            'update_center_point_blank': 'shift+keyu',
             'update_center_point_uncertain': 'keyu',
             'trigger_upload': 'keyt'}
         return bindings
@@ -64,31 +67,31 @@ class CellTypeExtension(AnnotationExtensionBase):
     @check_layer()
     def update_center_point( self, description, s):
         pos = self.viewer.get_mouse_coordinates(s)
-        self.points.update_point(pos, 'ctr_pt', message_type='cell type center point')
-        new_id = self.points.points['ctr_pt'].id
-        self.viewer.update_description({self.point_layer_dict['ctr_pt']:[new_id]}, description)
-        self.viewer.select_annotation(self.point_layer_dict['ctr_pt'], new_id)
+        self.points.update_point(pos, CTR_PT, message_type='cell type center point')
+        new_id = self.points.points[CTR_PT].id
+        self.viewer.update_description({self.point_layer_dict[CTR_PT]:[new_id]}, description)
+        self.viewer.select_annotation(self.point_layer_dict[CTR_PT], new_id)
 
     @check_layer()
     def trigger_upload( self, s):
         pos = self.viewer.get_mouse_coordinates(s)
-        anno_done = self.points.update_point(pos, 'trigger_pt', message_type='confirmation')
+        anno_done = self.points.update_point(pos, RADIUS_PT, message_type='confirmation')
 
-        self.points.points['ctr_pt'] = self.viewer.get_annotation(self.point_layer_dict['ctr_pt'],
-                                                self.points.points['ctr_pt'].id
+        self.points.points[CTR_PT] = self.viewer.get_annotation(self.point_layer_dict[CTR_PT],
+                                                self.points.points[CTR_PT].id
                                                 )
 
         cell_type = self.validate_cell_type_annotation( self.points() )
         if cell_type is None:
-            self.points.reset_points(pts_to_reset=['trigger_pt'])
+            self.points.reset_points(pts_to_reset=[RADIUS_PT])
             self.viewer.update_message('Please change the description to a valid cell type')
             return
 
         if anno_done:
             self.render_and_post_annotation(self.format_cell_type_data,
-                                            'cell_type',
+                                            TYPE_RENDERER,
                                             self.anno_layer_dict,
-                                            'cell_type')
+                                            ANNO_NAME)
             self.points.reset_points()
 
 
@@ -99,18 +102,6 @@ class CellTypeExtension(AnnotationExtensionBase):
     @check_layer()
     def update_center_point_aspiny(self, s):
         self.update_center_point(description='ivscc_m:aspiny_s_', s=s)
-
-    @check_layer()
-    def update_center_point_blank(self, s):
-        self.update_center_point(description='', s=s)
-
-    @check_layer()
-    def update_center_point_e(self, s):
-        self.update_center_point(description='valence:e', s=s)
-
-    @check_layer()
-    def update_center_point_i(self, s):
-        self.update_center_point(description='valence:i', s=s)
 
     @check_layer()
     def update_center_point_uncertain(self, s):
