@@ -1,7 +1,10 @@
 from neuroglancer_annotation_ui import EasyViewer, annotation
 import pandas as pd
 import numpy as np
+import warnings
 from .utils import bucket_of_values
+
+# MAX_URL_LENGTH = 2083
 
 class StateBuilder():
     def __init__(self, base_state=None,
@@ -121,7 +124,7 @@ class StateBuilder():
         self._add_layers()
         self._temp_viewer.set_view_options()
 
-    def render_state(self, data=None, base_state=None, return_as='url', url_prefix=None):
+    def render_state(self, data=None, base_state=None, return_as='url', url_prefix=None, link_text='Neuroglancer Link'):
         """
         Use the render rules to make a neuroglancer state out of a dataframe.
         Parameters
@@ -149,9 +152,13 @@ class StateBuilder():
         elif return_as == 'url':
             out = self._temp_viewer.as_url(prefix=url_prefix)
             self.initialize_state()
+            # if len(out) > MAX_URL_LENGTH:
+            #     warnings.warn('URL exceeds max length for many web browsers', Warning)
             return out
         elif return_as == 'html':
-            out = self._temp_viewer.as_url(prefix=url_prefix, as_html=True)
+            out = self._temp_viewer.as_url(prefix=url_prefix, as_html=True, link_text=link_text)
+            # if len(out) > MAX_URL_LENGTH + len(link_text) + 31: # 31=Length of html characters in the as_url function
+            #     warnings.warn('URL exceeds max length for many web browsers', Warning)
             self.initialize_state()
             return out
         elif return_as == 'json':
