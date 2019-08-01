@@ -10,11 +10,7 @@ import re
 
 neuroglancer.viewer_state.layer_types['segmentation_with_graph'] = utils.ChunkedgraphSegmentationLayer
 
-class Viewer(neuroglancer.Viewer):
-    def __init__(self):
-        super(Viewer, self).__init__()
-
-class EasyViewer( Viewer ):
+class EasyViewer( neuroglancer.Viewer ):
     """
     Extends the neuroglancer Viewer object to make simple operations simple.
     """
@@ -45,7 +41,7 @@ class EasyViewer( Viewer ):
         if re.search('^graphene:\/\/', source) is not None:
             s.layers[layer_name] = utils.ChunkedgraphSegmentationLayer(source=source, **kwargs)
         elif re.search('^precomputed:\/\/', source) is not None:
-            s.layers[layer_name] = utils.PrecomputedSegmentationLayer(source=source, **kwargs)
+            s.layers[layer_name] = neuroglancer.SegmentationLayer(source=source, **kwargs)
 
 
     def add_layers(self, image_layers={}, segmentation_layers={}, annotation_layers={}, resolution=None):

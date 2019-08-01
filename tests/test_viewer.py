@@ -16,9 +16,7 @@ def test_viewer_layers(viewer, img_layer, seg_layer_precomputed, seg_layer_graph
     viewer.add_selected_objects('seg_graph', [id_val])
     assert id_val in viewer.state.layers['seg_graph'].segments
 
-def test_pose_and_navigation(viewer, img_layer):
-    viewer.add_image_layer('img', img_layer)
-
+def test_pose_and_navigation(viewer):
     viewer.set_resolution([8,8,40])
     assert np.array_equal(viewer.state.voxel_size, [8,8,40])
 
@@ -28,8 +26,8 @@ def test_pose_and_navigation(viewer, img_layer):
 
     viewer.set_view_options()
 
-def test_annotations(viewer, seg_layer_graphene):
-    anno_ln = 'test_anno_layer'
+def test_annotations(viewer, anno_layer):
+    anno_ln = anno_layer
     viewer.add_annotation_layer(layer_name=anno_ln,
                                 color='#00bb33')
     viewer.set_annotation_layer_color(anno_ln, color='#aabbcc')
@@ -48,9 +46,15 @@ def test_annotations(viewer, seg_layer_graphene):
     viewer.remove_annotations(anno_ln, [pt_anno.id])
     assert len(viewer.state.layers[anno_ln].annotations) == 3
 
+    viewer.clear_annotation_layers([anno_ln])
+    assert len(viewer.state.layers[anno_ln].annotations) == 0
 
-def test_annotation_tags(viewer, img_layer):
-    viewer.add_image_layer('img', img_layer)
-    anno_ln = 'test_anno_layer'
-    viewer.add_annotation_layer(layer_name=anno_ln,
-                                color='#00bb33')
+def test_annotation_tags(viewer, anno_layer):
+    anno_ln = anno_layer
+    tags = ['tagA', 'tagB']
+    tag_dict = {ii+1:tag for ii, tag in zip(range(len(tags)), tags)}
+    anno_A = annotation.point_annotation([1,2,3], tag_ids=[2])
+    viewer.add_annotation_tags(anno_ln, tags)
+    viewer.add_annotations(anno_ln, [anno_A])
+    anno_a_ids = viewer.state.layers[anno_ln].annotations[0]._json_data['tagIds']
+    assert tag_dict[anno_a_ids[0]] == tags[1]

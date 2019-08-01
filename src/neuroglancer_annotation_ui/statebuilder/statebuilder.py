@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from .utils import bucket_of_values
 
-class DataStateBuilder():
+class StateBuilder():
     def __init__(self, base_state=None,
                  image_sources={}, seg_sources={},
                  selected_ids={}, annotation_layers={},
@@ -160,7 +160,7 @@ class DataStateBuilder():
     def viewer(self):
         return self._temp_viewer
 
-class FilteredDataStateBuilder(DataStateBuilder):
+class FilteredDataStateBuilder(StateBuilder):
     def __init__(self, *args, **kwargs):
         super(FilteredDataStateBuilder, self).__init__( *args, **kwargs)
 
