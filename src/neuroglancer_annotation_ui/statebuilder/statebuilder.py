@@ -12,8 +12,40 @@ class StateBuilder():
                  selected_ids={}, annotation_layers={},
                  resolution=[4,4,40], fixed_selection={},
                  url_prefix=None):
-        """
-        Class for turning data frames into neuroglancer states 
+        """A class for schematic mapping data frames into neuroglancer states.
+        Parameters
+        ----------
+        base_state : str, optional
+            Neuroglancer json state. This is set before all
+            layers are added from other arguments. Optional,
+            default is None.
+        image_sources : dict, optional
+            Dict where keys are layer names and values are
+            neuroglancer image sources, by default {}
+        seg_sources : dict, optional
+            Dict where keys are layer names and values are
+            neuroglancer segmentation sources, by default {}
+        selected_ids : dict, optional
+            Dict where keys are segmentation layer names and
+            values are an iterable of dataframe column names.
+            Object root ids from these columns are added to the
+            selected ids list in the segmentation layer. By default {}
+        annotation_layers : dict, optional
+            Dict where keys are annotation layer names and
+            values determine how annotations are rendered.
+            The render schema depends on the type of annotation:
+                - point annotation: {'points': Collection of column names}
+                - line annotation: {'lines': Collection of column name 2-tuples}
+                - sphere annotations: {'spheres': Collection of (center, radius) 2-tuples}
+            By default {}
+        resolution : list, optional
+            Numpy array for voxel resolution, by default [4,4,40]
+        fixed_selection : dict, optional
+            Dict where keys are segmentation layers and values are
+            a collection of object ids to make selected for all dataframes.
+            By default {}
+        url_prefix : str, optional
+            Default neuroglancer prefix to use, by default None
         """
         self._base_state = base_state
         self._image_sources = image_sources
@@ -119,23 +151,41 @@ class StateBuilder():
         return self._data_columns
 
     def initialize_state(self, base_state=None):
+        """Generate a new Neuroglancer state with layers as needed for the schema.
+        
+        Parameters
+        ----------
+        base_state : str, optional
+            Optional initial state to build on, described by its JSON. By default None.
+        """
         self._reset_state(base_state)
         self._temp_viewer.set_resolution(self._resolution)
         self._add_layers()
         self._temp_viewer.set_view_options()
 
     def render_state(self, data=None, base_state=None, return_as='url', url_prefix=None, link_text='Neuroglancer Link'):
-        """
-        Use the render rules to make a neuroglancer state out of a dataframe.
+        """Build a Neuroglancer state out of a DataFrame.
+        
         Parameters
-            data : DataFrame. Source of data for the rendering rules. Optional, default is None.
-                   If no data given, only the base state, image layers, and segmentation layers are generated.
-            base_state : JSON neuroglancer state (optional, default is None).
-                         Used as a base state for adding to.
-            return_as: ['url', 'viewer', 'html', 'json']. optional, default='url'.
-                       Sets how the state is returned. Note that if a viewer is returned,
-                       the state is not reset to default.
-            url_prefix: string, optional (default=None). Overrides the default neuroglancer url for url generation.
+        ----------
+        data : pandas.DataFrame, optional
+            DataFrame to use as a point source. By default None, for which
+            it will return only the base_state and any fixed values.
+        base_state : str, optional
+            Initial state to build on, expressed as Neuroglancer JSON. By default None
+        return_as : ['url', 'viewer', 'html', 'json'], optional
+            Choice of output types. Note that if a viewer is returned, the state is not reset.
+            By default 'url'
+        url_prefix : str, optional
+            Neuroglancer URL prefix to use. By default None, for which it will open with the
+            class default.
+        link_text : str, optional
+            Text to use for the link when returning as html, by default 'Neuroglancer Link'
+        
+        Returns
+        -------
+        string or neuroglancer.Viewer
+            A link to or viewer for a Neuroglancer state with layers, annotations, and selected objects determined by the data.
         """
         if base_state is not None:
             self.initialize_state(base_state=base_state)
@@ -176,21 +226,20 @@ class FilteredDataStateBuilder(StateBuilder):
     def __init__(self, *args, **kwargs):
         super(FilteredDataStateBuilder, self).__init__( *args, **kwargs)
 
-    def render_state(self, indices=None, data=None,
-                     base_state=None, return_as='url', url_prefix=None):
-        """
-        Use the render rules to make a neuroglancer state out of a dataframe and a set of indices
+    def render_state(self, indices=None, *args, **kwargs):
+        """Make a Neuroglancer state with a dataframe and selection of indices. This would generally be
+        better done by slicing the dataframe itself, but can be useful for interoperability with automation.
+        Arguments after indices are passed to DataStateBuilder.render_state.
+        
         Parameters
-            indices : Collection of index values to filter the data dataframe. Optional, default=None.
-                      Optional, default is None. If None, all data is used.
-            data : DataFrame. Source of data for the rendering rules. Optional, default is None.
-                   If no data given, only the base state, image layers, and segmentation layers are generated.
-            base_state : JSON neuroglancer state (optional, default is None).
-                         Used as a base state for adding to.
-            return_as: ['url', 'viewer', 'html', 'json']. optional, default='url'.
-                       Sets how the state is returned. Note that if a viewer is returned,
-                       the state is not reset to default.
-            url_prefix: string, optional (default=None). Overrides the default neuroglancer url for url generation.
+        ----------
+        indices : Collection of ints, optional
+            Indices to choose from the dataframe via iloc.  By default None, which plots the whole dataframe.
+
+        Returns
+        -------
+        string or neuroglancer.Viewer
+            A Neuroglancer state with layers, annotations, and selected objects determined by the data.
         """
 
         if data is not None:
@@ -200,26 +249,25 @@ class FilteredDataStateBuilder(StateBuilder):
                 data_render = data.loc[indices]
         else:
             data_render = None
-        return super(FilteredDataStateBuilder, self).render_state(
-                     data=data_render, base_state=base_state,
-                     return_as=return_as, url_prefix=url_prefix)
+        return super(FilteredDataStateBuilder, self).render_state(*args, **kwargs)
 
 
 class ChainedStateBuilder():
-    '''
-    A chain of state builders can render states by passing their output to the base state of the next.
-    Parameters:
-        statebuilders: Collection of StateBuilder objects
-    '''
-    def __init__(self, statebuilders=[]):
+    def __init__(self, statebuilders):
+        """Builds a collection of states that sequentially add annotations based on a sequence of dataframes.
+        
+        Parameters
+        ----------
+        statebuilders : list
+            List of DataStateBuilders, in same order as dataframes will be passed
+        """
         self._statebuilders = statebuilders
         if len(self._statebuilders) == 0:
             raise ValueError('Must have at least one statebuilder')
 
     def render_state(self, data_list=None, base_state=None, return_as='url', url_prefix=None):
-        """
-        Generate a single neuroglancer state by applying an ordered collection of dataframes to
-        an collection of StateBuilder renders.
+        """Generate a single neuroglancer state by addatively applying an ordered collection of
+        dataframes to an collection of StateBuilder renders.
         Parameters
             data_list : Collection of DataFrame. The order must match the order of StateBuilders
                         contained in the class on creation.
