@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import pandas as pd
-from neuroglancer_annotation_ui.statebuilder import StateBuilder, FilteredDataStateBuilder
+from neuroglancer_annotation_ui.statebuilder import StateBuilder, FilteredDataStateBuilder, build_state_direct
 
 def test_statebuilder_basic(img_layer, seg_layer_graphene):
     sb = StateBuilder(image_sources={'img':img_layer},
@@ -114,3 +114,10 @@ def test_statebuilder_complex_annotations(img_layer, seg_layer_graphene, df):
     statejson = sb.render_state(data=df, return_as='json')
     assert len(statejson['layers']) == 5
 
+def test_statebuilder_direct(img_layer, seg_layer_graphene, df):
+    img_sources = {'img': img_layer}
+    seg_sources = {'seg': seg_layer_graphene}
+    statejson = build_state_direct(point_annotations=np.vstack(df['single_pts'].values),
+                                   state_kws={'image_sources': img_sources, 'seg_sources': seg_sources},
+                                   return_as='json')
+    assert len(statejson['layers'][2]['annotations'])==10
