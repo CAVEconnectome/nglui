@@ -1,10 +1,10 @@
-from neuroglancer_annotation_ui import EasyViewer, annotation
+from neuroglancer_annotation_ui import EasyViewer, annotation, set_static_content_source
+from neuroglancer_annotation_ui.utils import default_static_content_source
 import pandas as pd
 import numpy as np
 from IPython.display import HTML
 from collections import defaultdict
 from .utils import bucket_of_values, make_basic_dataframe, sources_from_infoclient
-
 
 def build_state_direct(dataset_name=None, selected_ids=[], point_annotations={},
                       line_annotations={}, sphere_annotations={},
@@ -250,7 +250,8 @@ class StateBuilder():
         self._add_layers()
         self._temp_viewer.set_view_options()
 
-    def render_state(self, data=None, base_state=None, return_as='url', url_prefix=None, link_text='Neuroglancer Link'):
+    def render_state(self, data=None, base_state=None, return_as='url', static_content_source=default_static_content_source,
+                     url_prefix=None, link_text='Neuroglancer Link'):
         """Build a Neuroglancer state out of a DataFrame.
         
         Parameters
@@ -263,6 +264,9 @@ class StateBuilder():
         return_as : ['url', 'viewer', 'html', 'json'], optional
             Choice of output types. Note that if a viewer is returned, the state is not reset.
             By default 'url'
+        static_content_source : str, optional
+            Sets the neuroglancer web site source to use for a viewer, if a viewer is returned.
+            Optional, default is None. If none is set, uses the default value from neuroglancer_annotation_ui.utils.
         url_prefix : str, optional
             Neuroglancer URL prefix to use. By default None, for which it will open with the
             class default.
@@ -276,7 +280,7 @@ class StateBuilder():
         """
         if base_state is not None:
             self.initialize_state(base_state=base_state)
-
+    
         if url_prefix is None:
             url_prefix = self._url_prefix
 
@@ -285,6 +289,8 @@ class StateBuilder():
             self._render_data(data)
 
         if return_as == 'viewer':
+            if static_content_source is not None:
+                set_static_content_source(static_content_source)
             return self.viewer
         elif return_as == 'url':
             out = self._temp_viewer.as_url(prefix=url_prefix)
