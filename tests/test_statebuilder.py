@@ -42,38 +42,75 @@ def test_statebuilder_selections(img_layer, seg_layer_graphene, df):
     assert len(statejson['layers'][1]['segments']) == 30
 
 
-def test_statebuilder_annotations(img_layer, seg_layer_graphene, df):
-    anno_instructions_single = {'annos': {'points': ['single_pts']}}
+def test_statebuilder_annotation_types(img_layer, seg_layer_graphene, df):
+    point_annotations_single = {'annos': ['single_pts']}
     sb = StateBuilder(image_sources={'img':img_layer},
-                  seg_sources={'seg':seg_layer_graphene},
-                  annotation_layers=anno_instructions_single)
+                      seg_sources={'seg':seg_layer_graphene},
+                      point_annotations=point_annotations_single)
     statejson = sb.render_state(data=df, return_as='json')
     assert len(statejson['layers'][2]['annotations']) == 10
 
-    anno_instructions_array = {'annos': {'points': ['multi_pts_array']}}
+    anno_instructions_array = {'annos': ['multi_pts_array']}
     sb = StateBuilder(image_sources={'img':img_layer},
-                  seg_sources={'seg':seg_layer_graphene},
-                  annotation_layers=anno_instructions_array)
+                      seg_sources={'seg':seg_layer_graphene},
+                      point_annotations=anno_instructions_array)
     statejson = sb.render_state(data=df, return_as='json')
     assert len(statejson['layers'][2]['annotations']) == 20
 
-    anno_instructions_la = {'annos': {'points': ['multi_pts_list_array']}}
+    anno_instructions_la = {'annos': ['multi_pts_list_array']}
     sb = StateBuilder(image_sources={'img':img_layer},
                   seg_sources={'seg':seg_layer_graphene},
-                  annotation_layers=anno_instructions_la)
+                  point_annotations=anno_instructions_la)
     statejson = sb.render_state(data=df, return_as='json')
     assert len(statejson['layers'][2]['annotations']) == 20
 
-    anno_instructions_ll = {'annos': {'points': ['multi_pts_list_list']}}
+    anno_instructions_ll = {'annos': ['multi_pts_list_list']}
     sb = StateBuilder(image_sources={'img':img_layer},
                   seg_sources={'seg':seg_layer_graphene},
-                  annotation_layers=anno_instructions_ll)
+                  point_annotations=anno_instructions_ll)
     statejson = sb.render_state(data=df, return_as='json')
     assert len(statejson['layers'][2]['annotations']) == 20
 
-    anno_instructions_multicolumn = {'annos': {'points': ['single_pts', 'multi_pts_array']}}
+    anno_instructions_multicolumn = {'annos': ['single_pts', 'multi_pts_array']}
     sb = StateBuilder(image_sources={'img':img_layer},
                   seg_sources={'seg':seg_layer_graphene},
-                  annotation_layers=anno_instructions_multicolumn)
+                  point_annotations=anno_instructions_multicolumn)
     statejson = sb.render_state(data=df, return_as='json')
     assert len(statejson['layers'][2]['annotations']) == 30
+
+
+def test_statebuilder_complex_annotations(img_layer, seg_layer_graphene, df):
+    line_instructions = {'annos': [['line_a', 'line_b']]}
+    sb = StateBuilder(image_sources={'img': img_layer},
+                      seg_sources={'seg': seg_layer_graphene},
+                      line_annotations=line_instructions)
+    statejson = sb.render_state(data=df, return_as='json')
+    assert len(statejson['layers'][2]['annotations']) == 10
+
+
+    sphere_instructions = {'annos': [['line_a', 'radius']]}
+    sb = StateBuilder(image_sources={'img': img_layer},
+                      seg_sources={'seg': seg_layer_graphene},
+                      sphere_annotations=sphere_instructions)
+    statejson = sb.render_state(data=df, return_as='json')
+    assert len(statejson['layers'][2]['annotations']) == 10
+
+    anno_instructions_multicolumn = {'annos': ['single_pts', 'multi_pts_array']}
+    sb = StateBuilder(image_sources={'img': img_layer},
+                      seg_sources={'seg': seg_layer_graphene},
+                      point_annotations=anno_instructions_multicolumn,
+                      line_annotations=line_instructions,
+                      sphere_annotations=sphere_instructions)
+    statejson = sb.render_state(data=df, return_as='json')
+    assert len(statejson['layers'][2]['annotations']) == 50
+
+    sphere_instructions = {'sphere_annos': [['line_a', 'radius']]}
+    line_instructions = {'line_annos': [['line_a', 'line_b']],
+                         'line_annos_2': [['line_a', 'line_b']]}
+    sb = StateBuilder(image_sources={'img': img_layer},
+                      seg_sources={'seg': seg_layer_graphene},
+                      line_annotations=line_instructions,
+                      sphere_annotations=sphere_instructions)
+    statejson = sb.render_state(data=df, return_as='json')
+    assert len(statejson['layers']) == 5
+

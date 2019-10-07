@@ -34,11 +34,18 @@ def df():
     multi_pts_array = [np.random.randint(0,10000,(2,3)) for i in single_inds]
     multi_pts_list_array = [[np.random.randint(0,10000,(3,)) for j in range(2)] for i in single_inds]
     multi_pts_list_list = [np.random.randint(0,10000,(2,3)).tolist() for i in single_inds]
-
+    
+    line_a = [np.random.randint(0, 10000, (3,)) for i in single_inds]
+    line_b = [np.random.randint(0, 10000, (3,)) for i in single_inds]
+    rad = [1000* np.random.rand() for i in single_inds]
     return pd.DataFrame({'single_inds':single_inds,
                          'multi_inds_array':multi_inds_array,
                          'multi_inds_list': multi_inds_list,
                          'single_pts': single_pts,
                          'multi_pts_array': multi_pts_array,
                          'multi_pts_list_array': multi_pts_list_array,
-                         'multi_pts_list_list': multi_pts_list_list})
+                         'multi_pts_list_list': multi_pts_list_list,
+                         'line_a': line_a,
+                         'line_b': line_b,
+                         'radius': rad
+                         })

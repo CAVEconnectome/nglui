@@ -1,15 +1,149 @@
 from neuroglancer_annotation_ui import EasyViewer, annotation
+from annotationframeworkclient.infoservice import InfoServiceClient
 import pandas as pd
 import numpy as np
 import warnings
+from collections import defaultdict
 from .utils import bucket_of_values
 
-# MAX_URL_LENGTH = 2083
+
+def build_state_flat(selected_ids=[], point_annotations={},
+                     line_annotations={}, sphere_annotations={},
+                     return_as='url', render_kwargs={},
+                     state_kwargs={}):
+    """Build a Neuroglancer state from data directly, using the statebuilder as an intermediate layer.
+
+    Parameters
+    ----------
+    selected_ids : list, optional
+        List of object ids to make selected, by default []
+    point_annotations : Nx3 list or numpy array, or a dict, optional
+        Either an array of points or a dict with layernames as keys as array of point locations as values.
+        By default, an empty dict.
+    line_annotations : list or tuple, optional
+        Either a pair of Mx3 arrays of points or a dict with layernames as keys as pairs of Mx3 arrays as values.
+        Points at the same index along the 1st axis will be at the ends of each line annotation.
+        By default, an empty dict.
+    sphere_annotations : list or tuple, optional
+        Either a collection whose first element is an Lx3 array and whose second elemnt is a length L array-like, or a dict
+        with layernames as keys and values being that type of collection. This will generate spheres for each row with a center at each
+        point in the first element radius determined by the second.
+        By default, an empty dict.
+    return_as : ['url', 'viewer', 'html', 'json'], optional
+        Choice of output types. Note that if a viewer is returned, the state is not reset.
+        By default 'url'
+    render_kwargs : dict, optional
+        Keyword arguments to pass to the render_state function.
+    state_kwargs : dict, optional
+        Keyword arguments to pass to the StateBuilder initialization.
+
+    Returns
+    -------
+    string or neuroglancer.Viewer
+        A Neuroglancer state with layers, annotations, and selected objects determined by the data.        
+    """
+    if point_annotations is not None:
+        if not isinstance(point_annotations, dict):
+            point_annotations = {default_anno_layer_name: point_annotations}
+    
+    if line_annotations is not None:
+        if not isinstance(line_annotations, dict):
+            line_annotations = {default_anno_layer_name: line_annotations}
+    
+    if sphere_annotations is not None:
+        if not isinstance(sphere_annotations, dict):
+            sphere_annotations = {default_anno_layer_name: sphere_annotations}
+    
+    df, pals, lals, sals = _make_basic_dataframe(point_annotations, line_annotations, sphere_annotations)
+    sb = StateBuilder(point_annotations=pals, line_annotations=lals, sphere_annotations=sals, **kwargs)
+    return sb.render_state(data=df, return_as='url', **render_kwargs)
+
+def _make_basic_dataframe(point_annotations={}, line_annotations={}, sphere_annotations={}):
+    """Makes a dataframe containing pre-computed data to be read by a StateBuilder object.
+    """
+    dfs = []
+
+    pals = {}
+    for ii, (ln, data) in enumerate(point_annotations.items()):
+        col_name = f'point_{ii}'
+        if isinstance(data, np.ndarray):
+            data = data.tolist()
+        df=pd.DataFrame()
+        df[col_name] = data
+        dfs.append(df)
+        pals[ln] = [col_name]
+    
+    lals = {}
+    for ii, (ln, (data_a, data_b)) in enuemrate(line_annotations.items()):
+        col_name_a = f'line_{ii}_a'
+        col_name_b = f'line_{ii}_b'
+        if isinstance(data_a, np.ndarray):
+            data_a = data_a.tolist()
+        if isinstance(data_b, np.ndarray):
+            data_b = data_b.tolist()
+        df = pd.DataFrame()
+        df[col_name_a] = data_a
+        df[col_name_b] = data_b
+        dfs.append(df)
+        lals[ln] = [[col_name_a, col_name_b]]
+
+    sals = {}
+    for ii, (ln, (data_c, data_r)) in enuemrate(sphere_annotations.items()):
+        col_name_c = f'sphere_{ii}_c'
+        col_name_r = f'sphere_{ii}_r'
+        if isinstance(data_c, np.ndarray):
+            data_c = data_c.tolist()
+        if isinstance(data_r, np.ndarray):
+            data_r = data_r.tolist()
+        df = pd.DataFrame()
+        df[col_name_c] = data_c
+        df[col_name_r] = data_r
+        dfs.append(df)
+        sals[ln] = [[col_name_c, col_name_r]]
+    
+    df_out = pd.concat(dfs, sort=False)
+    return df_out, pals, lals, sals
+
+
+def sources_from_infoclient(dataset_name, segmentation_type='default', image_layer_name='img', seg_layer_name='seg'):
+    """Generate an img_source and seg_source dict from the info service. Will default to graphene and fall back to flat segmentation, unless otherwise specified. 
+    
+    Parameters
+    ----------
+    dataset_name : str
+        InfoService dataset name
+    segmentation_type : 'default', 'graphene' or 'flat', optional
+        Choose which type of segmentation to use. 'default' will try graphene first and fall back to flat. Graphene or flat will
+        only use the specified type or give nothing. By default 'default'. 
+    image_layer_name : str, optional
+        Layer name for the imagery, by default 'img'
+    seg_layer_name : str, optional
+        Layer name for the segmentation, by default 'seg'
+    """
+    info_client = InfoServiceClient(dataset_name=dataset_name)
+    image_source = {image_layer_name: info_client.image_source(format_for='neuroglancer')}
+    
+    if segmentation_type == 'default':
+        if info_client.pychunkedgraph_segmentation_source() is None:
+            segmentation_type = 'flat'
+        else:
+            segmentation_type = 'graphene'
+
+    if segmentation_type == 'graphene':
+        seg_source = {seg_layer_name : info_client.pychunkedgraph_segmentation_source(format_for='neuroglancer')}
+    elif segmentation_type == 'flat':
+        seg_source = {seg_layer_name: info_client.flat_segmentation_source(format_for='neuroglancer')}
+    else:
+        seg_source = {}
+    return image_source, seg_source
+
 
 class StateBuilder():
     def __init__(self, base_state=None,
+                 dataset_name=None, segmentation_type='graphene', image_layer_name='img', seg_layer_name='seg',
                  image_sources={}, seg_sources={},
-                 selected_ids={}, annotation_layers={},
+                 selected_ids={}, point_annotations={},
+                 line_annotations={}, sphere_annotations={},
                  resolution=[4,4,40], fixed_selection={},
                  url_prefix=None):
         """A class for schematic mapping data frames into neuroglancer states.
@@ -19,6 +153,14 @@ class StateBuilder():
             Neuroglancer json state. This is set before all
             layers are added from other arguments. Optional,
             default is None.
+        dataset_name : str or None, optional
+            Dataset name to populate image and segmentation layers from the InfoService. Default is None.
+        segmentation_type : 'graphene' or 'flat', optional
+            If dataset_name is used, specifies whether to take the flat or graph segmentation. Default is 'graphene'.
+        image_layer_name : str, optional
+            If dataset_name is used, defines the image layer name. Default is 'img'. Will not override explicit setting from image_sources.
+        seg_layer_name : str, optional
+            If dataset_name is used, defines the segmentation layer name. Default is 'seg'. Will not override explicit setting from seg_sources.
         image_sources : dict, optional
             Dict where keys are layer names and values are
             neuroglancer image sources, by default {}
@@ -30,13 +172,18 @@ class StateBuilder():
             values are an iterable of dataframe column names.
             Object root ids from these columns are added to the
             selected ids list in the segmentation layer. By default {}
-        annotation_layers : dict, optional
-            Dict where keys are annotation layer names and
-            values determine how annotations are rendered.
-            The render schema depends on the type of annotation:
-                - point annotation: {'points': Collection of column names}
-                - line annotation: {'lines': Collection of column name 2-tuples}
-                - sphere annotations: {'spheres': Collection of (center, radius) 2-tuples}
+        point_annotations : dict, optional
+            Dict where the keys define annotation layer names and the values
+            are a collection of column names to use as a source data for points
+            in that annotation layer.
+            By default {}
+        line_annotations : dict, optional
+            Dict where the keys define annotation layer names and the values
+            are a collection of column name 2-tuples to use as a source for line annotatons. 
+            By default {}
+        sphere_annotations : dict, optional
+            Dict where keys are annotation layer names and values are a collection of
+            (center, radius) 2-tuples of column names for getting the source data.
             By default {}
         resolution : list, optional
             Numpy array for voxel resolution, by default [4,4,40]
@@ -45,22 +192,41 @@ class StateBuilder():
             a collection of object ids to make selected for all dataframes.
             By default {}
         url_prefix : str, optional
-            Default neuroglancer prefix to use, by default None
+            Default neuroglancer prefix to use, by default None.
         """
+        if dataset_name is not None:
+            info_img, info_seg = sources_from_infoclient(dataset_name, segmentation_type=segmentation_type,
+                                                         image_layer_name=image_layer_name, seg_layer_name=seg_layer_name)
+            for ln, src in info_img.items():  # Do not override manual choices
+                if ln not in image_sources:
+                    image_sources[ln] = src
+            for ln, src in info_seg.items():
+                if ln not in seg_sources:
+                    seg_sources[ln] = src
+
         self._base_state = base_state
         self._image_sources = image_sources
         self._seg_sources = seg_sources
         self._resolution = resolution
         self._selected_ids = selected_ids
         self._fixed_selection = fixed_selection
+
+        annotation_layers = defaultdict(dict)
+        for ln, col_names in point_annotations.items():
+            annotation_layers[ln]['points'] = col_names
+        for ln, col_names in line_annotations.items():
+            annotation_layers[ln]['lines'] = col_names
+        for ln, col_names in sphere_annotations.items():
+            annotation_layers[ln]['spheres'] = col_names
         self._annotation_layers = annotation_layers
+
         self._url_prefix = url_prefix
         self._data_columns = self._compute_data_columns()
         self.initialize_state()
 
     def _compute_data_columns(self):
         data_columns = []
-        for ln, kws in self._annotation_layers.items():
+        for _, kws in self._annotation_layers.items():
             if 'points' in kws:
                 for col in kws['points']:
                     data_columns.append(col)
@@ -71,7 +237,7 @@ class StateBuilder():
                 for colpair in kws['spheres']:
                     data_columns.extend(colpair)
 
-        for ln, idcols in self._selected_ids.items():
+        for _, idcols in self._selected_ids.items():
             data_columns.extend(idcols)
 
         return data_columns
