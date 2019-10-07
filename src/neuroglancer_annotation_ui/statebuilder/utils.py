@@ -3,7 +3,7 @@ from annotationframeworkclient.infoservice import InfoServiceClient
 import numpy as np
 import pandas as pd
 
-def bucket_of_values(col, data, item_is_array=False):
+def bucket_of_values(col, data, item_is_array=False, array_width=3):
     '''
     Use to get a flat array of items when you don't know if it's already a collection or a collection of iterables.
     Parameters:
@@ -26,7 +26,7 @@ def bucket_of_values(col, data, item_is_array=False):
                 return dataseries.values[0].reshape(1,-1)
         else:
             if len(data)>1:
-                return np.vstack(dataseries.map(np.vstack)).reshape(-1,3)
+                return np.vstack(dataseries.map(np.vstack)).reshape(-1, array_width)
             else:
                 return np.vstack(dataseries).reshape(1, -1)
     else:
