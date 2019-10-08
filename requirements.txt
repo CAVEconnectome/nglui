@@ -1,11 +1,5 @@
 neuroglancer
 numpy
-flask
-flask_wtf
-wtforms
 pandas
-emannotationschemas
 ipython
-analysisdatalink>=0.1.4
 annotationframeworkclient>=0.1.0
-palettable
