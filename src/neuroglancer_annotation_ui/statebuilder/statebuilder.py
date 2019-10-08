@@ -8,6 +8,8 @@ from .utils import bucket_of_values, make_basic_dataframe, sources_from_infoclie
 
 def build_state_direct(dataset_name=None, selected_ids=[], point_annotations={},
                       line_annotations={}, sphere_annotations={},
+                      image_layer_name='img', seg_layer_name='seg',
+                      annotation_layer_colors={},
                       default_anno_layer_name='annos',
                       return_as='url', render_kws={},
                       state_kws={}):
@@ -53,9 +55,16 @@ def build_state_direct(dataset_name=None, selected_ids=[], point_annotations={},
     if sphere_annotations is not None:
         if not isinstance(sphere_annotations, dict):
             sphere_annotations = {default_anno_layer_name: sphere_annotations}
-    
+
+    if not isinstance(selected_ids, dict):
+        selected_ids = {seg_layer_name: selected_ids}
+
     df, pals, lals, sals = make_basic_dataframe(point_annotations, line_annotations, sphere_annotations)
-    sb = StateBuilder(dataset_name=dataset_name, point_annotations=pals, line_annotations=lals, sphere_annotations=sals, **state_kws)
+    sb = StateBuilder(dataset_name=dataset_name, point_annotations=pals,   
+                      line_annotations=lals, sphere_annotations=sals,
+                      seg_layer_name=seg_layer_name, image_layer_name=image_layer_name,
+                      annotation_layer_colors=annotation_layer_colors,
+                      fixed_selection=selected_ids, **state_kws)
     return sb.render_state(data=df, return_as=return_as, **render_kws)
 
 

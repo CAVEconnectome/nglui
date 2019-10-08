@@ -4,11 +4,6 @@ import pandas as pd
 from dashdataframe import configure_app
 from neuroglancer_annotation_ui.statebuilder import StateBuilder
 
-
-IMAGE_LAYER_NAME = 'img'
-SEG_LAYER_NAME = 'seg'
-DATASET_NAME = 'pinky100'
-ANNO_POINT_COLUMN = 'pt_position'
 FLASK_PORT = 8880
 
 df_filename = 'dash_example_data.h5'
