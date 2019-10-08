@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import pandas as pd
-from neuroglancer_annotation_ui.statebuilder import StateBuilder, FilteredDataStateBuilder, build_state_direct
+from neuroglancer_annotation_ui.statebuilder import StateBuilder, build_state_direct
 
 def test_statebuilder_basic(img_layer, seg_layer_graphene):
     sb = StateBuilder(image_sources={'img':img_layer},

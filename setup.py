@@ -33,7 +33,7 @@ setup(
    description='Neuroglancer python annotation UI framework.',
    long_description=open('README.md').read(),
    author='Derrick Brittain, Casey Schneider-Mizell, Forrest Collman',
-   author_email='dlbrittain@gmail.com',
+   author_email='caseysm@gmail.com',
    url="https://github.com/seung-lab/neuroglancer_annotation_ui",
    packages=find_packages('src'), 
    package_dir={'': 'src'},
