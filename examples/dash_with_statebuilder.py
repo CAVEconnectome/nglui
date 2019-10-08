@@ -1,3 +1,10 @@
+'''
+NOTE:
+This example uses dashdataframe to make a dash app for exploring data and genenerating
+Neuroglancer links. This can be installed with `pip install dashdataframe` or through
+github at https://github.com/AllenInstitute/DashDataFrame.
+'''
+
 import os
 import dash
 import pandas as pd
