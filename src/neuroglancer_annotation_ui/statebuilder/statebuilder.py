@@ -61,7 +61,7 @@ def build_state_direct(dataset_name=None, selected_ids=[], point_annotations={},
 
 class StateBuilder():
     def __init__(self, base_state=None,
-                 dataset_name=None, segmentation_type='graphene', image_layer_name='img', seg_layer_name='seg',
+                 dataset_name=None, segmentation_type='graphene', image_layer_name='img', seg_layer_name='seg', annotation_layer_colors={},
                  image_sources={}, seg_sources={},
                  selected_ids={}, point_annotations={},
                  line_annotations={}, sphere_annotations={},
@@ -139,6 +139,8 @@ class StateBuilder():
             annotation_layers[ln]['lines'] = col_names
         for ln, col_names in sphere_annotations.items():
             annotation_layers[ln]['spheres'] = col_names
+        for ln, color in annotation_layer_colors.items():
+            annotation_layers[ln]['color'] = color
         self._annotation_layers = annotation_layers
 
         self._url_prefix = url_prefix
@@ -310,36 +312,6 @@ class StateBuilder():
     @property
     def viewer(self):
         return self._temp_viewer
-
-class FilteredDataStateBuilder(StateBuilder):
-    def __init__(self, *args, **kwargs):
-        super(FilteredDataStateBuilder, self).__init__( *args, **kwargs)
-
-    def render_state(self, indices=None, *args, **kwargs):
-        """Make a Neuroglancer state with a dataframe and selection of indices. This would generally be
-        better done by slicing the dataframe itself, but can be useful for interoperability with automation.
-        Arguments after indices are passed to DataStateBuilder.render_state.
-        
-        Parameters
-        ----------
-        indices : Collection of ints, optional
-            Indices to choose from the dataframe via iloc.  By default None, which plots the whole dataframe.
-
-        Returns
-        -------
-        string or neuroglancer.Viewer
-            A Neuroglancer state with layers, annotations, and selected objects determined by the data.
-        """
-
-        if data is not None:
-            if indices is None:
-                data_render = data
-            else:
-                data_render = data.loc[indices]
-        else:
-            data_render = None
-        return super(FilteredDataStateBuilder, self).render_state(*args, **kwargs)
-
 
 class ChainedStateBuilder():
     def __init__(self, statebuilders):
