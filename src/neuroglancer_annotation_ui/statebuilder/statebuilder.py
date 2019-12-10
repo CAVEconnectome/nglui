@@ -70,11 +70,14 @@ def build_state_direct(dataset_name=None, selected_ids=[], point_annotations={},
 
 class StateBuilder():
     def __init__(self, base_state=None,
-                 dataset_name=None, segmentation_type='graphene', image_layer_name='img', seg_layer_name='seg', annotation_layer_colors={},
+                 dataset_name=None, segmentation_type='graphene',
+                 image_layer_name='img', seg_layer_name='seg',
+                 annotation_layer_colors={}, descriptions={},
                  image_sources={}, seg_sources={},
                  selected_ids={}, point_annotations={},
                  line_annotations={}, sphere_annotations={},
                  resolution=[4,4,40], fixed_selection={},
+                 linked_selections={},
                  url_prefix=None):
         """A class for schematic mapping data frames into neuroglancer states.
         Parameters
@@ -121,6 +124,9 @@ class StateBuilder():
             Dict where keys are segmentation layers and values are
             a collection of object ids to make selected for all dataframes.
             By default {}
+        linked_selections: dict, optional
+            Dict keyed by annotation layer name, with an entry that is a dict with keys 
+            'seg_layer' and 'data' that point to the segmentation layer name and the data column, respectively.
         url_prefix : str, optional
             Default neuroglancer prefix to use, by default None.
         """
@@ -140,6 +146,7 @@ class StateBuilder():
         self._resolution = resolution
         self._selected_ids = selected_ids
         self._fixed_selection = fixed_selection
+        self._linked_selections = linked_selections
 
         annotation_layers = defaultdict(dict)
         for ln, col_names in point_annotations.items():
@@ -151,6 +158,8 @@ class StateBuilder():
         for ln, color in annotation_layer_colors.items():
             annotation_layers[ln]['color'] = color
         self._annotation_layers = annotation_layers
+
+        self._annotation_descriptions = descriptions
 
         self._url_prefix = url_prefix
         self._data_columns = self._compute_data_columns()
@@ -203,7 +212,10 @@ class StateBuilder():
                 self._temp_viewer.add_segmentation_layer(ln, src)
         for ln, kws in self._annotation_layers.items():
             if ln not in self._temp_viewer.layer_names:
-                self._temp_viewer.add_annotation_layer(ln, color=kws.get('color', None))
+                linked_seg_layer = self._linked_selections.get(ln, {}).get('seg_layer', None)
+                self._temp_viewer.add_annotation_layer(ln,
+                                                       color=kws.get('color', None),
+                                                       linked_segmentation_layer=linked_seg_layer)
             # TODO tags for tag-mapping!
 
     def _render_data(self, data):
@@ -227,20 +239,38 @@ class StateBuilder():
             annos = []
             for pt_column in kws.get('points', []):
                 pts = bucket_of_values(pt_column, data, item_is_array=True)
-                annos.extend([annotation.point_annotation(pt) for pt in pts])
+                description_col = self._annotation_descriptions.get(ln, None)
+                if description_col is not None:
+                    descriptions = bucket_of_values(description_col, data, item_is_array=False)
+                else:
+                    descriptions = [None for pt in pts]
+                linked_selection_col = self._linked_selections.get(ln, {}).get('data', None)
+                if linked_selection_col is not None:
+                    linked_selections = bucket_of_values(linked_selection_col, data, item_is_array=False)
+                else:
+                    linked_selections = [None for pt in pts]
+                annos.extend([annotation.point_annotation(pt, description=d, linked_segmentation=[ls]) for pt, d, ls in zip(pts, descriptions, linked_selections)])
 
             for pt_column_pair in kws.get('lines', []):
                 pt_col_a, pt_col_b = pt_column_pair
                 pts_a = bucket_of_values(pt_col_a, data, item_is_array=True)
                 pts_b = bucket_of_values(pt_col_b, data, item_is_array=True)
-                annos.extend([annotation.line_annotation(ptA, ptB) for ptA, ptB in zip(pts_a, pts_b)])
+                if description_col is not None:
+                    descriptions = bucket_of_values(description_col, data, item_is_array=False)
+                else:
+                    descriptions = [None for pt in pts_a]
+                annos.extend([annotation.line_annotation(ptA, ptB, description=d) for ptA, ptB, d in zip(pts_a, pts_b, descriptions)])
 
             for pt_column_pair in kws.get('spheres', []):
                 z_factor = self._resolution[0]/self._resolution[2]
                 pt_col, radius_col = pt_column_pair
                 pts = bucket_of_values(pt_col, data, item_is_array=True)
                 rads = bucket_of_values(radius_col, data, item_is_array=False)
-                annos.extend([annotation.sphere_annotation(pt, radius, z_factor) for pt, radius in zip(pts, rads)])
+                if description_col is not None:
+                    descriptions = bucket_of_values(description_col, data, item_is_array=False)
+                else:
+                    descriptions = [None for pt in pts]
+                annos.extend([annotation.sphere_annotation(pt, radius, z_factor, description=d) for pt, radius, d in zip(pts, rads, descriptions)])
 
             self._temp_viewer.add_annotations(ln, annos)
 
