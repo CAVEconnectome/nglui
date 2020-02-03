@@ -1,8 +1,8 @@
-from neuroglancer import LineAnnotation, \
-                         PointAnnotation, \
-                         EllipsoidAnnotation, \
-                         AxisAlignedBoundingBoxAnnotation, \
-                         random_token
+from neuroglancer_annotation_ui.nglite import LineAnnotation, \
+                                              PointAnnotation, \
+                                              EllipsoidAnnotation, \
+                                              AxisAlignedBoundingBoxAnnotation, \
+                                              random_token
 
 def line_annotation(a, b, id=None, description=None, linked_segmentation=None, tag_ids=None):
     """Returns line annotation object.

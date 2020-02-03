@@ -1,5 +1,5 @@
-import neuroglancer
 from collections import OrderedDict
+import neuroglancer_annotation_ui.nglite as neuroglancer
 from neuroglancer_annotation_ui import annotation, utils
 from inspect import getmembers, ismethod
 from numpy import issubdtype, integer, uint64

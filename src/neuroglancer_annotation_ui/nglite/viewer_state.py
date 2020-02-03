@@ -38,7 +38,6 @@ def export(obj):
 def interpolate_linear(a, b, t):
     return a * (1 - t) + b * t
 
-
 @export
 class SpatialPosition(JsonObjectWrapper):
     __slots__ = ()
@@ -56,10 +55,8 @@ class SpatialPosition(JsonObjectWrapper):
         c.voxel_coordinates = interpolate_linear(a.voxel_coordinates, b.voxel_coordinates, t)
         return c
 
-
 def unit_quaternion():
     return np.array([0, 0, 0, 1], np.float32)
-
 
 def quaternion_slerp(a, b, t):
     """Spherical linear interpolation for unit quaternions.

@@ -219,7 +219,7 @@ class SkeletonHandler(BaseRequestHandler):
 global_server = None
 
 
-def set_static_content_source(url=url):
+def set_static_content_source(url=None):
     global global_static_content_source
     global_static_content_source = static.get_static_content_source(url=url)
 
