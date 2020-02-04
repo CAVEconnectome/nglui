@@ -425,7 +425,7 @@ class Layers(object):
             json_data = collections.OrderedDict()
         self._layers = []
         self._readonly = _readonly
-        if isinstance(json_data, collections.Mapping):
+        if isinstance(json_data, collections.abc.Mapping):
             for k, v in six.iteritems(json_data):
                 self._layers.append(ManagedLayer(k, v, _readonly=_readonly))
         else:

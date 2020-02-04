@@ -170,27 +170,7 @@ class EasyViewer( neuroglancer.Viewer ):
     def remove_annotation(self, layer_name, aids):
         raise DeprecationWarning('This function is depreciated. Use ''remove_annotations'' instead.')
         self.remove_annotations(self, layer_name, aids)
-
-
-    def remove_annotation_by_linked_oids_one_shot(self, layer_names, oids):
-        oids_to_remove = set(oids)
-        new_layer_data = {}
-        layers = self.state.layers
-        for ln in layer_names:
-            new_layer_data[ln] = [a for a in layers[ln].annotations._data if not oids_to_remove.issuperset(a.segments)]
-
-        with self.txn() as s:
-            for ln, new_data in new_layer_data.items():
-                s.layers[ln].annotations._data = new_data
-
-    def filter_annotations_by_linked_oids(self, layer_names, oids_to_keep):
-        oids_to_keep = set(oids)
-        new_layer_data = {}
-        for ln in layer_names:
-            new_layer_data[ln] = [a for a in self.state.layers[ln].annotations._data if oids_to_keep.issuperset(a.segments)]
-        with self.txn() as s:
-            for ln, new_data in new_layer_data.items():
-                s.layers[ln].annotations._data = new_data
+        
 
     def add_annotation_tags(self, layer_name, tags):
         '''

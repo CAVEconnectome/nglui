@@ -3,6 +3,7 @@ from neuroglancer_annotation_ui.nglite import LineAnnotation, \
                                               EllipsoidAnnotation, \
                                               AxisAlignedBoundingBoxAnnotation, \
                                               random_token
+from .utils import omit_nones
 
 def line_annotation(a, b, id=None, description=None, linked_segmentation=None, tag_ids=None):
     """Returns line annotation object.
@@ -19,7 +20,7 @@ def line_annotation(a, b, id=None, description=None, linked_segmentation=None, t
         point_b=b,
         id=id,
         description=description,
-        segments=linked_segmentation)
+        segments=omit_nones(linked_segmentation))
     if tag_ids is not None:
         line._json_data['tagIds'] = tag_ids
     return line
@@ -38,7 +39,7 @@ def point_annotation(point, id=None, description=None, linked_segmentation=None,
         point=[int(x) for x in point],
         id=id,
         description=description,
-        segments=linked_segmentation)
+        segments=omit_nones(linked_segmentation))
     if tag_ids is not None:
         point._json_data['tagIds'] = tag_ids
     return point
@@ -67,7 +68,7 @@ def ellipsoid_annotation(center, radii, id=None, description=None, linked_segmen
         radii=radii,
         id=id,
         description=description,
-        segments=linked_segmentation)
+        segments=omit_nones(linked_segmentation))
     if tag_ids is not None:
         ellipsoid._json_data['tag_ids'] = tag_ids
     return ellipsoid
@@ -87,7 +88,7 @@ def bounding_box_annotation(point_a, point_b, id=None, description=None, linked_
         point_b=point_b,
         id=id,
         description=description,
-        segments=linked_segmentation)
+        segments=omit_nones(linked_segmentation))
     if tag_ids is not None:
         bounding_box._json_data['tag_ids'] = tag_ids
     return bounding_box

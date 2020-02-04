@@ -1,7 +1,14 @@
-from collections import Iterable
+from collections.abc import Iterable
 from annotationframeworkclient.infoservice import InfoServiceClient
 import numpy as np
 import pandas as pd
+
+
+def omit_nones(seg_list):
+    seg_list = list(filter(lambda x: x is not None, seg_list))
+    if len(seg_list) == 0:
+        return None
+
 
 def bucket_of_values(col, data, item_is_array=False, array_width=3):
     '''
