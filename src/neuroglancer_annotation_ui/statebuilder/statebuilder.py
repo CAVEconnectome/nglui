@@ -69,6 +69,57 @@ def build_state_direct(dataset_name=None, selected_ids=[], point_annotations={},
 
 
 class StateBuilder():
+    """A class for schematic mapping data frames into neuroglancer states.
+    Parameters
+    ----------
+    base_state : str, optional
+        Neuroglancer json state. This is set before all
+        layers are added from other arguments. Optional,
+        default is None.
+    dataset_name : str or None, optional
+        Dataset name to populate image and segmentation layers from the InfoService. Default is None.
+    segmentation_type : 'graphene' or 'flat', optional
+        If dataset_name is used, specifies whether to take the flat or graph segmentation. Default is 'graphene'.
+    image_layer_name : str, optional
+        If dataset_name is used, defines the image layer name. Default is 'img'. Will not override explicit setting from image_sources.
+    seg_layer_name : str, optional
+        If dataset_name is used, defines the segmentation layer name. Default is 'seg'. Will not override explicit setting from seg_sources.
+    image_sources : dict, optional
+        Dict where keys are layer names and values are
+        neuroglancer image sources, by default {}
+    seg_sources : dict, optional
+        Dict where keys are layer names and values are
+        neuroglancer segmentation sources, by default {}
+    selected_ids : dict, optional
+        Dict where keys are segmentation layer names and
+        values are an iterable of dataframe column names.
+        Object root ids from these columns are added to the
+        selected ids list in the segmentation layer. By default {}
+    point_annotations : dict, optional
+        Dict where the keys define annotation layer names and the values
+        are a collection of column names to use as a source data for points
+        in that annotation layer.
+        By default {}
+    line_annotations : dict, optional
+        Dict where the keys define annotation layer names and the values
+        are a collection of column name 2-tuples to use as a source for line annotatons. 
+        By default {}
+    sphere_annotations : dict, optional
+        Dict where keys are annotation layer names and values are a collection of
+        (center, radius) 2-tuples of column names for getting the source data.
+        By default {}
+    resolution : list, optional
+        Numpy array for voxel resolution, by default [4,4,40]
+    fixed_selection : dict, optional
+        Dict where keys are segmentation layers and values are
+        a collection of object ids to make selected for all dataframes.
+        By default {}
+    linked_selections: dict, optional
+        Dict keyed by annotation layer name, with an entry that is a dict with keys 
+        'seg_layer' and 'data' that point to the segmentation layer name and the data column, respectively.
+    url_prefix : str, optional
+        Default neuroglancer prefix to use, by default None.
+    """
     def __init__(self, base_state=None,
                  dataset_name=None, segmentation_type='graphene',
                  image_layer_name='img', seg_layer_name='seg',
@@ -79,57 +130,6 @@ class StateBuilder():
                  resolution=[4,4,40], fixed_selection={},
                  linked_selections={},
                  url_prefix=None):
-        """A class for schematic mapping data frames into neuroglancer states.
-        Parameters
-        ----------
-        base_state : str, optional
-            Neuroglancer json state. This is set before all
-            layers are added from other arguments. Optional,
-            default is None.
-        dataset_name : str or None, optional
-            Dataset name to populate image and segmentation layers from the InfoService. Default is None.
-        segmentation_type : 'graphene' or 'flat', optional
-            If dataset_name is used, specifies whether to take the flat or graph segmentation. Default is 'graphene'.
-        image_layer_name : str, optional
-            If dataset_name is used, defines the image layer name. Default is 'img'. Will not override explicit setting from image_sources.
-        seg_layer_name : str, optional
-            If dataset_name is used, defines the segmentation layer name. Default is 'seg'. Will not override explicit setting from seg_sources.
-        image_sources : dict, optional
-            Dict where keys are layer names and values are
-            neuroglancer image sources, by default {}
-        seg_sources : dict, optional
-            Dict where keys are layer names and values are
-            neuroglancer segmentation sources, by default {}
-        selected_ids : dict, optional
-            Dict where keys are segmentation layer names and
-            values are an iterable of dataframe column names.
-            Object root ids from these columns are added to the
-            selected ids list in the segmentation layer. By default {}
-        point_annotations : dict, optional
-            Dict where the keys define annotation layer names and the values
-            are a collection of column names to use as a source data for points
-            in that annotation layer.
-            By default {}
-        line_annotations : dict, optional
-            Dict where the keys define annotation layer names and the values
-            are a collection of column name 2-tuples to use as a source for line annotatons. 
-            By default {}
-        sphere_annotations : dict, optional
-            Dict where keys are annotation layer names and values are a collection of
-            (center, radius) 2-tuples of column names for getting the source data.
-            By default {}
-        resolution : list, optional
-            Numpy array for voxel resolution, by default [4,4,40]
-        fixed_selection : dict, optional
-            Dict where keys are segmentation layers and values are
-            a collection of object ids to make selected for all dataframes.
-            By default {}
-        linked_selections: dict, optional
-            Dict keyed by annotation layer name, with an entry that is a dict with keys 
-            'seg_layer' and 'data' that point to the segmentation layer name and the data column, respectively.
-        url_prefix : str, optional
-            Default neuroglancer prefix to use, by default None.
-        """
         if dataset_name is not None:
             info_img, info_seg = sources_from_infoclient(dataset_name, segmentation_type=segmentation_type,
                                                          image_layer_name=image_layer_name, seg_layer_name=seg_layer_name)

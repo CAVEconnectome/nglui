@@ -10,7 +10,7 @@ def set_static_content_source(source=default_static_content_source, graphene_ver
     if graphene_version is None:
         neuroglancer.set_static_content_source(url=source)
     else:
-        neuroglancer.set_static_content_source(url=graphene_version_content_sources[graphene_version])
+        neuroglancer.set_static_content_source(url=graphene_version_content_sources.get(graphene_version, 0))
         
 def stop_ngl_server():
     """
