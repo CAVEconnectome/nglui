@@ -38,7 +38,6 @@ def test_statebuilder_selections(img_layer, seg_layer_graphene, df):
                       seg_sources={'seg':seg_layer_graphene},
                       selected_ids=selection_instruction_multicol)
     statejson = sb.render_state(data=df, return_as='json')
-    print(statejson['layers'][1]['segments'])
     assert len(statejson['layers'][1]['segments']) == 30
 
 

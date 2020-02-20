@@ -1,7 +1,8 @@
 import pytest
-from neuroglancer_annotation_ui import EasyViewer
+from neuroglancer_annotation_ui import EasyViewer, set_static_content_source
 import pandas as pd
 import numpy as np
+
 
 @pytest.fixture(scope='session')
 def viewer():
@@ -18,6 +19,8 @@ def seg_layer_precomputed():
 @pytest.fixture(scope='session')
 def seg_layer_graphene():
     return 'graphene://https://dev12.dynamicannotationframework.com/segmentation/1.0/pinky100_neo1'
+
+set_static_content_source(graphene_version=0)
 
 @pytest.fixture(scope='session')
 def anno_layer():

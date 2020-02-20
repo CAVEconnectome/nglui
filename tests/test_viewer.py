@@ -51,6 +51,7 @@ def test_annotations(viewer, anno_layer):
 
 def test_annotation_tags(viewer, anno_layer):
     anno_ln = anno_layer
+    viewer.add_annotation_layer(layer_name=anno_ln)
     tags = ['tagA', 'tagB']
     tag_dict = {ii+1:tag for ii, tag in zip(range(len(tags)), tags)}
     anno_A = annotation.point_annotation([1,2,3], tag_ids=[2])

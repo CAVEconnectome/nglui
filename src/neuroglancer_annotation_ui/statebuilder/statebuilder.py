@@ -237,9 +237,10 @@ class StateBuilder():
 
         for ln, kws in self._annotation_layers.items():
             annos = []
+            description_col = self._annotation_descriptions.get(ln, None)
+
             for pt_column in kws.get('points', []):
                 pts = bucket_of_values(pt_column, data, item_is_array=True)
-                description_col = self._annotation_descriptions.get(ln, None)
                 if description_col is not None:
                     descriptions = bucket_of_values(description_col, data, item_is_array=False)
                 else:
@@ -253,6 +254,7 @@ class StateBuilder():
 
             for pt_column_pair in kws.get('lines', []):
                 pt_col_a, pt_col_b = pt_column_pair
+
                 pts_a = bucket_of_values(pt_col_a, data, item_is_array=True)
                 pts_b = bucket_of_values(pt_col_b, data, item_is_array=True)
                 if description_col is not None:
