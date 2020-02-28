@@ -3,16 +3,139 @@ from neuroglancer_annotation_ui.utils import default_static_content_source
 import pandas as pd
 import numpy as np
 from IPython.display import HTML
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from .utils import bucket_of_values, make_basic_dataframe, sources_from_infoclient
+from collections.abc import Iterable
+
+DEFAULT_IMAGE_LAYER = 'img'
+DEFAULT_SEG_LAYER = 'seg'
+DEFAULT_ANNO_LAYER = 'anno'
+
+
+class LayerConfigBase(object):
+    def __init__(self,
+                 name,
+                 type,
+                 source,
+                 color,
+                 ):
+    self._config = dict(type=type,
+                        name=name,
+                        source=source,
+                        color=color,
+                        )
+
+
+class ImageLayerConfig(LayerConfigBase):
+    def __init__(self,
+                 source,
+                 name=DEFAULT_IMAGE_LAYER,
+                 ):
+        super(ImageLayerConfig, self).__init__(
+            name=name, type='image', source=source, color=None)
+
+
+class SelectionMapper(object):
+    def __init__(self, data_columns):
+        self._config = dict(data_columns=data_columns)
+
+
+class SegmentationLayerConfig(LayerConfigBase):
+    def __init__(self,
+                 source,
+                 name=DEFAULT_SEG_LAYER,
+                 selected_ids_column=[]):
+        if isinstance(selected_ids_column, str):
+            selected_ids_column = [selected_ids_column]
+        super(SegmentationLayerConfig, self).__init__(
+            name=name, type='segmentation', source=source, color=None)
+        self._mapping_rules = SelectionMapper(data_columns=selected_ids_column)
+
+
+class AnnotationLayerConfig(LayerConfigBase):
+    def __init__(self,
+                 name=DEFAULT_ANNO_LAYER,
+                 color=None,
+                 mapping_rules=[]):
+        super(AnnotationLayerConfig, self).__init__(
+            name=name, type='annotation', color=color)
+        self._mapping_rules = mapping_rules
+
+
+class AnnotationMapperBase(object):
+    def __init__(self,
+                 type,
+                 data_column,
+                 description_column,
+                 linked_segmentation_layer,
+                 linked_segmentation_column
+                 ):
+
+        self._config = dict(type=type,
+                            data_column=data_column,
+                            descriptions=description_column,
+                            linked_segmentation_layer=linked_segmentation_layer,
+                            linked_segmentation_column=linked_segmentation_column,
+                            )
+
+
+class PointMapper(AnnotationMapperBase):
+    def __init__(self,
+                 point_column,
+                 description_column=None,
+                 linked_segmentation_layer=DEFAULT_SEG_LAYER,
+                 linked_segmentation_column=None):
+
+        super(PointMapper, self).__init__(type='point',
+                                          data_columns=[point_column],
+                                          description_column=None,
+                                          linked_segmentation_column=linked_segmentation_column,
+                                          linked_segmentation_layer=linked_segmentation_layer)
+
+
+class LineMapper(AnnotationMapperBase):
+    def __init__(self,
+                 point_column_a,
+                 point_column_b,
+                 layer_name=DEFAULT_ANNO_LAYER,
+                 description_column=None,
+                 linked_segmentation_layer=DEFAULT_SEG_LAYER,
+                 linked_segmentation_column=None):
+
+        super(LineMapper, self).__init__(type='line',
+                                         data_columns=[
+                                              point_column_a, point_column_b],
+                                         layer_name=layer_name,
+                                         description_column=None,
+                                         linked_segmentation_column=linked_segmentation_column,
+                                         linked_segmentation_layer=linked_segmentation_layer)
+
+
+class SphereMapper(AnnotationMapperBase):
+    def __init__(self,
+                 center_column,
+                 radius_column,
+                 layer_name=DEFAULT_ANNO_LAYER,
+                 description_column=None,
+                 linked_segmentation_layer=DEFAULT_SEG_LAYER,
+                 linked_segmentation_column=None):
+
+        super(LineMapper, self).__init__(type='sphere',
+                                         data_columns=[
+                                              center_column, radius_column],
+                                         layer_name=layer_name,
+                                         description_column=None,
+                                         linked_segmentation_column=linked_segmentation_column,
+                                         linked_segmentation_layer=linked_segmentation_layer)
+
 
 def build_state_direct(dataset_name=None, selected_ids=[], point_annotations={},
-                      line_annotations={}, sphere_annotations={},
-                      image_layer_name='img', seg_layer_name='seg',
-                      annotation_layer_colors={},
-                      default_anno_layer_name='annos',
-                      return_as='url', render_kws={},
-                      state_kws={}):
+                       line_annotations={}, sphere_annotations={},
+                       image_layer_name=DEFAULT_IMAGE_LAYER, seg_layer_name=DEFAULT_SEG_LAYER,
+                       annotation_layer_colors={},
+                       default_anno_layer_name=DEFAULT_ANNO_LAYER,
+                       return_as='url', render_kws={},
+                       state_kws={}):
     """Build a Neuroglancer state from data directly, using the statebuilder as an intermediate layer.
 
     Parameters
@@ -47,11 +170,11 @@ def build_state_direct(dataset_name=None, selected_ids=[], point_annotations={},
     if point_annotations is not None:
         if not isinstance(point_annotations, dict):
             point_annotations = {default_anno_layer_name: point_annotations}
-    
+
     if line_annotations is not None:
         if not isinstance(line_annotations, dict):
             line_annotations = {default_anno_layer_name: line_annotations}
-    
+
     if sphere_annotations is not None:
         if not isinstance(sphere_annotations, dict):
             sphere_annotations = {default_anno_layer_name: sphere_annotations}
@@ -59,8 +182,9 @@ def build_state_direct(dataset_name=None, selected_ids=[], point_annotations={},
     if not isinstance(selected_ids, dict):
         selected_ids = {seg_layer_name: selected_ids}
 
-    df, pals, lals, sals = make_basic_dataframe(point_annotations, line_annotations, sphere_annotations)
-    sb = StateBuilder(dataset_name=dataset_name, point_annotations=pals,   
+    df, pals, lals, sals = make_basic_dataframe(
+        point_annotations, line_annotations, sphere_annotations)
+    sb = StateBuilder(dataset_name=dataset_name, point_annotations=pals,
                       line_annotations=lals, sphere_annotations=sals,
                       seg_layer_name=seg_layer_name, image_layer_name=image_layer_name,
                       annotation_layer_colors=annotation_layer_colors,
@@ -120,14 +244,15 @@ class StateBuilder():
     url_prefix : str, optional
         Default neuroglancer prefix to use, by default None.
     """
+
     def __init__(self, base_state=None,
                  dataset_name=None, segmentation_type='graphene',
                  image_layer_name='img', seg_layer_name='seg',
                  annotation_layer_colors={}, descriptions={},
                  image_sources={}, seg_sources={},
-                 selected_ids={}, point_annotations={},
-                 line_annotations={}, sphere_annotations={},
-                 resolution=[4,4,40], fixed_selection={},
+                 selected_ids={}, point_annotations=None,
+                 line_annotations=None, sphere_annotations=None,
+                 resolution=[4, 4, 40], fixed_selection={},
                  linked_selections={},
                  url_prefix=None):
         if dataset_name is not None:
@@ -183,7 +308,6 @@ class StateBuilder():
 
         return data_columns
 
-    
     def _reset_state(self, base_state=None):
         """
         Resets the neuroglancer state status to a default viewer.
@@ -199,9 +323,10 @@ class StateBuilder():
         '''
         # Check that each layer has a column
         if not np.all(np.isin(self.data_columns, data.columns)):
-            missing_cols = [c for c in self.data_columns if c not in data.columns]
-            raise ValueError('Dataframe does not have all needed columns. Missing {}'.format(missing_cols))
-
+            missing_cols = [
+                c for c in self.data_columns if c not in data.columns]
+            raise ValueError(
+                'Dataframe does not have all needed columns. Missing {}'.format(missing_cols))
 
     def _add_layers(self):
         for ln, src in self._image_sources.items():
@@ -212,9 +337,11 @@ class StateBuilder():
                 self._temp_viewer.add_segmentation_layer(ln, src)
         for ln, kws in self._annotation_layers.items():
             if ln not in self._temp_viewer.layer_names:
-                linked_seg_layer = self._linked_selections.get(ln, {}).get('seg_layer', None)
+                linked_seg_layer = self._linked_selections.get(
+                    ln, {}).get('seg_layer', None)
                 self._temp_viewer.add_annotation_layer(ln,
-                                                       color=kws.get('color', None),
+                                                       color=kws.get(
+                                                           'color', None),
                                                        linked_segmentation_layer=linked_seg_layer)
             # TODO tags for tag-mapping!
 
@@ -232,7 +359,7 @@ class StateBuilder():
                 self._temp_viewer.add_selected_objects(ln, oids)
 
     def _add_annotations(self, data):
-        if len(data)==0:
+        if len(data) == 0:
             return
 
         for ln, kws in self._annotation_layers.items():
@@ -242,15 +369,19 @@ class StateBuilder():
             for pt_column in kws.get('points', []):
                 pts = bucket_of_values(pt_column, data, item_is_array=True)
                 if description_col is not None:
-                    descriptions = bucket_of_values(description_col, data, item_is_array=False)
+                    descriptions = bucket_of_values(
+                        description_col, data, item_is_array=False)
                 else:
                     descriptions = [None for pt in pts]
-                linked_selection_col = self._linked_selections.get(ln, {}).get('data', None)
-                if linked_selection_col is not None:
-                    linked_selections = bucket_of_values(linked_selection_col, data, item_is_array=False)
+                linked_selection_cols = self._linked_selections.get(
+                    ln, {}).get('data', None)
+                if linked_selection_cols is not None:
+                    linked_selections = bucket_of_values(
+                        linked_selection_cols, data, item_is_array=False)
                 else:
                     linked_selections = [None for pt in pts]
-                annos.extend([annotation.point_annotation(pt, description=d, linked_segmentation=[ls]) for pt, d, ls in zip(pts, descriptions, linked_selections)])
+                annos.extend([annotation.point_annotation(pt, description=d, linked_segmentation=[
+                             ls]) for pt, d, ls in zip(pts, descriptions, linked_selections)])
 
             for pt_column_pair in kws.get('lines', []):
                 pt_col_a, pt_col_b = pt_column_pair
@@ -258,10 +389,12 @@ class StateBuilder():
                 pts_a = bucket_of_values(pt_col_a, data, item_is_array=True)
                 pts_b = bucket_of_values(pt_col_b, data, item_is_array=True)
                 if description_col is not None:
-                    descriptions = bucket_of_values(description_col, data, item_is_array=False)
+                    descriptions = bucket_of_values(
+                        description_col, data, item_is_array=False)
                 else:
                     descriptions = [None for pt in pts_a]
-                annos.extend([annotation.line_annotation(ptA, ptB, description=d) for ptA, ptB, d in zip(pts_a, pts_b, descriptions)])
+                annos.extend([annotation.line_annotation(ptA, ptB, description=d)
+                              for ptA, ptB, d in zip(pts_a, pts_b, descriptions)])
 
             for pt_column_pair in kws.get('spheres', []):
                 z_factor = self._resolution[0]/self._resolution[2]
@@ -269,10 +402,12 @@ class StateBuilder():
                 pts = bucket_of_values(pt_col, data, item_is_array=True)
                 rads = bucket_of_values(radius_col, data, item_is_array=False)
                 if description_col is not None:
-                    descriptions = bucket_of_values(description_col, data, item_is_array=False)
+                    descriptions = bucket_of_values(
+                        description_col, data, item_is_array=False)
                 else:
                     descriptions = [None for pt in pts]
-                annos.extend([annotation.sphere_annotation(pt, radius, z_factor, description=d) for pt, radius, d in zip(pts, rads, descriptions)])
+                annos.extend([annotation.sphere_annotation(
+                    pt, radius, z_factor, description=d) for pt, radius, d in zip(pts, rads, descriptions)])
 
             self._temp_viewer.add_annotations(ln, annos)
 
@@ -282,7 +417,7 @@ class StateBuilder():
 
     def initialize_state(self, base_state=None):
         """Generate a new Neuroglancer state with layers as needed for the schema.
-        
+
         Parameters
         ----------
         base_state : str, optional
@@ -296,7 +431,7 @@ class StateBuilder():
     def render_state(self, data=None, base_state=None, return_as='url', static_content_source=default_static_content_source,
                      url_prefix=None, link_text='Neuroglancer Link'):
         """Build a Neuroglancer state out of a DataFrame.
-        
+
         Parameters
         ----------
         data : pandas.DataFrame, optional
@@ -315,7 +450,7 @@ class StateBuilder():
             class default.
         link_text : str, optional
             Text to use for the link when returning as html, by default 'Neuroglancer Link'
-        
+
         Returns
         -------
         string or neuroglancer.Viewer
@@ -323,7 +458,7 @@ class StateBuilder():
         """
         if base_state is not None:
             self.initialize_state(base_state=base_state)
-    
+
         if url_prefix is None:
             url_prefix = self._url_prefix
 
@@ -340,7 +475,8 @@ class StateBuilder():
             self.initialize_state()
             return out
         elif return_as == 'html':
-            out = HTML(self._temp_viewer.as_url(prefix=url_prefix, as_html=True, link_text=link_text))
+            out = HTML(self._temp_viewer.as_url(
+                prefix=url_prefix, as_html=True, link_text=link_text))
             self.initialize_state()
             return out
         elif return_as == 'json':
@@ -354,10 +490,11 @@ class StateBuilder():
     def viewer(self):
         return self._temp_viewer
 
+
 class ChainedStateBuilder():
     def __init__(self, statebuilders):
         """Builds a collection of states that sequentially add annotations based on a sequence of dataframes.
-        
+
         Parameters
         ----------
         statebuilders : list
@@ -392,7 +529,7 @@ class ChainedStateBuilder():
                                               base_state=temp_state,
                                               return_as='json')
         last_builder = self._statebuilders[-1]
-        return last_builder.render_state(data = data_list[-1],
+        return last_builder.render_state(data=data_list[-1],
                                          base_state=temp_state,
                                          return_as=return_as,
                                          url_prefix=url_prefix)
