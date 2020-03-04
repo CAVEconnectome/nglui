@@ -19,11 +19,27 @@ class LayerConfigBase(object):
                  source,
                  color,
                  ):
-    self._config = dict(type=type,
-                        name=name,
-                        source=source,
-                        color=color,
-                        )
+        self._config = dict(type=type,
+                            name=name,
+                            source=source,
+                            color=color,
+                            )
+
+    @property
+    def type(self):
+        return self._config.get('type', None)
+
+    @property
+    def name(self):
+        return self._config.get('name', None)
+
+    @property
+    def source(self):
+        return self._config.get('source', None)
+
+    @property
+    def color(self):
+        return self._config.get('color', None)
 
 
 class ImageLayerConfig(LayerConfigBase):
@@ -34,63 +50,163 @@ class ImageLayerConfig(LayerConfigBase):
         super(ImageLayerConfig, self).__init__(
             name=name, type='image', source=source, color=None)
 
+    def _render_layer(self, viewer, data):
+        viewer.add_image_layer(self.name, self.source)
+        return viewer
+
 
 class SelectionMapper(object):
-    def __init__(self, data_columns):
-        self._config = dict(data_columns=data_columns)
+    def __init__(self, data_columns=None, fixed_ids=None):
+        if isinstance(data_columns, str):
+            data_columns = [data_columns]
+        self._config = dict(data_columns=data_columns,
+                            fixed_ids=fixed_ids)
+
+    @property
+    def data_columns(self):
+        if self._config.get('data_columns', None) is None:
+            return []
+        else:
+            return self._config.get('data_columns')
+
+    @property
+    def fixed_ids(self):
+        if self._config.get('fixed_ids', None) is None:
+            return []
+        else:
+            return self._config.get('fixed_ids', None)
+
+    def selected_ids(self, data):
+        selected_ids = [np.unique(self.fixed_ids)]
+        for col in self.data_columns:
+            selected_ids.append(np.unique(data[col]))
+        return np.concatenate(selected_ids)
 
 
 class SegmentationLayerConfig(LayerConfigBase):
     def __init__(self,
                  source,
                  name=DEFAULT_SEG_LAYER,
-                 selected_ids_column=[]):
-        if isinstance(selected_ids_column, str):
-            selected_ids_column = [selected_ids_column]
+                 selected_ids_column=None,
+                 fixed_ids=None,
+                 ):
         super(SegmentationLayerConfig, self).__init__(
             name=name, type='segmentation', source=source, color=None)
-        self._mapping_rules = SelectionMapper(data_columns=selected_ids_column)
+        if selected_ids_column is not None or fixed_ids is not None:
+            self._selection_map = SelectionMapper(
+                data_columns=selected_ids_column,
+                fixed_ids=fixed_ids)
+        else:
+            self._selection_map = None
+
+    def _render_layer(self, viewer, data):
+        viewer.add_segmentation_layer(self.name, self.source)
+        if self._selection_map is not None:
+            selected_ids = self._selection_map.selected_ids(data)
+            viewer.add_selected_objects(self.name, selected_ids)
+        return viewer
 
 
 class AnnotationLayerConfig(LayerConfigBase):
     def __init__(self,
                  name=DEFAULT_ANNO_LAYER,
                  color=None,
+                 linked_segmentation_layer=DEFAULT_SEG_LAYER,
                  mapping_rules=[]):
         super(AnnotationLayerConfig, self).__init__(
             name=name, type='annotation', color=color)
-        self._mapping_rules = mapping_rules
+        self._config['linked_segmentation_layer'] = linked_segmentation_layer
+        self._annotation_map_rules = mapping_rules
+
+    @property
+    def linked_segmentation_layer(self):
+        return self._config.get('linked_segmentation_layer', None)
+
+    def add_mapping_rules(self, rules):
+        if issubclass(rules, AnnotationMapperBase):
+            rules = [rules]
+        self._annotation_map_rules.extend(rules)
+
+    def _render_layer(self, viewer, data):
+        viewer.add_annotation_layer(self.name,
+                                    color=self.color,
+                                    linked_segmentation_layer=self.linked_segmentation_layer)
+        annos = []
+        for rule in self._annotation_map_rules:
+            annos.extend(rule._render_data(data))
+        viewer.add_annotations(self.name, annos)
 
 
 class AnnotationMapperBase(object):
     def __init__(self,
                  type,
-                 data_column,
+                 data_columns,
                  description_column,
-                 linked_segmentation_layer,
-                 linked_segmentation_column
+                 linked_segmentation_column,
                  ):
 
         self._config = dict(type=type,
-                            data_column=data_column,
-                            descriptions=description_column,
-                            linked_segmentation_layer=linked_segmentation_layer,
+                            data_columns=data_columns,
+                            description_column=description_column,
                             linked_segmentation_column=linked_segmentation_column,
                             )
+
+    @property
+    def type(self):
+        return self._config.get('type', None)
+
+    @property
+    def data_columns(self):
+        return self._config.get('data_columns', None)
+
+    @property
+    def description_column(self):
+        return self._config.get('description_columns', None)
+
+    def _render_data(self, data):
+        # Set per subclass
+        return None
+
+    def _linked_segmentations(self, data):
+        if self.linked_segmentation_column is not None:
+            seg_array = np.vstack(data[self.linked_segmentation_column].values)
+            linked_segs = [row[~np.isnan(row)].astype(int)
+                           for row in seg_array]
+        else:
+            linked_segs = [None for x in range(len(data))]
+        return linked_segs
+
+    def _descriptions(self, data):
+        if self.description_column is not None:
+            descriptions = data[self.description_column].values
+        else:
+            descriptions = [None for x in range(len(data))]
+        return descriptions
 
 
 class PointMapper(AnnotationMapperBase):
     def __init__(self,
                  point_column,
                  description_column=None,
-                 linked_segmentation_layer=DEFAULT_SEG_LAYER,
                  linked_segmentation_column=None):
 
         super(PointMapper, self).__init__(type='point',
                                           data_columns=[point_column],
                                           description_column=None,
                                           linked_segmentation_column=linked_segmentation_column,
-                                          linked_segmentation_layer=linked_segmentation_layer)
+                                          )
+
+    def _render_data(self, data):
+        col = self.data_columns[0]
+
+        pts = np.vstack(data[col].values)
+        descriptions = self._descriptions(data)
+        linked_segs = self._linked_segmentations(data)
+        annos = [point_annotation(pt,
+                                  description=d,
+                                  linked_segmentation=ls) for
+                 pt, d, ls in zip(pts, descriptions, linked_segs)]
+        return annos
 
 
 class LineMapper(AnnotationMapperBase):
@@ -108,7 +224,20 @@ class LineMapper(AnnotationMapperBase):
                                          layer_name=layer_name,
                                          description_column=None,
                                          linked_segmentation_column=linked_segmentation_column,
-                                         linked_segmentation_layer=linked_segmentation_layer)
+                                         )
+
+        def _render_data(self, data):
+            colA, colB = self.data_columns
+            ptAs = np.vstack(data[colA].values)
+            ptBs = np.vstack(data[colB].values)
+
+            descriptions = self._descriptions(data)
+            linked_segs = self._linked_segmentations(data)
+            annos = [line_annotation(ptA, ptB,
+                                     description=d,
+                                     linked_segmentation=ls) for
+                     ptA, ptB, d, ls in zip(ptAs, ptBs, descriptions, linked_segs)]
+            return annos
 
 
 class SphereMapper(AnnotationMapperBase):
@@ -126,7 +255,20 @@ class SphereMapper(AnnotationMapperBase):
                                          layer_name=layer_name,
                                          description_column=None,
                                          linked_segmentation_column=linked_segmentation_column,
-                                         linked_segmentation_layer=linked_segmentation_layer)
+                                         )
+
+        def _render_data(self, data):
+            col_ctr, col_rad = self.data_columns
+            pts = np.vstack(data[col_ctr].values)
+            rs = np.vstack(data[col_rad].values)
+
+            descriptions = self._descriptions(data)
+            linked_segs = self._linked_segmentations(data)
+            annos = [line_annotation(pt, r,
+                                     description=d,
+                                     linked_segmentation=ls) for
+                     pt, r, d, ls in zip(pts, rs, descriptions, linked_segs)]
+            return annos
 
 
 def build_state_direct(dataset_name=None, selected_ids=[], point_annotations={},
@@ -244,6 +386,15 @@ class StateBuilder():
     url_prefix : str, optional
         Default neuroglancer prefix to use, by default None.
     """
+
+    def __init__(
+        self,
+        base_state=None,
+        image_layers=[],
+        segmentation_layers=[],
+        annotation_layers=[],
+
+    )
 
     def __init__(self, base_state=None,
                  dataset_name=None, segmentation_type='graphene',
