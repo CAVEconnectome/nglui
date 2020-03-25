@@ -3,9 +3,7 @@ from neuroglancer_annotation_ui.utils import default_static_content_source
 import pandas as pd
 import numpy as np
 from IPython.display import HTML
-from collections import defaultdict, namedtuple
-from .utils import bucket_of_values, make_basic_dataframe, sources_from_infoclient
-from collections.abc import Iterable
+from .utils import bucket_of_values, make_basic_dataframe
 
 DEFAULT_IMAGE_LAYER = 'img'
 DEFAULT_SEG_LAYER = 'seg'
@@ -13,6 +11,21 @@ DEFAULT_ANNO_LAYER = 'anno'
 
 
 class LayerConfigBase(object):
+    """Base class for configuring layers
+
+    Parameters
+    ----------
+    name : str
+        Layer name for reference and display    
+    type : str
+        Layer type. Usually handled by the subclass
+    source : str
+        Datasource for the layer
+    color : str
+        Hex string (with starting hash).
+
+    """
+
     def __init__(self,
                  name,
                  type,
@@ -33,16 +46,45 @@ class LayerConfigBase(object):
     def name(self):
         return self._config.get('name', None)
 
+    @property.setter
+    def name(self, n):
+        self._config['name'] = n
+
     @property
     def source(self):
         return self._config.get('source', None)
+
+    @property.setter
+    def source(self, s):
+        self._config['source'] = s
 
     @property
     def color(self):
         return self._config.get('color', None)
 
+    @property.setter
+    def color(self, c):
+        self._config.set['color'] = c
+
+    def _render_layer(self, viewer, data):
+        """ Subclasses implement specific rendering rules
+        """
+        return viewer
+
 
 class ImageLayerConfig(LayerConfigBase):
+    """Image layer configuration class.
+
+    This provides the rules for setting up an image layer in neuroglancer.
+
+    Parameters
+    ----------
+    source : str
+        Cloudpath to an image source
+    name : str, optional
+        Name of the image layer. By default, 'img'.
+    """
+
     def __init__(self,
                  source,
                  name=DEFAULT_IMAGE_LAYER,
@@ -56,6 +98,16 @@ class ImageLayerConfig(LayerConfigBase):
 
 
 class SelectionMapper(object):
+    """Class for configuring object selections based on root id
+
+    Parameters
+    ----------
+    data_columns : str or list, optional
+        Name (or list of names) of the data columns to get ids from. Default is None.
+    fixed_ids : list, optional
+        List of ids to select irrespective of data.
+    """
+
     def __init__(self, data_columns=None, fixed_ids=None):
         if isinstance(data_columns, str):
             data_columns = [data_columns]
@@ -77,6 +129,8 @@ class SelectionMapper(object):
             return self._config.get('fixed_ids', None)
 
     def selected_ids(self, data):
+        """ Uses the rules to generate a list of ids from a dataframe.
+        """
         selected_ids = [np.unique(self.fixed_ids)]
         for col in self.data_columns:
             selected_ids.append(np.unique(data[col]))
@@ -84,6 +138,19 @@ class SelectionMapper(object):
 
 
 class SegmentationLayerConfig(LayerConfigBase):
+    """Configuration class for segmentatoin layers
+
+    Parameters
+    ----------
+    source : str
+        Segmentation source
+
+    Returns
+    -------
+    [type]
+        [description]
+    """
+
     def __init__(self,
                  source,
                  name=DEFAULT_SEG_LAYER,
@@ -99,6 +166,18 @@ class SegmentationLayerConfig(LayerConfigBase):
         else:
             self._selection_map = None
 
+    def add_selection_map(self, selected_ids_column=None, fixed_ids=None):
+        if self._selection_map is not None:
+            if isinstance(selected_ids_column, str):
+                selected_ids_column = [selected_ids_column]
+            data_columns = self._selection_map.data_columns.extend(
+                selected_ids_column)
+            fixed_ids = self._selection_map.fixed_ids.extend(fixed_ids)
+
+        self._selection_map = SelectionMapper(
+            data_columns=data_columns,
+            fixed_ids=fixed_ids)
+
     def _render_layer(self, viewer, data):
         viewer.add_segmentation_layer(self.name, self.source)
         if self._selection_map is not None:
@@ -108,17 +187,39 @@ class SegmentationLayerConfig(LayerConfigBase):
 
 
 class AnnotationLayerConfig(LayerConfigBase):
+    """Configuration class for annotation layers
+
+    Parameters
+    ----------
+    name : str, optional
+        Layer name. By default, 'annos'
+    color : str, optional
+        Hex color code with an initial #. By default, None
+    linked_segmentation_layer : str, optional
+        Name of a linked segmentation layer for selected ids. By default, None
+    mapping_rules : PointMapper, LineMapper, SphereMapper or list, optional
+        One rule or a list of rules mapping data to annotations. By default, []
+    tags : list, optional
+        List of tags for the layer.
+    Returns
+    -------
+    [type]
+        [description]
+    """
+
     def __init__(self,
                  name=DEFAULT_ANNO_LAYER,
                  color=None,
                  linked_segmentation_layer=None,
-                 mapping_rules=[]):
+                 mapping_rules=[],
+                 tags=None):
         super(AnnotationLayerConfig, self).__init__(
             name=name, type='annotation', color=color, source=None)
         self._config['linked_segmentation_layer'] = linked_segmentation_layer
         if issubclass(type(mapping_rules), AnnotationMapperBase):
             mapping_rules = [mapping_rules]
         self._annotation_map_rules = mapping_rules
+        self._tags = tags
 
     @property
     def linked_segmentation_layer(self):
@@ -127,7 +228,8 @@ class AnnotationLayerConfig(LayerConfigBase):
     def _render_layer(self, viewer, data):
         viewer.add_annotation_layer(self.name,
                                     color=self.color,
-                                    linked_segmentation_layer=self.linked_segmentation_layer)
+                                    linked_segmentation_layer=self.linked_segmentation_layer,
+                                    tags=self._tags)
         annos = []
         for rule in self._annotation_map_rules:
             annos.extend(rule._render_data(data))
