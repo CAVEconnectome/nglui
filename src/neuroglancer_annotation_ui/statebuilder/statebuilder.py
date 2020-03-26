@@ -3,7 +3,7 @@ from neuroglancer_annotation_ui.utils import default_static_content_source
 import pandas as pd
 import numpy as np
 from IPython.display import HTML
-from .utils import bucket_of_values, make_basic_dataframe
+from .utils import bucket_of_values, sources_from_infoclient
 
 DEFAULT_IMAGE_LAYER = 'img'
 DEFAULT_SEG_LAYER = 'seg'
@@ -46,7 +46,7 @@ class LayerConfigBase(object):
     def name(self):
         return self._config.get('name', None)
 
-    @property.setter
+    @name.setter
     def name(self, n):
         self._config['name'] = n
 
@@ -54,7 +54,7 @@ class LayerConfigBase(object):
     def source(self):
         return self._config.get('source', None)
 
-    @property.setter
+    @source.setter
     def source(self, s):
         self._config['source'] = s
 
@@ -62,7 +62,7 @@ class LayerConfigBase(object):
     def color(self):
         return self._config.get('color', None)
 
-    @property.setter
+    @color.setter
     def color(self, c):
         self._config.set['color'] = c
 
@@ -436,11 +436,22 @@ class StateBuilder():
         self,
         image_layers=[],
         segmentation_layers=[],
+        dataset_name=None,
+        segmentation_type='graphene',
+        image_kws={},
+        segmentation_kws={},
+        client=None,
         annotation_layers=[],
         base_state=None,
         url_prefix=None,
         resolution=[4, 4, 40],
     ):
+        if dataset_name is not None:
+            il, sl = sources_from_infoclient(dataset_name,
+                                             segmentation_type=segmentation_type,
+                                             image_kws=image_kws,
+                                             segmentation_kws=segmentation_kws,
+                                             client=client)
 
         self._base_state = base_state
         if isinstance(image_layers, ImageLayerConfig):

@@ -3,25 +3,27 @@ import neuroglancer_annotation_ui.nglite as neuroglancer
 from neuroglancer_annotation_ui import annotation, utils
 from inspect import getmembers, ismethod
 from numpy import issubdtype, integer, uint64
-import copy 
+import copy
 import json
 import os
 import re
 
 neuroglancer.viewer_state.layer_types['segmentation_with_graph'] = utils.ChunkedgraphSegmentationLayer
 
-class EasyViewer( neuroglancer.Viewer ):
+
+class EasyViewer(neuroglancer.Viewer):
     """
     Extends the neuroglancer Viewer object to make simple operations simple.
     """
+
     def __init__(self):
         super(EasyViewer, self).__init__()
 
     def __repr__(self):
-        return self.get_viewer_url()
+        return self.as_url()
 
     def _repr_html_(self):
-        return '<a href="%s" target="_blank">Viewer</a>' % self.get_viewer_url()
+        return '<a href="%s" target="_blank">Viewer</a>' % self.as_url()
 
     def set_source_url(self, ngl_url):
         self.ngl_url = neuroglancer.set_server_bind_address(ngl_url)
@@ -39,10 +41,11 @@ class EasyViewer( neuroglancer.Viewer ):
     @staticmethod
     def _smart_add_segmentation_layer(s, layer_name, source, **kwargs):
         if re.search('^graphene:\/\/', source) is not None:
-            s.layers[layer_name] = utils.ChunkedgraphSegmentationLayer(source=source, **kwargs)
+            s.layers[layer_name] = utils.ChunkedgraphSegmentationLayer(
+                source=source, **kwargs)
         elif re.search('^precomputed:\/\/', source) is not None:
-            s.layers[layer_name] = neuroglancer.SegmentationLayer(source=source, **kwargs)
-
+            s.layers[layer_name] = neuroglancer.SegmentationLayer(
+                source=source, **kwargs)
 
     def add_layers(self, image_layers={}, segmentation_layers={}, annotation_layers={}, resolution=None):
         with self.txn() as s:
@@ -55,7 +58,6 @@ class EasyViewer( neuroglancer.Viewer ):
             if resolution is not None:
                 s.voxel_size = resolutionP
         pass
-
 
     def add_segmentation_layer(self, layer_name, source, **kwargs):
         """Add segmentation layer to viewer instance.
@@ -85,7 +87,6 @@ class EasyViewer( neuroglancer.Viewer ):
         with self.txn() as s:
             s.voxel_size = resolution
 
-
     def add_annotation_layer(self, layer_name=None, color=None,
                              linked_segmentation_layer=None, filter_by_segmentation=True,
                              tags=None):
@@ -104,9 +105,9 @@ class EasyViewer( neuroglancer.Viewer ):
 
         with self.txn() as s:
             new_layer = neuroglancer.AnnotationLayer(linked_segmentation_layer=linked_segmentation_layer,
-                                                     filter_by_segmentation=filter_by_segmentation)    
-            s.layers.append( name=layer_name,
-                             layer=new_layer )
+                                                     filter_by_segmentation=filter_by_segmentation)
+            s.layers.append(name=layer_name,
+                            layer=new_layer)
             if color is not None:
                 s.layers[layer_name].annotationColor = color
         if tags is not None:
@@ -148,7 +149,8 @@ class EasyViewer( neuroglancer.Viewer ):
                 s.layers[layer_name].annotations.append(anno)
 
     def add_annotation(self, layer_name, annotation, color=None):
-        raise DeprecationWarning('This function is depreciated. Use ''add_annotation'' instead.')
+        raise DeprecationWarning(
+            'This function is depreciated. Use ''add_annotation'' instead.')
         self.add_annotations(layer_name, annotation, color=color)
 
     def remove_annotations(self, layer_name, anno_ids):
@@ -157,7 +159,7 @@ class EasyViewer( neuroglancer.Viewer ):
         try:
             with self.txn() as s:
                 el = len(s.layers[layer_name].annotations)
-                for anno in reversed( s.layers[layer_name].annotations ):
+                for anno in reversed(s.layers[layer_name].annotations):
                     el -= 1
                     if anno.id in anno_ids:
                         anno_ids.remove(anno.id)
@@ -168,9 +170,9 @@ class EasyViewer( neuroglancer.Viewer ):
             self.update_message('Could not remove annotation')
 
     def remove_annotation(self, layer_name, aids):
-        raise DeprecationWarning('This function is depreciated. Use ''remove_annotations'' instead.')
+        raise DeprecationWarning(
+            'This function is depreciated. Use ''remove_annotations'' instead.')
         self.remove_annotations(self, layer_name, aids)
-        
 
     def add_annotation_tags(self, layer_name, tags):
         '''
@@ -178,7 +180,8 @@ class EasyViewer( neuroglancer.Viewer ):
         '''
         if layer_name not in self.layer_names:
             raise ValueError('Layer is not an annotation layer')
-        tag_list = [OrderedDict({'id':tag_id+1, 'label':label}) for tag_id, label in enumerate(tags)]
+        tag_list = [OrderedDict({'id': tag_id+1, 'label': label})
+                    for tag_id, label in enumerate(tags)]
         with self.txn() as s:
             s.layers[layer_name]._json_data['annotationTags'] = tag_list
 
@@ -192,14 +195,14 @@ class EasyViewer( neuroglancer.Viewer ):
                             if anno.description is None:
                                 anno.description = new_description
                             else:
-                                anno.description = "{}\n{}".format(anno.description, new_description)
+                                anno.description = "{}\n{}".format(
+                                    anno.description, new_description)
                             id_list.remove(anno.id)
-                            if len(id_list)==0:
-                                break                            
+                            if len(id_list) == 0:
+                                break
             except Exception as e:
                 print(e)
                 self.update_message('Could not update descriptions!')
-
 
     @property
     def url(self):
@@ -207,7 +210,7 @@ class EasyViewer( neuroglancer.Viewer ):
 
     def as_url(self, prefix=None, as_html=False, link_text='Neuroglancer link'):
         if prefix is None:
-            prefix=utils.default_static_content_source
+            prefix = utils.default_static_content_source
         ngl_url = neuroglancer.to_url(self.state, prefix=prefix)
         if as_html:
             return '<a href="{}" target="_blank">{}</a>'.format(ngl_url, link_text)
@@ -219,24 +222,23 @@ class EasyViewer( neuroglancer.Viewer ):
             if message is not None:
                 s.status_messages['status'] = message
 
-
     def set_selected_layer(self, layer_name, tool=None):
         if layer_name in self.layer_names:
             with self.txn() as s:
-                s._json_data['selectedLayer'] = OrderedDict(layer=layer_name,visible=True)
+                s._json_data['selectedLayer'] = OrderedDict(
+                    layer=layer_name, visible=True)
                 if tool is not None:
-                    s.layers[layer_name]._json_data['tool'] = tool 
+                    s.layers[layer_name]._json_data['tool'] = tool
 
-    def get_selected_layer( self ):
+    def get_selected_layer(self):
         state_json = self.state.to_json()
-        try:    
+        try:
             selected_layer = state_json['selectedLayer']['layer']
         except:
             selected_layer = None
         return selected_layer
 
-
-    def get_annotation( self, layer_name, aid ):
+    def get_annotation(self, layer_name, aid):
         if self.state.layers[layer_name].type == 'annotation':
             for anno in self.state.layers[layer_name].annotations:
                 if anno.id == aid:
@@ -246,7 +248,7 @@ class EasyViewer( neuroglancer.Viewer ):
         else:
             return None
 
-    def get_selected_annotation_id( self ):
+    def get_selected_annotation_id(self):
         layer_name = self.get_selected_layer()
         try:
             aid_data = self.state.layers[layer_name]._json_data['selectedAnnotation']
@@ -258,22 +260,18 @@ class EasyViewer( neuroglancer.Viewer ):
             aid = None
         return aid
 
-
-    def select_annotation( self, layer_name, aid):
+    def select_annotation(self, layer_name, aid):
         if layer_name in self.layer_names:
             with self.txn() as s:
                 s.layers[layer_name]._json_data['selectedAnnotation'] = aid
         self.set_selected_layer(layer_name)
 
-
     @property
     def layer_names(self):
         return [l.name for l in self.state.layers]
 
-
     def selected_objects(self, segmentation_layer):
         return list(self.state.layers[segmentation_layer].segments)
- 
 
     def add_selected_objects(self, segmentation_layer, oids):
         if issubdtype(type(oids), integer):
@@ -283,11 +281,9 @@ class EasyViewer( neuroglancer.Viewer ):
             for oid in oids:
                 s.layers[segmentation_layer].segments.add(uint64(oid))
 
-
     def get_mouse_coordinates(self, s):
         pos = s.mouse_voxel_coordinates
         return pos
-
 
     def set_position(self, xyz, zoom_factor=None):
         if zoom_factor is None:
@@ -296,21 +292,21 @@ class EasyViewer( neuroglancer.Viewer ):
             s.position.voxelCoordinates = xyz
             s.navigation.zoomFactor = zoom_factor
 
-
-    def set_view_options( self,
-                          segmentation_layer=None,
-                          show_slices = False,
-                          layout='xy-3d',
-                          show_axis_lines=True,
-                          show_scale_bar=False,
-                          orthographic_projection=False,
-                          selected_alpha=0.3,
-                          zoom_factor=4,
-                          not_selected_alpha=0,
-                          perspective_alpha=0.8,
-                          perspective_zoom=5000):
+    def set_view_options(self,
+                         segmentation_layer=None,
+                         show_slices=False,
+                         layout='xy-3d',
+                         show_axis_lines=True,
+                         show_scale_bar=False,
+                         orthographic_projection=False,
+                         selected_alpha=0.3,
+                         zoom_factor=4,
+                         not_selected_alpha=0,
+                         perspective_alpha=0.8,
+                         perspective_zoom=5000):
         if segmentation_layer is None:
-            layers = [l.name for l in self.state.layers if l.type == 'segmentation']
+            layers = [
+                l.name for l in self.state.layers if l.type == 'segmentation']
         else:
             layers = [segmentation_layer]
 
@@ -326,4 +322,3 @@ class EasyViewer( neuroglancer.Viewer ):
                 s.layers[ln].selectedAlpha = selected_alpha
                 s.layers[ln].objectAlpha = perspective_alpha
                 s.layers[ln].notSelectedAlpha = not_selected_alpha
-

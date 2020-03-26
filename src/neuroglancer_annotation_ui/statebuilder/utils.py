@@ -1,5 +1,6 @@
 from collections.abc import Iterable
-from annotationframeworkclient.infoservice import InfoServiceClient
+from annotationframeworkclient import FrameworkClient
+from .statebuilder import ImageLayerConfig, SegmentationLayerConfig
 import numpy as np
 import pandas as pd
 
@@ -37,87 +38,45 @@ def bucket_of_values(col, data, item_is_array=False, array_width=3):
             return dataseries.values
 
 
-def make_basic_dataframe(point_annotations={}, line_annotations={}, sphere_annotations={}):
-    """Makes a dataframe containing pre-computed data to be read by a StateBuilder object.
-    """
-    dfs = []
-
-    pals = {}
-    for ii, (ln, data) in enumerate(point_annotations.items()):
-        col_name = f'point_{ii}'
-        if isinstance(data, np.ndarray):
-            data = data.tolist()
-        df = pd.DataFrame()
-        df[col_name] = data
-        dfs.append(df)
-        pals[ln] = [col_name]
-
-    lals = {}
-    for ii, (ln, (data_a, data_b)) in enumerate(line_annotations.items()):
-        col_name_a = f'line_{ii}_a'
-        col_name_b = f'line_{ii}_b'
-        if isinstance(data_a, np.ndarray):
-            data_a = data_a.tolist()
-        if isinstance(data_b, np.ndarray):
-            data_b = data_b.tolist()
-        df = pd.DataFrame()
-        df[col_name_a] = data_a
-        df[col_name_b] = data_b
-        dfs.append(df)
-        lals[ln] = [[col_name_a, col_name_b]]
-
-    sals = {}
-    for ii, (ln, (data_c, data_r)) in enumerate(sphere_annotations.items()):
-        col_name_c = f'sphere_{ii}_c'
-        col_name_r = f'sphere_{ii}_r'
-        if isinstance(data_c, np.ndarray):
-            data_c = data_c.tolist()
-        if isinstance(data_r, np.ndarray):
-            data_r = data_r.tolist()
-        df = pd.DataFrame()
-        df[col_name_c] = data_c
-        df[col_name_r] = data_r
-        dfs.append(df)
-        sals[ln] = [[col_name_c, col_name_r]]
-
-    if len(dfs) > 0:
-        df_out = pd.concat(dfs, sort=False)
-    else:
-        df_out = pd.DataFrame()
-    return df_out, pals, lals, sals
-
-
-def sources_from_infoclient(dataset_name, segmentation_type='default', image_layer_name='img', seg_layer_name='seg'):
-    """Generate an img_source and seg_source dict from the info service. Will default to graphene and fall back to flat segmentation, unless otherwise specified. 
+def sources_from_infoclient(dataset_name, segmentation_type='graphene', image_kws={}, segmentation_kws={}, client=None):
+    """Generate an Image and Segmentation source from a dataset name.
 
     Parameters
     ----------
     dataset_name : str
-        InfoService dataset name
-    segmentation_type : 'default', 'graphene' or 'flat', optional
-        Choose which type of segmentation to use. 'default' will try graphene first and fall back to flat. Graphene or flat will
-        only use the specified type or give nothing. By default 'default'. 
-    image_layer_name : str, optional
-        Layer name for the imagery, by default 'img'
-    seg_layer_name : str, optional
-        Layer name for the segmentation, by default 'seg'
+        Dataset name for client
+    segmentation_type : 'graphene' or 'flat', optional
+        Which segmentation type for try first, graphene or flat. It will fall back to the other if not found. By default 'graphene'
+    image_kws : dict, optional
+        Keyword arguments for an ImageLayerConfig (other than source), by default {}
+    segmentation_kws : dict, optional
+        Keyword arguments for a SegmentationLayerConfig (other than source), by default {}
+    client : InfoClient or None, optional
+        Predefined info client for lookup
+
+    Returns
+    -------
+    ImageLayerConfig
+        Config for an image layer in the statebuilder 
+    SegmentationLayerConfig
+        Config for a segmentation layer in the statebuilder
     """
-    info_client = InfoServiceClient(dataset_name=dataset_name)
-    image_source = {image_layer_name: info_client.image_source(
-        format_for='neuroglancer')}
 
-    if segmentation_type == 'default':
-        if info_client.pychunkedgraph_segmentation_source() is None:
-            segmentation_type = 'flat'
-        else:
-            segmentation_type = 'graphene'
+    if client is None:
+        client = FrameworkClient(dataset_name=dataset_name)
 
-    if segmentation_type == 'graphene':
-        seg_source = {seg_layer_name: info_client.pychunkedgraph_segmentation_source(
-            format_for='neuroglancer')}
-    elif segmentation_type == 'flat':
-        seg_source = {seg_layer_name: info_client.flat_segmentation_source(
-            format_for='neuroglancer')}
+    image_source = client.info.image_source(format_for='neuroglancer')
+    if segmentation_type == "graphene":
+        seg_source = client.info.graphene_source(format_for='neuroglancer')
+        if seg_source is None:
+            seg_source = client.info.flat_segmentation_source(
+                format_for='neuroglancer')
     else:
-        seg_source = {}
-    return image_source, seg_source
+        seg_source = client.info.flat_segmentation_source(
+            format_for='neuroglancer')
+        if seg_source is None:
+            seg_source = client.info.graphene_source(format_for='neuroglancer')
+
+    image_layer = ImageLayerConfig(image_source, *image_kws)
+    seg_layer = SegmentationLayerConfig(seg_source, *segmentation_kws)
+    return image_layer, seg_layer
