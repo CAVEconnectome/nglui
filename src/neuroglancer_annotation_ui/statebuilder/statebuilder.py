@@ -1,9 +1,10 @@
 from neuroglancer_annotation_ui import EasyViewer, annotation, set_static_content_source
 from neuroglancer_annotation_ui.utils import default_static_content_source
+from annotationframeworkclient import FrameworkClient
 import pandas as pd
 import numpy as np
 from IPython.display import HTML
-from .utils import bucket_of_values, sources_from_infoclient
+from .utils import bucket_of_values
 
 DEFAULT_IMAGE_LAYER = 'img'
 DEFAULT_SEG_LAYER = 'seg'
@@ -452,14 +453,22 @@ class StateBuilder():
                                              image_kws=image_kws,
                                              segmentation_kws=segmentation_kws,
                                              client=client)
+        else:
+            il = None
+            sl = None
 
         self._base_state = base_state
+
         if isinstance(image_layers, ImageLayerConfig):
             image_layers = [image_layers]
+        if il is not None:
+            image_layers.append(il)
         self._image_layers = image_layers
 
         if isinstance(segmentation_layers, SegmentationLayerConfig):
             segmentation_layers = [segmentation_layers]
+        if sl is not None:
+            segmentation_layers.append(sl)
         self._segmentation_layers = segmentation_layers
 
         if isinstance(annotation_layers, AnnotationLayerConfig):
@@ -667,3 +676,47 @@ def build_state_direct(dataset_name=None, selected_ids=[], point_annotations={},
                       annotation_layer_colors=annotation_layer_colors,
                       fixed_selection=selected_ids, **state_kws)
     return sb.render_state(data=df, return_as=return_as, **render_kws)
+
+
+def sources_from_infoclient(dataset_name, segmentation_type='graphene', image_kws={}, segmentation_kws={}, client=None):
+    """Generate an Image and Segmentation source from a dataset name.
+
+    Parameters
+    ----------
+    dataset_name : str
+        Dataset name for client
+    segmentation_type : 'graphene' or 'flat', optional
+        Which segmentation type for try first, graphene or flat. It will fall back to the other if not found. By default 'graphene'
+    image_kws : dict, optional
+        Keyword arguments for an ImageLayerConfig (other than source), by default {}
+    segmentation_kws : dict, optional
+        Keyword arguments for a SegmentationLayerConfig (other than source), by default {}
+    client : InfoClient or None, optional
+        Predefined info client for lookup
+
+    Returns
+    -------
+    ImageLayerConfig
+        Config for an image layer in the statebuilder 
+    SegmentationLayerConfig
+        Config for a segmentation layer in the statebuilder
+    """
+
+    if client is None:
+        client = FrameworkClient(dataset_name=dataset_name)
+
+    image_source = client.info.image_source(format_for='neuroglancer')
+    if segmentation_type == "graphene":
+        seg_source = client.info.graphene_source(format_for='neuroglancer')
+        if seg_source is None:
+            seg_source = client.info.flat_segmentation_source(
+                format_for='neuroglancer')
+    else:
+        seg_source = client.info.flat_segmentation_source(
+            format_for='neuroglancer')
+        if seg_source is None:
+            seg_source = client.info.graphene_source(format_for='neuroglancer')
+
+    image_layer = ImageLayerConfig(image_source, *image_kws)
+    seg_layer = SegmentationLayerConfig(seg_source, *segmentation_kws)
+    return image_layer, seg_layer
