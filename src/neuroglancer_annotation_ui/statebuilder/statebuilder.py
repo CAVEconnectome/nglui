@@ -17,7 +17,7 @@ class LayerConfigBase(object):
     Parameters
     ----------
     name : str
-        Layer name for reference and display    
+        Layer name for reference and display
     type : str
         Layer type. Usually handled by the subclass
     source : str
@@ -132,9 +132,9 @@ class SelectionMapper(object):
     def selected_ids(self, data):
         """ Uses the rules to generate a list of ids from a dataframe.
         """
-        selected_ids = [np.unique(self.fixed_ids)]
+        selected_ids = [np.array(self.fixed_ids, dtype=np.int64)]
         for col in self.data_columns:
-            selected_ids.append(np.unique(data[col]))
+            selected_ids.append(data[col])
         return np.concatenate(selected_ids)
 
 
@@ -448,11 +448,11 @@ class StateBuilder():
         resolution=[4, 4, 40],
     ):
         if dataset_name is not None:
-            il, sl = sources_from_infoclient(dataset_name,
-                                             segmentation_type=segmentation_type,
-                                             image_kws=image_kws,
-                                             segmentation_kws=segmentation_kws,
-                                             client=client)
+            il, sl = sources_from_client(dataset_name,
+                                         segmentation_type=segmentation_type,
+                                         image_kws=image_kws,
+                                         segmentation_kws=segmentation_kws,
+                                         client=client)
         else:
             il = None
             sl = None
@@ -549,10 +549,15 @@ class StateBuilder():
                 prefix=url_prefix, as_html=True, link_text=link_text))
             self.initialize_state()
             return out
-        elif return_as == 'json':
+        elif return_as == 'dict':
             out = self._temp_viewer.state.to_json()
             self.initialize_state()
             return out
+        elif return_as == 'json':
+            from json import dumps
+            out = self._temp_viewer.state.to_json()
+            self.initialize_state()
+            return dumps(out)
         else:
             raise ValueError('No appropriate return type selected')
 
@@ -615,70 +620,7 @@ class ChainedStateBuilder():
                                          url_prefix=url_prefix)
 
 
-def build_state_direct(dataset_name=None, selected_ids=[], point_annotations={},
-                       line_annotations={}, sphere_annotations={},
-                       image_layer_name=DEFAULT_IMAGE_LAYER, seg_layer_name=DEFAULT_SEG_LAYER,
-                       annotation_layer_colors={},
-                       default_anno_layer_name=DEFAULT_ANNO_LAYER,
-                       return_as='url', render_kws={},
-                       state_kws={}):
-    """Build a Neuroglancer state from data directly, using the statebuilder as an intermediate layer.
-
-    Parameters
-    ----------
-    selected_ids : list, optional
-        List of object ids to make selected, by default []
-    point_annotations : Nx3 list or numpy array, or a dict, optional
-        Either an array of points or a dict with layernames as keys as array of point locations as values.
-        By default, an empty dict.
-    line_annotations : list or tuple, optional
-        Either a pair of Mx3 arrays of points or a dict with layernames as keys as pairs of Mx3 arrays as values.
-        Points at the same index along the 1st axis will be at the ends of each line annotation.
-        By default, an empty dict.
-    sphere_annotations : list or tuple, optional
-        Either a collection whose first element is an Lx3 array and whose second elemnt is a length L array-like, or a dict
-        with layernames as keys and values being that type of collection. This will generate spheres for each row with a center at each
-        point in the first element radius determined by the second.
-        By default, an empty dict.
-    return_as : ['url', 'viewer', 'html', 'json'], optional
-        Choice of output types. Note that if a viewer is returned, the state is not reset.
-        By default 'url'
-    render_kwargs : dict, optional
-        Keyword arguments to pass to the render_state function.
-    state_kwargs : dict, optional
-        Keyword arguments to pass to the StateBuilder initialization.
-
-    Returns
-    -------
-    string or neuroglancer.Viewer
-        A Neuroglancer state with layers, annotations, and selected objects determined by the data.        
-    """
-    if point_annotations is not None:
-        if not isinstance(point_annotations, dict):
-            point_annotations = {default_anno_layer_name: point_annotations}
-
-    if line_annotations is not None:
-        if not isinstance(line_annotations, dict):
-            line_annotations = {default_anno_layer_name: line_annotations}
-
-    if sphere_annotations is not None:
-        if not isinstance(sphere_annotations, dict):
-            sphere_annotations = {default_anno_layer_name: sphere_annotations}
-
-    if not isinstance(selected_ids, dict):
-        selected_ids = {seg_layer_name: selected_ids}
-
-    df, pals, lals, sals = make_basic_dataframe(
-        point_annotations, line_annotations, sphere_annotations)
-    sb = StateBuilder(dataset_name=dataset_name, point_annotations=pals,
-                      line_annotations=lals, sphere_annotations=sals,
-                      seg_layer_name=seg_layer_name, image_layer_name=image_layer_name,
-                      annotation_layer_colors=annotation_layer_colors,
-                      fixed_selection=selected_ids, **state_kws)
-    return sb.render_state(data=df, return_as=return_as, **render_kws)
-
-
-def sources_from_infoclient(dataset_name, segmentation_type='graphene', image_kws={}, segmentation_kws={}, client=None):
+def sources_from_client(dataset_name, segmentation_type='graphene', image_kws={}, segmentation_kws={}, client=None):
     """Generate an Image and Segmentation source from a dataset name.
 
     Parameters
