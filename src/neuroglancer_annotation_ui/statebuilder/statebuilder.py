@@ -133,8 +133,9 @@ class SelectionMapper(object):
         """ Uses the rules to generate a list of ids from a dataframe.
         """
         selected_ids = [np.array(self.fixed_ids, dtype=np.int64)]
-        for col in self.data_columns:
-            selected_ids.append(data[col])
+        if data is not None:
+            for col in self.data_columns:
+                selected_ids.append(data[col])
         return np.concatenate(selected_ids)
 
 
@@ -355,14 +356,16 @@ class SphereMapper(AnnotationMapperBase):
                  radius_column,
                  description_column=None,
                  linked_segmentation_layer=None,
-                 linked_segmentation_column=None):
+                 linked_segmentation_column=None,
+                 z_multiplier=0.1):
 
-        super(LineMapper, self).__init__(type='sphere',
-                                         data_columns=[
-                                              center_column, radius_column],
-                                         description_column=None,
-                                         linked_segmentation_column=linked_segmentation_column,
-                                         )
+        super(SphereMapper, self).__init__(type='sphere',
+                                           data_columns=[
+                                               center_column, radius_column],
+                                           description_column=None,
+                                           linked_segmentation_column=linked_segmentation_column,
+                                           )
+        self._z_multiplier = z_multiplier
 
     def _render_data(self, data):
         col_ctr, col_rad = self.data_columns
@@ -370,12 +373,13 @@ class SphereMapper(AnnotationMapperBase):
             data[col_ctr]), ~pd.isnull(data[col_rad]))
 
         pts = np.vstack(data[col_ctr][relinds])
-        rs = np.vstack(data[col_rad][relinds])
+        rs = data[col_rad][relinds].values
         descriptions = self._descriptions(data[relinds])
         linked_segs = self._linked_segmentations(data[relinds])
         annos = [annotation.sphere_annotation(pt, r,
                                               description=d,
-                                              linked_segmentation=ls) for
+                                              linked_segmentation=ls,
+                                              z_multiplier=self._z_multiplier) for
                  pt, r, d, ls in zip(pts, rs, descriptions, linked_segs)]
         return annos
 
