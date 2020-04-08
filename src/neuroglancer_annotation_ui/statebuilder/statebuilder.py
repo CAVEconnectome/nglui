@@ -3,6 +3,7 @@ from neuroglancer_annotation_ui.utils import default_static_content_source
 from annotationframeworkclient import FrameworkClient
 import pandas as pd
 import numpy as np
+from collections.abc import Collection
 from IPython.display import HTML
 from .utils import bucket_of_values
 
@@ -32,11 +33,13 @@ class LayerConfigBase(object):
                  type,
                  source,
                  color,
+                 make_active
                  ):
         self._config = dict(type=type,
                             name=name,
                             source=source,
                             color=color,
+                            make_active=make_active,
                             )
 
     @property
@@ -67,6 +70,10 @@ class LayerConfigBase(object):
     def color(self, c):
         self._config.set['color'] = c
 
+    @property
+    def make_active(self):
+        return self._config.get('make_active', False)
+
     def _render_layer(self, viewer, data):
         """ Subclasses implement specific rendering rules
         """
@@ -89,9 +96,10 @@ class ImageLayerConfig(LayerConfigBase):
     def __init__(self,
                  source,
                  name=DEFAULT_IMAGE_LAYER,
+                 make_active=False,
                  ):
         super(ImageLayerConfig, self).__init__(
-            name=name, type='image', source=source, color=None)
+            name=name, type='image', source=source, color=None, make_active=make_active)
 
     def _render_layer(self, viewer, data):
         viewer.add_image_layer(self.name, self.source)
@@ -158,9 +166,10 @@ class SegmentationLayerConfig(LayerConfigBase):
                  name=DEFAULT_SEG_LAYER,
                  selected_ids_column=None,
                  fixed_ids=None,
+                 make_active=False,
                  ):
         super(SegmentationLayerConfig, self).__init__(
-            name=name, type='segmentation', source=source, color=None)
+            name=name, type='segmentation', source=source, color=None, make_active=make_active)
         if selected_ids_column is not None or fixed_ids is not None:
             self._selection_map = SelectionMapper(
                 data_columns=selected_ids_column,
@@ -214,9 +223,10 @@ class AnnotationLayerConfig(LayerConfigBase):
                  color=None,
                  linked_segmentation_layer=None,
                  mapping_rules=[],
-                 tags=None):
+                 tags=None,
+                 make_active=False):
         super(AnnotationLayerConfig, self).__init__(
-            name=name, type='annotation', color=color, source=None)
+            name=name, type='annotation', color=color, source=None, make_active=make_active)
         self._config['linked_segmentation_layer'] = linked_segmentation_layer
         if issubclass(type(mapping_rules), AnnotationMapperBase):
             mapping_rules = [mapping_rules]
@@ -234,7 +244,9 @@ class AnnotationLayerConfig(LayerConfigBase):
                                     tags=self._tags)
         annos = []
         for rule in self._annotation_map_rules:
-            annos.extend(rule._render_data(data))
+            rule.tag_map = self._tags
+            if data is not None:
+                annos.extend(rule._render_data(data))
         viewer.add_annotations(self.name, annos)
 
 
@@ -244,13 +256,16 @@ class AnnotationMapperBase(object):
                  data_columns,
                  description_column,
                  linked_segmentation_column,
+                 tag_column,
                  ):
 
         self._config = dict(type=type,
                             data_columns=data_columns,
                             description_column=description_column,
                             linked_segmentation_column=linked_segmentation_column,
+                            tag_column=tag_column,
                             )
+        self._tag_map = None
 
     @property
     def type(self):
@@ -262,11 +277,42 @@ class AnnotationMapperBase(object):
 
     @property
     def description_column(self):
-        return self._config.get('description_columns', None)
+        return self._config.get('description_column', None)
 
     @property
     def linked_segmentation_column(self):
         return self._config.get('linked_segmentation_column', None)
+
+    @property
+    def tag_column(self):
+        return self._config.get('tag_column', None)
+
+    @property
+    def tag_map(self):
+        if self._tag_map is None:
+            return {}
+        else:
+            return self._tag_map
+
+    @tag_map.setter
+    def tag_map(self, tag_list):
+        if tag_list is None:
+            self._tag_map = {}
+        else:
+            self._tag_map = {tag: ii+1 for ii, tag in enumerate(tag_list)}
+
+    def _assign_tags(self, data):
+        if self.tag_column is not None:
+            anno_tags = []
+            for row in data[self.tag_column]:
+                if isinstance(row, Collection) and not isinstance(row, str):
+                    add_annos = [self.tag_map.get(r, None) for r in row]
+                else:
+                    add_annos = [self.tag_map.get(row, None)]
+                anno_tags.append(add_annos)
+        else:
+            anno_tags = [[None] for x in range(len(data))]
+        return anno_tags
 
     def _render_data(self, data):
         # Set per subclass
@@ -294,12 +340,14 @@ class PointMapper(AnnotationMapperBase):
     def __init__(self,
                  point_column,
                  description_column=None,
-                 linked_segmentation_column=None):
+                 linked_segmentation_column=None,
+                 tag_column=None):
 
         super(PointMapper, self).__init__(type='point',
                                           data_columns=[point_column],
-                                          description_column=None,
+                                          description_column=description_column,
                                           linked_segmentation_column=linked_segmentation_column,
+                                          tag_column=tag_column,
                                           )
 
     def _render_data(self, data):
@@ -308,12 +356,14 @@ class PointMapper(AnnotationMapperBase):
 
         pts = np.vstack(data[col][relinds])
         descriptions = self._descriptions(data[relinds])
-        linked_segs = self._linked_segmentations(data[relinds])
 
+        linked_segs = self._linked_segmentations(data[relinds])
+        tags = self._assign_tags(data)
         annos = [annotation.point_annotation(pt,
                                              description=d,
-                                             linked_segmentation=ls) for
-                 pt, d, ls in zip(pts, descriptions, linked_segs)]
+                                             linked_segmentation=ls,
+                                             tag_ids=t) for
+                 pt, d, ls, t in zip(pts, descriptions, linked_segs, tags)]
         return annos
 
 
@@ -322,14 +372,15 @@ class LineMapper(AnnotationMapperBase):
                  point_column_a,
                  point_column_b,
                  description_column=None,
-                 linked_segmentation_layer=None,
-                 linked_segmentation_column=None):
+                 linked_segmentation_column=None,
+                 tag_column=None):
 
         super(LineMapper, self).__init__(type='line',
                                          data_columns=[
                                               point_column_a, point_column_b],
-                                         description_column=None,
+                                         description_column=description_column,
                                          linked_segmentation_column=linked_segmentation_column,
+                                         tag_column=tag_column,
                                          )
 
     def _render_data(self, data):
@@ -342,11 +393,12 @@ class LineMapper(AnnotationMapperBase):
         ptBs = np.vstack(data[colB][relinds])
         descriptions = self._descriptions(data[relinds])
         linked_segs = self._linked_segmentations(data[relinds])
-
+        tags = self._assign_tags(data)
         annos = [annotation.line_annotation(ptA, ptB,
                                             description=d,
-                                            linked_segmentation=ls) for
-                 ptA, ptB, d, ls in zip(ptAs, ptBs, descriptions, linked_segs)]
+                                            linked_segmentation=ls,
+                                            tag_ids=t) for
+                 ptA, ptB, d, ls, t in zip(ptAs, ptBs, descriptions, linked_segs, tags)]
         return annos
 
 
@@ -355,15 +407,16 @@ class SphereMapper(AnnotationMapperBase):
                  center_column,
                  radius_column,
                  description_column=None,
-                 linked_segmentation_layer=None,
                  linked_segmentation_column=None,
+                 tag_column=None,
                  z_multiplier=0.1):
 
         super(SphereMapper, self).__init__(type='sphere',
                                            data_columns=[
                                                center_column, radius_column],
-                                           description_column=None,
+                                           description_column=description_column,
                                            linked_segmentation_column=linked_segmentation_column,
+                                           tag_column=tag_column,
                                            )
         self._z_multiplier = z_multiplier
 
@@ -376,11 +429,13 @@ class SphereMapper(AnnotationMapperBase):
         rs = data[col_rad][relinds].values
         descriptions = self._descriptions(data[relinds])
         linked_segs = self._linked_segmentations(data[relinds])
+        tags = self._assign_tags(data)
         annos = [annotation.sphere_annotation(pt, r,
                                               description=d,
                                               linked_segmentation=ls,
+                                              tag_ids=t,
                                               z_multiplier=self._z_multiplier) for
-                 pt, r, d, ls in zip(pts, rs, descriptions, linked_segs)]
+                 pt, r, d, ls, t in zip(pts, rs, descriptions, linked_segs, tags)]
         return annos
 
 
@@ -388,65 +443,16 @@ class StateBuilder():
     """A class for schematic mapping data frames into neuroglancer states.
     Parameters
     ----------
-    base_state : str, optional
-        Neuroglancer json state. This is set before all
-        layers are added from other arguments. Optional,
-        default is None.
-    dataset_name : str or None, optional
-        Dataset name to populate image and segmentation layers from the InfoService. Default is None.
-    segmentation_type : 'graphene' or 'flat', optional
-        If dataset_name is used, specifies whether to take the flat or graph segmentation. Default is 'graphene'.
-    image_layer_name : str, optional
-        If dataset_name is used, defines the image layer name. Default is 'img'. Will not override explicit setting from image_sources.
-    seg_layer_name : str, optional
-        If dataset_name is used, defines the segmentation layer name. Default is 'seg'. Will not override explicit setting from seg_sources.
-    image_sources : dict, optional
-        Dict where keys are layer names and values are
-        neuroglancer image sources, by default {}
-    seg_sources : dict, optional
-        Dict where keys are layer names and values are
-        neuroglancer segmentation sources, by default {}
-    selected_ids : dict, optional
-        Dict where keys are segmentation layer names and
-        values are an iterable of dataframe column names.
-        Object root ids from these columns are added to the
-        selected ids list in the segmentation layer. By default {}
-    point_annotations : dict, optional
-        Dict where the keys define annotation layer names and the values
-        are a collection of column names to use as a source data for points
-        in that annotation layer.
-        By default {}
-    line_annotations : dict, optional
-        Dict where the keys define annotation layer names and the values
-        are a collection of column name 2-tuples to use as a source for line annotatons. 
-        By default {}
-    sphere_annotations : dict, optional
-        Dict where keys are annotation layer names and values are a collection of
-        (center, radius) 2-tuples of column names for getting the source data.
-        By default {}
-    resolution : list, optional
-        Numpy array for voxel resolution, by default [4,4,40]
-    fixed_selection : dict, optional
-        Dict where keys are segmentation layers and values are
-        a collection of object ids to make selected for all dataframes.
-        By default {}
-    linked_selections: dict, optional
-        Dict keyed by annotation layer name, with an entry that is a dict with keys 
-        'seg_layer' and 'data' that point to the segmentation layer name and the data column, respectively.
-    url_prefix : str, optional
-        Default neuroglancer prefix to use, by default None.
     """
 
     def __init__(
         self,
-        image_layers=[],
-        segmentation_layers=[],
+        layers=[],
         dataset_name=None,
         segmentation_type='graphene',
         image_kws={},
         segmentation_kws={},
         client=None,
-        annotation_layers=[],
         base_state=None,
         url_prefix=None,
         resolution=[4, 4, 40],
@@ -457,28 +463,13 @@ class StateBuilder():
                                          image_kws=image_kws,
                                          segmentation_kws=segmentation_kws,
                                          client=client)
+            layers = [il, sl] + layers
         else:
             il = None
             sl = None
 
         self._base_state = base_state
-
-        if isinstance(image_layers, ImageLayerConfig):
-            image_layers = [image_layers]
-        if il is not None:
-            image_layers.append(il)
-        self._image_layers = image_layers
-
-        if isinstance(segmentation_layers, SegmentationLayerConfig):
-            segmentation_layers = [segmentation_layers]
-        if sl is not None:
-            segmentation_layers.append(sl)
-        self._segmentation_layers = segmentation_layers
-
-        if isinstance(annotation_layers, AnnotationLayerConfig):
-            annotation_layers = [annotation_layers]
-        self._annotation_layers = annotation_layers
-
+        self._layers = layers
         self._resolution = resolution
         self._url_prefix = url_prefix
 
@@ -566,14 +557,8 @@ class StateBuilder():
             raise ValueError('No appropriate return type selected')
 
     def _render_layers(self, data):
-        for img_layer in self._image_layers:
-            img_layer._render_layer(self._temp_viewer, data)
-
-        for seg_layer in self._segmentation_layers:
-            seg_layer._render_layer(self._temp_viewer, data)
-
-        for anno_layer in self._annotation_layers:
-            anno_layer._render_layer(self._temp_viewer, data)
+        for layer in self._layers:
+            layer._render_layer(self._temp_viewer, data)
 
     @property
     def viewer(self):
