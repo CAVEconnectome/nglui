@@ -285,40 +285,47 @@ class EasyViewer(neuroglancer.Viewer):
         pos = s.mouse_voxel_coordinates
         return pos
 
-    def set_position(self, xyz, zoom_factor=None):
-        if zoom_factor is None:
-            zoom_factor = self.state.navigation.zoom_factor
-        with self.txn() as s:
-            s.position.voxelCoordinates = xyz
-            s.navigation.zoomFactor = zoom_factor
-
     def set_view_options(self,
-                         segmentation_layer=None,
-                         show_slices=False,
-                         layout='xy-3d',
-                         show_axis_lines=True,
-                         show_scale_bar=False,
-                         orthographic_projection=False,
-                         selected_alpha=0.3,
-                         zoom_factor=4,
-                         not_selected_alpha=0,
-                         perspective_alpha=0.8,
-                         perspective_zoom=5000):
-        if segmentation_layer is None:
-            layers = [
-                l.name for l in self.state.layers if l.type == 'segmentation']
-        else:
-            layers = [segmentation_layer]
-
+                         show_slices=None,
+                         layout=None,
+                         show_axis_lines=None,
+                         show_scale_bar=None,
+                         orthographic=None,
+                         position=None,
+                         zoom_image=None,
+                         zoom_3d=None,
+                         ):
         with self.txn() as s:
-            s.showSlices = show_slices
-            s.layout.type = layout
-            s.layout.orthographic_projection = orthographic_projection
-            s.show_axis_lines = show_axis_lines
-            s.show_scale_bar = show_scale_bar
-            s.perspectiveZoom = perspective_zoom
-            s.navigation.zoomFactor = zoom_factor
-            for ln in layers:
-                s.layers[ln].selectedAlpha = selected_alpha
-                s.layers[ln].objectAlpha = perspective_alpha
-                s.layers[ln].notSelectedAlpha = not_selected_alpha
+            if show_slices is not None:
+                s.showSlices = show_slices
+            if layout is not None:
+                s.layout.type = layout
+            if show_axis_lines is not None:
+                s.show_axis_lines = show_axis_lines
+            if show_scale_bar is not None:
+                s.show_scale_bar = show_scale_bar
+            if orthographic is not None:
+                s.layout.orthographic_projection = orthographic
+            if position is not None:
+                s.position.voxelCoordinates = position
+            if zoom_image is not None:
+                s.navigation.zoomFactor = zoom_image
+            if zoom_3d is not None:
+                s.perspectiveZoom = zoom_3d
+
+    def set_segmentation_view_options(self,
+                                      layer_name,
+                                      alpha_selected=None,
+                                      alpha_3d=None,
+                                      alpha_unselected=None,
+                                      ):
+        if self.state.layers[layer_name].type is not 'segmentation':
+            return
+        with self.txn() as s:
+            l = s.layers[layer_name]
+            if alpha_selected is not None:
+                l.selectedAlpha = alpha_selected
+            if alpha_3d is not None:
+                l.objectAlpha = alpha_3d
+            if alpha_unselected is not None:
+                l.notSelectedAlpha = alpha_unselected

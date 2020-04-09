@@ -11,6 +11,17 @@ DEFAULT_IMAGE_LAYER = 'img'
 DEFAULT_SEG_LAYER = 'seg'
 DEFAULT_ANNO_LAYER = 'anno'
 
+DEFAULT_VIEW_KWS = {'layout': 'xy-3d',
+                    'zoom_image': 2,
+                    'show_slices': False,
+                    'zoom_image': 8,
+                    'zoom_3d': 2000,
+                    }
+
+DEFAULT_SEGMENTATION_VIEW_KWS = {'alpha_selected': 0.3,
+                                 'alpha_3d': 1,
+                                 'alpha_unselected': 0}
+
 
 class LayerConfigBase(object):
     """Base class for configuring layers
@@ -25,7 +36,8 @@ class LayerConfigBase(object):
         Datasource for the layer
     color : str
         Hex string (with starting hash).
-
+    active : bool,
+        If True, becomes a selected layer.
     """
 
     def __init__(self,
@@ -33,13 +45,13 @@ class LayerConfigBase(object):
                  type,
                  source,
                  color,
-                 make_active
+                 active,
                  ):
         self._config = dict(type=type,
                             name=name,
                             source=source,
                             color=color,
-                            make_active=make_active,
+                            active=active,
                             )
 
     @property
@@ -71,13 +83,21 @@ class LayerConfigBase(object):
         self._config.set['color'] = c
 
     @property
-    def make_active(self):
-        return self._config.get('make_active', False)
+    def active(self):
+        return self._config.get('active', False)
 
     def _render_layer(self, viewer, data):
+        """ Applies rendering rules
+        """
+        self._specific_rendering(viewer, data)
+        if self.active:
+            viewer.set_selected_layer(self.name)
+        return viewer
+
+    def _specific_rendering(self, viewer, data):
         """ Subclasses implement specific rendering rules
         """
-        return viewer
+        pass
 
 
 class ImageLayerConfig(LayerConfigBase):
@@ -91,19 +111,20 @@ class ImageLayerConfig(LayerConfigBase):
         Cloudpath to an image source
     name : str, optional
         Name of the image layer. By default, 'img'.
+    active : bool, optional
+        If True, makes the layer active in neuroglancer. Default is False.
     """
 
     def __init__(self,
                  source,
                  name=DEFAULT_IMAGE_LAYER,
-                 make_active=False,
+                 active=False,
                  ):
         super(ImageLayerConfig, self).__init__(
-            name=name, type='image', source=source, color=None, make_active=make_active)
+            name=name, type='image', source=source, color=None, active=active)
 
-    def _render_layer(self, viewer, data):
+    def _specific_rendering(self, viewer, data):
         viewer.add_image_layer(self.name, self.source)
-        return viewer
 
 
 class SelectionMapper(object):
@@ -148,34 +169,44 @@ class SelectionMapper(object):
 
 
 class SegmentationLayerConfig(LayerConfigBase):
-    """Configuration class for segmentatoin layers
+    """Configuration class for segmentation layers
 
     Parameters
     ----------
     source : str
         Segmentation source
-
-    Returns
-    -------
-    [type]
-        [description]
-    """
+    name : str, optional,
+        Layer name.
+    selected_ids_column : str or list-like, optional.
+        Column name (or list of column names) to use for selected ids.
+    fixed_ids : list-like, optional.
+        List of root ids to select directly.
+    active : bool, optional.
+        If True, makes the layer selected. Default is False.
+    view_kws : dict, optional.
+        Keyword arguments for viewer.set_segmentation_view_options. Sets selected (and unselected) segmetation alpha values. Defaults to values in DEFAULT_SEGMENTATION_VIEW_KWS dict specified in this module.
+   """
 
     def __init__(self,
                  source,
                  name=DEFAULT_SEG_LAYER,
                  selected_ids_column=None,
                  fixed_ids=None,
-                 make_active=False,
+                 active=False,
+                 view_kws={},
                  ):
         super(SegmentationLayerConfig, self).__init__(
-            name=name, type='segmentation', source=source, color=None, make_active=make_active)
+            name=name, type='segmentation', source=source, color=None, active=active)
         if selected_ids_column is not None or fixed_ids is not None:
             self._selection_map = SelectionMapper(
                 data_columns=selected_ids_column,
                 fixed_ids=fixed_ids)
         else:
             self._selection_map = None
+
+        base_seg_kws = DEFAULT_SEGMENTATION_VIEW_KWS.copy()
+        base_seg_kws.update(view_kws)
+        self._view_kws = view_kws
 
     def add_selection_map(self, selected_ids_column=None, fixed_ids=None):
         if self._selection_map is not None:
@@ -189,12 +220,12 @@ class SegmentationLayerConfig(LayerConfigBase):
             data_columns=data_columns,
             fixed_ids=fixed_ids)
 
-    def _render_layer(self, viewer, data):
+    def _specific_rendering(self, viewer, data):
         viewer.add_segmentation_layer(self.name, self.source)
         if self._selection_map is not None:
             selected_ids = self._selection_map.selected_ids(data)
             viewer.add_selected_objects(self.name, selected_ids)
-        return viewer
+        viewer.set_segmentation_view_options(self.name, **self._view_kws)
 
 
 class AnnotationLayerConfig(LayerConfigBase):
@@ -212,10 +243,8 @@ class AnnotationLayerConfig(LayerConfigBase):
         One rule or a list of rules mapping data to annotations. By default, []
     tags : list, optional
         List of tags for the layer.
-    Returns
-    -------
-    [type]
-        [description]
+    active : bool, optional
+        If True, makes the layer selected. Default is True (unlike for image/segmentation layers).
     """
 
     def __init__(self,
@@ -224,9 +253,9 @@ class AnnotationLayerConfig(LayerConfigBase):
                  linked_segmentation_layer=None,
                  mapping_rules=[],
                  tags=None,
-                 make_active=False):
+                 active=True):
         super(AnnotationLayerConfig, self).__init__(
-            name=name, type='annotation', color=color, source=None, make_active=make_active)
+            name=name, type='annotation', color=color, source=None, active=active)
         self._config['linked_segmentation_layer'] = linked_segmentation_layer
         if issubclass(type(mapping_rules), AnnotationMapperBase):
             mapping_rules = [mapping_rules]
@@ -237,7 +266,7 @@ class AnnotationLayerConfig(LayerConfigBase):
     def linked_segmentation_layer(self):
         return self._config.get('linked_segmentation_layer', None)
 
-    def _render_layer(self, viewer, data):
+    def _specific_rendering(self, viewer, data):
         viewer.add_annotation_layer(self.name,
                                     color=self.color,
                                     linked_segmentation_layer=self.linked_segmentation_layer,
@@ -247,6 +276,7 @@ class AnnotationLayerConfig(LayerConfigBase):
             rule.tag_map = self._tags
             if data is not None:
                 annos.extend(rule._render_data(data))
+                viewer.set_view_options(position=rule._get_position(data))
         viewer.add_annotations(self.name, annos)
 
 
@@ -257,6 +287,7 @@ class AnnotationMapperBase(object):
                  description_column,
                  linked_segmentation_column,
                  tag_column,
+                 set_position,
                  ):
 
         self._config = dict(type=type,
@@ -264,6 +295,7 @@ class AnnotationMapperBase(object):
                             description_column=description_column,
                             linked_segmentation_column=linked_segmentation_column,
                             tag_column=tag_column,
+                            set_position=set_position,
                             )
         self._tag_map = None
 
@@ -286,6 +318,10 @@ class AnnotationMapperBase(object):
     @property
     def tag_column(self):
         return self._config.get('tag_column', None)
+
+    @property
+    def set_position(self):
+        return self._config.get('set_position', False)
 
     @property
     def tag_map(self):
@@ -335,19 +371,28 @@ class AnnotationMapperBase(object):
             descriptions = [None for x in range(len(data))]
         return descriptions
 
+    def _get_position(self, data):
+        if len(data) > 0 and self.set_position is True:
+            return list(data[self.data_columns[0]].loc[0])
+        else:
+            return None
+
 
 class PointMapper(AnnotationMapperBase):
     def __init__(self,
                  point_column,
                  description_column=None,
                  linked_segmentation_column=None,
-                 tag_column=None):
+                 tag_column=None,
+                 set_position=False,
+                 ):
 
         super(PointMapper, self).__init__(type='point',
                                           data_columns=[point_column],
                                           description_column=description_column,
                                           linked_segmentation_column=linked_segmentation_column,
                                           tag_column=tag_column,
+                                          set_position=set_position,
                                           )
 
     def _render_data(self, data):
@@ -373,7 +418,9 @@ class LineMapper(AnnotationMapperBase):
                  point_column_b,
                  description_column=None,
                  linked_segmentation_column=None,
-                 tag_column=None):
+                 tag_column=None,
+                 set_position=False,
+                 ):
 
         super(LineMapper, self).__init__(type='line',
                                          data_columns=[
@@ -381,6 +428,7 @@ class LineMapper(AnnotationMapperBase):
                                          description_column=description_column,
                                          linked_segmentation_column=linked_segmentation_column,
                                          tag_column=tag_column,
+                                         set_position=set_position,
                                          )
 
     def _render_data(self, data):
@@ -409,7 +457,9 @@ class SphereMapper(AnnotationMapperBase):
                  description_column=None,
                  linked_segmentation_column=None,
                  tag_column=None,
-                 z_multiplier=0.1):
+                 z_multiplier=0.1,
+                 set_position=False,
+                 ):
 
         super(SphereMapper, self).__init__(type='sphere',
                                            data_columns=[
@@ -417,6 +467,7 @@ class SphereMapper(AnnotationMapperBase):
                                            description_column=description_column,
                                            linked_segmentation_column=linked_segmentation_column,
                                            tag_column=tag_column,
+                                           set_position=set_position,
                                            )
         self._z_multiplier = z_multiplier
 
@@ -456,6 +507,7 @@ class StateBuilder():
         base_state=None,
         url_prefix=None,
         resolution=[4, 4, 40],
+        view_kws={},
     ):
         if dataset_name is not None:
             il, sl = sources_from_client(dataset_name,
@@ -472,6 +524,10 @@ class StateBuilder():
         self._layers = layers
         self._resolution = resolution
         self._url_prefix = url_prefix
+
+        base_kws = DEFAULT_VIEW_KWS.copy()
+        base_kws.update(view_kws)
+        self._view_kws = base_kws
 
     def _reset_state(self, base_state=None):
         """
@@ -491,8 +547,9 @@ class StateBuilder():
             Optional initial state to build on, described by its JSON. By default None.
         """
         self._reset_state(base_state)
-        self._temp_viewer.set_resolution(self._resolution)
-        self._temp_viewer.set_view_options()
+        if self._resolution is not None:
+            self._temp_viewer.set_resolution(self._resolution)
+        self._temp_viewer.set_view_options(**self._view_kws)
 
     def render_state(self, data=None, base_state=None, return_as='url', static_content_source=default_static_content_source,
                      url_prefix=None, link_text='Neuroglancer Link'):
@@ -578,7 +635,8 @@ class ChainedStateBuilder():
         if len(self._statebuilders) == 0:
             raise ValueError('Must have at least one statebuilder')
 
-    def render_state(self, data_list=None, base_state=None, return_as='url', url_prefix=None):
+    def render_state(self, data_list=None, base_state=None, return_as='url', static_content_source=default_static_content_source,
+                     url_prefix=None, link_text='Neuroglancer Link'):
         """Generate a single neuroglancer state by addatively applying an ordered collection of
         dataframes to an collection of StateBuilder renders.
         Parameters
@@ -601,7 +659,7 @@ class ChainedStateBuilder():
         for builder, data in zip(self._statebuilders[:-1], data_list[:-1]):
             temp_state = builder.render_state(data=data,
                                               base_state=temp_state,
-                                              return_as='json')
+                                              return_as='dict')
         last_builder = self._statebuilders[-1]
         return last_builder.render_state(data=data_list[-1],
                                          base_state=temp_state,
