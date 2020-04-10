@@ -1,9 +1,9 @@
 from neuroglancer_annotation_ui import EasyViewer, annotation, set_static_content_source
 from neuroglancer_annotation_ui.utils import default_static_content_source
-from annotationframeworkclient import FrameworkClient
 import pandas as pd
 import numpy as np
 from collections.abc import Collection
+from warnings import warn
 from IPython.display import HTML
 from .utils import bucket_of_values
 
@@ -138,11 +138,12 @@ class SelectionMapper(object):
         List of ids to select irrespective of data.
     """
 
-    def __init__(self, data_columns=None, fixed_ids=None):
+    def __init__(self, data_columns=None, fixed_ids=None, color_column=None):
         if isinstance(data_columns, str):
             data_columns = [data_columns]
         self._config = dict(data_columns=data_columns,
-                            fixed_ids=fixed_ids)
+                            fixed_ids=fixed_ids,
+                            color_column=color_column)
 
     @property
     def data_columns(self):
@@ -158,6 +159,10 @@ class SelectionMapper(object):
         else:
             return self._config.get('fixed_ids', None)
 
+    @property
+    def color_column(self):
+        return self._config.get('color_column', None)
+
     def selected_ids(self, data):
         """ Uses the rules to generate a list of ids from a dataframe.
         """
@@ -166,6 +171,13 @@ class SelectionMapper(object):
             for col in self.data_columns:
                 selected_ids.append(data[col])
         return np.concatenate(selected_ids)
+
+    def seg_colors(self, data):
+        if self.color_column is not None:
+            colors = data[self.color_column]
+            return colors.to_list()
+        else:
+            return None
 
 
 class SegmentationLayerConfig(LayerConfigBase):
@@ -192,6 +204,7 @@ class SegmentationLayerConfig(LayerConfigBase):
                  name=DEFAULT_SEG_LAYER,
                  selected_ids_column=None,
                  fixed_ids=None,
+                 color_column=None,
                  active=False,
                  view_kws={},
                  ):
@@ -200,7 +213,8 @@ class SegmentationLayerConfig(LayerConfigBase):
         if selected_ids_column is not None or fixed_ids is not None:
             self._selection_map = SelectionMapper(
                 data_columns=selected_ids_column,
-                fixed_ids=fixed_ids)
+                fixed_ids=fixed_ids,
+                color_column=color_column)
         else:
             self._selection_map = None
 
@@ -224,7 +238,8 @@ class SegmentationLayerConfig(LayerConfigBase):
         viewer.add_segmentation_layer(self.name, self.source)
         if self._selection_map is not None:
             selected_ids = self._selection_map.selected_ids(data)
-            viewer.add_selected_objects(self.name, selected_ids)
+            colors = self._selection_map.seg_colors(data)
+            viewer.add_selected_objects(self.name, selected_ids, colors)
         viewer.set_segmentation_view_options(self.name, **self._view_kws)
 
 
@@ -503,6 +518,7 @@ class StateBuilder():
         segmentation_type='graphene',
         image_kws={},
         segmentation_kws={},
+        server_address=None,
         client=None,
         base_state=None,
         url_prefix=None,
@@ -510,8 +526,11 @@ class StateBuilder():
         view_kws={},
     ):
         if dataset_name is not None:
-            il, sl = sources_from_client(dataset_name,
-                                         segmentation_type=segmentation_type,
+            if client is None:
+                from annotationframeworkclient import FrameworkClient
+                client = FrameworkClient(
+                    dataset_name, server_address=server_address)
+            il, sl = sources_from_client(segmentation_type=segmentation_type,
                                          image_kws=image_kws,
                                          segmentation_kws=segmentation_kws,
                                          client=client)
@@ -519,6 +538,7 @@ class StateBuilder():
         else:
             il = None
             sl = None
+        self._client = client
 
         self._base_state = base_state
         self._layers = layers
@@ -552,7 +572,7 @@ class StateBuilder():
         self._temp_viewer.set_view_options(**self._view_kws)
 
     def render_state(self, data=None, base_state=None, return_as='url', static_content_source=default_static_content_source,
-                     url_prefix=None, link_text='Neuroglancer Link'):
+                     url_prefix=None, link_text='Neuroglancer Link', client=None):
         """Build a Neuroglancer state out of a DataFrame.
 
         Parameters
@@ -585,6 +605,8 @@ class StateBuilder():
 
         if url_prefix is None:
             url_prefix = self._url_prefix
+        if url_prefix is None:
+            url_prefix = static_content_source
 
         self._render_layers(data)
 
@@ -593,12 +615,15 @@ class StateBuilder():
                 set_static_content_source(static_content_source)
             return self.viewer
         elif return_as == 'url':
-            out = self._temp_viewer.as_url(prefix=url_prefix)
+            url = self._temp_viewer.as_url(prefix=url_prefix)
+            _long_url_warning(url)
             self.initialize_state()
-            return out
+            return url
         elif return_as == 'html':
-            out = HTML(self._temp_viewer.as_url(
-                prefix=url_prefix, as_html=True, link_text=link_text))
+            out = self._temp_viewer.as_url(
+                prefix=url_prefix, as_html=True, link_text=link_text)
+            _long_url_warning(out)
+            out = HTML(out)
             self.initialize_state()
             return out
         elif return_as == 'dict':
@@ -610,6 +635,16 @@ class StateBuilder():
             out = self._temp_viewer.state.to_json()
             self.initialize_state()
             return dumps(out)
+        elif return_as == 'shared':
+            if client is None:
+                if self._client is None:
+                    raise ValueError(
+                        'A FrameworkClient must be specified either here or in the StateBuilder originally')
+                client = self._client
+            state_id = client.state.upload_state_json(
+                self._temp_viewer.state.to_json())
+            self.initialize_state()
+            return client.state.build_neuroglancer_url(state_id, url_prefix)
         else:
             raise ValueError('No appropriate return type selected')
 
@@ -667,7 +702,12 @@ class ChainedStateBuilder():
                                          url_prefix=url_prefix)
 
 
-def sources_from_client(dataset_name, segmentation_type='graphene', image_kws={}, segmentation_kws={}, client=None):
+def sources_from_client(dataset_name=None,
+                        segmentation_type='graphene',
+                        image_kws={},
+                        segmentation_kws={},
+                        server_address=None,
+                        client=None):
     """Generate an Image and Segmentation source from a dataset name.
 
     Parameters
@@ -680,6 +720,8 @@ def sources_from_client(dataset_name, segmentation_type='graphene', image_kws={}
         Keyword arguments for an ImageLayerConfig (other than source), by default {}
     segmentation_kws : dict, optional
         Keyword arguments for a SegmentationLayerConfig (other than source), by default {}
+    server_address : str, optional
+        Set a non-default server address for the client.
     client : InfoClient or None, optional
         Predefined info client for lookup
 
@@ -690,9 +732,13 @@ def sources_from_client(dataset_name, segmentation_type='graphene', image_kws={}
     SegmentationLayerConfig
         Config for a segmentation layer in the statebuilder
     """
-
+    try:
+        from annotationframeworkclient import FrameworkClient
+    except ImportError:
+        raise Error('Install annotationframeworkclient to use this feature')
     if client is None:
-        client = FrameworkClient(dataset_name=dataset_name)
+        client = FrameworkClient(
+            dataset_name=dataset_name, server_address=server_address)
 
     image_source = client.info.image_source(format_for='neuroglancer')
     if segmentation_type == "graphene":
@@ -709,3 +755,20 @@ def sources_from_client(dataset_name, segmentation_type='graphene', image_kws={}
     image_layer = ImageLayerConfig(image_source, *image_kws)
     seg_layer = SegmentationLayerConfig(seg_source, *segmentation_kws)
     return image_layer, seg_layer
+
+
+def _get_state_client(dataset_name=None, server_address=None, client=None):
+    try:
+        from annotationframeworkclient import FrameworkClient
+    except ImportError:
+        raise Error('Install annotationframeworkclient to use this feature')
+    if client is None:
+        client = FrameworkClient(
+            dataset_name=dataset_name, server_address=server_address)
+    return client.state
+
+
+def _long_url_warning(url):
+    if len(url) > 2048:
+        warn('URL is longer than 2048 characters. Consider uploading to the state server if unexpected behavior occurs')
+    pass

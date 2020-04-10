@@ -273,13 +273,20 @@ class EasyViewer(neuroglancer.Viewer):
     def selected_objects(self, segmentation_layer):
         return list(self.state.layers[segmentation_layer].segments)
 
-    def add_selected_objects(self, segmentation_layer, oids):
+    def add_selected_objects(self, segmentation_layer, oids, colors=None):
         if issubdtype(type(oids), integer):
             oids = [oids]
 
         with self.txn() as s:
             for oid in oids:
                 s.layers[segmentation_layer].segments.add(uint64(oid))
+
+        if colors is not None:
+            if isinstance(colors, dict):
+                self.assign_colors(segmentation_layer, colors)
+            elif len(colors) == len(oids):
+                seg_colors = {str(oid): clr for oid, clr in zip(oids, colors)}
+                self.assign_colors(segmentation_layer, seg_colors)
 
     def get_mouse_coordinates(self, s):
         pos = s.mouse_voxel_coordinates
@@ -329,3 +336,18 @@ class EasyViewer(neuroglancer.Viewer):
                 l.objectAlpha = alpha_3d
             if alpha_unselected is not None:
                 l.notSelectedAlpha = alpha_unselected
+
+    def assign_colors(self, layer_name, seg_colors):
+        """ Assign colors to root ids in a segmentation layer
+
+        Parameters
+        ----------
+        layer_name : str,
+            Segmentation layer name
+        seg_colors : dict
+            dict with root ids as keys and colors as values.
+        """
+        with self.txn() as s:
+            if seg_colors is not None:
+                seg_colors = {str(oid): k for oid, k in seg_colors.items()}
+                s.layers[layer_name]._json_data['segmentColors'] = seg_colors
