@@ -1,11 +1,8 @@
-from collections import OrderedDict
 import neuroglancer_annotation_ui.nglite as neuroglancer
-from neuroglancer_annotation_ui import annotation, utils
-from inspect import getmembers, ismethod
+from . import annotation, utils
 from numpy import issubdtype, integer, uint64
+from collections import OrderedDict
 import copy
-import json
-import os
 import re
 
 neuroglancer.viewer_state.layer_types['segmentation_with_graph'] = utils.ChunkedgraphSegmentationLayer
