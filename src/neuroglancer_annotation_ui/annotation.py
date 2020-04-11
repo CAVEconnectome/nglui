@@ -22,7 +22,7 @@ def line_annotation(a, b, id=None, description=None, linked_segmentation=None, t
         id=id,
         description=description,
         segments=omit_nones(linked_segmentation))
-    if tag_ids is not None or len(tag_ids) != 0:
+    if tag_ids is not None:
         line._json_data['tagIds'] = omit_nones(tag_ids)
     return line
 
@@ -41,7 +41,7 @@ def point_annotation(point, id=None, description=None, linked_segmentation=None,
         id=id,
         description=description,
         segments=omit_nones(linked_segmentation))
-    if tag_ids is not None or len(tag_ids) != 0:
+    if tag_ids is not None:
         point._json_data['tagIds'] = omit_nones(tag_ids)
     return point
 
@@ -72,7 +72,7 @@ def ellipsoid_annotation(center, radii, id=None, description=None, linked_segmen
         id=id,
         description=description,
         segments=omit_nones(linked_segmentation))
-    if tag_ids is not None or len(tag_ids) != 0:
+    if tag_ids is not None:
         ellipsoid._json_data['tag_ids'] = omit_nones(tag_ids)
     return ellipsoid
 
@@ -93,6 +93,6 @@ def bounding_box_annotation(point_a, point_b, id=None, description=None, linked_
         id=id,
         description=description,
         segments=omit_nones(linked_segmentation))
-    if tag_ids is not None or len(tag_ids) != 0:
+    if tag_ids is not None:
         bounding_box._json_data['tag_ids'] = omit_nones(tag_ids)
     return bounding_box

@@ -8,47 +8,37 @@ import numpy as np
 def viewer():
     return EasyViewer()
 
-@pytest.fixture(scope='session')
-def img_layer():
-    return 'precomputed://gs://neuroglancer-public-data/flyem_fib-25/image'
 
 @pytest.fixture(scope='session')
-def seg_layer_precomputed():
-    return 'precomputed://gs://neuroglancer-public-data/flyem_fib-25/ground_truth'
+def img_path():
+    return 'precomputed://gs://pathtoimagery'
+
 
 @pytest.fixture(scope='session')
-def seg_layer_graphene():
-    return 'graphene://https://dev12.dynamicannotationframework.com/segmentation/1.0/pinky100_neo1'
+def seg_path_precomputed():
+    return 'precomputed://gs://pathtosegmentation/seg'
 
-set_static_content_source(graphene_version=0)
 
 @pytest.fixture(scope='session')
-def anno_layer():
+def seg_path_graphene():
+    return 'graphene://gs://pathtosegmentation/seg'
+
+
+@pytest.fixture(scope='session')
+def anno_layer_name():
     return 'test_anno_layer'
 
-@pytest.fixture(scope='session')
-def df():
-    datalen = 10
-    single_inds = np.arange(0,datalen)
-    multi_inds_array = [100+np.arange(ii, ii+2) for ii in np.arange(0, 2*datalen, 2)]
-    multi_inds_list = [(200+np.arange(ii, ii+2)).tolist() for ii in np.arange(0, 2*datalen, 2)]
 
-    single_pts = [np.random.randint(0,10000,(3,)) for i in single_inds]
-    multi_pts_array = [np.random.randint(0,10000,(2,3)) for i in single_inds]
-    multi_pts_list_array = [[np.random.randint(0,10000,(3,)) for j in range(2)] for i in single_inds]
-    multi_pts_list_list = [np.random.randint(0,10000,(2,3)).tolist() for i in single_inds]
-    
-    line_a = [np.random.randint(0, 10000, (3,)) for i in single_inds]
-    line_b = [np.random.randint(0, 10000, (3,)) for i in single_inds]
-    rad = [1000* np.random.rand() for i in single_inds]
-    return pd.DataFrame({'single_inds':single_inds,
-                         'multi_inds_array':multi_inds_array,
-                         'multi_inds_list': multi_inds_list,
-                         'single_pts': single_pts,
-                         'multi_pts_array': multi_pts_array,
-                         'multi_pts_list_array': multi_pts_list_array,
-                         'multi_pts_list_list': multi_pts_list_list,
-                         'line_a': line_a,
-                         'line_b': line_b,
-                         'radius': rad
-                         })
+@pytest.fixture(scope='function')
+def soma_df():
+    return pd.read_hdf('tests/testdata/test_data.h5', 'soma').head(5)
+
+
+@pytest.fixture(scope='function')
+def pre_syn_df():
+    return pd.read_hdf('tests/testdata/test_data.h5', 'presyn').head(5)
+
+
+@pytest.fixture(scope='function')
+def post_syn_df():
+    return pd.read_hdf('tests/testdata/test_data.h5', 'postsyn').head(5)
