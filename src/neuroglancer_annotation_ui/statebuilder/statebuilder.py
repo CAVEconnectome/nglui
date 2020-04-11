@@ -290,8 +290,9 @@ class AnnotationLayerConfig(LayerConfigBase):
         for rule in self._annotation_map_rules:
             rule.tag_map = self._tags
             if data is not None:
-                annos.extend(rule._render_data(data))
-                viewer.set_view_options(position=rule._get_position(data))
+                if len(data) > 0:
+                    annos.extend(rule._render_data(data))
+                    viewer.set_view_options(position=rule._get_position(data))
         viewer.add_annotations(self.name, annos)
 
 
