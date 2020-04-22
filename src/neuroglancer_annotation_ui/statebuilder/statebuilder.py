@@ -138,11 +138,12 @@ class SelectionMapper(object):
         List of ids to select irrespective of data.
     """
 
-    def __init__(self, data_columns=None, fixed_ids=None, color_column=None):
+    def __init__(self, data_columns=None, fixed_ids=None, fixed_id_colors=None, color_column=None):
         if isinstance(data_columns, str):
             data_columns = [data_columns]
         self._config = dict(data_columns=data_columns,
                             fixed_ids=fixed_ids,
+                            fixed_id_colors=fixed_id_colors,
                             color_column=color_column)
 
     @property
@@ -160,24 +161,39 @@ class SelectionMapper(object):
             return self._config.get('fixed_ids', None)
 
     @property
+    def fixed_id_colors(self):
+        if self._config.get('fixed_id_colors', None) is None:
+            return []
+        else:
+            return list(self._config.get('fixed_id_colors', None))
+
+    @property
     def color_column(self):
         return self._config.get('color_column', None)
 
     def selected_ids(self, data):
         """ Uses the rules to generate a list of ids from a dataframe.
         """
-        selected_ids = [np.array(self.fixed_ids, dtype=np.int64)]
+        selected_ids = []
         if data is not None:
             for col in self.data_columns:
                 selected_ids.append(data[col])
+        selected_ids.append(np.array(self.fixed_ids, dtype=np.int64))
         return np.concatenate(selected_ids)
 
     def seg_colors(self, data):
+        colors = {}
+        if len(self.fixed_id_colors) == len(self.fixed_ids):
+            for ii, oid in enumerate(self.fixed_ids):
+                colors[oid] = self.fixed_id_colors[ii]
+
         if self.color_column is not None:
-            colors = data[self.color_column]
-            return colors.to_list()
-        else:
-            return None
+            clist = data[self.color_column].to_list()
+            for col in self.data_columns:
+                for ii, oid in enumerate(data[col]):
+                    colors[oid] = clist[ii]
+
+        return colors
 
 
 class SegmentationLayerConfig(LayerConfigBase):
@@ -193,6 +209,10 @@ class SegmentationLayerConfig(LayerConfigBase):
         Column name (or list of column names) to use for selected ids.
     fixed_ids : list-like, optional.
         List of root ids to select directly.
+    fixed_id_colors : list-like, optional.
+        List of colors for fixed ids. Should be the same length as fixed_ids, although null entries can be padded with None values.
+    color_column : str, optional.
+        Column to use for color values for selected objects. Values should be RGB hex strings with a # at the begining.
     active : bool, optional.
         If True, makes the layer selected. Default is False.
     view_kws : dict, optional.
@@ -204,6 +224,7 @@ class SegmentationLayerConfig(LayerConfigBase):
                  name=DEFAULT_SEG_LAYER,
                  selected_ids_column=None,
                  fixed_ids=None,
+                 fixed_id_colors=None,
                  color_column=None,
                  active=False,
                  view_kws={},
@@ -214,6 +235,7 @@ class SegmentationLayerConfig(LayerConfigBase):
             self._selection_map = SelectionMapper(
                 data_columns=selected_ids_column,
                 fixed_ids=fixed_ids,
+                fixed_id_colors=fixed_id_colors,
                 color_column=color_column)
         else:
             self._selection_map = None
@@ -395,6 +417,22 @@ class AnnotationMapperBase(object):
 
 
 class PointMapper(AnnotationMapperBase):
+    """Sets rules to map dataframes to point annotations
+
+    Parameters
+    ----------
+    point_column : str
+        Column name with 3d position data
+    decription_column : str, optional
+        Column name with string data for annotation descriptions
+    linked_segmentation_column : str, optional
+        Column name for root ids to link to annotations
+    tag_column : str, optional
+        Column name for categorical tag data. Tags must match those set in the annotation layer.
+    set_position : bool, optional
+        If set to True, moves the position to center on the first point in the data.
+    """
+
     def __init__(self,
                  point_column,
                  description_column=None,
@@ -429,6 +467,24 @@ class PointMapper(AnnotationMapperBase):
 
 
 class LineMapper(AnnotationMapperBase):
+    """Sets rules to map dataframes to line annotations
+
+    Parameters
+    ----------
+    point_column_a : str
+        Column name with 3d position data for the first point of the line
+    point_column_b : str
+        Column name with 3d position data for the first point of the line
+    decription_column : str, optional
+        Column name with string data for annotation descriptions
+    linked_segmentation_column : str, optional
+        Column name for root ids to link to annotations
+    tag_column : str, optional
+        Column name for categorical tag data. Tags must match those set in the annotation layer.
+    set_position : bool, optional
+        If set to True, moves the position to center on the first point in the data (using point_column_a).
+    """
+
     def __init__(self,
                  point_column_a,
                  point_column_b,
@@ -467,6 +523,24 @@ class LineMapper(AnnotationMapperBase):
 
 
 class SphereMapper(AnnotationMapperBase):
+    """Sets rules to map dataframes to sphere annotations
+
+    Parameters
+    ----------
+    center_column : str
+        Column name with 3d position data for the center of the sphere
+    radius_column : str
+        Column name with a radius for the sphere (in nm)
+    decription_column : str, optional
+        Column name with string data for annotation descriptions
+    linked_segmentation_column : str, optional
+        Column name for root ids to link to annotations
+    tag_column : str, optional
+        Column name for categorical tag data. Tags must match those set in the annotation layer.
+    set_position : bool, optional
+        If set to True, moves the position to center on the first point in the data.
+    """
+
     def __init__(self,
                  center_column,
                  radius_column,
@@ -583,8 +657,15 @@ class StateBuilder():
             it will return only the base_state and any fixed values.
         base_state : str, optional
             Initial state to build on, expressed as Neuroglancer JSON. By default None
-        return_as : ['url', 'viewer', 'html', 'json'], optional
+        return_as : ['url', 'viewer', 'html', 'json', 'dict', 'shared'], optional
             Choice of output types. Note that if a viewer is returned, the state is not reset.
+                url : Returns the raw url describing the state
+                viewer : Returns an EasyViewer object holding the state information
+                html : Returns an HTML link to the url, useful for notebooks.
+                json : Returns a JSON string describing the state.
+                dict : Returns a dict version of the JSON state.
+                shared : Uploads the state to the State Service specified by an AnnotationFrameworkClient and returns a neuroglancer URL
+                shared_id : Uploads the state to the State Service specified by an AnnotationFrameworkClient and returns only the state id
             By default 'url'
         static_content_source : str, optional
             Sets the neuroglancer web site source to use for a viewer, if a viewer is returned.
@@ -594,7 +675,9 @@ class StateBuilder():
             class default.
         link_text : str, optional
             Text to use for the link when returning as html, by default 'Neuroglancer Link'
-
+        client : AnnotationFrameworkClient, optional,
+            If the client is going to render directly to a shared state, this client will be used to interface
+            with the server. If None is specified, uses the client specified when the StateBuilder was initialized.
         Returns
         -------
         string or neuroglancer.Viewer
@@ -617,13 +700,11 @@ class StateBuilder():
             return self.viewer
         elif return_as == 'url':
             url = self._temp_viewer.as_url(prefix=url_prefix)
-            _long_url_warning(url)
             self.initialize_state()
             return url
         elif return_as == 'html':
             out = self._temp_viewer.as_url(
                 prefix=url_prefix, as_html=True, link_text=link_text)
-            _long_url_warning(out)
             out = HTML(out)
             self.initialize_state()
             return out
@@ -637,17 +718,25 @@ class StateBuilder():
             self.initialize_state()
             return dumps(out)
         elif return_as == 'shared':
-            if client is None:
-                if self._client is None:
-                    raise ValueError(
-                        'A FrameworkClient must be specified either here or in the StateBuilder originally')
-                client = self._client
-            state_id = client.state.upload_state_json(
-                self._temp_viewer.state.to_json())
+            state_id = self._upload_to_state_server(client)
             self.initialize_state()
             return client.state.build_neuroglancer_url(state_id, url_prefix)
+        elif return_as == 'shared_id':
+            state_id = self._upload_to_state_server(client)
+            self.initialize_state()
+            return state_id
         else:
             raise ValueError('No appropriate return type selected')
+
+    def _upload_to_state_server(self, client=None):
+        if client is None:
+            if self._client is None:
+                raise ValueError(
+                    'A FrameworkClient must be specified either here or in the StateBuilder originally')
+            client = self._client
+        state_id = client.state.upload_state_json(
+            self._temp_viewer.state.to_json())
+        return state_id
 
     def _render_layers(self, data):
         for layer in self._layers:
@@ -723,7 +812,7 @@ def sources_from_client(dataset_name=None,
         Keyword arguments for a SegmentationLayerConfig (other than source), by default {}
     server_address : str, optional
         Set a non-default server address for the client.
-    client : InfoClient or None, optional
+    client : AnnotationFrameworkClient or None, optional
         Predefined info client for lookup
 
     Returns
@@ -767,9 +856,3 @@ def _get_state_client(dataset_name=None, server_address=None, client=None):
         client = FrameworkClient(
             dataset_name=dataset_name, server_address=server_address)
     return client.state
-
-
-def _long_url_warning(url):
-    if len(url) > 2048:
-        warn('URL is longer than 2048 characters. Consider uploading to the state server if unexpected behavior occurs')
-    pass

@@ -346,5 +346,6 @@ class EasyViewer(neuroglancer.Viewer):
         """
         with self.txn() as s:
             if seg_colors is not None:
-                seg_colors = {str(oid): k for oid, k in seg_colors.items()}
+                seg_colors = {str(oid): k for oid,
+                              k in seg_colors.items() if k is not None}
                 s.layers[layer_name]._json_data['segmentColors'] = seg_colors
