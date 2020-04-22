@@ -18,7 +18,7 @@ df_key = 'data'
 plot_columns = ['pre_syn', 'post_syn']
 
 
-def _statebuilder():
+def make_statebuilder():
     image_layer = statebuilder.ImageLayerConfig(name='EM',
                                                 source='precomputed://gs://neuroglancer/pinky100_v0/son_of_alignment_v15_rechunked')
     seg_layer = statebuilder.SegmentationLayerConfig(name='layer23',
@@ -35,7 +35,7 @@ def build_dash_app():
 
     app = dash.Dash()
 
-    sb = _statebuilder()
+    sb = make_statebuilder()
 
     def render_state(select_indices, render_df):
         render_df = render_df.loc[select_indices]
