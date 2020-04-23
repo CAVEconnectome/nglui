@@ -32,6 +32,7 @@ setup(
     version=find_version('src', 'nglui', '__init__.py'),
     description='Framework for data-driven generation of neuroglancer states.',
     long_description=open('README.md').read(),
+    long_description_content_type='text/markdown',
     author='Derrick Brittain, Casey Schneider-Mizell, Forrest Collman',
     author_email='caseysm@gmail.com',
     url="https://github.com/seung-lab/neuroglancer_annotation_ui",
