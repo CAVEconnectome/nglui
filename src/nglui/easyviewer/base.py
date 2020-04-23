@@ -1,4 +1,4 @@
-import neuroglancer_annotation_ui.nglite as neuroglancer
+import nglui.nglite as neuroglancer
 from . import annotation, utils
 from numpy import issubdtype, integer, uint64
 from collections import OrderedDict

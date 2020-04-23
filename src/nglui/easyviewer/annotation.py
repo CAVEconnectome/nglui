@@ -1,4 +1,4 @@
-from neuroglancer_annotation_ui.nglite import LineAnnotation, \
+from nglui.nglite import LineAnnotation, \
     PointAnnotation, \
     EllipsoidAnnotation, \
     AxisAlignedBoundingBoxAnnotation, \

@@ -1,5 +1,5 @@
 import pytest
-from neuroglancer_annotation_ui import annotation
+from nglui import annotation
 import numpy as np
 
 

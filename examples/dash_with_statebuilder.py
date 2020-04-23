@@ -9,7 +9,7 @@ import os
 import dash
 import pandas as pd
 from dashdataframe import configure_app
-from neuroglancer_annotation_ui import statebuilder
+from nglui import statebuilder
 
 FLASK_PORT = 8880
 

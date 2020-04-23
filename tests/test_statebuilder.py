@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import pandas as pd
 from collections import OrderedDict
-from neuroglancer_annotation_ui.statebuilder import *
+from nglui.statebuilder import *
 
 
 @pytest.fixture

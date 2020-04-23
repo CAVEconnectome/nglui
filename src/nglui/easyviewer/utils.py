@@ -1,5 +1,5 @@
-import neuroglancer_annotation_ui.nglite as neuroglancer
-from neuroglancer_annotation_ui.nglite.viewer_state import SegmentationLayer
+import nglui.nglite as neuroglancer
+from nglui.nglite.viewer_state import SegmentationLayer
 
 default_static_content_source = 'https://neuromancer-seung-import.appspot.com/'
 

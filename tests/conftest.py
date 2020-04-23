@@ -1,5 +1,5 @@
 import pytest
-from neuroglancer_annotation_ui import EasyViewer, set_static_content_source
+from nglui import EasyViewer, set_static_content_source
 import pandas as pd
 import numpy as np
 
