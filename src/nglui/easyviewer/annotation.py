@@ -1,8 +1,10 @@
-from neuroglancer import LineAnnotation, \
-                         PointAnnotation, \
-                         EllipsoidAnnotation, \
-                         AxisAlignedBoundingBoxAnnotation, \
-                         random_token
+from nglui.nglite import LineAnnotation, \
+    PointAnnotation, \
+    EllipsoidAnnotation, \
+    AxisAlignedBoundingBoxAnnotation, \
+    random_token
+from .utils import omit_nones
+
 
 def line_annotation(a, b, id=None, description=None, linked_segmentation=None, tag_ids=None):
     """Returns line annotation object.
@@ -19,9 +21,9 @@ def line_annotation(a, b, id=None, description=None, linked_segmentation=None, t
         point_b=b,
         id=id,
         description=description,
-        segments=linked_segmentation)
+        segments=omit_nones(linked_segmentation))
     if tag_ids is not None:
-        line._json_data['tagIds'] = tag_ids
+        line._json_data['tagIds'] = omit_nones(tag_ids)
     return line
 
 
@@ -38,10 +40,11 @@ def point_annotation(point, id=None, description=None, linked_segmentation=None,
         point=[int(x) for x in point],
         id=id,
         description=description,
-        segments=linked_segmentation)
+        segments=omit_nones(linked_segmentation))
     if tag_ids is not None:
-        point._json_data['tagIds'] = tag_ids
+        point._json_data['tagIds'] = omit_nones(tag_ids)
     return point
+
 
 def sphere_annotation(center, radius, z_multiplier, id=None, description=None, linked_segmentation=None, tag_ids=None):
     """
@@ -51,6 +54,7 @@ def sphere_annotation(center, radius, z_multiplier, id=None, description=None, l
     radii = [radius * x for x in unit_v]
     return ellipsoid_annotation(center, radii, id=id, description=description,
                                 linked_segmentation=linked_segmentation, tag_ids=tag_ids)
+
 
 def ellipsoid_annotation(center, radii, id=None, description=None, linked_segmentation=None, tag_ids=None):
     """returns ellipsoid annotation object.
@@ -67,10 +71,11 @@ def ellipsoid_annotation(center, radii, id=None, description=None, linked_segmen
         radii=radii,
         id=id,
         description=description,
-        segments=linked_segmentation)
+        segments=omit_nones(linked_segmentation))
     if tag_ids is not None:
-        ellipsoid._json_data['tag_ids'] = tag_ids
+        ellipsoid._json_data['tag_ids'] = omit_nones(tag_ids)
     return ellipsoid
+
 
 def bounding_box_annotation(point_a, point_b, id=None, description=None, linked_segmentation=None, tag_ids=None):
     """returns axis aligned bounding box annotation object.
@@ -87,7 +92,7 @@ def bounding_box_annotation(point_a, point_b, id=None, description=None, linked_
         point_b=point_b,
         id=id,
         description=description,
-        segments=linked_segmentation)
+        segments=omit_nones(linked_segmentation))
     if tag_ids is not None:
-        bounding_box._json_data['tag_ids'] = tag_ids
+        bounding_box._json_data['tag_ids'] = omit_nones(tag_ids)
     return bounding_box

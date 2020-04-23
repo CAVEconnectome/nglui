@@ -1,123 +1,190 @@
 import pytest
 import numpy as np
 import pandas as pd
-from neuroglancer_annotation_ui.statebuilder import StateBuilder, build_state_direct
-
-def test_statebuilder_basic(img_layer, seg_layer_graphene):
-    sb = StateBuilder(image_sources={'img':img_layer},
-                      seg_sources={'seg':seg_layer_graphene})
-    viewer = sb.render_state(return_as='viewer')
-    assert viewer.state.layers['img'].type == 'image'
-    assert viewer.state.layers['seg'].type == 'segmentation_with_graph'
+from collections import OrderedDict
+from nglui.statebuilder import *
 
 
-def test_statebuilder_selections(img_layer, seg_layer_graphene, df):
-    selection_instruction_single = {'seg': ['single_inds']}
-    sb = StateBuilder(image_sources={'img':img_layer},
-                      seg_sources={'seg':seg_layer_graphene},
-                      selected_ids=selection_instruction_single)
-    statejson = sb.render_state(data=df, return_as='json')
-    assert len(statejson['layers'][1]['segments']) == 10
-
-    selection_instruction_multi_a = {'seg': ['multi_inds_array']}
-    sb = StateBuilder(image_sources={'img':img_layer},
-                      seg_sources={'seg':seg_layer_graphene},
-                      selected_ids=selection_instruction_multi_a)
-    statejson = sb.render_state(data=df, return_as='json')
-    assert len(statejson['layers'][1]['segments']) == 20
-
-    selection_instruction_multi_b = {'seg': ['multi_inds_list']}
-    sb = StateBuilder(image_sources={'img':img_layer},
-                      seg_sources={'seg':seg_layer_graphene},
-                      selected_ids=selection_instruction_multi_b)
-    statejson = sb.render_state(data=df, return_as='json')
-    assert len(statejson['layers'][1]['segments']) == 20
-
-    selection_instruction_multicol = {'seg': ['single_inds', 'multi_inds_array']}
-    sb = StateBuilder(image_sources={'img':img_layer},
-                      seg_sources={'seg':seg_layer_graphene},
-                      selected_ids=selection_instruction_multicol)
-    statejson = sb.render_state(data=df, return_as='json')
-    print(statejson['layers'][1]['segments'])
-    assert len(statejson['layers'][1]['segments']) == 30
+@pytest.fixture
+def image_layer(img_path):
+    img_layer = ImageLayerConfig(name='img',
+                                 source=img_path,
+                                 )
+    return img_layer
 
 
-def test_statebuilder_annotation_types(img_layer, seg_layer_graphene, df):
-    point_annotations_single = {'annos': ['single_pts']}
-    sb = StateBuilder(image_sources={'img':img_layer},
-                      seg_sources={'seg':seg_layer_graphene},
-                      point_annotations=point_annotations_single)
-    statejson = sb.render_state(data=df, return_as='json')
-    assert len(statejson['layers'][2]['annotations']) == 10
-
-    anno_instructions_array = {'annos': ['multi_pts_array']}
-    sb = StateBuilder(image_sources={'img':img_layer},
-                      seg_sources={'seg':seg_layer_graphene},
-                      point_annotations=anno_instructions_array)
-    statejson = sb.render_state(data=df, return_as='json')
-    assert len(statejson['layers'][2]['annotations']) == 20
-
-    anno_instructions_la = {'annos': ['multi_pts_list_array']}
-    sb = StateBuilder(image_sources={'img':img_layer},
-                  seg_sources={'seg':seg_layer_graphene},
-                  point_annotations=anno_instructions_la)
-    statejson = sb.render_state(data=df, return_as='json')
-    assert len(statejson['layers'][2]['annotations']) == 20
-
-    anno_instructions_ll = {'annos': ['multi_pts_list_list']}
-    sb = StateBuilder(image_sources={'img':img_layer},
-                  seg_sources={'seg':seg_layer_graphene},
-                  point_annotations=anno_instructions_ll)
-    statejson = sb.render_state(data=df, return_as='json')
-    assert len(statejson['layers'][2]['annotations']) == 20
-
-    anno_instructions_multicolumn = {'annos': ['single_pts', 'multi_pts_array']}
-    sb = StateBuilder(image_sources={'img':img_layer},
-                  seg_sources={'seg':seg_layer_graphene},
-                  point_annotations=anno_instructions_multicolumn)
-    statejson = sb.render_state(data=df, return_as='json')
-    assert len(statejson['layers'][2]['annotations']) == 30
+@pytest.fixture
+def seg_layer_basic(seg_path_precomputed):
+    seg_layer = SegmentationLayerConfig(name='seg',
+                                        source=seg_path_precomputed)
+    return seg_layer
 
 
-def test_statebuilder_complex_annotations(img_layer, seg_layer_graphene, df):
-    line_instructions = {'annos': [['line_a', 'line_b']]}
-    sb = StateBuilder(image_sources={'img': img_layer},
-                      seg_sources={'seg': seg_layer_graphene},
-                      line_annotations=line_instructions)
-    statejson = sb.render_state(data=df, return_as='json')
-    assert len(statejson['layers'][2]['annotations']) == 10
+@pytest.fixture
+def anno_layer_basic():
+    anno_layer = AnnotationLayerConfig(name='anno')
+    return anno_layer
 
 
-    sphere_instructions = {'annos': [['line_a', 'radius']]}
-    sb = StateBuilder(image_sources={'img': img_layer},
-                      seg_sources={'seg': seg_layer_graphene},
-                      sphere_annotations=sphere_instructions)
-    statejson = sb.render_state(data=df, return_as='json')
-    assert len(statejson['layers'][2]['annotations']) == 10
+def test_basic(image_layer, seg_layer_basic, anno_layer_basic):
+    sb = StateBuilder([image_layer, seg_layer_basic, anno_layer_basic])
+    state = sb.render_state()
+    assert len(state) == 642
 
-    anno_instructions_multicolumn = {'annos': ['single_pts', 'multi_pts_array']}
-    sb = StateBuilder(image_sources={'img': img_layer},
-                      seg_sources={'seg': seg_layer_graphene},
-                      point_annotations=anno_instructions_multicolumn,
-                      line_annotations=line_instructions,
-                      sphere_annotations=sphere_instructions)
-    statejson = sb.render_state(data=df, return_as='json')
-    assert len(statejson['layers'][2]['annotations']) == 50
+    state = sb.render_state(return_as='html')
+    assert len(state.data) == 690
 
-    sphere_instructions = {'sphere_annos': [['line_a', 'radius']]}
-    line_instructions = {'line_annos': [['line_a', 'line_b']],
-                         'line_annos_2': [['line_a', 'line_b']]}
-    sb = StateBuilder(image_sources={'img': img_layer},
-                      seg_sources={'seg': seg_layer_graphene},
-                      line_annotations=line_instructions,
-                      sphere_annotations=sphere_instructions)
-    statejson = sb.render_state(data=df, return_as='json')
-    assert len(statejson['layers']) == 5
+    state = sb.render_state(return_as='dict')
+    assert isinstance(state, OrderedDict)
 
-def test_statebuilder_direct(img_layer, seg_layer_graphene, df):
-    img_sources = {'img': img_layer}
-    seg_sources = {'seg': seg_layer_graphene}
-    statejson = build_state_direct(point_annotations=np.vstack(df['single_pts'].values),
-                                   state_kws={'image_sources': img_sources, 'seg_sources': seg_sources},
-                                   return_as='json')
-    assert len(statejson['layers'][2]['annotations'])==10
+    state = sb.render_state(return_as='json')
+    assert type(state) is str
+
+    state = sb.render_state(return_as='viewer')
+    assert len(state.layer_names) == 3
+
+
+def test_segmentation_layer(soma_df, seg_path_precomputed):
+    seg_layer = SegmentationLayerConfig(name='seg',
+                                        source=seg_path_precomputed,
+                                        fixed_ids=[1000],
+                                        selected_ids_column='pt_root_id')
+
+    sb = StateBuilder(layers=[seg_layer])
+    state = sb.render_state(soma_df, return_as='dict')
+    print(state['layers'])
+    assert '648518346349538466' in state['layers'][0]['segments']
+    assert '1000' in state['layers'][0]['segments']
+
+
+def test_segmentation_layer_color(soma_df, seg_path_precomputed):
+    soma_df['color'] = ['#fdd4c2', '#fca082', '#fb694a', '#e32f27', '#b11218']
+    seg_layer = SegmentationLayerConfig(name='seg',
+                                        source=seg_path_precomputed,
+                                        selected_ids_column='pt_root_id',
+                                        color_column='color')
+    sb = StateBuilder(layers=[seg_layer])
+    state = sb.render_state(soma_df, return_as='dict')
+    print(state['layers'])
+    assert state['layers'][0]['segmentColors']['648518346349538715'] == '#e32f27'
+
+
+def test_segmentation_layer_options(soma_df, seg_path_precomputed):
+    segmentation_view_options = {'alpha_selected': 0.6,
+                                 'alpha_3d': 0.2}
+    seg_layer = SegmentationLayerConfig(seg_path_precomputed,
+                                        view_kws=segmentation_view_options)
+    sb = StateBuilder([seg_layer])
+    state = sb.render_state(return_as='dict')
+    assert state['layers'][0]['selectedAlpha'] == 0.6
+
+
+def test_annotations(pre_syn_df):
+    points = PointMapper(point_column='pre_pt_position')
+    points_2 = PointMapper(point_column='ctr_pt_position')
+    anno_layer = AnnotationLayerConfig(name='annos',
+                                       mapping_rules=[points, points_2])
+
+    sb = StateBuilder([anno_layer])
+    state = sb.render_state(pre_syn_df, return_as='dict')
+    assert len(state['layers'][0]['annotations']) == 10
+
+
+def test_annotations_line(pre_syn_df):
+    lines = LineMapper(point_column_a='pre_pt_position',
+                       point_column_b='post_pt_position')
+    anno_layer = AnnotationLayerConfig(name='annos',
+                                       mapping_rules=lines)
+
+    sb = StateBuilder([anno_layer])
+    state = sb.render_state(pre_syn_df, return_as='dict')
+    assert len(state['layers'][0]['annotations']) == 5
+
+
+def test_annotations_sphere(soma_df):
+    soma_df['radius'] = 5000
+    spheres = SphereMapper(center_column='pt_position', radius_column='radius')
+    anno_layer = AnnotationLayerConfig(name='annos',
+                                       mapping_rules=spheres)
+    sb = StateBuilder([anno_layer])
+    state = sb.render_state(soma_df, return_as='dict')
+    assert len(state['layers'][0]['annotations']) == 5
+
+
+def test_annotations_description(soma_df):
+    soma_df['desc'] = ['a', 'b', 'c', 'd', 'e']
+    points = PointMapper('pt_position', description_column='desc')
+    anno_layer = AnnotationLayerConfig(name='annos', mapping_rules=points)
+    sb = StateBuilder([anno_layer])
+    state = sb.render_state(soma_df, return_as='dict')
+    assert state['layers'][0]['annotations'][2]['description'] == 'c'
+
+
+def test_annotations_linked(soma_df, seg_path_precomputed):
+    seg_layer = SegmentationLayerConfig(seg_path_precomputed,
+                                        name='seg')
+
+    points = PointMapper(
+        'pt_position', linked_segmentation_column='pt_root_id')
+    anno_layer = AnnotationLayerConfig(
+        mapping_rules=points, linked_segmentation_layer='seg')
+
+    sb = StateBuilder([seg_layer, anno_layer])
+    state = sb.render_state(soma_df, return_as='dict')
+    assert '648518346349538715' in state['layers'][1]['annotations'][3]['segments']
+
+
+def test_annotation_tags(soma_df):
+    tag_list = ['i', 'e']
+
+    points = PointMapper('pt_position', tag_column='cell_type')
+    anno_layer = AnnotationLayerConfig(mapping_rules=points, tags=tag_list)
+
+    sb = StateBuilder([anno_layer])
+    state = sb.render_state(soma_df, return_as='dict')
+    assert 2 in state['layers'][0]['annotations'][1]['tagIds']
+
+
+def test_view_options(soma_df, image_layer):
+    view_options = {'layout': '4panel',
+                    'show_slices': True,
+                    'zoom_3d': 500,
+                    'position': [71832, 54120, 1089]}
+
+    sb = StateBuilder([image_layer], view_kws=view_options)
+    state = sb.render_state(return_as='dict')
+    assert state['navigation']['pose']['position']['voxelCoordinates'] == [
+        71832, 54120, 1089]
+
+    points = PointMapper('pt_position', set_position=True)
+    anno_layer = AnnotationLayerConfig(mapping_rules=points)
+
+    sb = StateBuilder([image_layer, anno_layer])
+    state = sb.render_state(soma_df, return_as='dict')
+    assert state['navigation']['pose']['position']['voxelCoordinates'] == list(
+        soma_df['pt_position'].loc[0])
+
+
+def test_chained(pre_syn_df, post_syn_df, image_layer):
+    # First state builder
+
+    postsyn_mapper = LineMapper(
+        point_column_a='pre_pt_position', point_column_b='ctr_pt_position')
+    postsyn_annos = AnnotationLayerConfig(
+        'post', color='#00CCCC', mapping_rules=postsyn_mapper)
+
+    postsyn_sb = StateBuilder(layers=[image_layer, postsyn_annos])
+
+    # Second state builder
+    presyn_mapper = LineMapper(
+        point_column_a='ctr_pt_position', point_column_b='post_pt_position')
+    presyn_annos = AnnotationLayerConfig(
+        'pre', color='#CC1111', mapping_rules=presyn_mapper)
+
+    presyn_sb = StateBuilder(layers=[presyn_annos])
+
+    # Chained state builder
+    chained_sb = ChainedStateBuilder([postsyn_sb, presyn_sb])
+    state = chained_sb.render_state(
+        [post_syn_df, pre_syn_df], return_as='dict')
+    assert len(state['layers']) == 3

@@ -28,17 +28,17 @@ with open('test_requirements.txt', 'r') as f:
     test_required = f.read().splitlines()
 
 setup(
-   name='neuroglancer_annotation_ui',
-   version=find_version('src','neuroglancer_annotation_ui','__init__.py'),
-   description='Neuroglancer python annotation UI framework.',
-   long_description=open('README.md').read(),
-   author='Derrick Brittain, Casey Schneider-Mizell, Forrest Collman',
-   author_email='caseysm@gmail.com',
-   url="https://github.com/seung-lab/neuroglancer_annotation_ui",
-   packages=find_packages('src'), 
-   package_dir={'': 'src'},
-   setup_requires=['pytest-runner'],
-   tests_require=test_required,
-   include_package_data=True,
-   install_requires=[required],  # external packages as dependencies
+    name='nglui',
+    version=find_version('src', 'nglui', '__init__.py'),
+    description='Framework for data-driven generation of neuroglancer states.',
+    long_description=open('README.md').read(),
+    author='Derrick Brittain, Casey Schneider-Mizell, Forrest Collman',
+    author_email='caseysm@gmail.com',
+    url="https://github.com/seung-lab/neuroglancer_annotation_ui",
+    packages=find_packages('src'),
+    package_dir={'': 'src'},
+    setup_requires=['pytest-runner'],
+    tests_require=test_required,
+    include_package_data=True,
+    install_requires=[required],  # external packages as dependencies
 )
