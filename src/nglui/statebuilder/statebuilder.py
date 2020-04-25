@@ -589,32 +589,11 @@ class StateBuilder():
     def __init__(
         self,
         layers=[],
-        dataset_name=None,
-        segmentation_type='graphene',
-        image_kws={},
-        segmentation_kws={},
-        server_address=None,
-        client=None,
         base_state=None,
         url_prefix=None,
         resolution=[4, 4, 40],
         view_kws={},
     ):
-        if dataset_name is not None:
-            if client is None:
-                from annotationframeworkclient import FrameworkClient
-                client = FrameworkClient(
-                    dataset_name, server_address=server_address)
-            il, sl = sources_from_client(segmentation_type=segmentation_type,
-                                         image_kws=image_kws,
-                                         segmentation_kws=segmentation_kws,
-                                         client=client)
-            layers = [il, sl] + layers
-        else:
-            il = None
-            sl = None
-        self._client = client
-
         self._base_state = base_state
         self._layers = layers
         self._resolution = resolution
@@ -647,7 +626,7 @@ class StateBuilder():
         self._temp_viewer.set_view_options(**self._view_kws)
 
     def render_state(self, data=None, base_state=None, return_as='url', static_content_source=default_static_content_source,
-                     url_prefix=None, link_text='Neuroglancer Link', client=None):
+                     url_prefix=None, link_text='Neuroglancer Link'):
         """Build a Neuroglancer state out of a DataFrame.
 
         Parameters
@@ -664,8 +643,6 @@ class StateBuilder():
                 html : Returns an HTML link to the url, useful for notebooks.
                 json : Returns a JSON string describing the state.
                 dict : Returns a dict version of the JSON state.
-                shared : Uploads the state to the State Service specified by an AnnotationFrameworkClient and returns a neuroglancer URL
-                shared_id : Uploads the state to the State Service specified by an AnnotationFrameworkClient and returns only the state id
             By default 'url'
         static_content_source : str, optional
             Sets the neuroglancer web site source to use for a viewer, if a viewer is returned.
@@ -675,9 +652,6 @@ class StateBuilder():
             class default.
         link_text : str, optional
             Text to use for the link when returning as html, by default 'Neuroglancer Link'
-        client : AnnotationFrameworkClient, optional,
-            If the client is going to render directly to a shared state, this client will be used to interface
-            with the server. If None is specified, uses the client specified when the StateBuilder was initialized.
         Returns
         -------
         string or neuroglancer.Viewer
@@ -717,26 +691,8 @@ class StateBuilder():
             out = self._temp_viewer.state.to_json()
             self.initialize_state()
             return dumps(out)
-        elif return_as == 'shared':
-            state_id = self._upload_to_state_server(client)
-            self.initialize_state()
-            return client.state.build_neuroglancer_url(state_id, url_prefix)
-        elif return_as == 'shared_id':
-            state_id = self._upload_to_state_server(client)
-            self.initialize_state()
-            return state_id
         else:
             raise ValueError('No appropriate return type selected')
-
-    def _upload_to_state_server(self, client=None):
-        if client is None:
-            if self._client is None:
-                raise ValueError(
-                    'A FrameworkClient must be specified either here or in the StateBuilder originally')
-            client = self._client
-        state_id = client.state.upload_state_json(
-            self._temp_viewer.state.to_json())
-        return state_id
 
     def _render_layers(self, data):
         for layer in self._layers:
@@ -790,69 +746,3 @@ class ChainedStateBuilder():
                                          base_state=temp_state,
                                          return_as=return_as,
                                          url_prefix=url_prefix)
-
-
-def sources_from_client(dataset_name=None,
-                        segmentation_type='graphene',
-                        image_kws={},
-                        segmentation_kws={},
-                        server_address=None,
-                        client=None):
-    """Generate an Image and Segmentation source from a dataset name.
-
-    Parameters
-    ----------
-    dataset_name : str
-        Dataset name for client
-    segmentation_type : 'graphene' or 'flat', optional
-        Which segmentation type for try first, graphene or flat. It will fall back to the other if not found. By default 'graphene'
-    image_kws : dict, optional
-        Keyword arguments for an ImageLayerConfig (other than source), by default {}
-    segmentation_kws : dict, optional
-        Keyword arguments for a SegmentationLayerConfig (other than source), by default {}
-    server_address : str, optional
-        Set a non-default server address for the client.
-    client : AnnotationFrameworkClient or None, optional
-        Predefined info client for lookup
-
-    Returns
-    -------
-    ImageLayerConfig
-        Config for an image layer in the statebuilder 
-    SegmentationLayerConfig
-        Config for a segmentation layer in the statebuilder
-    """
-    try:
-        from annotationframeworkclient import FrameworkClient
-    except ImportError:
-        raise Error('Install annotationframeworkclient to use this feature')
-    if client is None:
-        client = FrameworkClient(
-            dataset_name=dataset_name, server_address=server_address)
-
-    image_source = client.info.image_source(format_for='neuroglancer')
-    if segmentation_type == "graphene":
-        seg_source = client.info.graphene_source(format_for='neuroglancer')
-        if seg_source is None:
-            seg_source = client.info.flat_segmentation_source(
-                format_for='neuroglancer')
-    else:
-        seg_source = client.info.flat_segmentation_source(
-            format_for='neuroglancer')
-        if seg_source is None:
-            seg_source = client.info.graphene_source(format_for='neuroglancer')
-
-    image_layer = ImageLayerConfig(image_source, *image_kws)
-    seg_layer = SegmentationLayerConfig(seg_source, *segmentation_kws)
-    return image_layer, seg_layer
-
-
-def _get_state_client(dataset_name=None, server_address=None, client=None):
-    try:
-        from annotationframeworkclient import FrameworkClient
-    except ImportError:
-        raise Error('Install annotationframeworkclient to use this feature')
-    if client is None:
-        client = FrameworkClient(
-            dataset_name=dataset_name, server_address=server_address)
-    return client.state
