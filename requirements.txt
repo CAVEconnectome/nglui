@@ -1,7 +1,6 @@
 numpy>=1.11.0
 pandas
 ipython
-annotationframeworkclient>=0.3.0
 Pillow>=3.2.0
 tornado<6
 sockjs-tornado
