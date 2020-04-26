@@ -35,7 +35,7 @@ setup(
     long_description_content_type='text/markdown',
     author='Derrick Brittain, Casey Schneider-Mizell, Forrest Collman',
     author_email='caseysm@gmail.com',
-    url="https://github.com/seung-lab/neuroglancer_annotation_ui",
+    url="https://github.com/seung-lab/NeuroglancerAnnotationUI",
     packages=find_packages('src'),
     package_dir={'': 'src'},
     setup_requires=['pytest-runner'],
