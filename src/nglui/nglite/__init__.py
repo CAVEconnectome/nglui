@@ -13,11 +13,9 @@
 # limitations under the License.
 
 from __future__ import absolute_import
-from .server import set_static_content_source, set_server_bind_address, is_server_running, stop
 from .viewer import Viewer, UnsynchronizedViewer
 from .viewer_state import *
 from .viewer_config_state import MapEntry, PrefetchState, ScaleBarOptions
 from .equivalence_map import EquivalenceMap
 from .url_state import to_url, parse_url
 from . import skeleton
-from . import server

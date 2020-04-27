@@ -1,6 +1,5 @@
 from collections.abc import Iterable
 import numpy as np
-import pandas as pd
 
 
 def bucket_of_values(col, data, item_is_array=False, array_width=3):

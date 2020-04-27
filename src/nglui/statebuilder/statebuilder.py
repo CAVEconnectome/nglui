@@ -1,5 +1,5 @@
-from nglui import EasyViewer, annotation, set_static_content_source
-from nglui.easyviewer.utils import default_static_content_source
+from nglui import EasyViewer, annotation
+from nglui.easyviewer.utils import default_neuroglancer_base
 import pandas as pd
 import numpy as np
 from collections.abc import Collection
@@ -590,7 +590,7 @@ class StateBuilder():
         self,
         layers=[],
         base_state=None,
-        url_prefix=None,
+        url_prefix=default_neuroglancer_base,
         resolution=[4, 4, 40],
         view_kws={},
     ):
@@ -625,7 +625,7 @@ class StateBuilder():
             self._temp_viewer.set_resolution(self._resolution)
         self._temp_viewer.set_view_options(**self._view_kws)
 
-    def render_state(self, data=None, base_state=None, return_as='url', static_content_source=default_static_content_source,
+    def render_state(self, data=None, base_state=None, return_as='url',
                      url_prefix=None, link_text='Neuroglancer Link'):
         """Build a Neuroglancer state out of a DataFrame.
 
@@ -644,9 +644,6 @@ class StateBuilder():
                 json : Returns a JSON string describing the state.
                 dict : Returns a dict version of the JSON state.
             By default 'url'
-        static_content_source : str, optional
-            Sets the neuroglancer web site source to use for a viewer, if a viewer is returned.
-            Optional, default is None. If none is set, uses the default value from neuroglancer_annotation_ui.utils.
         url_prefix : str, optional
             Neuroglancer URL prefix to use. By default None, for which it will open with the
             class default.
@@ -663,14 +660,10 @@ class StateBuilder():
 
         if url_prefix is None:
             url_prefix = self._url_prefix
-        if url_prefix is None:
-            url_prefix = static_content_source
 
         self._render_layers(data)
 
         if return_as == 'viewer':
-            if static_content_source is not None:
-                set_static_content_source(static_content_source)
             return self.viewer
         elif return_as == 'url':
             url = self._temp_viewer.as_url(prefix=url_prefix)
@@ -716,8 +709,8 @@ class ChainedStateBuilder():
         if len(self._statebuilders) == 0:
             raise ValueError('Must have at least one statebuilder')
 
-    def render_state(self, data_list=None, base_state=None, return_as='url', static_content_source=default_static_content_source,
-                     url_prefix=None, link_text='Neuroglancer Link'):
+    def render_state(self, data_list=None, base_state=None, return_as='url',
+                     url_prefix=default_neuroglancer_base, link_text='Neuroglancer Link'):
         """Generate a single neuroglancer state by addatively applying an ordered collection of
         dataframes to an collection of StateBuilder renders.
         Parameters
@@ -728,7 +721,8 @@ class ChainedStateBuilder():
             return_as: ['url', 'viewer', 'html', 'json']. optional, default='url'.
                        Sets how the state is returned. Note that if a viewer is returned,
                        the state is not reset to default.
-            url_prefix: string, optional (default=None). Overrides the default neuroglancer url for url generation.
+            url_prefix: string, optional (default is https://neuromancer-seung-import.appspot.com).
+                        Overrides the default neuroglancer url for url generation.
         """
         if data_list is None:
             data_list = len(self._statebuilders) * [None]
