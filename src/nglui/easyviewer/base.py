@@ -22,9 +22,6 @@ class EasyViewer(neuroglancer.Viewer):
     def _repr_html_(self):
         return '<a href="%s" target="_blank">Viewer</a>' % self.as_url()
 
-    def set_source_url(self, ngl_url):
-        self.ngl_url = neuroglancer.set_server_bind_address(ngl_url)
-
     def load_url(self, url):
         """Load neuroglancer compatible url and updates viewer state
 
@@ -207,7 +204,7 @@ class EasyViewer(neuroglancer.Viewer):
 
     def as_url(self, prefix=None, as_html=False, link_text='Neuroglancer link'):
         if prefix is None:
-            prefix = utils.default_static_content_source
+            prefix = utils.default_neuroglancer_base
         ngl_url = neuroglancer.to_url(self.state, prefix=prefix)
         if as_html:
             return '<a href="{}" target="_blank">{}</a>'.format(ngl_url, link_text)

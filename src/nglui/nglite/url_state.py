@@ -26,8 +26,10 @@ from .json_wrappers import to_json
 
 SINGLE_QUOTE_STRING_PATTERN = u'(\'(?:[^\'\\\\]|(?:\\\\.))*\')'
 DOUBLE_QUOTE_STRING_PATTERN = u'("(?:[^\'\\\\]|(?:\\\\.))*")'
-SINGLE_OR_DOUBLE_QUOTE_STRING_PATTERN = SINGLE_QUOTE_STRING_PATTERN + u'|' + DOUBLE_QUOTE_STRING_PATTERN
-DOUBLE_OR_SINGLE_QUOTE_STRING_PATTERN = DOUBLE_QUOTE_STRING_PATTERN + u'|' + SINGLE_QUOTE_STRING_PATTERN
+SINGLE_OR_DOUBLE_QUOTE_STRING_PATTERN = SINGLE_QUOTE_STRING_PATTERN + \
+    u'|' + DOUBLE_QUOTE_STRING_PATTERN
+DOUBLE_OR_SINGLE_QUOTE_STRING_PATTERN = DOUBLE_QUOTE_STRING_PATTERN + \
+    u'|' + SINGLE_QUOTE_STRING_PATTERN
 
 
 DOUBLE_QUOTE_PATTERN = u'^((?:[^"\'\\\\]|(?:\\\\.))*)"'
@@ -74,7 +76,8 @@ def _convert_json_helper(x, desired_comma_char, desired_quote_char):
             x = x[m.end():]
             original_string = m.group(1)
             if original_string is not None:
-                replacement = _convert_string_literal(original_string, quote_initial, desired_quote_char, quote_search)
+                replacement = _convert_string_literal(
+                    original_string, quote_initial, desired_quote_char, quote_search)
             else:
                 replacement = m.group(2)
         s += re.sub(comma_search, desired_comma_char, before)
@@ -85,8 +88,10 @@ def _convert_json_helper(x, desired_comma_char, desired_quote_char):
 def url_safe_to_json(x):
     return _convert_json_helper(x, u',', u'"')
 
+
 def json_to_url_safe(x):
     return _convert_json_helper(x, u'_', u'\'')
+
 
 def url_fragment_to_json(fragment_value):
     unquoted = urllib.parse.unquote(fragment_value)
@@ -105,12 +110,15 @@ def parse_url(url):
     result = urllib.parse.urlparse(url)
     return parse_url_fragment(result.fragment)
 
+
 def to_url_fragment(state):
-    json_string = json.dumps(to_json(state), separators=(u',', u':'), default=json_encoder_default)
+    json_string = json.dumps(to_json(state), separators=(
+        u',', u':'), default=json_encoder_default)
     return urllib.parse.quote(json_string, safe=u'~@#$&()*!+=:;,.?/\'')
 
 
-default_neuroglancer_url = u'https://neuroglancer-demo.appspot.com'
+default_neuroglancer_url = u'https://neuromancer-seung-import.appspot.com'
+
 
 def to_url(state, prefix=default_neuroglancer_url):
     return u'%s#!%s' % (prefix, to_url_fragment(state))

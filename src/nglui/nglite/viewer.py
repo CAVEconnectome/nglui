@@ -14,18 +14,17 @@
 
 from __future__ import absolute_import
 
-from . import server, url_state, viewer_base
+from . import url_state, viewer_base
 
 
 class _ViewerHelper(object):
-    """Mixin for implementing viewers based on the built-in server."""
+    """Mixin for implementing viewers based on the built-in server [kept for compatibility]."""
 
     def __init__(self):
         super(_ViewerHelper, self).__init__()
-        server.register_viewer(self)
 
     def defer_callback(self, callback, *args, **kwargs):
-        server.defer_callback(callback, *args, **kwargs)
+        pass
 
     def __repr__(self):
         return self.get_viewer_url()
@@ -40,16 +39,14 @@ class _ViewerHelper(object):
 class Viewer(viewer_base.ViewerBase, _ViewerHelper):
     def __init__(self):
         super(Viewer, self).__init__()
-        server.register_viewer(self)
 
     def get_viewer_url(self):
-        return '%s/v/%s/' % (server.get_server_url(), self.token)
+        return 'Not implemented'
 
 
 class UnsynchronizedViewer(viewer_base.UnsynchronizedViewerBase, _ViewerHelper):
     def __init__(self):
         super(UnsynchronizedViewer, self).__init__()
-        server.register_viewer(self)
 
     def get_viewer_url(self):
-        return url_state.to_url(self.raw_state, '%s/v/%s/' % (server.get_server_url(), self.token))
+        return 'Not implemented'
