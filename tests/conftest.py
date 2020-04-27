@@ -1,5 +1,5 @@
 import pytest
-from nglui import EasyViewer, set_static_content_source
+from nglui import EasyViewer
 import pandas as pd
 import numpy as np
 
