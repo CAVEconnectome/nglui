@@ -113,19 +113,24 @@ class ImageLayerConfig(LayerConfigBase):
         Name of the image layer. By default, 'img'.
     active : bool, optional
         If True, makes the layer active in neuroglancer. Default is False.
+    contrast_controls : bool, optional
+        If True, gives the layer a user-controllable brightness and contrast shader. Default is False.
     """
 
     def __init__(self,
                  source,
                  name=DEFAULT_IMAGE_LAYER,
                  active=False,
+                 contrast_controls=False,
                  ):
         super(ImageLayerConfig, self).__init__(
             name=name, type='image', source=source, color=None, active=active)
+        self._contrast_controls = contrast_controls 
 
     def _specific_rendering(self, viewer, data):
         viewer.add_image_layer(self.name, self.source)
-
+        if self._contrast_controls:
+            viewer.add_contrast_shader(self.name)
 
 class SelectionMapper(object):
     """Class for configuring object selections based on root id
@@ -591,6 +596,7 @@ class StateBuilder():
         layers=[],
         base_state=None,
         url_prefix=default_neuroglancer_base,
+        state_server=None,
         resolution=[4, 4, 40],
         view_kws={},
     ):
@@ -598,6 +604,7 @@ class StateBuilder():
         self._layers = layers
         self._resolution = resolution
         self._url_prefix = url_prefix
+        self._state_server = state_server
 
         base_kws = DEFAULT_VIEW_KWS.copy()
         base_kws.update(view_kws)
@@ -621,6 +628,10 @@ class StateBuilder():
             Optional initial state to build on, described by its JSON. By default None.
         """
         self._reset_state(base_state)
+
+        if self._state_server is not None:
+            self._temp_viewer.set_state_server(self._state_server)
+
         if self._resolution is not None:
             self._temp_viewer.set_resolution(self._resolution)
         self._temp_viewer.set_view_options(**self._view_kws)
