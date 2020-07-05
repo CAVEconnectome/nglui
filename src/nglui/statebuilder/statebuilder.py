@@ -125,12 +125,13 @@ class ImageLayerConfig(LayerConfigBase):
                  ):
         super(ImageLayerConfig, self).__init__(
             name=name, type='image', source=source, color=None, active=active)
-        self._contrast_controls = contrast_controls 
+        self._contrast_controls = contrast_controls
 
     def _specific_rendering(self, viewer, data):
         viewer.add_image_layer(self.name, self.source)
         if self._contrast_controls:
             viewer.add_contrast_shader(self.name)
+
 
 class SelectionMapper(object):
     """Class for configuring object selections based on root id
@@ -283,6 +284,9 @@ class AnnotationLayerConfig(LayerConfigBase):
         Name of a linked segmentation layer for selected ids. By default, None
     mapping_rules : PointMapper, LineMapper, SphereMapper or list, optional
         One rule or a list of rules mapping data to annotations. By default, []
+    array_data : bool, optional
+        If True, allows simple mapping where one or more arrays are passed instead of a dataframe.
+        Only allows basic annotation creation, no tags, linked segmentations, or other rich features.
     tags : list, optional
         List of tags for the layer.
     active : bool, optional
@@ -294,13 +298,22 @@ class AnnotationLayerConfig(LayerConfigBase):
                  color=None,
                  linked_segmentation_layer=None,
                  mapping_rules=[],
+                 array_data=False,
                  tags=None,
-                 active=True):
+                 active=True,
+                 ):
         super(AnnotationLayerConfig, self).__init__(
             name=name, type='annotation', color=color, source=None, active=active)
         self._config['linked_segmentation_layer'] = linked_segmentation_layer
         if issubclass(type(mapping_rules), AnnotationMapperBase):
             mapping_rules = [mapping_rules]
+        if array_data is True:
+            if len(mapping_rules) > 1:
+                raise ValueError(
+                    "Only one mapping rule can be set using array data")
+            for mr in mapping_rules:
+                mr.array_data = array_data
+        self._array_data = array_data
         self._annotation_map_rules = mapping_rules
         self._tags = tags
 
@@ -309,6 +322,10 @@ class AnnotationLayerConfig(LayerConfigBase):
         return self._config.get('linked_segmentation_layer', None)
 
     def _specific_rendering(self, viewer, data):
+        if self._array_data:
+            if len(self._annotation_map_rules) > 0:
+                data = pd.DataFrame(
+                    data={self._annotation_map_rules[0].data_columns[0]: data.tolist()})
         viewer.add_annotation_layer(self.name,
                                     color=self.color,
                                     linked_segmentation_layer=self.linked_segmentation_layer,
@@ -335,6 +352,7 @@ class AnnotationMapperBase(object):
 
         self._config = dict(type=type,
                             data_columns=data_columns,
+                            array_data=False,
                             description_column=description_column,
                             linked_segmentation_column=linked_segmentation_column,
                             tag_column=tag_column,
@@ -379,6 +397,22 @@ class AnnotationMapperBase(object):
             self._tag_map = {}
         else:
             self._tag_map = {tag: ii+1 for ii, tag in enumerate(tag_list)}
+
+    @property
+    def array_data(self):
+        return self._config.get('array_data', False)
+
+    @array_data.setter
+    def array_data(self, new_array_data):
+        self._config['array_data'] = new_array_data
+        if new_array_data:
+            self._config['data_columns'] = self._default_array_data_columns()
+            self._config['description_column'] = None
+            self._config['linked_segmentation_column'] = None
+            self._config['tag_column'] = None
+
+    def _default_array_data_columns(self):
+        return []
 
     def _assign_tags(self, data):
         if self.tag_column is not None:
@@ -426,8 +460,11 @@ class PointMapper(AnnotationMapperBase):
 
     Parameters
     ----------
-    point_column : str
+    point_column : str, optional
         Column name with 3d position data
+    array_data : bool, optional
+        If True, the expected data is a Nx3 numpy array. This will only work for point positions,
+        to use any other features you must build a dataframe.
     decription_column : str, optional
         Column name with string data for annotation descriptions
     linked_segmentation_column : str, optional
@@ -439,13 +476,12 @@ class PointMapper(AnnotationMapperBase):
     """
 
     def __init__(self,
-                 point_column,
+                 point_column=None,
                  description_column=None,
                  linked_segmentation_column=None,
                  tag_column=None,
                  set_position=False,
                  ):
-
         super(PointMapper, self).__init__(type='point',
                                           data_columns=[point_column],
                                           description_column=description_column,
@@ -454,7 +490,12 @@ class PointMapper(AnnotationMapperBase):
                                           set_position=set_position,
                                           )
 
+    def _default_array_data_columns(self):
+        return ['pt']
+
     def _render_data(self, data):
+        if self.array_data:
+            data = pd.DataFrame(data={'pt': np.array(data).tolist()})
         col = self.data_columns[0]
         relinds = ~pd.isnull(data[col])
 
@@ -477,9 +518,11 @@ class LineMapper(AnnotationMapperBase):
     Parameters
     ----------
     point_column_a : str
-        Column name with 3d position data for the first point of the line
+        Column name with 3d position data for the first point of the line.
+        Must be set if array_data is False (the default)
     point_column_b : str
-        Column name with 3d position data for the first point of the line
+        Column name with 3d position data for the first point of the line.
+        Must be set if array_data is False (the default)
     decription_column : str, optional
         Column name with string data for annotation descriptions
     linked_segmentation_column : str, optional
@@ -491,14 +534,13 @@ class LineMapper(AnnotationMapperBase):
     """
 
     def __init__(self,
-                 point_column_a,
-                 point_column_b,
+                 point_column_a=None,
+                 point_column_b=None,
                  description_column=None,
                  linked_segmentation_column=None,
                  tag_column=None,
                  set_position=False,
                  ):
-
         super(LineMapper, self).__init__(type='line',
                                          data_columns=[
                                               point_column_a, point_column_b],
@@ -508,7 +550,13 @@ class LineMapper(AnnotationMapperBase):
                                          set_position=set_position,
                                          )
 
+    def _default_array_data_columns(self):
+        return ['pt_a', 'pt_b']
+
     def _render_data(self, data):
+        if self.array_data:
+            data = pd.DataFrame(
+                data={'pt_a': data[0].tolist(), 'pt_b': data[1].tolist()})
         colA, colB = self.data_columns
 
         relinds = np.logical_and(~pd.isnull(
@@ -547,15 +595,14 @@ class SphereMapper(AnnotationMapperBase):
     """
 
     def __init__(self,
-                 center_column,
-                 radius_column,
+                 center_column=None,
+                 radius_column=None,
                  description_column=None,
                  linked_segmentation_column=None,
                  tag_column=None,
                  z_multiplier=0.1,
                  set_position=False,
                  ):
-
         super(SphereMapper, self).__init__(type='sphere',
                                            data_columns=[
                                                center_column, radius_column],
@@ -566,7 +613,13 @@ class SphereMapper(AnnotationMapperBase):
                                            )
         self._z_multiplier = z_multiplier
 
+    def _default_array_data_columns(self):
+        return ['ctr_pt', 'rad']
+
     def _render_data(self, data):
+        if self.array_data:
+            data = pd.DataFrame(
+                data={'ctr_pt': data[0].tolist(), 'rad': data[1]})
         col_ctr, col_rad = self.data_columns
         relinds = np.logical_and(~pd.isnull(
             data[col_ctr]), ~pd.isnull(data[col_rad]))

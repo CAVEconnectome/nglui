@@ -81,8 +81,8 @@ class EasyViewer(neuroglancer.Viewer):
         with self.txn() as s:
             s.voxel_size = resolution
 
-    def add_contrast_shader(self, layer_name):
-        shader_text = "#uicontrol float black slider(min=0, max=1, default=0.4)\n#uicontrol float white slider(min=0, max=1, default=0.65)\nfloat rescale(float value) {\n  return (value - black) / (white - black);\n}\nvoid main() {\n  float val = toNormalized(getDataValue());\n  if (val < black) {\n    emitRGB(vec3(0,0,0));\n  } else if (val > white) {\n    emitRGB(vec3(1.0, 1.0, 1.0));\n  } else {\n    emitGrayscale(rescale(val));\n  }\n}\n"
+    def add_contrast_shader(self, layer_name, black_value=0.0, white_value=1.0):
+        shader_text = f'#uicontrol float black slider(min=0, max=1, default={black_value})\n#uicontrol float white slider(min=0, max=1, default={white_value})\nfloat rescale(float value) {{\n  return (value - black) / (white - black);\n}}\nvoid main() {{\n  float val = toNormalized(getDataValue());\n  if (val < black) {{\n    emitRGB(vec3(0,0,0));\n  }} else if (val > white) {{\n    emitRGB(vec3(1.0, 1.0, 1.0));\n  }} else {{\n    emitGrayscale(rescale(val));\n  }}\n}}\n'
         self._update_layer_shader(layer_name, shader_text)
 
     def _update_layer_shader(self, layer_name, shader_text):
