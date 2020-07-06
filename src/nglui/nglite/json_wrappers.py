@@ -97,7 +97,9 @@ class JsonObjectWrapper(object):
         with self._lock:
             self._cached_wrappers[key] = (value, self._json_data.get(key))
 
+
 _types_supporting_validation = frozenset([np.uint64])
+
 
 def _normalize_validator(wrapped_type, validator):
     if validator is None:
@@ -116,7 +118,8 @@ def _normalize_validator(wrapped_type, validator):
 def wrapped_property(json_name, wrapped_type, validator=None, doc=None):
     validator = _normalize_validator(wrapped_type, validator)
     return property(fget=lambda self: self._get_wrapped(json_name, wrapped_type),
-                    fset=lambda self, value: self._set_wrapped(json_name, value, validator),
+                    fset=lambda self, value: self._set_wrapped(
+                        json_name, value, validator),
                     doc=doc)
 
 
@@ -156,11 +159,14 @@ def optional(wrapper, default_value=None):
         modified_wrapper.supports_readonly = True
     return modified_wrapper
 
+
 class MapBase(object):
     pass
 
+
 def typed_string_map(wrapped_type, validator=None):
     validator = _normalize_validator(wrapped_type, validator)
+
     class Map(JsonObjectWrapper, MapBase):
         supports_validation = True
 
@@ -212,7 +218,7 @@ def typed_string_map(wrapped_type, validator=None):
         def __setitem__(self, key, value):
             with self._lock:
                 self._set_wrapped(key, value, validator)
-                self._json_data[key] = None # placeholder
+                self._json_data[key] = None  # placeholder
 
         def __delitem__(self, key):
             if self._readonly:
@@ -226,6 +232,7 @@ def typed_string_map(wrapped_type, validator=None):
 
     return Map
 
+
 def typed_set(wrapped_type):
     def wrapper(x, _readonly=False):
         set_type = frozenset if _readonly else set
@@ -238,11 +245,14 @@ def typed_set(wrapped_type):
     wrapper.supports_readonly = True
     return wrapper
 
+
 def typed_list(wrapped_type, validator=None):
     validator = _normalize_validator(wrapped_type, validator)
+
     class TypedList(object):
         supports_readonly = True
         supports_validation = True
+
         def __init__(self, json_data=None, _readonly=False):
             if json_data is None:
                 json_data = []
@@ -284,6 +294,7 @@ def typed_list(wrapped_type, validator=None):
         def extend(self, values):
             for x in values:
                 self.append(x)
+
         def insert(self, index, x):
             x = validator(x)
             self._data.insert(index, x)
