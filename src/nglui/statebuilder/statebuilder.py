@@ -347,6 +347,7 @@ class AnnotationMapperBase(object):
                  description_column,
                  linked_segmentation_column,
                  tag_column,
+                 group_column,
                  set_position,
                  ):
 
@@ -356,6 +357,7 @@ class AnnotationMapperBase(object):
                             description_column=description_column,
                             linked_segmentation_column=linked_segmentation_column,
                             tag_column=tag_column,
+                            group_column=group_column,
                             set_position=set_position,
                             )
         self._tag_map = None
@@ -379,6 +381,10 @@ class AnnotationMapperBase(object):
     @property
     def tag_column(self):
         return self._config.get('tag_column', None)
+
+    @property
+    def group_column(self):
+        return self._config.get('group_column', None)
 
     @property
     def set_position(self):
@@ -448,6 +454,17 @@ class AnnotationMapperBase(object):
             descriptions = [None for x in range(len(data))]
         return descriptions
 
+    def _add_groups(self, groups, annos):
+        vals, inverse = np.unique(groups, return_inverse=True)
+        inv_inds = np.flatnonzero(~np.isnan(vals))
+        group_annos = []
+        for ii in inv_inds:
+            anno_to_group = [annos[jj] for jj in np.flatnonzero(inverse == ii)]
+            group_annos.append(annotation.group_annotations(
+                anno_to_group, return_all=False))
+        annos.extend(group_annos)
+        return annos
+
     def _get_position(self, data):
         if len(data) > 0 and self.set_position is True:
             return list(data[self.data_columns[0]].iloc[0])
@@ -470,9 +487,14 @@ class PointMapper(AnnotationMapperBase):
     linked_segmentation_column : str, optional
         Column name for root ids to link to annotations
     tag_column : str, optional
-        Column name for categorical tag data. Tags must match those set in the annotation layer.
+        Column name for categorical tag data. Tags must match those set in the
+        annotation layer.
+    group_column : str, optional
+        Column name for grouping data. Rows with the same non-NaN value will be
+        collected into a grouped annotation.
     set_position : bool, optional
-        If set to True, moves the position to center on the first point in the data.
+        If set to True, moves the position to center on the first point in the
+        data.
     """
 
     def __init__(self,
@@ -480,6 +502,7 @@ class PointMapper(AnnotationMapperBase):
                  description_column=None,
                  linked_segmentation_column=None,
                  tag_column=None,
+                 group_column=None,
                  set_position=False,
                  ):
         super(PointMapper, self).__init__(type='point',
@@ -487,6 +510,7 @@ class PointMapper(AnnotationMapperBase):
                                           description_column=description_column,
                                           linked_segmentation_column=linked_segmentation_column,
                                           tag_column=tag_column,
+                                          group_column=group_column,
                                           set_position=set_position,
                                           )
 
@@ -509,6 +533,11 @@ class PointMapper(AnnotationMapperBase):
                                              linked_segmentation=ls,
                                              tag_ids=t) for
                  pt, d, ls, t in zip(pts, descriptions, linked_segs, tags)]
+
+        if self.group_column is not None:
+            groups = data[self.group_column].values[relinds]
+            annos = self._add_groups(groups, annos)
+
         return annos
 
 
@@ -539,6 +568,7 @@ class LineMapper(AnnotationMapperBase):
                  description_column=None,
                  linked_segmentation_column=None,
                  tag_column=None,
+                 group_column=None,
                  set_position=False,
                  ):
         super(LineMapper, self).__init__(type='line',
@@ -547,6 +577,7 @@ class LineMapper(AnnotationMapperBase):
                                          description_column=description_column,
                                          linked_segmentation_column=linked_segmentation_column,
                                          tag_column=tag_column,
+                                         group_column=group_column,
                                          set_position=set_position,
                                          )
 
@@ -572,6 +603,11 @@ class LineMapper(AnnotationMapperBase):
                                             linked_segmentation=ls,
                                             tag_ids=t) for
                  ptA, ptB, d, ls, t in zip(ptAs, ptBs, descriptions, linked_segs, tags)]
+
+        if self.group_column is not None:
+            groups = data[self.group_column].values[relinds]
+            annos = self._add_groups(groups, annos)
+
         return annos
 
 
@@ -590,6 +626,9 @@ class SphereMapper(AnnotationMapperBase):
         Column name for root ids to link to annotations
     tag_column : str, optional
         Column name for categorical tag data. Tags must match those set in the annotation layer.
+    group_column : str, optional
+        Column name for grouping data. Rows with the same non-NaN value will be
+        collected into a grouped annotation.
     set_position : bool, optional
         If set to True, moves the position to center on the first point in the data.
     """
@@ -600,6 +639,7 @@ class SphereMapper(AnnotationMapperBase):
                  description_column=None,
                  linked_segmentation_column=None,
                  tag_column=None,
+                 group_column=None,
                  z_multiplier=0.1,
                  set_position=False,
                  ):
@@ -609,6 +649,7 @@ class SphereMapper(AnnotationMapperBase):
                                            description_column=description_column,
                                            linked_segmentation_column=linked_segmentation_column,
                                            tag_column=tag_column,
+                                           group_column=group_column,
                                            set_position=set_position,
                                            )
         self._z_multiplier = z_multiplier
@@ -635,6 +676,11 @@ class SphereMapper(AnnotationMapperBase):
                                               tag_ids=t,
                                               z_multiplier=self._z_multiplier) for
                  pt, r, d, ls, t in zip(pts, rs, descriptions, linked_segs, tags)]
+
+        if self.group_column is not None:
+            groups = data[self.group_column].values[relinds]
+            annos = self._add_groups(groups, annos)
+
         return annos
 
 
