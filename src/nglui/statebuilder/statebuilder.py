@@ -3,7 +3,6 @@ from nglui.easyviewer.utils import default_neuroglancer_base
 import pandas as pd
 import numpy as np
 from collections.abc import Collection
-from warnings import warn
 from IPython.display import HTML
 from .utils import bucket_of_values
 
@@ -14,7 +13,6 @@ DEFAULT_ANNO_LAYER = 'anno'
 DEFAULT_VIEW_KWS = {'layout': 'xy-3d',
                     'zoom_image': 2,
                     'show_slices': False,
-                    'zoom_image': 8,
                     'zoom_3d': 2000,
                     }
 
@@ -115,6 +113,10 @@ class ImageLayerConfig(LayerConfigBase):
         If True, makes the layer active in neuroglancer. Default is False.
     contrast_controls : bool, optional
         If True, gives the layer a user-controllable brightness and contrast shader. Default is False.
+    black : float, optional
+        If contrast_controls is True, sets the default black level. Default is 0.0.
+    white : float, optional
+        If contrast_controls is True, sets the default white level. Default is 1.0.
     """
 
     def __init__(self,
@@ -122,6 +124,8 @@ class ImageLayerConfig(LayerConfigBase):
                  name=DEFAULT_IMAGE_LAYER,
                  active=False,
                  contrast_controls=False,
+                 black=0.0,
+                 white=1.0,
                  ):
         super(ImageLayerConfig, self).__init__(
             name=name, type='image', source=source, color=None, active=active)
@@ -130,7 +134,7 @@ class ImageLayerConfig(LayerConfigBase):
     def _specific_rendering(self, viewer, data):
         viewer.add_image_layer(self.name, self.source)
         if self._contrast_controls:
-            viewer.add_contrast_shader(self.name)
+            viewer.add_contrast_shader(self.name, black=black, white=white)
 
 
 class SelectionMapper(object):
