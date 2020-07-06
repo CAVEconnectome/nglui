@@ -130,11 +130,14 @@ class ImageLayerConfig(LayerConfigBase):
         super(ImageLayerConfig, self).__init__(
             name=name, type='image', source=source, color=None, active=active)
         self._contrast_controls = contrast_controls
+        self._black = black
+        self._white = white
 
     def _specific_rendering(self, viewer, data):
         viewer.add_image_layer(self.name, self.source)
         if self._contrast_controls:
-            viewer.add_contrast_shader(self.name, black=black, white=white)
+            viewer.add_contrast_shader(
+                self.name, black=self._black, white=self._white)
 
 
 class SelectionMapper(object):
