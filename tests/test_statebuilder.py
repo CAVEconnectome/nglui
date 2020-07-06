@@ -90,6 +90,15 @@ def test_annotations(pre_syn_df):
     assert len(state['layers'][0]['annotations']) == 10
 
 
+def test_array_annotations():
+    data = np.array([[1, 2, 3], [3, 4, 5], [6, 5, 3], [1, 2, 1]])
+    anno_layer = AnnotationLayerConfig(
+        name='annos', array_data=True, mapping_rules=PointMapper())
+    sb = StateBuilder([anno_layer])
+    state = sb.render_state(data, return_as='dict')
+    assert len(state['layers'][0]['annotations']) == 4
+
+
 def test_annotations_line(pre_syn_df):
     lines = LineMapper(point_column_a='pre_pt_position',
                        point_column_b='post_pt_position')
