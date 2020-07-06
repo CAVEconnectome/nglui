@@ -52,6 +52,14 @@ def test_annotations(viewer, anno_layer_name):
     assert len(viewer.state.layers[anno_ln].annotations) == 0
 
 
+def test_grouped_annotations(viewer, anno_layer_name):
+    pt_anno_1 = annotation.point_annotation([1, 2, 3])
+    pt_anno_2 = annotation.point_annotation([4, 5, 6])
+    grp = annotation.group_annotations(
+        [pt_anno_1, pt_anno_2], return_all=False)
+    assert grp.id == pt_anno_1.parent_id
+
+
 def test_annotation_tags(viewer, anno_layer_name):
     anno_ln = anno_layer_name
     viewer.add_annotation_layer(layer_name=anno_ln)

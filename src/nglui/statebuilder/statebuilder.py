@@ -497,8 +497,8 @@ class PointMapper(AnnotationMapperBase):
         Column name for categorical tag data. Tags must match those set in the
         annotation layer.
     group_column : str, optional
-        Column name for grouping data. Rows with the same non-NaN value will be
-        collected into a grouped annotation.
+        Column name for grouping data. Data in this row should be numeric with possible NaNs.
+        Rows with the same non-NaN value will be collected into a grouped annotation.
     set_position : bool, optional
         If set to True, moves the position to center on the first point in the
         data.
@@ -565,6 +565,9 @@ class LineMapper(AnnotationMapperBase):
         Column name for root ids to link to annotations
     tag_column : str, optional
         Column name for categorical tag data. Tags must match those set in the annotation layer.
+    group_column : str, optional
+        Column name for grouping data. Data in this row should be numeric with possible NaNs.
+        Rows with the same non-NaN value will be collected into a grouped annotation.
     set_position : bool, optional
         If set to True, moves the position to center on the first point in the data (using point_column_a).
     """
@@ -634,8 +637,8 @@ class SphereMapper(AnnotationMapperBase):
     tag_column : str, optional
         Column name for categorical tag data. Tags must match those set in the annotation layer.
     group_column : str, optional
-        Column name for grouping data. Rows with the same non-NaN value will be
-        collected into a grouped annotation.
+        Column name for grouping data. Data in this row should be numeric with possible NaNs.
+        Rows with the same non-NaN value will be collected into a grouped annotation.
     set_position : bool, optional
         If set to True, moves the position to center on the first point in the data.
     """
