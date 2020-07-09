@@ -225,7 +225,8 @@ class SegmentationLayerConfig(LayerConfigBase):
     fixed_id_colors : list-like, optional.
         List of colors for fixed ids. Should be the same length as fixed_ids, although null entries can be padded with None values.
     color_column : str, optional.
-        Column to use for color values for selected objects. Values should be RGB hex strings with a # at the begining.
+        # at the begining.
+        Column to use for color values for selected objects. Values should be RGB hex strings with a
     active : bool, optional.
         If True, makes the layer selected. Default is False.
     view_kws : dict, optional.
@@ -329,10 +330,6 @@ class AnnotationLayerConfig(LayerConfigBase):
         return self._config.get('linked_segmentation_layer', None)
 
     def _specific_rendering(self, viewer, data):
-        if self._array_data:
-            if len(self._annotation_map_rules) > 0:
-                data = pd.DataFrame(
-                    data={self._annotation_map_rules[0].data_columns[0]: data.tolist()})
         viewer.add_annotation_layer(self.name,
                                     color=self.color,
                                     linked_segmentation_layer=self.linked_segmentation_layer,
@@ -356,6 +353,8 @@ class AnnotationMapperBase(object):
                  tag_column,
                  group_column,
                  set_position,
+                 gather_linked_segmentations,
+                 share_linked_segmentations,
                  ):
 
         self._config = dict(type=type,
@@ -366,6 +365,8 @@ class AnnotationMapperBase(object):
                             tag_column=tag_column,
                             group_column=group_column,
                             set_position=set_position,
+                            gather_linked_segmentations=gather_linked_segmentations,
+                            share_linked_segmentations=share_linked_segmentations,
                             )
         self._tag_map = None
 
@@ -392,6 +393,14 @@ class AnnotationMapperBase(object):
     @property
     def group_column(self):
         return self._config.get('group_column', None)
+
+    @property
+    def gather_linked_segmentations(self):
+        return self._config.get('gather_linked_segmentations', True)
+
+    @property
+    def share_linked_segmentations(self):
+        return self._config.get('share_linked_segmentations', False)
 
     @property
     def set_position(self):
@@ -465,10 +474,17 @@ class AnnotationMapperBase(object):
         vals, inverse = np.unique(groups, return_inverse=True)
         inv_inds = np.flatnonzero(~np.isnan(vals))
         group_annos = []
+
         for ii in inv_inds:
             anno_to_group = [annos[jj] for jj in np.flatnonzero(inverse == ii)]
-            group_annos.append(annotation.group_annotations(
-                anno_to_group, return_all=False))
+            group_annos.append(
+                annotation.group_annotations(
+                    anno_to_group,
+                    return_all=False,
+                    gather_linked_segmentations=self.gather_linked_segmentations,
+                    share_linked_segmentations=self.share_linked_segmentations
+                )
+            )
         annos.extend(group_annos)
         return annos
 
@@ -510,6 +526,8 @@ class PointMapper(AnnotationMapperBase):
                  linked_segmentation_column=None,
                  tag_column=None,
                  group_column=None,
+                 gather_linked_segmentations=True,
+                 share_linked_segmentations=False,
                  set_position=False,
                  ):
         super(PointMapper, self).__init__(type='point',
@@ -518,6 +536,8 @@ class PointMapper(AnnotationMapperBase):
                                           linked_segmentation_column=linked_segmentation_column,
                                           tag_column=tag_column,
                                           group_column=group_column,
+                                          gather_linked_segmentations=gather_linked_segmentations,
+                                          share_linked_segmentations=share_linked_segmentations,
                                           set_position=set_position,
                                           )
 
@@ -579,6 +599,8 @@ class LineMapper(AnnotationMapperBase):
                  linked_segmentation_column=None,
                  tag_column=None,
                  group_column=None,
+                 gather_linked_segmentations=True,
+                 share_linked_segmentations=False,
                  set_position=False,
                  ):
         super(LineMapper, self).__init__(type='line',
@@ -588,6 +610,8 @@ class LineMapper(AnnotationMapperBase):
                                          linked_segmentation_column=linked_segmentation_column,
                                          tag_column=tag_column,
                                          group_column=group_column,
+                                         gather_linked_segmentations=gather_linked_segmentations,
+                                         share_linked_segmentations=share_linked_segmentations,
                                          set_position=set_position,
                                          )
 
@@ -650,6 +674,8 @@ class SphereMapper(AnnotationMapperBase):
                  linked_segmentation_column=None,
                  tag_column=None,
                  group_column=None,
+                 gather_linked_segmentations=True,
+                 share_linked_segmentations=False,
                  z_multiplier=0.1,
                  set_position=False,
                  ):
@@ -660,6 +686,8 @@ class SphereMapper(AnnotationMapperBase):
                                            linked_segmentation_column=linked_segmentation_column,
                                            tag_column=tag_column,
                                            group_column=group_column,
+                                           gather_linked_segmentations=gather_linked_segmentations,
+                                           share_linked_segmentations=share_linked_segmentations,
                                            set_position=set_position,
                                            )
         self._z_multiplier = z_multiplier

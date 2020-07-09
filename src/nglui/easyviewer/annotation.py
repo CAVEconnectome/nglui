@@ -5,6 +5,7 @@ from nglui.nglite import LineAnnotation, \
     CollectionAnnotation, \
     random_token
 from .utils import omit_nones
+from numpy import unique, concatenate
 
 
 def line_annotation(a, b, id=None, description=None, linked_segmentation=None, tag_ids=None):
@@ -99,7 +100,12 @@ def bounding_box_annotation(point_a, point_b, id=None, description=None, linked_
     return bounding_box
 
 
-def group_annotations(annotations, source=None, id=None, return_all=True):
+def group_annotations(annotations,
+                      source=None,
+                      id=None,
+                      return_all=True,
+                      gather_linked_segmentations=True,
+                      share_linked_segmentations=False):
     if len(annotations) == 0:
         return []
     if id is None:
@@ -112,10 +118,26 @@ def group_annotations(annotations, source=None, id=None, return_all=True):
         elif annotations[0].type == 'ellipsoid':
             source = annotations[0].center
     entries = [anno.id for anno in annotations]
+
+    seg_in_group = [anno.segments for anno in annotations]
+    seg_in_group = unique(concatenate(seg_in_group))
+
+    if gather_linked_segmentations:
+        linked_segs = seg_in_group
+    else:
+        linked_segs = []
+
     collection_anno = CollectionAnnotation(
-        source=source, entries=entries, id=id, children_visible=True)
+        source=source,
+        entries=entries,
+        id=id,
+        segments=omit_nones(seg_in_group),
+        children_visible=True)
+
     for anno in annotations:
         anno.parent_id = collection_anno.id
+        if share_linked_segmentations:
+            anno.segments = seg_in_group
     if return_all:
         annotations.append(collection_anno)
         return annotations

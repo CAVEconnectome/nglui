@@ -1,5 +1,5 @@
-import nglui.nglite as neuroglancer
-from nglui.nglite.viewer_state import SegmentationLayer
+from .. import nglite as neuroglancer
+SegmentationLayer = neuroglancer.viewer_state.SegmentationLayer
 
 default_neuroglancer_base = 'https://neuromancer-seung-import.appspot.com/'
 
