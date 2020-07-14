@@ -8,13 +8,19 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 
 ### Added
 
-- Grouped annotations in nglite base and EasyViewer's annotation module. This feature lets you create annotation groups in the Seung-lab branches of Neuroglancer, where multiple annotations are related to one another. This works by passing a list of already-created annotations and getting a new "CollectionAnnotation" that groups them together.
+- Grouped annotations in nglite base and EasyViewer's annotation module.
+This feature lets you create annotation groups in the Seung-lab branches of Neuroglancer, where multiple annotations are related to one another.
+It works by passing a list of already-created annotations and getting a new "CollectionAnnotation" that groups them together.
 
-– Grouped annotations in StateBuilder. PointMapper, SphereMapper, and LineMapper objects can take a 'group_column' value. Data in this column is intended to be numeric or NaN, and rows that share the same value are grouped together. At the moment, this feature only works within individual mapper objects.
+- Grouped annotations in StateBuilder. PointMapper, SphereMapper, and LineMapper objects can take a 'group_column' value.
+Data in this column is intended to be numeric or NaN, and rows that share the same value are grouped together.
+At the moment, this feature only works within individual mapper objects.
 
-- Two options for linked segmentation ids on grouped annotations: "gather_linked_segmentations" assigns all linked ids of objects within the group to the group annotation itself (True by default). "share_linked_segmentations" offers the chance to add all linked objects within the group to all annotations within the group (False by default).
+- Two options for linked segmentation ids on grouped annotations:
+`gather_linked_segmentations` assigns all linked ids of objects within the group to the group annotation itself (True by default).
+`share_linked_segmentations` will add all linked objects within the group to all annotations within the group (False by default).
 
-– `array_data` option on AnnotationLayerConfig for simple cases where you just want to map Nx3 arrays to points, a pair of Nx3 arrays to lines, or an Nx3 + N array to spheres (centers+radii).
+- `array_data` option on AnnotationLayerConfig for simple cases where you just want to map Nx3 arrays to points, a pair of Nx3 arrays to lines, or an Nx3 + N array to spheres (centers+radii).
 
 ### Fixed
 - Bug in GL Shader that caused StateBuilder to fail when `constrast_controls` was set to True.
