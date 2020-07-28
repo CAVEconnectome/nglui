@@ -33,7 +33,7 @@ class EasyViewer(neuroglancer.Viewer):
     @staticmethod
     def _smart_add_segmentation_layer(s, layer_name, source, **kwargs):
         if re.search("^graphene:\/\/", source) is not None:
-            s.layers[layer_name] = utils.ChunkedgraphSegmentationLayer(
+            s.layers[layer_name] = neuroglancer.ChunkedgraphSegmentationLayer(
                 source=source, **kwargs
             )
         elif re.search("^precomputed:\/\/", source) is not None:
@@ -79,7 +79,8 @@ class EasyViewer(neuroglancer.Viewer):
             source (str): source of neuroglancer image layer
         """
         with self.txn() as s:
-            s.layers[layer_name] = neuroglancer.ImageLayer(source=source, **kwargs)
+            s.layers[layer_name] = neuroglancer.ImageLayer(
+                source=source, **kwargs)
 
     def set_resolution(self, resolution):
         with self.txn() as s:
@@ -418,11 +419,13 @@ class EasyViewer(neuroglancer.Viewer):
 
         annos_red = neuroglancer.annotationHolder()
         for pt, sv_id in zip(points_red, supervoxels_red):
-            annos_red.annotations.append(_multicut_annotation(pt, seg_id, sv_id))
+            annos_red.annotations.append(
+                _multicut_annotation(pt, seg_id, sv_id))
 
         annos_blue = neuroglancer.annotationHolder()
         for pt, sv_id in zip(points_blue, supervoxels_blue):
-            annos_blue.annotations.append(_multicut_annotation(pt, seg_id, sv_id))
+            annos_blue.annotations.append(
+                _multicut_annotation(pt, seg_id, sv_id))
 
         self.add_selected_objects(layer_name, [seg_id])
 
@@ -435,7 +438,7 @@ class EasyViewer(neuroglancer.Viewer):
         if focus:
             self.set_selected_layer(layer_name)
             ctr_pt = (
-                vstack([points_red, points_blue]).mean(axis=0) / self.state.voxel_size
+                vstack([points_red, points_blue]).mean(
+                    axis=0) / self.state.voxel_size
             )
             self.set_view_options(position=ctr_pt, zoom_3d=100)
-

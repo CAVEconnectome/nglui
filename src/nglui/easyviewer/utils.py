@@ -1,13 +1,8 @@
 from .. import nglite as neuroglancer
+
 SegmentationLayer = neuroglancer.viewer_state.SegmentationLayer
 
-default_neuroglancer_base = 'https://neuromancer-seung-import.appspot.com/'
-
-
-class ChunkedgraphSegmentationLayer(SegmentationLayer):
-    def __init__(self, *args, **kwargs):
-        super(SegmentationLayer, self).__init__(
-            *args, type='segmentation_with_graph', **kwargs)
+default_neuroglancer_base = "https://neuromancer-seung-import.appspot.com/"
 
 
 def omit_nones(seg_list):
