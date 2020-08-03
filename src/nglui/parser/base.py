@@ -1,24 +1,127 @@
-import numpy as npj
+import numpy as np
 
 
 def layer_names(state):
-    """ Get layer names from a neuroglancer json state """
+    """Get all layer names in the state
+
+    Parameters
+    ----------
+    state : dict
+        Neuroglancer state as a JSON dict
+
+    Returns
+    -------
+    names : list
+        List of layer names
+    """
     return [l['name'] for l in state['layers']]
 
 
 def image_layers(state):
+    """Get all image layer names in the state
+
+    Parameters
+    ----------
+    state : dict
+        Neuroglancer state as a JSON dict
+
+    Returns
+    -------
+    names : list
+        List of layer names
+    """
     return [l['name'] for l in state['layers'] if l['type'] == 'image']
 
 
 def segmentation_layers(state):
+    """Get all segmentation layer names in the state
+
+    Parameters
+    ----------
+    state : dict
+        Neuroglancer state as a JSON dict
+
+    Returns
+    -------
+    names : list
+        List of layer names
+    """
     return [l['name'] for l in state['layers'] if l['type'] == 'segmentation']
 
 
 def annotation_layers(state):
+    """Get all annotation layer names in the state
+
+    Parameters
+    ----------
+    state : dict
+        Neuroglancer state as a JSON dict
+
+    Returns
+    -------
+    names : list
+        List of layer names
+    """
     return [l['name'] for l in state['layers'] if l['type'] == 'annotation']
 
 
+def tag_dictionary(state, layer_name):
+    """Get the tag id to string dictionary for a layer
+
+    Parameters
+    ----------
+    state : dict
+
+    layer_name : [type]
+        [description]
+
+    Returns
+    -------
+    [type]
+        [description]
+    """
+    l = get_layer(state, layer_name)
+    taginfo = l.get('annotationTags', [])
+    tags = {}
+    for t in taginfo:
+        tags[int(['id'])] = t['label']
+    return tags
+
+
+def get_layer(state, layer_name):
+    """Gets the contents of the layer based on the layer name.
+
+    Parameters
+    ----------
+    state : dict
+        Neuroglancer state as a JSON dict
+    layer_name : str
+        Name of layer
+
+    Returns
+    -------
+    layer : dict
+        Layer data contents
+    """
+    layer_ind = layer_names(state).index(layer_name)
+    return state['layers'][layer_ind]
+
+
 def view_settings(state):
+    """Get all data about the view state in neuroglancer: position,
+    image zoom, orientation and zoom of the 3d view, and voxel size.
+
+    Parameters
+    ----------
+    state : dict
+        Neuroglancer state as JSON dict
+
+    Returns
+    -------
+    view : dict
+        Dictionary with keys: position, zoomFactor, perspectiveOrientation,
+        perspectiveZoom, and voxelSize
+    """
     view = {}
     view['position'] = state['navigation']['pose']['position']['voxelCoordinates']
     view['zoomFactor'] = state['zoomFactor']
@@ -28,50 +131,8 @@ def view_settings(state):
     return view
 
 
-def get_annotations(state, layers=None, linked_segmentations=False, descriptions=False, tags=False, collapse_single=True, annotation_types='point'):
-    if layers is None:
-        layers = annotation_layers(state)
-
-    if isinstance(layers, str):
-        layers = [layers]
-
-    if len(layers) == 1 and collapse_single:
-        return_single = True
-    else:
-        return_single = False
-
-    if isinstance(annotation_types, str):
-        annotation_types = [annotation_types]
-        single_anno = True
-    else:
-        single_anno = False
-
-    annotations = {}
-    for ln in layers:
-        annotations[ln] = {}
-
-        for l in state['layers']:
-            if l.name == ln:
-                break
-        else:
-            continue
-
-        annos = l['annotations']
-        for at in annotation_types:
-
-    return out
-
-
-def _layer_from_name(state, layer_name):
-    for l in state['layers']:
-        if l['name'] == layer_name:
-            return l
-    else:
-        return None
-
-
 def _get_type_annotations(state, layer_name, type):
-    l = _layer_from_name(state, layer_name)
+    l = get_layer(state, layer_name)
     annos = l.get('annotations', [])
     return [anno for anno in annos if anno['type'] == type]
 
@@ -137,12 +198,94 @@ def _generic_annotations(state, layer_name, description, linked_segmentations, t
 
 
 def point_annotations(state, layer_name, description=False, linked_segmentations=False, tags=False):
+    """Get all point annotation points and other info from a layer.
+
+    Parameters
+    ----------
+    state : dict
+        Neuroglancer state as JSON dict
+    layer_name : str
+        Layer name
+    description : bool, optional
+        If True, also returns descriptions as well. By default False
+    linked_segmentations : bool, optional
+        If True, also returns list of linked segmentations, by default False
+    tags : bool, optional
+        If True, also returns list of tags, by default False
+
+    Returns
+    -------
+    anno_points : list
+        List of N 3-element points (as list)
+    anno_descriptions : list
+        List of N strings (or None), only returned if description=True.
+    anno_linked_segmentations : list
+        List of N lists of object ids. Only returned if linked_segmentations=True.
+    anno_tags : list
+        List of N lists of tag ids. Only returned if tags=True.
+    """
     return _generic_annotations(state, layer_name, description, linked_segmentations, tags, 'point')
 
 
 def line_annotations(state, layer_name, description=False, linked_segmentations=False, tags=False):
+    """Get all line annotation points and other info from a layer.
+
+    Parameters
+    ----------
+    state : dict
+        Neuroglancer state as JSON dict
+    layer_name : str
+        Layer name
+    description : bool, optional
+        If True, also returns descriptions as well. By default False
+    linked_segmentations : bool, optional
+        If True, also returns list of linked segmentations, by default False
+    tags : bool, optional
+        If True, also returns list of tags, by default False
+
+    Returns
+    -------
+    anno_points_A : list
+        List of N 3-element points (as list) of the first point in each line.
+    anno_points_B : list
+        List of N 3-element points (as list) of the second point in each line.
+    anno_descriptions : list
+        List of N strings (or None), only returned if description=True.
+    anno_linked_segmentations : list
+        List of N lists of object ids. Only returned if linked_segmentations=True.
+    anno_tags : list
+        List of N lists of tag ids. Only returned if tags=True.
+    """
     return _generic_annotations(state, layer_name, description, linked_segmentations, tags, 'line')
 
 
 def sphere_annotations(state, layer_name, description=False, linked_segmentations=False, tags=False):
+    """Get all sphere annotation points and other info from a layer.
+
+    Parameters
+    ----------
+    state : dict
+        Neuroglancer state as JSON dict
+    layer_name : str
+        Layer name
+    description : bool, optional
+        If True, also returns descriptions as well. By default False
+    linked_segmentations : bool, optional
+        If True, also returns list of linked segmentations, by default False
+    tags : bool, optional
+        If True, also returns list of tags, by default False
+
+    Returns
+    -------
+    anno_points : list
+        List of N 3-element center points (as list)
+    radius_points : list
+        List of N 3-element radii for each axis of the ellipsoid.
+    anno_descriptions : list
+        List of N strings (or None), only returned if description=True.
+    anno_linked_segmentations : list
+        List of N lists of object ids. Only returned if linked_segmentations=True.
+    anno_tags : list
+        List of N lists of tag ids. Only returned if tags=True.
+    """
     return _generic_annotations(state, layer_name, description, linked_segmentations, tags, 'sphere')
