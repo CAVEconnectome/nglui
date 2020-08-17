@@ -457,7 +457,7 @@ class AnnotationMapperBase(object):
         if self.linked_segmentation_column is not None:
             seg_array = np.vstack(
                 data[self.linked_segmentation_column].values)
-            linked_segs = [row[~np.isnan(row)].astype(int)
+            linked_segs = [row[~pd.isnull(row)].astype(int)
                            for row in seg_array]
         else:
             linked_segs = [None for x in range(len(data))]
@@ -472,7 +472,7 @@ class AnnotationMapperBase(object):
 
     def _add_groups(self, groups, annos):
         vals, inverse = np.unique(groups, return_inverse=True)
-        inv_inds = np.flatnonzero(~np.isnan(vals))
+        inv_inds = np.flatnonzero(~pd.isnull(vals))
         group_annos = []
 
         for ii in inv_inds:
