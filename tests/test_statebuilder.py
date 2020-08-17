@@ -129,7 +129,7 @@ def test_annotations_description(soma_df):
     assert state['layers'][0]['annotations'][2]['description'] == 'c'
 
 
-def test_annotations_linked(soma_df, seg_path_precomputed):
+def test_annotations_linked(soma_df, soma_df_Int64, seg_path_precomputed):
     seg_layer = SegmentationLayerConfig(seg_path_precomputed,
                                         name='seg')
 
@@ -141,6 +141,9 @@ def test_annotations_linked(soma_df, seg_path_precomputed):
     sb = StateBuilder([seg_layer, anno_layer])
     state = sb.render_state(soma_df, return_as='dict')
     assert '648518346349538715' in state['layers'][1]['annotations'][3]['segments']
+
+    state = sb.render_state(soma_df_Int64, return_as='dict')
+    assert len(state['layers'][1]['annotations'][0]['segments']) == 0
 
 
 def test_annotation_tags(soma_df):
