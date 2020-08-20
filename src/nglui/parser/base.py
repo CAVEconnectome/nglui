@@ -1,5 +1,7 @@
 import numpy as np
 
+SEGMENTATION_LAYER_TYPES = ['segmentation', 'segmentation_with_graph']
+
 
 def layer_names(state):
     """Get all layer names in the state
@@ -46,7 +48,7 @@ def segmentation_layers(state):
     names : list
         List of layer names
     """
-    return [l['name'] for l in state['layers'] if l['type'] == 'segmentation']
+    return [l['name'] for l in state['layers'] if l['type'] in SEGMENTATION_LAYER_TYPES]
 
 
 def annotation_layers(state):
