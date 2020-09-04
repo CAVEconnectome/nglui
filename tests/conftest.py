@@ -2,6 +2,7 @@ import pytest
 from nglui import EasyViewer
 import pandas as pd
 import numpy as np
+import json
 
 
 @pytest.fixture(scope='session')
@@ -50,3 +51,10 @@ def pre_syn_df():
 @pytest.fixture(scope='function')
 def post_syn_df():
     return pd.read_hdf('tests/testdata/test_data.h5', 'postsyn').head(5)
+
+
+@pytest.fixture(scope='session')
+def test_state():
+    with open('tests/testdata/test_state.json', 'r') as f:
+        state = json.load(f)
+    return state

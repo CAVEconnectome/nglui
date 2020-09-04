@@ -86,7 +86,7 @@ def tag_dictionary(state, layer_name):
     taginfo = l.get('annotationTags', [])
     tags = {}
     for t in taginfo:
-        tags[int(['id'])] = t['label']
+        tags[int(t['id'])] = t['label']
     return tags
 
 
@@ -126,9 +126,9 @@ def view_settings(state):
     """
     view = {}
     view['position'] = state['navigation']['pose']['position']['voxelCoordinates']
-    view['zoomFactor'] = state['zoomFactor']
-    view['perspectiveOrientation'] = state['perspectiveOrientation']
-    view['perspectiveZoom'] = state['perspectiveZoom']
+    view['zoomFactor'] = state['navigation'].get('zoomFactor', None)
+    view['perspectiveOrientation'] = state.get('perspectiveOrientation', None)
+    view['perspectiveZoom'] = state.get('perspectiveZoom', None)
     view['voxelSize'] = state['navigation']['pose']['position']['voxelSize']
     return view
 
