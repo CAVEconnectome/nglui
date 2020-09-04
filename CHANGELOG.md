@@ -19,6 +19,7 @@ This should remove some of the boilerplate one writes every time you want to get
 ## [2.1.1] — 2020-08-17
 
 ### Changed
+
 - Switched from numpy `isnan` to pandas `isnull` in StateBuilder. This allows nullable pandas Int64 dtypes to work as columns
 
 ## [2.1.0] — 2020-07-14
