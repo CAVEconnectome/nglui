@@ -32,11 +32,11 @@ class EasyViewer(neuroglancer.Viewer):
 
     @staticmethod
     def _smart_add_segmentation_layer(s, layer_name, source, **kwargs):
-        if re.search("^graphene:\/\/", source) is not None:
+        if re.search(r"^graphene://", source) is not None:
             s.layers[layer_name] = neuroglancer.ChunkedgraphSegmentationLayer(
                 source=source, **kwargs
             )
-        elif re.search("^precomputed:\/\/", source) is not None:
+        elif re.search(r"^precomputed://", source) is not None:
             s.layers[layer_name] = neuroglancer.SegmentationLayer(
                 source=source, **kwargs
             )
@@ -56,7 +56,7 @@ class EasyViewer(neuroglancer.Viewer):
             for ln, kws in annotation_layers.items():
                 s.layers[ln] = neuroglancer.AnnotationLayer(**kws)
             if resolution is not None:
-                s.voxel_size = resolutionP
+                s.voxel_size = resolution
         pass
 
     def add_segmentation_layer(self, layer_name, source, **kwargs):
@@ -169,12 +169,6 @@ class EasyViewer(neuroglancer.Viewer):
             for anno in annotations:
                 s.layers[layer_name].annotations.append(anno)
 
-    def add_annotation(self, layer_name, annotation, color=None):
-        raise DeprecationWarning(
-            "This function is depreciated. Use " "add_annotation" " instead."
-        )
-        self.add_annotations(layer_name, annotation, color=color)
-
     def remove_annotations(self, layer_name, anno_ids):
         if isinstance(anno_ids, str):
             anno_ids = [anno_ids]
@@ -188,14 +182,8 @@ class EasyViewer(neuroglancer.Viewer):
                         s.layers[layer_name].annotations.pop(el)
                         if len(anno_ids) == 0:
                             break
-        except Exception as e:
+        except:
             self.update_message("Could not remove annotation")
-
-    def remove_annotation(self, layer_name, aids):
-        raise DeprecationWarning(
-            "This function is depreciated. Use " "remove_annotations" " instead."
-        )
-        self.remove_annotations(self, layer_name, aids)
 
     def add_annotation_tags(self, layer_name, tags):
         """
