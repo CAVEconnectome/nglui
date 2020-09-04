@@ -309,10 +309,16 @@ class AnnotationLayerConfig(LayerConfigBase):
                  array_data=False,
                  tags=None,
                  active=True,
+                 filter_by_segmentation=False,
+                 brackets_show_segmentation=True,
+                 selection_shows_segmentation=True,
                  ):
         super(AnnotationLayerConfig, self).__init__(
             name=name, type='annotation', color=color, source=None, active=active)
         self._config['linked_segmentation_layer'] = linked_segmentation_layer
+        self._config['filter_by_segmentation'] = filter_by_segmentation
+        self._config['selection_shows_segmentation'] = selection_shows_segmentation
+        self._config['brackets_show_segmentation'] = brackets_show_segmentation
         if issubclass(type(mapping_rules), AnnotationMapperBase):
             mapping_rules = [mapping_rules]
         if array_data is True:
@@ -329,10 +335,25 @@ class AnnotationLayerConfig(LayerConfigBase):
     def linked_segmentation_layer(self):
         return self._config.get('linked_segmentation_layer', None)
 
+    @property
+    def filter_by_segmentation(self):
+        return self._config.get('filter_by_segmentation', None)
+
+    @property
+    def selection_shows_segmentation(self):
+        return self._config.get('selection_shows_segmentation', None)
+
+    @property
+    def brackets_show_segmentation(self):
+        return self._config.get('brackets_show_segmentation', None)
+
     def _specific_rendering(self, viewer, data):
         viewer.add_annotation_layer(self.name,
                                     color=self.color,
                                     linked_segmentation_layer=self.linked_segmentation_layer,
+                                    filter_by_segmentation=self.filter_by_segmentation,
+                                    selection_shows_segmentation=self.selection_shows_segmentation,
+                                    brackets_show_segmentation=self.brackets_show_segmentation,
                                     tags=self._tags)
         annos = []
         for rule in self._annotation_map_rules:

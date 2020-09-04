@@ -28,11 +28,12 @@ def anno_layer_basic():
 
 def test_basic(image_layer, seg_layer_basic, anno_layer_basic):
     sb = StateBuilder([image_layer, seg_layer_basic, anno_layer_basic])
-    state = sb.render_state()
-    assert len(state) == 642
+    state_url = sb.render_state()
+    assert state_url[:4] == 'http'
 
     state = sb.render_state(return_as='html')
-    assert len(state.data) == 690
+    # padding for link html plus text
+    assert state.data == f'<a href="{state_url}" target="_blank">Neuroglancer Link</a>'
 
     state = sb.render_state(return_as='dict')
     assert isinstance(state, OrderedDict)

@@ -103,7 +103,9 @@ class EasyViewer(neuroglancer.Viewer):
         layer_name=None,
         color=None,
         linked_segmentation_layer=None,
-        filter_by_segmentation=True,
+        filter_by_segmentation=False,
+        brackets_show_segmentation=True,
+        selection_shows_segmentation=True,
         tags=None,
     ):
         """Add annotation layer to the viewer instance.
@@ -123,6 +125,8 @@ class EasyViewer(neuroglancer.Viewer):
             new_layer = neuroglancer.AnnotationLayer(
                 linked_segmentation_layer=linked_segmentation_layer,
                 filter_by_segmentation=filter_by_segmentation,
+                brackets_show_segmentation=brackets_show_segmentation,
+                selection_shows_segmentation=selection_shows_segmentation,
             )
             s.layers.append(name=layer_name, layer=new_layer)
             if color is not None:

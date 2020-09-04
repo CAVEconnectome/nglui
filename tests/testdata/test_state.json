@@ -1,0 +1,174 @@
+{
+  "layers": [
+    {
+      "source": "precomputed://gs://neuroglancer/pinky100_v0/son_of_alignment_v15_rechunked",
+      "type": "image",
+      "blend": "default",
+      "shaderControls": {},
+      "name": "imagery"
+    },
+    {
+      "source": "precomputed://gs://microns_public_datasets/pinky100_v185/seg",
+      "type": "segmentation",
+      "selectedAlpha": 0.2,
+      "objectAlpha": 0.95,
+      "segmentColors": {
+        "648518346349538689": "#fcaf93",
+        "648518346346300466": "#aa1016",
+        "648518346349538682": "#d52221",
+        "648518346349463803": "#f44f39",
+        "648518346349519354": "#ffffff",
+        "648518346349538677": "#fc8161"
+      },
+      "segments": [
+        "648518346346300466",
+        "648518346349463803",
+        "648518346349519354",
+        "648518346349538677",
+        "648518346349538682",
+        "648518346349538689"
+      ],
+      "skeletonRendering": {
+        "mode2d": "lines_and_points",
+        "mode3d": "lines"
+      },
+      "name": "segments"
+    },
+    {
+      "annotationColor": "#ffffff",
+      "type": "annotation",
+      "annotations": [
+        {
+          "point": [
+            97087,
+            55441,
+            1462
+          ],
+          "type": "point",
+          "id": "9f8523ab5415e7602ecd879129a0211d9a0f4c5e",
+          "tagIds": [
+            1
+          ],
+          "segments": [
+            "648518346349538689"
+          ]
+        },
+        {
+          "point": [
+            96557,
+            53475,
+            1413
+          ],
+          "type": "point",
+          "id": "690c46adda481102945d1d30c6c926d68c904f2a",
+          "tagIds": [
+            1
+          ],
+          "segments": [
+            "648518346349538682"
+          ]
+        },
+        {
+          "point": [
+            96864,
+            54279,
+            1440
+          ],
+          "type": "point",
+          "id": "7239cb6717ff329954ce513b1740276a00694989",
+          "tagIds": [
+            1
+          ],
+          "segments": [
+            "648518346349538677"
+          ]
+        },
+        {
+          "point": [
+            96760,
+            53691,
+            1399
+          ],
+          "type": "point",
+          "id": "d7844dfa62cf01d12e0139ff23322bb0f2203b82",
+          "tagIds": [
+            1
+          ],
+          "segments": [
+            "648518346349463803"
+          ]
+        },
+        {
+          "point": [
+            96712,
+            53735,
+            1395
+          ],
+          "type": "point",
+          "id": "41747fea593f9ce458bd7018678198954ef5fbb6",
+          "tagIds": [
+            1
+          ],
+          "segments": [
+            "648518346346300466"
+          ]
+        },
+        {
+          "point": [
+            96754,
+            53986,
+            1428
+          ],
+          "type": "point",
+          "id": "4be157ede72c894d6f90ff99cede2224f49c4da2",
+          "tagIds": [
+            1
+          ],
+          "segments": [
+            "648518346346300466"
+          ]
+        }
+      ],
+      "annotationTags": [
+        {
+          "id": 1,
+          "label": "ChC"
+        }
+      ],
+      "voxelSize": [
+        4,
+        4,
+        40
+      ],
+      "linkedSegmentationLayer": "segments",
+      "filterBySegmentation": true,
+      "bracketShortcutsShowSegmentation": false,
+      "annotationSelectionShowsSegmentation": false,
+      "name": "synapses"
+    }
+  ],
+  "navigation": {
+    "pose": {
+      "position": {
+        "voxelSize": [
+          4,
+          4,
+          40
+        ],
+        "voxelCoordinates": [
+          97087,
+          55441,
+          1462
+        ]
+      }
+    },
+    "zoomFactor": 8
+  },
+  "perspectiveZoom": 1500,
+  "showSlices": false,
+  "selectedLayer": {
+    "layer": "synapses",
+    "visible": true
+  },
+  "layout": "xy-3d"
+}

@@ -3,6 +3,24 @@
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
 <!-- ## Unreleased -->
+## [2.2.0] — 2020-09-04
+
+### Added
+
+- Parser submodule `nglui.parser` for quickly extracting data from neuroglancer states.
+This should remove some of the boilerplate one writes every time you want to get data out of a state.
+
+- AnnotationLayerConfig now can take arguments about user interactions such as filtering by segmentation and bracket shortcuts showing segmentations.
+
+### Changed
+
+- Default behavior for annotation layers now has filtering by segmentation turned off and bracket shortcuts showing segmentations turned on.
+
+## [2.1.1] — 2020-08-17
+
+### Changed
+
+- Switched from numpy `isnan` to pandas `isnull` in StateBuilder. This allows nullable pandas Int64 dtypes to work as columns
 
 ## [2.1.0] — 2020-07-14
 
@@ -23,19 +41,25 @@ At the moment, this feature only works within individual mapper objects.
 - `array_data` option on AnnotationLayerConfig for simple cases where you just want to map Nx3 arrays to points, a pair of Nx3 arrays to lines, or an Nx3 + N array to spheres (centers+radii).
 
 ### Fixed
+
 - Bug in GL Shader that caused StateBuilder to fail when `constrast_controls` was set to True.
 
 ## [2.0.2] - 2020-06-18
 
 ### Added
+
 - Custom GL Shaders (see [documentation](https://github.com/google/neuroglancer/blob/a12552d03844fb6092cf300171d2f2077b3960e2/src/neuroglancer/sliceview/image_layer_rendering.md)) for image and segmentation layers can be set in EasyViewer.
+
 - JSON State Server can be set in EasyViewer.
+
 - Added `contrast_controls` argument to `statebuilder.ImageLayerConfig` to provide brightness/contrast controls to layer through GL Shader.
+
 - Added `state_server` argument to `statebuilder.StateBuilder` to pre-set state server endpoints.
 
 ## [2.0.1] - 2020-04-27
 
 ### Fixed
+
 - Removed unnecessary parts of the included neuroglancer module (`nglite`) for cleanliness.
 
 ## [2.0.0] - 2020-04-25
@@ -43,11 +67,15 @@ At the moment, this feature only works within individual mapper objects.
 This update significantly changed the underlying nature and goals of the Neuroglancer Annotation UI project.
 
 ### Added
+
 - StateBuilder module for rule-based method of generating Neuroglancer states from Pandas DataFrames.
+
 - Added various features to make use of specific aspects of the Seung-lab Neuroglancer fork.
 
 ### Changed
+
 - Removed dependency on neuroglancer python package, which was not designed for the Seung-Lab Neuroglancer fork and had some difficult install requirements for features that were unnecessary for this project demanded.
 
 ### Removed
+
 - Dynamic state management via python server.
