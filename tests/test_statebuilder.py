@@ -162,7 +162,7 @@ def test_annotation_groups(pre_syn_df):
     df = pre_syn_df.copy()
     df['group'] = [1, 1, np.nan, 2.0, 2.0]
     points = PointMapper('ctr_pt_position', group_column='group')
-    anno_layer = statebuilder.AnnotationLayerConfig(mapping_rules=[points])
+    anno_layer = AnnotationLayerConfig(mapping_rules=[points])
     sb = StateBuilder([anno_layer])
     state = sb.render_state(df, return_as='dict')
     assert len(state['layers'][0]['annotations']) == 7

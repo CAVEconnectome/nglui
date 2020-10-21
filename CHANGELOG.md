@@ -3,6 +3,13 @@
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
 <!-- ## Unreleased -->
+## [2.2.1] — 2020-10-21
+
+### Fixed
+- **StateBuilder**: Setting view options for Graphene segmentation layers now works
+- **Parser**: Now imported as a property of nglui if you import as `import nglui`.
+- Small bug fixes.
+
 ## [2.2.0] — 2020-09-04
 
 ### Added

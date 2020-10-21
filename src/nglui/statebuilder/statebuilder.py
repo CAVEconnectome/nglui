@@ -78,7 +78,7 @@ class LayerConfigBase(object):
 
     @color.setter
     def color(self, c):
-        self._config.set['color'] = c
+        self._config['color'] = c
 
     @property
     def active(self):
