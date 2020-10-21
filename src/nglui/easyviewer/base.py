@@ -5,6 +5,8 @@ from collections import OrderedDict
 import copy
 import re
 
+SEGMENTATION_LAYER_TYPES = ['segmentation', 'segmentation_with_graph']
+
 
 class EasyViewer(neuroglancer.Viewer):
     """
@@ -339,7 +341,7 @@ class EasyViewer(neuroglancer.Viewer):
     def set_segmentation_view_options(
         self, layer_name, alpha_selected=None, alpha_3d=None, alpha_unselected=None,
     ):
-        if self.state.layers[layer_name].type is not "segmentation":
+        if self.state.layers[layer_name].type not in SEGMENTATION_LAYER_TYPES:
             return
         with self.txn() as s:
             l = s.layers[layer_name]

@@ -1,6 +1,5 @@
 import numpy as np
-
-SEGMENTATION_LAYER_TYPES = ['segmentation', 'segmentation_with_graph']
+from ..easyviewer.base import SEGMENTATION_LAYER_TYPES
 
 
 def layer_names(state):
