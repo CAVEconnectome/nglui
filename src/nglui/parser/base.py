@@ -290,3 +290,74 @@ def sphere_annotations(state, layer_name, description=False, linked_segmentation
         List of N lists of tag ids. Only returned if tags=True.
     """
     return _generic_annotations(state, layer_name, description, linked_segmentations, tags, 'sphere')
+
+
+def extract_multicut(state, seg_layer=None):
+    """Extract information entered into the multicut graph operation
+
+    Parameters
+    ----------
+    state : dict
+        Neuroglancer state
+    seg_layer : str, optional
+        Name of a segmentation layer or None. If None, the function will check how many segmentation
+        layers there are and, if only one exits, choose it. If more than one segmentation layer is present,
+        it errors. By default None
+
+    Returns
+    -------
+    pts: np.array
+        Nx3 array of points selected
+    side: np.array
+        N array with 'source' or 'sink', depending on which side the point is on.
+    svids: np.array
+        N array with selected supervoxel. If only points are selected (e.g. via clicking on the mesh),
+        the value will be NaN.
+    root_id: int
+        Root id of the object to split
+
+    Raises
+    ------
+    ValueError
+        [description]
+    """
+    if seg_layer is None:
+        seg_layers = segmentation_layers(state)
+        if len(seg_layers) == 1:
+            seg_layer = seg_layers[0]
+        else:
+            raise ValueError(
+                'State has multiple segmentation layers. Please specify the layer to use.')
+    l = get_layer(state, 'seg')
+    pts = []
+    svids = []
+    side = []
+    root_id = None
+
+    source_data = l['graphOperationMarker'][0]
+    for anno in source_data['annotations']:
+        pts.append(anno['point'])
+        side.append('source')
+        if root_id is None:
+            root_id = int(anno['segments'][1])
+        svid = int(anno['segments'][0])
+        if svid != root_id:
+            svids.append(svid)
+        else:
+            # This means that no supervoxel was directly selected
+            svids.append(np.nan)
+
+    sink_data = l['graphOperationMarker'][1]
+    for anno in sink_data['annotations']:
+        pts.append(anno['point'])
+        side.append('sink')
+        svid = int(anno['segments'][0])
+        if root_id is None:
+            root_id = int(anno['segments'][1])
+        if svid != root_id:
+            svids.append(svid)
+        else:
+            # This means that no supervoxel was directly selected
+            svids.append(np.nan)
+
+    return np.array(pts), np.array(side), np.array(svids), root_id
