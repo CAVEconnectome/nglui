@@ -191,7 +191,7 @@ class SelectionMapper(object):
         if data is not None:
             for col in self.data_columns:
                 selected_ids.append(data[col])
-        selected_ids.append(np.array(self.fixed_ids, dtype=np.int64))
+        selected_ids.append(np.array(self.fixed_ids, dtype=np.uint64))
         return np.concatenate(selected_ids)
 
     def seg_colors(self, data):
