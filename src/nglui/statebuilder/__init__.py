@@ -1,9 +1,4 @@
-from .statebuilder import StateBuilder, \
-    ChainedStateBuilder, \
-    SelectionMapper, \
-    SegmentationLayerConfig, \
-    AnnotationLayerConfig, \
-    ImageLayerConfig, \
-    PointMapper, \
-    LineMapper, \
-    SphereMapper
+from .helpers import from_client
+from .statebuilder import StateBuilder, ChainedStateBuilder
+from .layers import SegmentationLayerConfig, AnnotationLayerConfig, ImageLayerConfig
+from .mappers import SelectionMapper, PointMapper, LineMapper, SphereMapper, BoundingBoxMapper

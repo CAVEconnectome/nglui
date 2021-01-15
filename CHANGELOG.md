@@ -3,9 +3,29 @@
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
 <!-- ## Unreleased -->
+## [2.3.0] - 2021-01-14
+
+### Added
+
+- **StateBuilder**: At long last, a BoundingBoxMapper
+- **StateBuilder**: A `from_client` function to generate simple image & segmentation states from a FrameworkClient instance.
+- **StateBuilder**: Statebuilder can take a client to configure certain default parameters.
+- **StateBuilder**: SegmentationLayerConfig explicitly takes some view keyword arguments: `alpha_selected`, `alpha_3d`, and `alpha_unselected`.
+- **Parser**: New options to get annotation groups and group ids for all annotations.
+- **Parser**: New function to extract multicut information from a state.
+
+### Fixed
+
+- **StateBuilder**: Explicitly uses uint64 for root ids, which shouldn't matter but might fix some selection bugs.
+
+### Changed
+
+- **Statebuilder**: Behind the scenes refactoring that should not affect use.
+
 ## [2.2.1] — 2020-10-21
 
 ### Fixed
+
 - **StateBuilder**: Setting view options for Graphene segmentation layers now works
 - **Parser**: Now imported as a property of nglui if you import as `import nglui`.
 - Small bug fixes.

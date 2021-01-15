@@ -150,6 +150,10 @@ def _get_line_annotations(state, layer_name):
     return _get_type_annotations(state, layer_name, 'line')
 
 
+def _get_group_annotations(state, layer_name):
+    return _get_type_annotations(state, layer_name, 'collection')
+
+
 def _extract_point_data(annos):
     return [[anno.get('point') for anno in annos]]
 
@@ -157,31 +161,39 @@ def _extract_point_data(annos):
 def _extract_sphere_data(annos):
     pt = [anno.get('center') for anno in annos]
     rad = [anno.get('radii') for anno in annos]
-    return [pt, rad]
+    return pt, rad
 
 
 def _extract_line_data(annos):
     ptA = [anno.get('pointA') for anno in annos]
     ptB = [anno.get('pointB') for anno in annos]
-    return [ptA, ptB]
+    return ptA, ptB
+
+
+def _extract_group_data(annos):
+    pt = [anno.get('source') for anno in annos]
+    anno_id = [anno.get('id') for anno in annos]
+    return pt, anno_id
 
 
 _get_map = {
     'point': _get_point_annotations,
     'line': _get_line_annotations,
     'sphere': _get_sphere_annotations,
+    'group': _get_group_annotations,
 }
 
 _extraction_map = {
     'point': _extract_point_data,
     'line': _extract_line_data,
-    'sphere': _extract_sphere_data
+    'sphere': _extract_sphere_data,
+    'group': _extract_group_data,
 }
 
 
-def _generic_annotations(state, layer_name, description, linked_segmentations, tags, type):
-    annos = _get_map[type](state, layer_name)
-    out = _extraction_map[type](annos)
+def _generic_annotations(state, layer_name, description, linked_segmentations, tags, group, anno_type):
+    annos = _get_map[anno_type](state, layer_name)
+    out = _extraction_map[anno_type](annos)
     if description:
         desc = [anno.get('description', None) for anno in annos]
         out.append(desc)
@@ -192,13 +204,16 @@ def _generic_annotations(state, layer_name, description, linked_segmentations, t
     if tags:
         tag_list = [anno.get('tagIds', []) for anno in annos]
         out.append(tag_list)
+    if group:
+        group_ids = [anno.get('parentId') for anno in annos]
+        out.append(group_ids)
     if len(out) == 1:
         return out[0]
     else:
         return out
 
 
-def point_annotations(state, layer_name, description=False, linked_segmentations=False, tags=False):
+def point_annotations(state, layer_name, description=False, linked_segmentations=False, tags=False, group=False):
     """Get all point annotation points and other info from a layer.
 
     Parameters
@@ -224,11 +239,14 @@ def point_annotations(state, layer_name, description=False, linked_segmentations
         List of N lists of object ids. Only returned if linked_segmentations=True.
     anno_tags : list
         List of N lists of tag ids. Only returned if tags=True.
+    anno_group : list
+        List of group ids (as string) or None for annotations. Only returned if group=True
     """
-    return _generic_annotations(state, layer_name, description, linked_segmentations, tags, 'point')
+    return _generic_annotations(state, layer_name, description=description, linked_segmentations=linked_segmentations,
+                                tags=tags, group=group, anno_type='point')
 
 
-def line_annotations(state, layer_name, description=False, linked_segmentations=False, tags=False):
+def line_annotations(state, layer_name, description=False, linked_segmentations=False, tags=False, group=False):
     """Get all line annotation points and other info from a layer.
 
     Parameters
@@ -256,11 +274,13 @@ def line_annotations(state, layer_name, description=False, linked_segmentations=
         List of N lists of object ids. Only returned if linked_segmentations=True.
     anno_tags : list
         List of N lists of tag ids. Only returned if tags=True.
+    anno_group : list
+        List of group ids (as string) or None for annotations. Only returned if group=True
     """
-    return _generic_annotations(state, layer_name, description, linked_segmentations, tags, 'line')
+    return _generic_annotations(state, layer_name, description, linked_segmentations, tags, group, 'line')
 
 
-def sphere_annotations(state, layer_name, description=False, linked_segmentations=False, tags=False):
+def sphere_annotations(state, layer_name, description=False, linked_segmentations=False, tags=False, group=False):
     """Get all sphere annotation points and other info from a layer.
 
     Parameters
@@ -288,8 +308,43 @@ def sphere_annotations(state, layer_name, description=False, linked_segmentation
         List of N lists of object ids. Only returned if linked_segmentations=True.
     anno_tags : list
         List of N lists of tag ids. Only returned if tags=True.
+    anno_group : list
+        List of group ids (as string) or None for annotations. Only returned if group=True
     """
-    return _generic_annotations(state, layer_name, description, linked_segmentations, tags, 'sphere')
+    return _generic_annotations(state, layer_name, description, linked_segmentations, tags, group, 'sphere')
+
+
+def group_annotations(state, layer_name, description=False, linked_segmentations=False, tags=False):
+    """All group annotations and their associated points
+
+    Parameters
+    ----------
+    state : dict
+        Neuroglancer state as JSON dict
+    layer_name : str
+        Annotation layer name    
+    description : bool, optional
+        If True, also returns descriptions as well. By default False
+    linked_segmentations : bool, optional
+        If True, also returns list of linked segmentations, by default False
+    tags : bool, optional
+        If True, also returns list of tags, by default False
+
+    Returns
+    -------
+    group_points : list
+        List of N 3-element points
+    group_id: list
+        List of N id strings for groups.
+    anno_descriptions : list
+        List of N strings (or None), only returned if description=True.
+    anno_linked_segmentations : list
+        List of N lists of object ids. Only returned if linked_segmentations=True.
+    anno_tags : list
+        List of N lists of tag ids. Only returned if tags=True.
+    """
+    return _generic_annotations(state, layer_name, description=description,
+                                linked_segmentations=linked_segmentations, tags=tags, group=False, anno_type='group')
 
 
 def extract_multicut(state, seg_layer=None):
@@ -315,11 +370,6 @@ def extract_multicut(state, seg_layer=None):
         the value will be NaN.
     root_id: int
         Root id of the object to split
-
-    Raises
-    ------
-    ValueError
-        [description]
     """
     if seg_layer is None:
         seg_layers = segmentation_layers(state)
