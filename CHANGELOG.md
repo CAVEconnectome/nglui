@@ -16,7 +16,7 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 
 ### Fixed
 
-- **StateBuilder**: Explicitly uses uint64 for root ids, which shouldn't matter but might fix some selection bugs.
+- **StateBuilder**: Fixed a scenario where int64s get altered by a conversion through floats.
 
 ### Changed
 
