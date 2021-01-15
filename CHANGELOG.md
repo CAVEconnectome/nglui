@@ -7,7 +7,7 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 
 ### Fixed
 
-- Remove pytables from requirements, because the pip install does not work on OS X (at least). If you want to run tests, you will need to install either with `pip install tables` if you're on a system where that works or `conda install tables` otherwise.
+- Remove pytables from requirements, because the pip install does not work on OS X (at least). If you want to run tests, you will need to install either with `pip install tables` if you're on a system where that works or `conda install pytables` otherwise.
 
 ## [2.3.0] - 2021-01-14
 
