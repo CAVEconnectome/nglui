@@ -3,6 +3,12 @@
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
 <!-- ## Unreleased -->
+## [2.3.1] - 2021-01-15
+
+### Fixed
+
+- Remove pytables from requirements, because the pip install does not work on OS X (at least). If you want to run tests, you will need to install either with `pip install tables` if you're on a system where that works or `conda install tables` otherwise.
+
 ## [2.3.0] - 2021-01-14
 
 ### Added
