@@ -296,7 +296,7 @@ class EasyViewer(neuroglancer.Viewer):
 
         with self.txn() as s:
             for oid in oids:
-                s.layers[segmentation_layer].segments.add(int(oid))
+                s.layers[segmentation_layer].segments.add(uint64(oid))
 
         if colors is not None:
             if isinstance(colors, dict):
