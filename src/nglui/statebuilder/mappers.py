@@ -33,9 +33,9 @@ class SelectionMapper(object):
     @property
     def fixed_ids(self):
         if self._config.get('fixed_ids', None) is None:
-            return []
+            return np.array([], dtype=np.uint64)
         else:
-            return self._config.get('fixed_ids', None)
+            return np.array(self._config.get('fixed_ids', []), dtype=np.uint64)
 
     @property
     def fixed_id_colors(self):
@@ -54,8 +54,8 @@ class SelectionMapper(object):
         selected_ids = []
         if data is not None:
             for col in self.data_columns:
-                selected_ids.append(data[col])
-        selected_ids.append(np.array(self.fixed_ids))
+                selected_ids.append(data[col].values.astype(np.uint64))
+        selected_ids.append(self.fixed_ids)
         return np.concatenate(selected_ids)
 
     def seg_colors(self, data):
