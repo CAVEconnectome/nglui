@@ -187,4 +187,5 @@ class ChainedStateBuilder():
         return last_builder.render_state(data=data_list[-1],
                                          base_state=temp_state,
                                          return_as=return_as,
-                                         url_prefix=url_prefix)
+                                         url_prefix=url_prefix,
+                                         link_text=link_text)

@@ -132,6 +132,31 @@ def view_settings(state):
     return view
 
 
+def get_selected_ids(state, layer=None):
+    """Get a list of selected ids in a segmentation layer
+
+    Parameters
+    ----------
+    state : dict
+        State dict
+    layer : str, optional
+        Segmentation layer name, if needed. If None and only one segmentation layer
+        is present, default to it. By default None
+
+    Returns
+    -------
+    list
+        List of root ids.
+    """
+    seg_layers = segmentation_layers(state)
+    if len(seg_layers) == 1 and layer is None:
+        layer = seg_layers[0]
+    else:
+        raise ValueError(
+            'Segmentation layer must be specified since the state has more than one')
+    return [int(s) for s in get_layer(state, layer)['segments']]
+
+
 def _get_type_annotations(state, layer_name, type):
     l = get_layer(state, layer_name)
     annos = l.get('annotations', [])
@@ -161,19 +186,19 @@ def _extract_point_data(annos):
 def _extract_sphere_data(annos):
     pt = [anno.get('center') for anno in annos]
     rad = [anno.get('radii') for anno in annos]
-    return pt, rad
+    return [pt, rad]
 
 
 def _extract_line_data(annos):
     ptA = [anno.get('pointA') for anno in annos]
     ptB = [anno.get('pointB') for anno in annos]
-    return ptA, ptB
+    return [ptA, ptB]
 
 
 def _extract_group_data(annos):
     pt = [anno.get('source') for anno in annos]
     anno_id = [anno.get('id') for anno in annos]
-    return pt, anno_id
+    return [pt, anno_id]
 
 
 _get_map = {
