@@ -3,6 +3,8 @@
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
 <!-- ## Unreleased -->
+## [2.4.0] - 2021-01-22
+
 ### Added
 
 - **Parser**: `get_selected_ids` does what it says for a layer.
