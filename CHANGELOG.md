@@ -3,6 +3,14 @@
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
 <!-- ## Unreleased -->
+### Added
+
+- **Parser**: `get_selected_ids` does what it says for a layer.
+
+### Fixed
+- **Parser**: Getting annotations with tags/descriptions/etc works.
+- **StateBuilder**: `return_as` parameter works with ChainedStateBuilder now
+
 ## [2.3.1] - 2021-01-15
 
 ### Fixed
