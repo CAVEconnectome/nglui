@@ -5,7 +5,7 @@ from collections import OrderedDict
 import copy
 import re
 
-SEGMENTATION_LAYER_TYPES = ['segmentation', 'segmentation_with_graph']
+SEGMENTATION_LAYER_TYPES = ["segmentation", "segmentation_with_graph"]
 
 
 class EasyViewer(neuroglancer.Viewer):
@@ -81,8 +81,7 @@ class EasyViewer(neuroglancer.Viewer):
             source (str): source of neuroglancer image layer
         """
         with self.txn() as s:
-            s.layers[layer_name] = neuroglancer.ImageLayer(
-                source=source, **kwargs)
+            s.layers[layer_name] = neuroglancer.ImageLayer(source=source, **kwargs)
 
     def set_resolution(self, resolution):
         with self.txn() as s:
@@ -137,9 +136,7 @@ class EasyViewer(neuroglancer.Viewer):
             self.add_annotation_tags(layer_name=layer_name, tags=tags)
 
     def set_annotation_layer_color(self, layer_name, color):
-        """Set the color for the annotation layer
-
-        """
+        """Set the color for the annotation layer"""
         if layer_name in [l.name for l in self.state.layers]:
             with self.txn() as s:
                 s.layers[layer_name].annotationColor = color
@@ -339,7 +336,11 @@ class EasyViewer(neuroglancer.Viewer):
                 s.perspectiveZoom = zoom_3d
 
     def set_segmentation_view_options(
-        self, layer_name, alpha_selected=None, alpha_3d=None, alpha_unselected=None,
+        self,
+        layer_name,
+        alpha_selected=None,
+        alpha_3d=None,
+        alpha_unselected=None,
     ):
         if self.state.layers[layer_name].type not in SEGMENTATION_LAYER_TYPES:
             return
@@ -353,7 +354,7 @@ class EasyViewer(neuroglancer.Viewer):
                 l.notSelectedAlpha = alpha_unselected
 
     def assign_colors(self, layer_name, seg_colors):
-        """ Assign colors to root ids in a segmentation layer
+        """Assign colors to root ids in a segmentation layer
 
         Parameters
         ----------
@@ -388,9 +389,9 @@ class EasyViewer(neuroglancer.Viewer):
         seg_id : np.uint64
             Segmentation id of the object in question
         points_red : np.array
-            Nx3 array of locations in nm space for side 1 of the cut.
+            Nx3 array of locations in voxel space for side 1 of the cut.
         points_blue : np.array
-            Mx3 array of locations in nm space for side 2 of the cut.
+            Mx3 array of locations in voxel space for side 2 of the cut.
         supervoxels_red : np.array or None, optional
             N-length array of supervoxel ids associated with locations in points_red or None. If None, supervoxels lookup occurs based on the mesh. By default None
         supervoxels_blue : np.array or None, optional
@@ -414,12 +415,14 @@ class EasyViewer(neuroglancer.Viewer):
         annos_red = neuroglancer.annotationHolder()
         for pt, sv_id in zip(points_red, supervoxels_red):
             annos_red.annotations.append(
-                _multicut_annotation(pt, seg_id, sv_id))
+                _multicut_annotation(pt * self.state.voxel_size, seg_id, sv_id)
+            )
 
         annos_blue = neuroglancer.annotationHolder()
         for pt, sv_id in zip(points_blue, supervoxels_blue):
             annos_blue.annotations.append(
-                _multicut_annotation(pt, seg_id, sv_id))
+                _multicut_annotation(pt * self.state.voxel_size, seg_id, sv_id)
+            )
 
         self.add_selected_objects(layer_name, [seg_id])
 
@@ -432,7 +435,6 @@ class EasyViewer(neuroglancer.Viewer):
         if focus:
             self.set_selected_layer(layer_name)
             ctr_pt = (
-                vstack([points_red, points_blue]).mean(
-                    axis=0) / self.state.voxel_size
+                vstack([points_red, points_blue]).mean(axis=0)
             )
             self.set_view_options(position=ctr_pt, zoom_3d=100)

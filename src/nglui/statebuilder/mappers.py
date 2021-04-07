@@ -15,42 +15,45 @@ class SelectionMapper(object):
         List of ids to select irrespective of data.
     """
 
-    def __init__(self, data_columns=None, fixed_ids=None, fixed_id_colors=None, color_column=None):
+    def __init__(
+        self, data_columns=None, fixed_ids=None, fixed_id_colors=None, color_column=None
+    ):
         if isinstance(data_columns, str):
             data_columns = [data_columns]
-        self._config = dict(data_columns=data_columns,
-                            fixed_ids=fixed_ids,
-                            fixed_id_colors=fixed_id_colors,
-                            color_column=color_column)
+        self._config = dict(
+            data_columns=data_columns,
+            fixed_ids=fixed_ids,
+            fixed_id_colors=fixed_id_colors,
+            color_column=color_column,
+        )
 
     @property
     def data_columns(self):
-        if self._config.get('data_columns', None) is None:
+        if self._config.get("data_columns", None) is None:
             return []
         else:
-            return self._config.get('data_columns')
+            return self._config.get("data_columns")
 
     @property
     def fixed_ids(self):
-        if self._config.get('fixed_ids', None) is None:
+        if self._config.get("fixed_ids", None) is None:
             return np.array([], dtype=np.uint64)
         else:
-            return np.array(self._config.get('fixed_ids', []), dtype=np.uint64)
+            return np.array(self._config.get("fixed_ids", []), dtype=np.uint64)
 
     @property
     def fixed_id_colors(self):
-        if self._config.get('fixed_id_colors', None) is None:
+        if self._config.get("fixed_id_colors", None) is None:
             return []
         else:
-            return list(self._config.get('fixed_id_colors', None))
+            return list(self._config.get("fixed_id_colors", None))
 
     @property
     def color_column(self):
-        return self._config.get('color_column', None)
+        return self._config.get("color_column", None)
 
     def selected_ids(self, data):
-        """ Uses the rules to generate a list of ids from a dataframe.
-        """
+        """Uses the rules to generate a list of ids from a dataframe."""
         selected_ids = []
         if data is not None:
             for col in self.data_columns:
@@ -74,66 +77,68 @@ class SelectionMapper(object):
 
 
 class AnnotationMapperBase(object):
-    def __init__(self,
-                 type,
-                 data_columns,
-                 description_column,
-                 linked_segmentation_column,
-                 tag_column,
-                 group_column,
-                 set_position,
-                 gather_linked_segmentations,
-                 share_linked_segmentations,
-                 ):
+    def __init__(
+        self,
+        type,
+        data_columns,
+        description_column,
+        linked_segmentation_column,
+        tag_column,
+        group_column,
+        set_position,
+        gather_linked_segmentations,
+        share_linked_segmentations,
+    ):
 
-        self._config = dict(type=type,
-                            data_columns=data_columns,
-                            array_data=False,
-                            description_column=description_column,
-                            linked_segmentation_column=linked_segmentation_column,
-                            tag_column=tag_column,
-                            group_column=group_column,
-                            set_position=set_position,
-                            gather_linked_segmentations=gather_linked_segmentations,
-                            share_linked_segmentations=share_linked_segmentations,
-                            )
+        self._config = dict(
+            type=type,
+            data_columns=data_columns,
+            array_data=False,
+            description_column=description_column,
+            linked_segmentation_column=linked_segmentation_column,
+            tag_column=tag_column,
+            group_column=group_column,
+            set_position=set_position,
+            gather_linked_segmentations=gather_linked_segmentations,
+            share_linked_segmentations=share_linked_segmentations,
+        )
         self._tag_map = None
 
     @property
     def type(self):
-        return self._config.get('type', None)
+        return self._config.get("type", None)
 
     @property
     def data_columns(self):
-        return self._config.get('data_columns', None)
+        return self._config.get("data_columns", None)
 
     @property
     def description_column(self):
-        return self._config.get('description_column', None)
+        return self._config.get("description_column", None)
 
     @property
     def linked_segmentation_column(self):
-        return self._config.get('linked_segmentation_column', None)
+        return self._config.get("linked_segmentation_column", None)
 
     @property
     def tag_column(self):
-        return self._config.get('tag_column', None)
+        return self._config.get("tag_column", None)
 
     @property
     def group_column(self):
-        return self._config.get('group_column', None)
+        return self._config.get("group_column", None)
 
     @property
     def gather_linked_segmentations(self):
-        return self._config.get('gather_linked_segmentations', True)
+        return self._config.get("gather_linked_segmentations", True)
 
     @property
     def share_linked_segmentations(self):
-        return self._config.get('share_linked_segmentations', False)
+        return self._config.get("share_linked_segmentations", False)
 
     @property
     def set_position(self):
-        return self._config.get('set_position', False)
+        return self._config.get("set_position", False)
 
     @property
     def tag_map(self):
@@ -147,20 +152,20 @@ class AnnotationMapperBase(object):
         if tag_list is None:
             self._tag_map = {}
         else:
-            self._tag_map = {tag: ii+1 for ii, tag in enumerate(tag_list)}
+            self._tag_map = {tag: ii + 1 for ii, tag in enumerate(tag_list)}
 
     @property
     def array_data(self):
-        return self._config.get('array_data', False)
+        return self._config.get("array_data", False)
 
     @array_data.setter
     def array_data(self, new_array_data):
-        self._config['array_data'] = new_array_data
+        self._config["array_data"] = new_array_data
         if new_array_data:
-            self._config['data_columns'] = self._default_array_data_columns()
-            self._config['description_column'] = None
-            self._config['linked_segmentation_column'] = None
-            self._config['tag_column'] = None
+            self._config["data_columns"] = self._default_array_data_columns()
+            self._config["description_column"] = None
+            self._config["linked_segmentation_column"] = None
+            self._config["tag_column"] = None
 
     def _default_array_data_columns(self):
         return []
@@ -184,10 +189,8 @@ class AnnotationMapperBase(object):
 
     def _linked_segmentations(self, data):
         if self.linked_segmentation_column is not None:
-            seg_array = np.vstack(
-                data[self.linked_segmentation_column].values)
-            linked_segs = [row[~pd.isnull(row)].astype(int)
-                           for row in seg_array]
+            seg_array = np.vstack(data[self.linked_segmentation_column].values)
+            linked_segs = [row[~pd.isnull(row)].astype(int) for row in seg_array]
         else:
             linked_segs = [None for x in range(len(data))]
         return linked_segs
@@ -211,7 +214,7 @@ class AnnotationMapperBase(object):
                     anno_to_group,
                     return_all=False,
                     gather_linked_segmentations=self.gather_linked_segmentations,
-                    share_linked_segmentations=self.share_linked_segmentations
+                    share_linked_segmentations=self.share_linked_segmentations,
                 )
             )
         annos.extend(group_annos)
@@ -249,33 +252,35 @@ class PointMapper(AnnotationMapperBase):
         data.
     """
 
-    def __init__(self,
-                 point_column=None,
-                 description_column=None,
-                 linked_segmentation_column=None,
-                 tag_column=None,
-                 group_column=None,
-                 gather_linked_segmentations=True,
-                 share_linked_segmentations=False,
-                 set_position=False,
-                 ):
-        super(PointMapper, self).__init__(type='point',
-                                          data_columns=[point_column],
-                                          description_column=description_column,
-                                          linked_segmentation_column=linked_segmentation_column,
-                                          tag_column=tag_column,
-                                          group_column=group_column,
-                                          gather_linked_segmentations=gather_linked_segmentations,
-                                          share_linked_segmentations=share_linked_segmentations,
-                                          set_position=set_position,
-                                          )
+    def __init__(
+        self,
+        point_column=None,
+        description_column=None,
+        linked_segmentation_column=None,
+        tag_column=None,
+        group_column=None,
+        gather_linked_segmentations=True,
+        share_linked_segmentations=False,
+        set_position=False,
+    ):
+        super(PointMapper, self).__init__(
+            type="point",
+            data_columns=[point_column],
+            description_column=description_column,
+            linked_segmentation_column=linked_segmentation_column,
+            tag_column=tag_column,
+            group_column=group_column,
+            gather_linked_segmentations=gather_linked_segmentations,
+            share_linked_segmentations=share_linked_segmentations,
+            set_position=set_position,
+        )
 
     def _default_array_data_columns(self):
-        return ['pt']
+        return ["pt"]
 
     def _render_data(self, data):
         if self.array_data:
-            data = pd.DataFrame(data={'pt': np.array(data).tolist()})
+            data = pd.DataFrame(data={"pt": np.array(data).tolist()})
         col = self.data_columns[0]
         relinds = ~pd.isnull(data[col])
 
@@ -284,11 +289,12 @@ class PointMapper(AnnotationMapperBase):
 
         linked_segs = self._linked_segmentations(data[relinds])
         tags = self._assign_tags(data)
-        annos = [annotation.point_annotation(pt,
-                                             description=d,
-                                             linked_segmentation=ls,
-                                             tag_ids=t) for
-                 pt, d, ls, t in zip(pts, descriptions, linked_segs, tags)]
+        annos = [
+            annotation.point_annotation(
+                pt, description=d, linked_segmentation=ls, tag_ids=t
+            )
+            for pt, d, ls, t in zip(pts, descriptions, linked_segs, tags)
+        ]
 
         if self.group_column is not None:
             groups = data[self.group_column].values[relinds]
@@ -321,51 +327,53 @@ class LineMapper(AnnotationMapperBase):
         If set to True, moves the position to center on the first point in the data (using point_column_a).
     """
 
-    def __init__(self,
-                 point_column_a=None,
-                 point_column_b=None,
-                 description_column=None,
-                 linked_segmentation_column=None,
-                 tag_column=None,
-                 group_column=None,
-                 gather_linked_segmentations=True,
-                 share_linked_segmentations=False,
-                 set_position=False,
-                 ):
-        super(LineMapper, self).__init__(type='line',
-                                         data_columns=[
-                                              point_column_a, point_column_b],
-                                         description_column=description_column,
-                                         linked_segmentation_column=linked_segmentation_column,
-                                         tag_column=tag_column,
-                                         group_column=group_column,
-                                         gather_linked_segmentations=gather_linked_segmentations,
-                                         share_linked_segmentations=share_linked_segmentations,
-                                         set_position=set_position,
-                                         )
+    def __init__(
+        self,
+        point_column_a=None,
+        point_column_b=None,
+        description_column=None,
+        linked_segmentation_column=None,
+        tag_column=None,
+        group_column=None,
+        gather_linked_segmentations=True,
+        share_linked_segmentations=False,
+        set_position=False,
+    ):
+        super(LineMapper, self).__init__(
+            type="line",
+            data_columns=[point_column_a, point_column_b],
+            description_column=description_column,
+            linked_segmentation_column=linked_segmentation_column,
+            tag_column=tag_column,
+            group_column=group_column,
+            gather_linked_segmentations=gather_linked_segmentations,
+            share_linked_segmentations=share_linked_segmentations,
+            set_position=set_position,
+        )
 
     def _default_array_data_columns(self):
-        return ['pt_a', 'pt_b']
+        return ["pt_a", "pt_b"]
 
     def _render_data(self, data):
         if self.array_data:
             data = pd.DataFrame(
-                data={'pt_a': data[0].tolist(), 'pt_b': data[1].tolist()})
+                data={"pt_a": data[0].tolist(), "pt_b": data[1].tolist()}
+            )
         colA, colB = self.data_columns
 
-        relinds = np.logical_and(~pd.isnull(
-            data[colA]), ~pd.isnull(data[colB]))
+        relinds = np.logical_and(~pd.isnull(data[colA]), ~pd.isnull(data[colB]))
 
         ptAs = np.vstack(data[colA][relinds])
         ptBs = np.vstack(data[colB][relinds])
         descriptions = self._descriptions(data[relinds])
         linked_segs = self._linked_segmentations(data[relinds])
         tags = self._assign_tags(data)
-        annos = [annotation.line_annotation(ptA, ptB,
-                                            description=d,
-                                            linked_segmentation=ls,
-                                            tag_ids=t) for
-                 ptA, ptB, d, ls, t in zip(ptAs, ptBs, descriptions, linked_segs, tags)]
+        annos = [
+            annotation.line_annotation(
+                ptA, ptB, description=d, linked_segmentation=ls, tag_ids=t
+            )
+            for ptA, ptB, d, ls, t in zip(ptAs, ptBs, descriptions, linked_segs, tags)
+        ]
 
         if self.group_column is not None:
             groups = data[self.group_column].values[relinds]
@@ -396,53 +404,57 @@ class SphereMapper(AnnotationMapperBase):
         If set to True, moves the position to center on the first point in the data.
     """
 
-    def __init__(self,
-                 center_column=None,
-                 radius_column=None,
-                 description_column=None,
-                 linked_segmentation_column=None,
-                 tag_column=None,
-                 group_column=None,
-                 gather_linked_segmentations=True,
-                 share_linked_segmentations=False,
-                 z_multiplier=0.1,
-                 set_position=False,
-                 ):
-        super(SphereMapper, self).__init__(type='sphere',
-                                           data_columns=[
-                                               center_column, radius_column],
-                                           description_column=description_column,
-                                           linked_segmentation_column=linked_segmentation_column,
-                                           tag_column=tag_column,
-                                           group_column=group_column,
-                                           gather_linked_segmentations=gather_linked_segmentations,
-                                           share_linked_segmentations=share_linked_segmentations,
-                                           set_position=set_position,
-                                           )
+    def __init__(
+        self,
+        center_column=None,
+        radius_column=None,
+        description_column=None,
+        linked_segmentation_column=None,
+        tag_column=None,
+        group_column=None,
+        gather_linked_segmentations=True,
+        share_linked_segmentations=False,
+        z_multiplier=0.1,
+        set_position=False,
+    ):
+        super(SphereMapper, self).__init__(
+            type="sphere",
+            data_columns=[center_column, radius_column],
+            description_column=description_column,
+            linked_segmentation_column=linked_segmentation_column,
+            tag_column=tag_column,
+            group_column=group_column,
+            gather_linked_segmentations=gather_linked_segmentations,
+            share_linked_segmentations=share_linked_segmentations,
+            set_position=set_position,
+        )
         self._z_multiplier = z_multiplier
 
     def _default_array_data_columns(self):
-        return ['ctr_pt', 'rad']
+        return ["ctr_pt", "rad"]
 
     def _render_data(self, data):
         if self.array_data:
-            data = pd.DataFrame(
-                data={'ctr_pt': data[0].tolist(), 'rad': data[1]})
+            data = pd.DataFrame(data={"ctr_pt": data[0].tolist(), "rad": data[1]})
         col_ctr, col_rad = self.data_columns
-        relinds = np.logical_and(~pd.isnull(
-            data[col_ctr]), ~pd.isnull(data[col_rad]))
+        relinds = np.logical_and(~pd.isnull(data[col_ctr]), ~pd.isnull(data[col_rad]))
 
         pts = np.vstack(data[col_ctr][relinds])
         rs = data[col_rad][relinds].values
         descriptions = self._descriptions(data[relinds])
         linked_segs = self._linked_segmentations(data[relinds])
         tags = self._assign_tags(data)
-        annos = [annotation.sphere_annotation(pt, r,
-                                              description=d,
-                                              linked_segmentation=ls,
-                                              tag_ids=t,
-                                              z_multiplier=self._z_multiplier) for
-                 pt, r, d, ls, t in zip(pts, rs, descriptions, linked_segs, tags)]
+        annos = [
+            annotation.sphere_annotation(
+                pt,
+                r,
+                description=d,
+                linked_segmentation=ls,
+                tag_ids=t,
+                z_multiplier=self._z_multiplier,
+            )
+            for pt, r, d, ls, t in zip(pts, rs, descriptions, linked_segs, tags)
+        ]
 
         if self.group_column is not None:
             groups = data[self.group_column].values[relinds]
@@ -452,54 +464,105 @@ class SphereMapper(AnnotationMapperBase):
 
 
 class BoundingBoxMapper(AnnotationMapperBase):
-    def __init__(self,
-                 point_column_a=None,
-                 point_column_b=None,
-                 description_column=None,
-                 linked_segmentation_column=None,
-                 tag_column=None,
-                 group_column=None,
-                 gather_linked_segmentations=True,
-                 share_linked_segmentations=False,
-                 set_position=False,
-                 ):
-        super(BoundingBoxMapper, self).__init__(type='axis_aligned_bounding_box',
-                                                data_columns=[
-                                                    point_column_a, point_column_b],
-                                                description_column=description_column,
-                                                linked_segmentation_column=linked_segmentation_column,
-                                                tag_column=tag_column,
-                                                group_column=group_column,
-                                                gather_linked_segmentations=gather_linked_segmentations,
-                                                share_linked_segmentations=share_linked_segmentations,
-                                                set_position=set_position,
-                                                )
+    def __init__(
+        self,
+        point_column_a=None,
+        point_column_b=None,
+        description_column=None,
+        linked_segmentation_column=None,
+        tag_column=None,
+        group_column=None,
+        gather_linked_segmentations=True,
+        share_linked_segmentations=False,
+        set_position=False,
+    ):
+        super(BoundingBoxMapper, self).__init__(
+            type="axis_aligned_bounding_box",
+            data_columns=[point_column_a, point_column_b],
+            description_column=description_column,
+            linked_segmentation_column=linked_segmentation_column,
+            tag_column=tag_column,
+            group_column=group_column,
+            gather_linked_segmentations=gather_linked_segmentations,
+            share_linked_segmentations=share_linked_segmentations,
+            set_position=set_position,
+        )
 
     def _default_array_data_columns(self):
-        return ['pt_a', 'pt_b']
+        return ["pt_a", "pt_b"]
 
     def _render_data(self, data):
         if self.array_data:
             data = pd.DataFrame(
-                data={'pt_a': data[0].tolist(), 'pt_b': data[1].tolist()})
+                data={"pt_a": data[0].tolist(), "pt_b": data[1].tolist()}
+            )
         colA, colB = self.data_columns
 
-        relinds = np.logical_and(~pd.isnull(
-            data[colA]), ~pd.isnull(data[colB]))
+        relinds = np.logical_and(~pd.isnull(data[colA]), ~pd.isnull(data[colB]))
 
         ptAs = np.vstack(data[colA][relinds])
         ptBs = np.vstack(data[colB][relinds])
         descriptions = self._descriptions(data[relinds])
         linked_segs = self._linked_segmentations(data[relinds])
         tags = self._assign_tags(data)
-        annos = [annotation.bounding_box_annotation(ptA, ptB,
-                                                    description=d,
-                                                    linked_segmentation=ls,
-                                                    tag_ids=t) for
-                 ptA, ptB, d, ls, t in zip(ptAs, ptBs, descriptions, linked_segs, tags)]
+        annos = [
+            annotation.bounding_box_annotation(
+                ptA, ptB, description=d, linked_segmentation=ls, tag_ids=t
+            )
+            for ptA, ptB, d, ls, t in zip(ptAs, ptBs, descriptions, linked_segs, tags)
+        ]
 
         if self.group_column is not None:
             groups = data[self.group_column].values[relinds]
             annos = self._add_groups(groups, annos)
 
         return annos
+
+
+class SplitPointMapper(object):
+    def __init__(
+        self,
+        id_column,
+        point_column,
+        team_column,
+        team_names=["red", "blue"],
+        supervoxel_column=None,
+        focus=True,
+    ):
+        self.id_column = id_column
+        self.point_column = point_column
+        self.team_column = team_column
+        self.team_names = team_names
+        self.supervoxel_column = supervoxel_column
+        self.focus = focus
+
+    def _render_data(self, df):
+        if len(df) == 0:
+            return None, np.atleast_2d([]), np.atleast_2d([]), []
+
+        team_pts = []
+        team_svs = []
+        for team_name in self.team_names:
+            team_df = df.query(f"{self.team_column} == @team_name")
+            if len(team_df) > 0:
+                team_pts.append(np.vstack(team_df[self.point_column].values))
+                if self.supervoxel_column:
+                    team_svs.append(team_df[self.supervoxel_column].values)
+                else:
+                    team_svs.append(None)
+            else:
+                team_pts.append(np.atleast_2d([]))
+
+        seg_id = np.unique(df[self.id_column])
+        if len(seg_id) > 1:
+            raise ValueError("Multiple seg ids provided for SplitPointMapper")
+        else:
+            seg_id = seg_id[0]
+
+        return seg_id, team_pts[0], team_pts[1], team_svs[0], team_svs[1]
+
+    def _get_position(self, df):
+        if len(df) == 0:
+            return None
+
+        df[self.point_column].values
