@@ -211,3 +211,14 @@ def test_chained(pre_syn_df, post_syn_df, image_layer):
     state = chained_sb.render_state(
         [post_syn_df, pre_syn_df], return_as='dict')
     assert len(state['layers']) == 3
+
+def test_split_points(split_point_df, seg_path_graphene):
+    split_mapper = SplitPointMapper(id_column='seg_id',
+                                    point_column='pts',
+                                    team_column='team',
+                                    focus=True)
+    seg = SegmentationLayerConfig(seg_path_graphene, split_point_map=split_mapper)
+    sb = StateBuilder([seg])
+    state = sb.render_state(split_point_df, return_as='dict')
+    seg_layer = state['layers'][0]
+    assert len(seg_layer['graphOperationMarker'][1]['annotations']) == 2
