@@ -3,12 +3,12 @@ import numpy as np
 
 
 def bucket_of_values(col, data, item_is_array=False, array_width=3):
-    '''
+    """
     Use to get a flat array of items when you don't know if it's already a collection or a collection of iterables.
     Parameters:
         dataseries: Pandas dataseries with either all items or all a collection of items.
                     If the item is expected to be an nd-array, use item_shape to define what an element is.
-    '''
+    """
 
     if len(data) == 0:
         return []

@@ -36,13 +36,13 @@ class LocalVolumeManager(trackable_state.ChangeNotifier):
         if v.token not in self.volumes:
             self.volumes[v.token] = v
             self._dispatch_changed_callbacks()
-        return 'python://%s' % (self.get_volume_key(v))
+        return "python://%s" % (self.get_volume_key(v))
 
     def get_volume_key(self, v):
         return self.__token_prefix + v.token
 
     def update(self, json_str):
-        pattern = '|'.join(self.volumes)
+        pattern = "|".join(self.volumes)
         present_tokens = set()
         for m in re.finditer(pattern, json_str):
             present_tokens.add(m.group(0))
@@ -59,7 +59,9 @@ class LocalVolumeManager(trackable_state.ChangeNotifier):
 class ViewerCommonBase(object):
     def __init__(self):
         self.token = make_random_token()
-        self.config_state = trackable_state.TrackableState(viewer_config_state.ConfigState)
+        self.config_state = trackable_state.TrackableState(
+            viewer_config_state.ConfigState
+        )
 
         def set_actions(actions):
             def func(s):
@@ -69,7 +71,7 @@ class ViewerCommonBase(object):
 
         self.actions = viewer_config_state.Actions(set_actions)
 
-        self.volume_manager = LocalVolumeManager(self.token + '.')
+        self.volume_manager = LocalVolumeManager(self.token + ".")
 
         self.__watched_volumes = dict()
 
@@ -77,13 +79,15 @@ class ViewerCommonBase(object):
 
         self._next_screenshot_id = 0
         self._screenshot_callbacks = {}
-        self.actions.add('screenshot', self._handle_screenshot_reply)
+        self.actions.add("screenshot", self._handle_screenshot_reply)
 
     def async_screenshot(self, callback):
         screenshot_id = str(self._next_screenshot_id)
         self._next_screenshot_id += 1
+
         def set_screenshot_id(s):
             s.screenshot = screenshot_id
+
         self.config_state.retry_txn(set_screenshot_id)
         self._screenshot_callbacks[screenshot_id] = callback
 
@@ -105,9 +109,11 @@ class ViewerCommonBase(object):
                 s.viewer_size = size
         event = threading.Event()
         result = [None]
+
         def handler(s):
             result[0] = s
             event.set()
+
         self.async_screenshot(handler)
         event.wait()
         if size is not None:
@@ -140,7 +146,8 @@ class ViewerCommonBase(object):
         def func(s):
             volume_manager = self.volume_manager
             s.source_generations = {
-                volume_manager.get_volume_key(x): x.change_count for x in six.viewvalues(self.volume_manager.volumes)
+                volume_manager.get_volume_key(x): x.change_count
+                for x in six.viewvalues(self.volume_manager.volumes)
             }
 
         self.config_state.retry_txn(func)
@@ -162,10 +169,12 @@ class ViewerCommonBase(object):
 class ViewerBase(ViewerCommonBase):
     def __init__(self):
         super(ViewerBase, self).__init__()
-        self.shared_state = trackable_state.TrackableState(viewer_state.ViewerState,
-                                                           self._transform_viewer_state)
+        self.shared_state = trackable_state.TrackableState(
+            viewer_state.ViewerState, self._transform_viewer_state
+        )
         self.shared_state.add_changed_callback(
-            lambda: self.volume_manager.update(encode_json(self.shared_state.raw_state)))
+            lambda: self.volume_manager.update(encode_json(self.shared_state.raw_state))
+        )
 
     @property
     def state(self):

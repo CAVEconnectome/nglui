@@ -6,14 +6,15 @@ from collections.abc import Collection
 from IPython.display import HTML
 from .utils import bucket_of_values
 
-DEFAULT_VIEW_KWS = {'layout': 'xy-3d',
-                    'zoom_image': 2,
-                    'show_slices': False,
-                    'zoom_3d': 2000,
-                    }
+DEFAULT_VIEW_KWS = {
+    "layout": "xy-3d",
+    "zoom_image": 2,
+    "show_slices": False,
+    "zoom_3d": 2000,
+}
 
 
-class StateBuilder():
+class StateBuilder:
     """A class for schematic mapping data frames into neuroglancer states.
     Parameters
     ----------
@@ -73,8 +74,14 @@ class StateBuilder():
             self._temp_viewer.set_resolution(self._resolution)
         self._temp_viewer.set_view_options(**self._view_kws)
 
-    def render_state(self, data=None, base_state=None, return_as='url',
-                     url_prefix=None, link_text='Neuroglancer Link'):
+    def render_state(
+        self,
+        data=None,
+        base_state=None,
+        return_as="url",
+        url_prefix=None,
+        link_text="Neuroglancer Link",
+    ):
         """Build a Neuroglancer state out of a DataFrame.
 
         Parameters
@@ -111,29 +118,31 @@ class StateBuilder():
 
         self._render_layers(data)
 
-        if return_as == 'viewer':
+        if return_as == "viewer":
             return self.viewer
-        elif return_as == 'url':
+        elif return_as == "url":
             url = self._temp_viewer.as_url(prefix=url_prefix)
             self.initialize_state()
             return url
-        elif return_as == 'html':
+        elif return_as == "html":
             out = self._temp_viewer.as_url(
-                prefix=url_prefix, as_html=True, link_text=link_text)
+                prefix=url_prefix, as_html=True, link_text=link_text
+            )
             out = HTML(out)
             self.initialize_state()
             return out
-        elif return_as == 'dict':
+        elif return_as == "dict":
             out = self._temp_viewer.state.to_json()
             self.initialize_state()
             return out
-        elif return_as == 'json':
+        elif return_as == "json":
             from json import dumps
+
             out = self._temp_viewer.state.to_json()
             self.initialize_state()
             return dumps(out)
         else:
-            raise ValueError('No appropriate return type selected')
+            raise ValueError("No appropriate return type selected")
 
     def _render_layers(self, data):
         for layer in self._layers:
@@ -144,7 +153,7 @@ class StateBuilder():
         return self._temp_viewer
 
 
-class ChainedStateBuilder():
+class ChainedStateBuilder:
     def __init__(self, statebuilders):
         """Builds a collection of states that sequentially add annotations based on a sequence of dataframes.
 
@@ -155,10 +164,16 @@ class ChainedStateBuilder():
         """
         self._statebuilders = statebuilders
         if len(self._statebuilders) == 0:
-            raise ValueError('Must have at least one statebuilder')
+            raise ValueError("Must have at least one statebuilder")
 
-    def render_state(self, data_list=None, base_state=None, return_as='url',
-                     url_prefix=default_neuroglancer_base, link_text='Neuroglancer Link'):
+    def render_state(
+        self,
+        data_list=None,
+        base_state=None,
+        return_as="url",
+        url_prefix=default_neuroglancer_base,
+        link_text="Neuroglancer Link",
+    ):
         """Generate a single neuroglancer state by addatively applying an ordered collection of
         dataframes to an collection of StateBuilder renders.
         Parameters
@@ -176,16 +191,18 @@ class ChainedStateBuilder():
             data_list = len(self._statebuilders) * [None]
 
         if len(data_list) != len(self._statebuilders):
-            raise ValueError('Must have as many dataframes as statebuilders')
+            raise ValueError("Must have as many dataframes as statebuilders")
 
         temp_state = base_state
         for builder, data in zip(self._statebuilders[:-1], data_list[:-1]):
-            temp_state = builder.render_state(data=data,
-                                              base_state=temp_state,
-                                              return_as='dict')
+            temp_state = builder.render_state(
+                data=data, base_state=temp_state, return_as="dict"
+            )
         last_builder = self._statebuilders[-1]
-        return last_builder.render_state(data=data_list[-1],
-                                         base_state=temp_state,
-                                         return_as=return_as,
-                                         url_prefix=url_prefix,
-                                         link_text=link_text)
+        return last_builder.render_state(
+            data=data_list[-1],
+            base_state=temp_state,
+            return_as=return_as,
+            url_prefix=url_prefix,
+            link_text=link_text,
+        )

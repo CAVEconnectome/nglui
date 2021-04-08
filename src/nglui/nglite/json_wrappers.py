@@ -42,7 +42,7 @@ def to_json(value):
 class JsonObjectWrapper(object):
     supports_readonly = True
 
-    __slots__ = ('_json_data', '_cached_wrappers', '_lock', '_readonly')
+    __slots__ = ("_json_data", "_cached_wrappers", "_lock", "_readonly")
 
     def __init__(self, json_data=None, _readonly=False, **kwargs):
         if json_data is None:
@@ -51,13 +51,13 @@ class JsonObjectWrapper(object):
             json_data = json_data.to_json()
         elif not isinstance(json_data, dict):
             raise TypeError
-        object.__setattr__(self, '_json_data', json_data)
-        object.__setattr__(self, '_cached_wrappers', dict())
-        object.__setattr__(self, '_lock', threading.RLock())
-        object.__setattr__(self, '_readonly', 1 if _readonly else False)
+        object.__setattr__(self, "_json_data", json_data)
+        object.__setattr__(self, "_cached_wrappers", dict())
+        object.__setattr__(self, "_lock", threading.RLock())
+        object.__setattr__(self, "_readonly", 1 if _readonly else False)
         for k in kwargs:
             setattr(self, k, kwargs[k])
-        object.__setattr__(self, '_readonly', _readonly)
+        object.__setattr__(self, "_readonly", _readonly)
 
     def to_json(self):
         if self._readonly:
@@ -75,7 +75,7 @@ class JsonObjectWrapper(object):
         return type(self)(copy.deepcopy(self.to_json(), memo))
 
     def __repr__(self):
-        return u'%s(%s)' % (type(self).__name__, encode_json_for_repr(self.to_json()))
+        return u"%s(%s)" % (type(self).__name__, encode_json_for_repr(self.to_json()))
 
     def _get_wrapped(self, key, wrapped_type):
         with self._lock:
@@ -84,8 +84,8 @@ class JsonObjectWrapper(object):
             if cached_value is not None and cached_value[1] is json_value:
                 return cached_value[0]
             kwargs = dict()
-            if self._readonly and hasattr(wrapped_type, 'supports_readonly'):
-                kwargs['_readonly'] = True
+            if self._readonly and hasattr(wrapped_type, "supports_readonly"):
+                kwargs["_readonly"] = True
             wrapper = wrapped_type(json_value, **kwargs)
             self._cached_wrappers[key] = wrapper, json_value
             return wrapper
@@ -103,30 +103,36 @@ _types_supporting_validation = frozenset([np.uint64])
 
 def _normalize_validator(wrapped_type, validator):
     if validator is None:
-        if (inspect.isroutine(wrapped_type) or hasattr(wrapped_type, 'supports_validation')
-                or wrapped_type in _types_supporting_validation):
+        if (
+            inspect.isroutine(wrapped_type)
+            or hasattr(wrapped_type, "supports_validation")
+            or wrapped_type in _types_supporting_validation
+        ):
             validator = wrapped_type
         else:
+
             def validator_func(x):
                 if not isinstance(x, wrapped_type):
                     raise TypeError
                 return x
+
             validator = validator_func
     return validator
 
 
 def wrapped_property(json_name, wrapped_type, validator=None, doc=None):
     validator = _normalize_validator(wrapped_type, validator)
-    return property(fget=lambda self: self._get_wrapped(json_name, wrapped_type),
-                    fset=lambda self, value: self._set_wrapped(
-                        json_name, value, validator),
-                    doc=doc)
+    return property(
+        fget=lambda self: self._get_wrapped(json_name, wrapped_type),
+        fset=lambda self, value: self._set_wrapped(json_name, value, validator),
+        doc=doc,
+    )
 
 
 def array_wrapper(dtype, shape=None):
     if shape is not None:
         if isinstance(shape, numbers.Number):
-            shape = (shape, )
+            shape = (shape,)
         else:
             shape = tuple(shape)
 
@@ -136,9 +142,10 @@ def array_wrapper(dtype, shape=None):
             value.setflags(write=False)
         if shape is not None:
             if len(shape) != len(value.shape) or any(
-                    expected_size is not None and expected_size != actual_size
-                    for expected_size, actual_size in zip(shape, value.shape)):
-                raise ValueError('expected shape', shape)
+                expected_size is not None and expected_size != actual_size
+                for expected_size, actual_size in zip(shape, value.shape)
+            ):
+                raise ValueError("expected shape", shape)
         return value
 
     wrapper.supports_readonly = True
@@ -155,7 +162,7 @@ def optional(wrapper, default_value=None):
             return default_value
         return wrapper(value, **kwargs)
 
-    if hasattr(wrapper, 'supports_readonly'):
+    if hasattr(wrapper, "supports_readonly"):
         modified_wrapper.supports_readonly = True
     return modified_wrapper
 
@@ -237,11 +244,12 @@ def typed_set(wrapped_type):
     def wrapper(x, _readonly=False):
         set_type = frozenset if _readonly else set
         kwargs = dict()
-        if hasattr(wrapped_type, 'supports_readonly'):
+        if hasattr(wrapped_type, "supports_readonly"):
             kwargs.update(_readonly=True)
         if x is None:
             return set_type()
         return set_type(wrapped_type(v, **kwargs) for v in x)
+
     wrapper.supports_readonly = True
     return wrapper
 
@@ -310,4 +318,5 @@ def typed_list(wrapped_type, validator=None):
 
         def __repr__(self):
             return encode_json_for_repr(self.to_json())
+
     return TypedList

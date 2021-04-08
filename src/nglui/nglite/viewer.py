@@ -41,7 +41,7 @@ class Viewer(viewer_base.ViewerBase, _ViewerHelper):
         super(Viewer, self).__init__()
 
     def get_viewer_url(self):
-        return 'Not implemented'
+        return "Not implemented"
 
 
 class UnsynchronizedViewer(viewer_base.UnsynchronizedViewerBase, _ViewerHelper):
@@ -49,4 +49,4 @@ class UnsynchronizedViewer(viewer_base.UnsynchronizedViewerBase, _ViewerHelper):
         super(UnsynchronizedViewer, self).__init__()
 
     def get_viewer_url(self):
-        return 'Not implemented'
+        return "Not implemented"
