@@ -520,6 +520,28 @@ class BoundingBoxMapper(AnnotationMapperBase):
 
 
 class SplitPointMapper(object):
+    """Mapper to create split points in a segmentation layer.
+
+    Parameters
+    ----------
+    id_column : str
+        Column name for segment ids. The id column must contain the same id in all rows.
+    point_column : str
+        Name of the column containing points in space.
+    team_column : str
+        Name of the column describing the team for the points. The contents of the column should have two values, by default "red" and "blue".
+    team_names : list, optional
+        List of two values for the team names used in the team column. The first is mapped to red points, the second blue. Default is ["red", "blue"].
+    supervoxel_column : str or None, optional
+        Name of a column providing supervoxel ids. If None (default), the supervoxel must be looked up on the server.
+    focus : bool, optional
+        If True, sets the focus on the split tool and sets the position to the center of split points. Default is True.
+
+    Returns
+    -------
+    SplitPointMapper instance to pass to a segmentation layer.
+    """
+
     def __init__(
         self,
         id_column,
@@ -560,9 +582,3 @@ class SplitPointMapper(object):
             seg_id = seg_id[0]
 
         return seg_id, team_pts[0], team_pts[1], team_svs[0], team_svs[1]
-
-    def _get_position(self, df):
-        if len(df) == 0:
-            return None
-
-        df[self.point_column].values
