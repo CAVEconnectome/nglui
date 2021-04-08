@@ -170,6 +170,8 @@ class SegmentationLayerConfig(LayerConfigBase):
         Opacity of meshes. Optional, default is 1.
     alpha_unselected: float, optional
         Opacity of unselected segments. Optional, default is 0.
+    split_point_map: mappers.SplitPointMap or None, optional
+        If not None, provides an object to map the dataframe input to multicut points. Default is None.
     view_kws : dict, optional.
         Keyword arguments for viewer.set_segmentation_view_options. Sets selected (and unselected) segmetation alpha values. Defaults to values in DEFAULT_SEGMENTATION_VIEW_KWS dict specified in this module.
     """
