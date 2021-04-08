@@ -1,16 +1,15 @@
 from .layers import ImageLayerConfig, SegmentationLayerConfig
 
-CONTRAST_CONFIG = {'minnie65_phase3_v1': {'contrast_controls': True,
-                                          'black': 0.35,
-                                          'white': 0.70,
-                                          }
-                   }
+CONTRAST_CONFIG = {
+    "minnie65_phase3_v1": {
+        "contrast_controls": True,
+        "black": 0.35,
+        "white": 0.70,
+    }
+}
 
 
-def from_client(client,
-                image_name=None,
-                segmentation_name=None,
-                contrast=None):
+def from_client(client, image_name=None, segmentation_name=None, contrast=None):
     """Generate basic image and segmentation layers from a FrameworkClient
 
     Parameters
@@ -22,7 +21,7 @@ def from_client(client,
     segmentation_name : str, optional
         Name for the segmentation layer, by default None
     contrast : list-like, optional
-        Two elements specifying the black level and white level as 
+        Two elements specifying the black level and white level as
         floats between 0 and 1, by default None. If None, no contrast
         is set.
 
@@ -34,13 +33,13 @@ def from_client(client,
         Segmentation layer with default values from the client
     """
     if contrast is None:
-        config = CONTRAST_CONFIG.get(client.datastack_name, {
-                                     'contrast_controls': True, 'black': 0, 'white': 1})
+        config = CONTRAST_CONFIG.get(
+            client.datastack_name, {"contrast_controls": True, "black": 0, "white": 1}
+        )
     else:
-        config = {'contrast_controls': True,
-                  'black': contrast[0], 'white': contrast[1]}
-    img_layer = ImageLayerConfig(client.info.image_source(),
-                                 name=image_name, **config)
-    seg_layer = SegmentationLayerConfig(client.info.segmentation_source(),
-                                        name=segmentation_name)
+        config = {"contrast_controls": True, "black": contrast[0], "white": contrast[1]}
+    img_layer = ImageLayerConfig(client.info.image_source(), name=image_name, **config)
+    seg_layer = SegmentationLayerConfig(
+        client.info.segmentation_source(), name=segmentation_name
+    )
     return img_layer, seg_layer

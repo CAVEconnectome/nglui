@@ -24,8 +24,8 @@ import six
 
 class Skeleton(object):
     def __init__(self, vertex_positions, edges, vertex_attributes=None):
-        self.vertex_positions = np.array(vertex_positions, dtype='<f4')
-        self.edges = np.array(edges, dtype='<u4')
+        self.vertex_positions = np.array(vertex_positions, dtype="<f4")
+        self.edges = np.array(edges, dtype="<u4")
         self.vertex_attributes = vertex_attributes
 
     def encode(self, source):
@@ -33,27 +33,33 @@ class Skeleton(object):
         edges = self.edges
         vertex_positions = self.vertex_positions
         vertex_attributes = self.vertex_attributes
-        result.write(struct.pack('<II', vertex_positions.shape[0], edges.shape[0] // 2))
+        result.write(struct.pack("<II", vertex_positions.shape[0], edges.shape[0] // 2))
         result.write(vertex_positions.tobytes())
         result.write(edges.tobytes())
         if len(source.vertex_attributes) > 0:
             for name, info in six.iteritems(source.vertex_attributes):
 
-                attribute = np.array(vertex_attributes[name],
-                                     np.dtype(info.data_type).newbyteorder('<'))
+                attribute = np.array(
+                    vertex_attributes[name], np.dtype(info.data_type).newbyteorder("<")
+                )
                 expected_shape = (vertex_positions.shape[0], info.num_components)
-                if (attribute.shape[0] != expected_shape[0] or
-                        attribute.size != np.prod(expected_shape)):
-                    raise ValueError('Expected attribute %r to have shape %r, but was: %r' %
-                                     (name, expected_shape, attribute.shape))
+                if attribute.shape[0] != expected_shape[0] or attribute.size != np.prod(
+                    expected_shape
+                ):
+                    raise ValueError(
+                        "Expected attribute %r to have shape %r, but was: %r"
+                        % (name, expected_shape, attribute.shape)
+                    )
                 result.write(attribute.tobytes())
         return result.getvalue()
 
 
-VertexAttributeInfo = collections.namedtuple('VertexAttributeInfo', ['data_type', 'num_components'])
+VertexAttributeInfo = collections.namedtuple(
+    "VertexAttributeInfo", ["data_type", "num_components"]
+)
+
 
 class SkeletonSource(object):
-
     def __init__(self):
         self.vertex_attributes = collections.OrderedDict()
 
@@ -70,5 +76,7 @@ class SkeletonSource(object):
     def get_vertex_attributes_spec(self):
         temp = collections.OrderedDict()
         for k, v in six.iteritems(self.vertex_attributes):
-            temp[k] = dict(dataType=np.dtype(v.data_type).name, numComponents=v.num_components)
+            temp[k] = dict(
+                dataType=np.dtype(v.data_type).name, numComponents=v.num_components
+            )
         return temp

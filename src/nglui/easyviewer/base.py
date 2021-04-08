@@ -434,7 +434,5 @@ class EasyViewer(neuroglancer.Viewer):
 
         if focus:
             self.set_selected_layer(layer_name)
-            ctr_pt = (
-                vstack([points_red, points_blue]).mean(axis=0)
-            )
+            ctr_pt = vstack([points_red, points_blue]).mean(axis=0)
             self.set_view_options(position=ctr_pt, zoom_3d=100)

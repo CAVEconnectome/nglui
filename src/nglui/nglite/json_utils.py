@@ -23,9 +23,12 @@ import numpy as np
 min_safe_integer = -9007199254740991
 max_safe_integer = 9007199254740991
 
+
 def json_encoder_default(obj):
     """JSON encoder function that handles some numpy types."""
-    if isinstance(obj, numbers.Integral) and (obj < min_safe_integer or obj > max_safe_integer):
+    if isinstance(obj, numbers.Integral) and (
+        obj < min_safe_integer or obj > max_safe_integer
+    ):
         return str(obj)
     if isinstance(obj, np.integer):
         return str(obj)
@@ -37,14 +40,18 @@ def json_encoder_default(obj):
         return list(obj)
     raise TypeError
 
+
 def json_encoder_default_for_repr(obj):
     return json_encoder_default(obj)
+
 
 def decode_json(x):
     return json.loads(x, object_pairs_hook=collections.OrderedDict)
 
+
 def encode_json(obj):
     return json.dumps(obj, default=json_encoder_default)
+
 
 def encode_json_for_repr(obj):
     return json.dumps(obj, default=json_encoder_default_for_repr)
