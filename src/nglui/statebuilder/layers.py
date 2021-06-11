@@ -10,6 +10,7 @@ from .mappers import (
     SphereMapper,
     BoundingBoxMapper,
 )
+from datetime import datetime
 
 DEFAULT_IMAGE_LAYER = "img"
 DEFAULT_SEG_LAYER = "seg"
@@ -174,6 +175,8 @@ class SegmentationLayerConfig(LayerConfigBase):
         If not None, provides an object to map the dataframe input to multicut points. Default is None.
     view_kws : dict, optional.
         Keyword arguments for viewer.set_segmentation_view_options. Sets selected (and unselected) segmetation alpha values. Defaults to values in DEFAULT_SEGMENTATION_VIEW_KWS dict specified in this module.
+    timestamp : float or datetime, optional.
+        Timestamp at which to fix the chunkedgraph in either unix epoch or datetime format. Optional, default is None.
     """
 
     def __init__(
@@ -190,6 +193,7 @@ class SegmentationLayerConfig(LayerConfigBase):
         alpha_unselected=0,
         split_point_map=None,
         view_kws=None,
+        timestamp=None,
     ):
         if name is None:
             name = DEFAULT_SEG_LAYER
@@ -208,6 +212,10 @@ class SegmentationLayerConfig(LayerConfigBase):
             self._selection_map = None
 
         self._split_point_map = split_point_map
+
+        if isinstance(timestamp, datetime):
+            timestamp = timestamp.timestamp()
+        self.timestamp = timestamp
 
         base_seg_kws = DEFAULT_SEGMENTATION_VIEW_KWS.copy()
         if view_kws is None:
@@ -256,6 +264,7 @@ class SegmentationLayerConfig(LayerConfigBase):
                 self._split_point_map.focus,
             )
 
+        viewer.set_timestamp(self.name, self.timestamp)
         viewer.set_segmentation_view_options(self.name, **self._view_kws)
 
 

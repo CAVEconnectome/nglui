@@ -353,6 +353,29 @@ class EasyViewer(neuroglancer.Viewer):
             if alpha_unselected is not None:
                 l.notSelectedAlpha = alpha_unselected
 
+    def set_timestamp(
+        self,
+        layer_name,
+        timestamp=None,
+    ):
+        """Set timestamp of a segmentation layer
+
+        Parameters
+        ----------
+        layer_name : str
+            Name of a segmentation layer
+        timestamp : float, optional
+            Timestamp in unix epoch time (e.g. `time.time.now()` in python), by default None
+        """
+        if self.state.layers[layer_name].type != "segmentation_with_graph":
+            return
+        with self.txn() as s:
+            l = s.layers[layer_name]
+            if timestamp is not None:
+                l.timestamp = int(timestamp)
+            else:
+                l.timestamp = None
+
     def assign_colors(self, layer_name, seg_colors):
         """Assign colors to root ids in a segmentation layer
 
