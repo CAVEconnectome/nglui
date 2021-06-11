@@ -3,6 +3,18 @@
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
 <!-- ## Unreleased -->
+
+
+## [2.6.0] - 2021-06-11
+
+### Added
+
+- **StateBuilder** You can now set a timestamp in SegmentationLayerConfig. Either datetime or unix epoch are allowed.
+
+## [2.5.0]
+
+- **StateBuilder** You can now set split points using a SplitPointMapper
+
 ## [2.4.0] - 2021-01-22
 
 ### Added
