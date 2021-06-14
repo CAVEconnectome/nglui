@@ -3,7 +3,11 @@
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
 <!-- ## Unreleased -->
+## [2.7.0] - 2021-06-13
 
+### Added
+
+- **StateBuilder** In all Mappers, setting `multipoint=True` will allow the point columns to contain multiple points per row, with the other columns assigned to all points in the row. Note that for Mappers with multiple point columns (e.g. LineMappers, SphereMappers, and BoundingBoxMappers), the number of values must be the same in both columns.
 
 ## [2.6.0] - 2021-06-11
 
