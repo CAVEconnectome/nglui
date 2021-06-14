@@ -3,6 +3,12 @@
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
 <!-- ## Unreleased -->
+## [2.7.1] - 2021-06-13
+
+### Fixed
+
+- **StateBuilder** Multipoint performance has improved.
+
 ## [2.7.0] - 2021-06-13
 
 ### Added
