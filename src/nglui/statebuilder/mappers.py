@@ -260,7 +260,7 @@ class AnnotationMapperBase(object):
 
     def _get_position(self, data):
         if len(data) > 0 and self.set_position is True:
-            return list(data[self.data_columns[0]].iloc[0])
+            return list(np.atleast_2d(data[self.data_columns[0]].iloc[0])[0])
         else:
             return None
 
