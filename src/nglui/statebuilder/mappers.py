@@ -2,22 +2,26 @@ import numpy as np
 from nglui import annotation
 import pandas as pd
 from collections.abc import Collection
+from itertools import chain
 
 
 def _multipoint_transform(row, pt_columns, squeeze_cols):
     """Reshape dataframe to accomodate multiple points in a single row"""
     pts = {pcol: np.atleast_2d(row[pcol]) for pcol in pt_columns}
-    row_dat = {}
+    n_pts = pts[pt_columns[0]].shape[0]
+    rows = [{} for _ in range(n_pts)]
     for col in row.index:
         if col in pt_columns:
             if col in squeeze_cols:
-                # Revert the atleast_2d if it's a 1-d array, namely sphere radius
-                row_dat[col] = pts[col].squeeze().tolist()
+                for r, v in zip(rows, pts[col].squeeze().tolist()):
+                    r[col] = v
             else:
-                row_dat[col] = pts[col].tolist()
+                for r, v in zip(rows, pts[col].tolist()):
+                    r[col] = v
         else:
-            row_dat[col] = row[col]
-    return pd.DataFrame(row_dat)
+            for r in rows:
+                r[col] = row[col]
+    return rows
 
 
 class SelectionMapper(object):
@@ -166,15 +170,13 @@ class AnnotationMapperBase(object):
         if data is None or len(data) == 0:
             return data
         else:
-            return pd.concat(
-                data.apply(
-                    lambda x: _multipoint_transform(
-                        x, pt_columns=pt_columns, squeeze_cols=squeeze_cols
-                    ),
-                    axis=1,
-                ).tolist(),
-                ignore_index=True,
-            )
+            rows = data.apply(
+                lambda x: _multipoint_transform(
+                    x, pt_columns=pt_columns, squeeze_cols=squeeze_cols
+                ),
+                axis=1,
+            ).tolist()
+            return pd.DataFrame.from_records([r for r in chain.from_iterable(rows)])
 
     @property
     def tag_map(self):
