@@ -39,7 +39,7 @@ def soma_df():
 def soma_df_Int64():
     df = pd.read_hdf("tests/testdata/test_data.h5", "soma").head(5)
     df["pt_root_id"] = df["pt_root_id"].astype("Int64")
-    df["pt_root_id"].iloc[0] = pd.NA
+    df["pt_root_id"].iloc[0] = np.nan
     return df.head()
 
 

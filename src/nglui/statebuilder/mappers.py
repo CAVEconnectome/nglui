@@ -24,6 +24,12 @@ def _multipoint_transform(row, pt_columns, squeeze_cols):
     return rows
 
 
+def _data_scaler(data_resolution, viewer_resolution):
+    if data_resolution is None:
+        data_resolution = viewer_resolution
+    return (np.array(data_resolution) / np.array(viewer_resolution)).reshape((1, 3))
+
+
 class SelectionMapper(object):
     """Class for configuring object selections based on root id
 
@@ -221,14 +227,16 @@ class AnnotationMapperBase(object):
             anno_tags = [[None] for x in range(len(data))]
         return anno_tags
 
-    def _render_data(self, data):
+    def _render_data(self, data, data_resolution, viewer_resolution):
         # Set per subclass
         return None
 
     def _linked_segmentations(self, data):
         if self.linked_segmentation_column is not None:
-            seg_array = np.vstack(data[self.linked_segmentation_column].values)
-            linked_segs = [row[~pd.isnull(row)].astype(int) for row in seg_array]
+            seg_array = data[self.linked_segmentation_column]
+            linked_segs = [
+                row if len(np.atleast_1d(row)) > 0 else None for row in seg_array
+            ]
         else:
             linked_segs = [None for x in range(len(data))]
         return linked_segs
@@ -320,7 +328,7 @@ class PointMapper(AnnotationMapperBase):
     def _default_array_data_columns(self):
         return ["pt"]
 
-    def _render_data(self, data):
+    def _render_data(self, data, data_resolution, viewer_resolution):
         if self.array_data:
             data = pd.DataFrame(data={"pt": np.array(data).tolist()})
 
@@ -330,7 +338,8 @@ class PointMapper(AnnotationMapperBase):
         col = self.data_columns[0]
         relinds = ~pd.isnull(data[col])
 
-        pts = np.vstack(data[col][relinds])
+        scaler = _data_scaler(data_resolution, viewer_resolution)
+        pts = np.vstack(data[col][relinds]) * scaler
         descriptions = self._descriptions(data[relinds])
 
         linked_segs = self._linked_segmentations(data[relinds])
@@ -341,7 +350,6 @@ class PointMapper(AnnotationMapperBase):
             )
             for pt, d, ls, t in zip(pts, descriptions, linked_segs, tags)
         ]
-
         if self.group_column is not None:
             groups = data[self.group_column].values[relinds]
             annos = self._add_groups(groups, annos)
@@ -405,7 +413,7 @@ class LineMapper(AnnotationMapperBase):
     def _default_array_data_columns(self):
         return ["pt_a", "pt_b"]
 
-    def _render_data(self, data):
+    def _render_data(self, data, data_resolution, viewer_resolution):
         if self.array_data:
             data = pd.DataFrame(
                 data={"pt_a": data[0].tolist(), "pt_b": data[1].tolist()}
@@ -417,8 +425,9 @@ class LineMapper(AnnotationMapperBase):
         colA, colB = self.data_columns
         relinds = np.logical_and(~pd.isnull(data[colA]), ~pd.isnull(data[colB]))
 
-        ptAs = np.vstack(data[colA][relinds])
-        ptBs = np.vstack(data[colB][relinds])
+        scaler = _data_scaler(data_resolution, viewer_resolution)
+        ptAs = np.vstack(data[colA][relinds]) * scaler
+        ptBs = np.vstack(data[colB][relinds]) * scaler
         descriptions = self._descriptions(data[relinds])
         linked_segs = self._linked_segmentations(data[relinds])
         tags = self._assign_tags(data)
@@ -492,7 +501,7 @@ class SphereMapper(AnnotationMapperBase):
     def _default_array_data_columns(self):
         return ["ctr_pt", "rad"]
 
-    def _render_data(self, data):
+    def _render_data(self, data, data_resolution, viewer_resolution):
         if self.array_data:
             data = pd.DataFrame(data={"ctr_pt": data[0].tolist(), "rad": data[1]})
 
@@ -504,8 +513,15 @@ class SphereMapper(AnnotationMapperBase):
 
         relinds = np.logical_and(~pd.isnull(data[col_ctr]), ~pd.isnull(data[col_rad]))
 
-        pts = np.vstack(data[col_ctr][relinds])
+        scaler = _data_scaler(data_resolution, viewer_resolution)
+        pts = np.vstack(data[col_ctr][relinds]) * scaler
         rs = data[col_rad][relinds].values
+
+        if viewer_resolution:
+            z_multiplier = viewer_resolution[1] / viewer_resolution[2]
+        else:
+            z_multiplier = self._z_multiplier
+
         descriptions = self._descriptions(data[relinds])
         linked_segs = self._linked_segmentations(data[relinds])
         tags = self._assign_tags(data)
@@ -516,7 +532,7 @@ class SphereMapper(AnnotationMapperBase):
                 description=d,
                 linked_segmentation=ls,
                 tag_ids=t,
-                z_multiplier=self._z_multiplier,
+                z_multiplier=z_multiplier,
             )
             for pt, r, d, ls, t in zip(pts, rs, descriptions, linked_segs, tags)
         ]
@@ -558,7 +574,8 @@ class BoundingBoxMapper(AnnotationMapperBase):
     def _default_array_data_columns(self):
         return ["pt_a", "pt_b"]
 
-    def _render_data(self, data):
+    def _render_data(self, data, data_resolution, viewer_resolution):
+
         if self.array_data:
             data = pd.DataFrame(
                 data={"pt_a": data[0].tolist(), "pt_b": data[1].tolist()}
@@ -570,8 +587,10 @@ class BoundingBoxMapper(AnnotationMapperBase):
         colA, colB = self.data_columns
         relinds = np.logical_and(~pd.isnull(data[colA]), ~pd.isnull(data[colB]))
 
-        ptAs = np.vstack(data[colA][relinds])
-        ptBs = np.vstack(data[colB][relinds])
+        scaler = _data_scaler(data_resolution, viewer_resolution)
+
+        ptAs = np.vstack(data[colA][relinds]) * scaler
+        ptBs = np.vstack(data[colB][relinds]) * scaler
         descriptions = self._descriptions(data[relinds])
         linked_segs = self._linked_segmentations(data[relinds])
         tags = self._assign_tags(data)
@@ -628,7 +647,7 @@ class SplitPointMapper(object):
         self.supervoxel_column = supervoxel_column
         self.focus = focus
 
-    def _render_data(self, df):
+    def _render_data(self, df, data_resolution, viewer_resolution):
         if len(df) == 0:
             return None, np.atleast_2d([]), np.atleast_2d([]), []
 
