@@ -1,7 +1,3 @@
-from nglui import EasyViewer, annotation
-import pandas as pd
-import numpy as np
-from .utils import bucket_of_values
 from .mappers import (
     SelectionMapper,
     AnnotationMapperBase,
@@ -88,14 +84,23 @@ class LayerConfigBase(object):
     def active(self):
         return self._config.get("active", False)
 
-    def _render_layer(self, viewer, data):
+    def _render_layer(
+        self, viewer, data, compatibility_mode=False, viewer_resolution=None
+    ):
         """Applies rendering rules"""
-        self._specific_rendering(viewer, data)
+        self._specific_rendering(
+            viewer,
+            data,
+            compatibility_mode=compatibility_mode,
+            viewer_resolution=viewer_resolution,
+        )
         if self.active:
             viewer.set_selected_layer(self.name)
         return viewer
 
-    def _specific_rendering(self, viewer, data):
+    def _specific_rendering(
+        self, viewer, data, compatibility_mode=False, viewer_resolution=None
+    ):
         """Subclasses implement specific rendering rules"""
         pass
 
@@ -139,7 +144,9 @@ class ImageLayerConfig(LayerConfigBase):
         self._black = black
         self._white = white
 
-    def _specific_rendering(self, viewer, data):
+    def _specific_rendering(
+        self, viewer, data, compatibility_mode=False, viewer_resolution=None
+    ):
         viewer.add_image_layer(self.name, self.source)
         if self._contrast_controls:
             viewer.add_contrast_shader(self.name, black=self._black, white=self._white)
@@ -194,6 +201,7 @@ class SegmentationLayerConfig(LayerConfigBase):
         split_point_map=None,
         view_kws=None,
         timestamp=None,
+        data_resolution=None,
     ):
         if name is None:
             name = DEFAULT_SEG_LAYER
@@ -201,6 +209,8 @@ class SegmentationLayerConfig(LayerConfigBase):
         super(SegmentationLayerConfig, self).__init__(
             name=name, type="segmentation", source=source, color=None, active=active
         )
+        self._config["data_resolution"] = data_resolution
+
         if selected_ids_column is not None or fixed_ids is not None:
             self._selection_map = SelectionMapper(
                 data_columns=selected_ids_column,
@@ -227,18 +237,29 @@ class SegmentationLayerConfig(LayerConfigBase):
         base_seg_kws.update(view_kws)
         self._view_kws = view_kws
 
+    @property
+    def data_resolution(self):
+        return self._config.get("data_resolution", None)
+
     def add_selection_map(self, selected_ids_column=None, fixed_ids=None):
         if self._selection_map is not None:
             if isinstance(selected_ids_column, str):
                 selected_ids_column = [selected_ids_column]
-            data_columns = self._selection_map.data_columns.extend(selected_ids_column)
+            if self._selection_map is not None:
+                data_columns = self._selection_map.data_columns.extend(
+                    selected_ids_column
+                )
             fixed_ids = self._selection_map.fixed_ids.extend(fixed_ids)
+        else:
+            data_columns = selected_ids_column
 
         self._selection_map = SelectionMapper(
             data_columns=data_columns, fixed_ids=fixed_ids
         )
 
-    def _specific_rendering(self, viewer, data):
+    def _specific_rendering(
+        self, viewer, data, compatibility_mode=False, viewer_resolution=None
+    ):
         viewer.add_segmentation_layer(self.name, self.source)
 
         if self._selection_map is not None:
@@ -246,14 +267,18 @@ class SegmentationLayerConfig(LayerConfigBase):
             colors = self._selection_map.seg_colors(data)
             viewer.add_selected_objects(self.name, selected_ids, colors)
 
-        if self._split_point_map is not None:
+        if self._split_point_map is not None and not compatibility_mode:
             (
                 seg_id,
                 points_red,
                 points_blue,
                 sv_red,
                 sv_blue,
-            ) = self._split_point_map._render_data(data)
+            ) = self._split_point_map._render_data(
+                data,
+                data_resolution=self.data_resolution,
+                viewer_resolution=viewer_resolution,
+            )
             viewer.set_multicut_points(
                 self.name,
                 seg_id,
@@ -264,7 +289,8 @@ class SegmentationLayerConfig(LayerConfigBase):
                 self._split_point_map.focus,
             )
 
-        viewer.set_timestamp(self.name, self.timestamp)
+        if not compatibility_mode:
+            viewer.set_timestamp(self.name, self.timestamp)
         viewer.set_segmentation_view_options(self.name, **self._view_kws)
 
 
@@ -302,6 +328,8 @@ class AnnotationLayerConfig(LayerConfigBase):
         filter_by_segmentation=False,
         brackets_show_segmentation=True,
         selection_shows_segmentation=True,
+        filter_query=None,
+        data_resolution=None,
     ):
         if name is None:
             name = DEFAULT_ANNO_LAYER
@@ -313,6 +341,9 @@ class AnnotationLayerConfig(LayerConfigBase):
         self._config["filter_by_segmentation"] = filter_by_segmentation
         self._config["selection_shows_segmentation"] = selection_shows_segmentation
         self._config["brackets_show_segmentation"] = brackets_show_segmentation
+        self._config["filter_query"] = filter_query
+        self._config["data_resolution"] = data_resolution
+
         if issubclass(type(mapping_rules), AnnotationMapperBase):
             mapping_rules = [mapping_rules]
         if array_data is True:
@@ -340,7 +371,17 @@ class AnnotationLayerConfig(LayerConfigBase):
     def brackets_show_segmentation(self):
         return self._config.get("brackets_show_segmentation", None)
 
-    def _specific_rendering(self, viewer, data):
+    @property
+    def filter_query(self):
+        return self._config.get("filter_query", None)
+
+    @property
+    def data_resolution(self):
+        return self._config.get("data_resolution", None)
+
+    def _specific_rendering(
+        self, viewer, data, compatibility_mode=False, viewer_resolution=None
+    ):
         viewer.add_annotation_layer(
             self.name,
             color=self.color,
@@ -354,7 +395,16 @@ class AnnotationLayerConfig(LayerConfigBase):
         for rule in self._annotation_map_rules:
             rule.tag_map = self._tags
             if data is not None:
+                if self.filter_query is not None:
+                    data = data.query(self.filter_query)
                 if len(data) > 0:
-                    annos.extend(rule._render_data(data))
+                    annos.extend(
+                        rule._render_data(
+                            data,
+                            data_resolution=self.data_resolution,
+                            viewer_resolution=viewer_resolution,
+                        )
+                    )
                     viewer.set_view_options(position=rule._get_position(data))
+
         viewer.add_annotations(self.name, annos)

@@ -157,7 +157,7 @@ def test_annotation_tags(soma_df):
 
     sb = StateBuilder([anno_layer])
     state = sb.render_state(soma_df, return_as="dict")
-    assert 2 in state["layers"][0]["annotations"][1]["tagIds"]
+    assert '2' in state["layers"][0]["annotations"][1]["tagIds"]
 
 
 def test_annotation_groups(pre_syn_df):
