@@ -266,9 +266,12 @@ class AnnotationMapperBase(object):
         annos.extend(group_annos)
         return annos
 
-    def _get_position(self, data):
+    def _get_position(self, data, data_resolution=None, viewer_resolution=None):
         if len(data) > 0 and self.set_position is True:
-            return list(np.atleast_2d(data[self.data_columns[0]].iloc[0])[0])
+            pt = np.atleast_2d(data[self.data_columns[0]].iloc[0])[0]
+            if data_resolution and viewer_resolution:
+                pt = pt * np.array(data_resolution) / np.array(viewer_resolution)
+            return list(pt)
         else:
             return None
 

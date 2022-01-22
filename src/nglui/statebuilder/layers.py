@@ -405,6 +405,12 @@ class AnnotationLayerConfig(LayerConfigBase):
                             viewer_resolution=viewer_resolution,
                         )
                     )
-                    viewer.set_view_options(position=rule._get_position(data))
+                    viewer.set_view_options(
+                        position=rule._get_position(
+                            data,
+                            data_resolution=self.data_resolution,
+                            viewer_resolution=viewer_resolution,
+                        )
+                    )
 
         viewer.add_annotations(self.name, annos)
