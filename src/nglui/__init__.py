@@ -3,4 +3,4 @@ from . import statebuilder
 from . import nglite
 from . import parser
 
-__version__ = "2.8.1"
+__version__ = "2.9.0"
