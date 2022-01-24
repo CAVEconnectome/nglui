@@ -135,6 +135,7 @@ def group_annotations(
     return_all=True,
     gather_linked_segmentations=True,
     share_linked_segmentations=False,
+    children_visible=True,
 ):
     if len(annotations) == 0:
         return []
@@ -165,7 +166,7 @@ def group_annotations(
         entries=entries,
         id=id,
         segments=omit_nones(seg_in_group),
-        children_visible=True,
+        children_visible=children_visible,
     )
 
     for anno in annotations:

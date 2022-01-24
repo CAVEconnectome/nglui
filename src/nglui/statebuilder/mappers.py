@@ -115,6 +115,7 @@ class AnnotationMapperBase(object):
         gather_linked_segmentations,
         share_linked_segmentations,
         multipoint,
+        collapse_groups,
     ):
 
         self._config = dict(
@@ -129,6 +130,7 @@ class AnnotationMapperBase(object):
             gather_linked_segmentations=gather_linked_segmentations,
             share_linked_segmentations=share_linked_segmentations,
             multipoint=multipoint,
+            collapse_groups=collapse_groups,
         )
         self._tag_map = None
 
@@ -171,6 +173,10 @@ class AnnotationMapperBase(object):
     @property
     def multipoint(self):
         return self._config.get("multipoint", False)
+
+    @property
+    def collapse_groups(self):
+        return self._config.get("collapse_groups", False)
 
     def multipoint_reshape(self, data, pt_columns, squeeze_cols=[]):
         if data is None or len(data) == 0:
@@ -261,6 +267,7 @@ class AnnotationMapperBase(object):
                     return_all=False,
                     gather_linked_segmentations=self.gather_linked_segmentations,
                     share_linked_segmentations=self.share_linked_segmentations,
+                    children_visible=not self.collapse_groups,
                 )
             )
         annos.extend(group_annos)
@@ -314,6 +321,7 @@ class PointMapper(AnnotationMapperBase):
         share_linked_segmentations=False,
         set_position=False,
         multipoint=False,
+        collapse_groups=False,
     ):
         super(PointMapper, self).__init__(
             type="point",
@@ -326,6 +334,7 @@ class PointMapper(AnnotationMapperBase):
             share_linked_segmentations=share_linked_segmentations,
             set_position=set_position,
             multipoint=multipoint,
+            collapse_groups=collapse_groups,
         )
 
     def _default_array_data_columns(self):
@@ -399,6 +408,7 @@ class LineMapper(AnnotationMapperBase):
         share_linked_segmentations=False,
         set_position=False,
         multipoint=False,
+        collapse_groups=False,
     ):
         super(LineMapper, self).__init__(
             type="line",
@@ -411,6 +421,7 @@ class LineMapper(AnnotationMapperBase):
             share_linked_segmentations=share_linked_segmentations,
             set_position=set_position,
             multipoint=multipoint,
+            collapse_groups=collapse_groups,
         )
 
     def _default_array_data_columns(self):
@@ -486,6 +497,7 @@ class SphereMapper(AnnotationMapperBase):
         z_multiplier=0.1,
         set_position=False,
         multipoint=False,
+        collapse_groups=False,
     ):
         super(SphereMapper, self).__init__(
             type="sphere",
@@ -498,6 +510,7 @@ class SphereMapper(AnnotationMapperBase):
             share_linked_segmentations=share_linked_segmentations,
             set_position=set_position,
             multipoint=multipoint,
+            collapse_groups=collapse_groups,
         )
         self._z_multiplier = z_multiplier
 
@@ -560,6 +573,7 @@ class BoundingBoxMapper(AnnotationMapperBase):
         share_linked_segmentations=False,
         set_position=False,
         multipoint=False,
+        collapse_groups=False,
     ):
         super(BoundingBoxMapper, self).__init__(
             type="axis_aligned_bounding_box",
@@ -572,6 +586,7 @@ class BoundingBoxMapper(AnnotationMapperBase):
             share_linked_segmentations=share_linked_segmentations,
             set_position=set_position,
             multipoint=multipoint,
+            collapse_groups=False,
         )
 
     def _default_array_data_columns(self):
