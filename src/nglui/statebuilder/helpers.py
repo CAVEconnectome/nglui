@@ -103,6 +103,8 @@ def make_pre_post_statebuilder(
     point_column="ctr_pt_position",
     pre_pt_root_id_col="pre_pt_root_id",
     post_pt_root_id_col="post_pt_root_id",
+    data_resolution_pre=None,
+    data_resolution_post=None,
     input_layer_name="syns_in",
     output_layer_name="syns_out",
 ):
@@ -152,6 +154,7 @@ def make_pre_post_statebuilder(
             input_layer_name,
             mapping_rules=[input_point_mapper],
             linked_segmentation_layer=seg_layer.name,
+            data_resolution=data_resolution_post,
         )
         sb_in = StateBuilder([inputs_lay])
         state_builders.append(sb_in)
@@ -164,6 +167,7 @@ def make_pre_post_statebuilder(
             output_layer_name,
             mapping_rules=[output_point_mapper],
             linked_segmentation_layer=seg_layer.name,
+            data_resolution=data_resolution_pre,
         )
         sb_out = StateBuilder([outputs_lay])
         state_builders.append(sb_out)
@@ -187,11 +191,19 @@ def make_url_robust(df, sb, client, shorten="if_long", ngl_url=None):
         url = sb.render_state(df, return_as="url", url_prefix=ngl_url)
         if len(url) > MAX_URL_LENGTH:
             url = make_state_url(df, sb, client, ngl_url=ngl_url)
-    if shorten == "always":
+    elif shorten == "always":
         url = make_state_url(df, sb, client)
-    if shorten == "never":
+    elif shorten == "never":
         url = sb.render_state(df, return_as="url", url_prefix=ngl_url)
+    else:
+        raise (ValueError('shorten should be one of ["if_long", "always", "never"]'))
     return url
+
+
+make_synapse_neuroglancer_link(
+    synapse_df,
+    client,
+)
 
 
 def make_neuron_neuroglancer_link(
@@ -251,12 +263,15 @@ def make_neuron_neuroglancer_link(
         root_ids = [root_ids]
     df1 = pd.DataFrame({"root_id": root_ids})
     dataframes = [df1]
+    data_resolution_pre = None
+    data_resolution_post = None
     if show_inputs:
         syn_in_df = client.materialize.synapse_query(
             post_ids=root_ids,
             timestamp=timestamp,
             desired_resolution=client.info.viewer_resolution(),
         )
+        data_resolution_pre = syn_in_df.attrs["dataframe_resolution"]
         if sort_inputs:
             syn_in_df = sort_dataframe_by_root_id(
                 syn_in_df, pre_pt_root_id_col, ascending=sort_ascending, drop=True
@@ -270,6 +285,7 @@ def make_neuron_neuroglancer_link(
             timestamp=timestamp,
             desired_resolution=client.info.viewer_resolution(),
         )
+        data_resolution_post = syn_out_df.attrs["dataframe_resolution"]
         if sort_outputs:
             syn_out_df = sort_dataframe_by_root_id(
                 syn_out_df, post_pt_root_id_col, ascending=sort_ascending, drop=True
@@ -286,6 +302,8 @@ def make_neuron_neuroglancer_link(
         post_pt_root_id_col=post_pt_root_id_col,
         input_layer_name=input_layer_name,
         output_layer_name=output_layer_name,
+        data_resolution_pre=data_resolution_pre,
+        data_resolution_post=data_resolution_post,
     )
 
     if return_as == "json":
