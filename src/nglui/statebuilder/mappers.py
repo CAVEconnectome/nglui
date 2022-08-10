@@ -63,9 +63,11 @@ class SelectionMapper(object):
     @property
     def fixed_ids(self):
         if self._config.get("fixed_ids", None) is None:
-            return np.array([], dtype=np.uint64)
+            return np.atleast_1d(np.array([], dtype=np.uint64))
         else:
-            return np.array(self._config.get("fixed_ids", []), dtype=np.uint64)
+            return np.atleast_1d(
+                np.array(self._config.get("fixed_ids", []), dtype=np.uint64)
+            )
 
     @property
     def fixed_id_colors(self):
