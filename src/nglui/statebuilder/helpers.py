@@ -87,6 +87,8 @@ def make_pre_post_statebuilder(
     img_layer, seg_layer = from_client(client, contrast=contrast)
     seg_layer.add_selection_map(fixed_ids=root_id)
     seg_layer.color
+    if view_kws is None:
+        view_kws = {}
     sb1 = StateBuilder(
         layers=[img_layer, seg_layer],
         resolution=client.info.viewer_resolution(),
