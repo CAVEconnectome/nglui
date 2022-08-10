@@ -64,19 +64,19 @@ def make_pre_post_statebuilder(
 
     Args:
         client (CAVEclient): a CAVEclient configured for datastack to visualize
-        root_id (_type_): a rootID to build around
+        root_id (int): a rootID to build around
         show_inputs (bool, optional): whether to show input synapses. Defaults to False.
         show_outputs (bool, optional): whether to show output synapses.. Defaults to False.
         contrast (list, optional):  list-like, optional
             Two elements specifying the black level and white level as
             floats between 0 and 1, by default None. If None, no contrast
             is set.
-        view_kws (_type_, optional): _description_. Defaults to None.
-        point_column (str, optional): _description_. Defaults to "ctr_pt_position".
-        pre_pt_root_id_col (str, optional): _description_. Defaults to "pre_pt_root_id".
-        post_pt_root_id_col (str, optional): _description_. Defaults to "post_pt_root_id".
-        input_layer_name (str, optional): _description_. Defaults to "syns_in".
-        output_layer_name (str, optional): _description_. Defaults to "syns_out".
+        view_kws (dict, optional): view_kws to configure statebuilder, see nglui.StateBuilder . Defaults to None.
+        point_column (str, optional): column to pull points for synapses from. Defaults to "ctr_pt_position".
+        pre_pt_root_id_col (str, optional): column to pull pre synaptic ids for synapses from. Defaults to "pre_pt_root_id".
+        post_pt_root_id_col (str, optional): column to pull post synaptic ids for synapses from. Defaults to "post_pt_root_id".
+        input_layer_name (str, optional): name of layer for inputs. Defaults to "syns_in".
+        output_layer_name (str, optional): name of layer for outputs. Defaults to "syns_out".
 
     Returns:
         ChainedStateBuilder: An instance of a ChainedStateBuilder configured to accept
