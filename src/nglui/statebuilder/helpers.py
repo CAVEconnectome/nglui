@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 from typing import Iterable
 from .layers import (
     ImageLayerConfig,
@@ -64,7 +65,9 @@ def make_point_statebuilder(
     client: CAVEclient,
     point_column="pt_position",
     linked_seg_column="pt_root_id",
+    group_column=None,
     contrast=None,
+    view_kws=None,
 ):
     """make a state builder that puts points on a single column with a linked segmentaton id
 
@@ -72,16 +75,21 @@ def make_point_statebuilder(
         client (CAVEclient): CAVEclient configured for the datastack desired
         point_column (str, optional): column in dataframe to pull points from. Defaults to "pt_position".
         linked_seg_column (str, optional): column to link to segmentation, None for no column. Defaults to "pt_root_id".
+        group_columns (str, or list, optional): column(s) to group annotations by, None for no grouping (default=None)
         contrast (list, optional):  list-like, optional
             Two elements specifying the black level and white level as
             floats between 0 and 1, by default None. If None, no contrast
             is set.
+        view_kws (dict, optional): dict, optional
+            dictionary of view keywords to configure neuroglancer view
     Returns:
         StateBuilder: a statebuilder to make points with linked segmentations
     """
     img_layer, seg_layer = from_client(client, contrast=contrast)
     point_mapper = PointMapper(
-        point_column=point_column, linked_segmentation_column=linked_seg_column
+        point_column=point_column,
+        linked_segmentation_column=linked_seg_column,
+        group_column=group_column,
     )
     ann_layer = AnnotationLayerConfig(
         "pts", mapping_rules=[point_mapper], linked_segmentation_layer=seg_layer.name
@@ -91,6 +99,7 @@ def make_point_statebuilder(
         state_server=client.state.client.state._server_address,
         resolution=client.info.viewer_resolution(),
         client=client,
+        view_kws=view_kws,
     )
 
 
@@ -103,8 +112,8 @@ def make_pre_post_statebuilder(
     point_column="ctr_pt_position",
     pre_pt_root_id_col="pre_pt_root_id",
     post_pt_root_id_col="post_pt_root_id",
-    data_resolution_pre=None,
-    data_resolution_post=None,
+    dataframe_resolution_pre=None,
+    dataframe_resolution_post=None,
     input_layer_name="syns_in",
     output_layer_name="syns_out",
 ):
@@ -154,7 +163,7 @@ def make_pre_post_statebuilder(
             input_layer_name,
             mapping_rules=[input_point_mapper],
             linked_segmentation_layer=seg_layer.name,
-            data_resolution=data_resolution_post,
+            data_resolution=dataframe_resolution_post,
         )
         sb_in = StateBuilder([inputs_lay])
         state_builders.append(sb_in)
@@ -167,7 +176,7 @@ def make_pre_post_statebuilder(
             output_layer_name,
             mapping_rules=[output_point_mapper],
             linked_segmentation_layer=seg_layer.name,
-            data_resolution=data_resolution_pre,
+            data_resolution=dataframe_resolution_pre,
         )
         sb_out = StateBuilder([outputs_lay])
         state_builders.append(sb_out)
@@ -200,10 +209,70 @@ def make_url_robust(df, sb, client, shorten="if_long", ngl_url=None):
     return url
 
 
-make_synapse_neuroglancer_link(
+def package_state(df, sb, client, shorten, return_as, ngl_url, link_text):
+    if ngl_url is None:
+        ngl_url = client.info.viewer_site()
+        if ngl_url is None:
+            ngl_url = DEFAULT_NGL
+
+    if (return_as == "html") or (return_as == "url"):
+        url = make_url_robust(df, sb, client, shorten=shorten, ngl_url=ngl_url)
+        if return_as == "html":
+            return HTML(f'<a href="{url}">{link_text}</a>')
+        else:
+            return url
+    elif return_as == "json":
+        return sb.render_state(df, return_as=return_as)
+    else:
+        raise (
+            ValueError(
+                f'return_as={return_as} not a valid choice, choose one of "html", "url", or "json")'
+            )
+        )
+
+
+def make_synapse_neuroglancer_link(
     synapse_df,
     client,
-)
+    return_as="html",
+    shorten="always",
+    contrast=None,
+    point_column="ctr_pt_position",
+    group_connections=True,
+    link_pre_and_post=True,
+    ngl_url=None,
+    view_kws=None,
+    dataframe_resolution=None,
+    pre_post_columns=None,
+    neuroglancer_link_text="Neuroglancer Link",
+):
+    if point_column not in synapse_df.columns:
+        raise ValueError(f"point_column={point_column} not in dataframe")
+    if pre_post_columns is None:
+        pre_post_columns = ["pre_pt_root_id", "post_pt_root_id"]
+    if dataframe_resolution is None:
+        dataframe_resolution = synapse_df.attrs.get("dataframe_resolution", None)
+
+    if group_connections:
+        group_column = pre_post_columns
+    else:
+        group_column = None
+    if link_pre_and_post:
+        linked_columns = pre_post_columns
+    else:
+        linked_columns = None
+
+    sb = make_point_statebuilder(
+        client,
+        point_column=point_column,
+        linked_seg_column=linked_columns,
+        group_column=group_column,
+        contrast=contrast,
+        view_kws=view_kws,
+    )
+    return package_state(
+        synapse_df, sb, client, shorten, return_as, ngl_url, neuroglancer_link_text
+    )
 
 
 def make_neuron_neuroglancer_link(
@@ -302,21 +371,10 @@ def make_neuron_neuroglancer_link(
         post_pt_root_id_col=post_pt_root_id_col,
         input_layer_name=input_layer_name,
         output_layer_name=output_layer_name,
-        data_resolution_pre=data_resolution_pre,
-        data_resolution_post=data_resolution_post,
+        dataframe_resolution_pre=data_resolution_pre,
+        dataframe_resolution_post=data_resolution_post,
     )
-
-    if return_as == "json":
-        return sb.render_state(dataframes, return_as="json")
-    if ngl_url is None:
-        ngl_url = client.info.viewer_site()
-        if ngl_url is None:
-            ngl_url = DEFAULT_NGL
-    url = make_url_robust(dataframes, sb, client, shorten=shorten, ngl_url=ngl_url)
-    if return_as == "html":
-        return HTML(f'<a href="{url}">{link_text}</a>')
-    else:
-        return url
+    return package_state(dataframes, sb, client, shorten, return_as, ngl_url, link_text)
 
 
 def from_client(client, image_name=None, segmentation_name=None, contrast=None):
