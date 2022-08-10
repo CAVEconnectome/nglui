@@ -1,3 +1,4 @@
+from typing import Iterable
 from .layers import (
     ImageLayerConfig,
     SegmentationLayerConfig,
@@ -6,6 +7,8 @@ from .layers import (
 )
 from .statebuilder import ChainedStateBuilder, StateBuilder
 from caveclient import CAVEclient
+import pandas as pd
+from IPython.display import HTML
 
 CONTRAST_CONFIG = {
     "minnie65_phase3_v1": {
@@ -14,6 +17,8 @@ CONTRAST_CONFIG = {
         "white": 0.70,
     }
 }
+MAX_URL_LENGTH = 1_750_000
+DEFAULT_NGL = "https://neuromancer-seung-import.appspot.com/"
 
 
 def make_point_statebuilder(
@@ -48,7 +53,6 @@ def make_point_statebuilder(
 
 def make_pre_post_statebuilder(
     client: CAVEclient,
-    root_id: int,
     show_inputs: bool = False,
     show_outputs: bool = False,
     contrast: dict = None,
@@ -85,8 +89,8 @@ def make_pre_post_statebuilder(
     """
 
     img_layer, seg_layer = from_client(client, contrast=contrast)
-    seg_layer.add_selection_map(fixed_ids=root_id)
-    seg_layer.color
+    seg_layer.add_selection_map(selected_ids_column="root_id")
+
     if view_kws is None:
         view_kws = {}
     sb1 = StateBuilder(
@@ -119,9 +123,35 @@ def make_pre_post_statebuilder(
     return ChainedStateBuilder(state_builders)
 
 
+def make_state_url(df, sb, client, ngl_url=None):
+    state = sb.render_state(df, return_as="dict")
+    state_id = client.state.upload_state_json(state)
+    if ngl_url is None:
+        ngl_url = client.info.viewer_site()
+        if ngl_url is None:
+            ngl_url = DEFAULT_NGL
+    url = client.state.build_neuroglancer_url(state_id, ngl_url=ngl_url)
+    return url
+
+
+def make_url_robust(df, sb, client, shorten="if_long", ngl_url=None):
+    """Generate a url from a neuroglancer state. If too long, return through state server"""
+    if shorten == "if_long":
+        url = sb.render_state(df, return_as="url", url_prefix=ngl_url)
+        if len(url) > MAX_URL_LENGTH:
+            url = make_state_url(df, sb, client, ngl_url=ngl_url)
+    if shorten == "always":
+        url = make_state_url(df, sb, client)
+    if shorten == "never":
+        url = sb.render_state(df, return_as="url", url_prefix=ngl_url)
+    return url
+
+
 def make_neuron_neuroglancer_link(
     client,
-    root_id,
+    root_ids,
+    return_as="html",
+    shorten="always",
     show_inputs=False,
     show_outputs=False,
     contrast=None,
@@ -133,12 +163,17 @@ def make_neuron_neuroglancer_link(
     input_layer_name="syns_in",
     output_layer_name="syns_out",
     ngl_url=None,
+    link_text="Neuroglancer Link",
 ):
     """function to create a neuroglancer link view of a neuron, optionally including inputs and outputs
 
     Args:
         client (_type_): a CAVEclient configured for datastack to visualize
-        root_id (_type_): root_id to build around
+        root_ids (Iterable[int]): root_ids to build around
+        return_as (str, optional): one of 'html', 'json', 'url'. (default 'html')
+        shorten (str, optional): if 'always' make a state link always
+                             'if_long' make a state link if the json is too long (default)
+                             'never' don't shorten link
         show_inputs (bool, optional): whether to include input synapses. Defaults to False.
         show_outputs (bool, optional): whether to include output synapses. Defaults to False.
         contrast (list, optional): Two elements specifying the black level and white level as
@@ -152,33 +187,35 @@ def make_neuron_neuroglancer_link(
         input_layer_name (str, optional): name of layer for inputs. Defaults to "syns_in".
         output_layer_name (str, optional): name of layer for outputs. Defaults to "syns_out".
         ngl_url (str, optional): url to use for neuroglancer. Defaults to None (will use default viewer set in datastack)
-
+        link_text (str, optional): text to use for html return. Defaults to Neuroglancer Link
     Raises:
         ValueError: If the point column is not present in the synapse table
 
     Returns:
         str: url of neuroglancer link with saved state
     """
-    dataframes = [None]
+    if type(root_ids) == int:
+        root_ids = [root_ids]
+    df1 = pd.DataFrame({"root_id": root_ids})
+    dataframes = [df1]
     if show_inputs:
         syn_in_df = client.materialize.synapse_query(
-            post_ids=root_id,
+            post_ids=root_ids,
             timestamp=timestamp,
-            desired_resolution=client.info.viewer_resolution,
+            desired_resolution=client.info.viewer_resolution(),
         )
         if point_column not in syn_in_df.columns:
             raise ValueError("column pt_column={pt_column} not in synapse table")
         dataframes.append(syn_in_df)
     if show_outputs:
         syn_out_df = client.materialize.synapse_query(
-            pre_ids=root_id,
+            pre_ids=root_ids,
             timestamp=timestamp,
-            desired_resolution=client.info.viewer_resolution,
+            desired_resolution=client.info.viewer_resolution(),
         )
         dataframes.append(syn_out_df)
     sb = make_pre_post_statebuilder(
         client,
-        root_id,
         show_inputs=show_inputs,
         show_outputs=show_outputs,
         contrast=contrast,
@@ -189,10 +226,18 @@ def make_neuron_neuroglancer_link(
         input_layer_name=input_layer_name,
         output_layer_name=output_layer_name,
     )
-    state_d = sb.render_state(dataframes, return_as="json")
-    link_id = client.state.upload_state_json(state_d)
-    url = client.state.build_neuroglancer_url(link_id, ngl_url=ngl_url)
-    return url
+
+    if return_as == "json":
+        return sb.render_state(dataframes, return_as="json")
+    if ngl_url is None:
+        ngl_url = client.info.viewer_site()
+        if ngl_url is None:
+            ngl_url = DEFAULT_NGL
+    url = make_url_robust(dataframes, sb, client, shorten=shorten, ngl_url=ngl_url)
+    if return_as == "html":
+        return HTML(f'<a href="{url}">{link_text}</a>')
+    else:
+        return url
 
 
 def from_client(client, image_name=None, segmentation_name=None, contrast=None):
