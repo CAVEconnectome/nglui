@@ -91,7 +91,7 @@ class StateBuilder:
         data : pandas.DataFrame, optional
             DataFrame to use as a point source. By default None, for which
             it will return only the base_state and any fixed values.
-        base_state : str, optional
+        base_state : dict, optional
             Initial state to build on, expressed as Neuroglancer JSON. By default None
         return_as : ['url', 'viewer', 'html', 'json', 'dict', 'shared'], optional
             Choice of output types. Note that if a viewer is returned, the state is not reset.
