@@ -21,6 +21,45 @@ MAX_URL_LENGTH = 1_750_000
 DEFAULT_NGL = "https://neuromancer-seung-import.appspot.com/"
 
 
+def sort_dataframe_by_root_id(
+    df, root_id_column, ascending=False, num_column="n_times", drop=False
+):
+    """Sort a dataframe so that rows belonging to the same root id are together, ordered by how many times the root id appears.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        dataframe to sort
+    root_id_column : str
+        Column name to use for sorting root ids
+    ascending : bool, optional
+        Whether to sort ascending (lowest count to highest) or not, by default False
+    num_column : str, optional
+        Temporary column name to use for count information, by default 'n_times'
+    drop : bool, optional
+        If True, drop the additional column when returning.
+
+    Returns
+    -------
+    pd.DataFrame
+    """
+    cols = df.columns[df.columns != root_id_column]
+    if len(cols) == 0:
+        df = df.copy()
+        df[num_column] = df[root_id_column]
+        use_column = num_column
+    else:
+        use_column = cols[0]
+
+    df[num_column] = df.groupby(root_id_column).transform("count")[use_column]
+    if drop:
+        return df.sort_values(
+            by=[num_column, root_id_column], ascending=ascending
+        ).drop(columns=[num_column])
+    else:
+        return df.sort_values(by=[num_column, root_id_column], ascending=ascending)
+
+
 def make_point_statebuilder(
     client: CAVEclient,
     point_column="pt_position",
@@ -44,7 +83,9 @@ def make_point_statebuilder(
     point_mapper = PointMapper(
         point_column=point_column, linked_segmentation_column=linked_seg_column
     )
-    ann_layer = AnnotationLayerConfig("pts", mapping_rules=[point_mapper])
+    ann_layer = AnnotationLayerConfig(
+        "pts", mapping_rules=[point_mapper], linked_segmentation_layer=seg_layer.name
+    )
     return StateBuilder(
         [img_layer, seg_layer, ann_layer],
         state_server=client.state.client.state._server_address,
@@ -104,21 +145,25 @@ def make_pre_post_statebuilder(
     state_builders = [sb1]
     if show_inputs:
         # First state builder
-
         input_point_mapper = PointMapper(
             point_column=point_column, linked_segmentation_column=pre_pt_root_id_col
         )
         inputs_lay = AnnotationLayerConfig(
-            input_layer_name, mapping_rules=[input_point_mapper]
+            input_layer_name,
+            mapping_rules=[input_point_mapper],
+            linked_segmentation_layer=seg_layer.name,
         )
         sb_in = StateBuilder([inputs_lay])
         state_builders.append(sb_in)
     if show_outputs:
         output_point_mapper = PointMapper(
-            point_column=point_column, linked_segmentation_column=post_pt_root_id_col
+            point_column=point_column,
+            linked_segmentation_column=post_pt_root_id_col,
         )
         outputs_lay = AnnotationLayerConfig(
-            output_layer_name, mapping_rules=[output_point_mapper]
+            output_layer_name,
+            mapping_rules=[output_point_mapper],
+            linked_segmentation_layer=seg_layer.name,
         )
         sb_out = StateBuilder([outputs_lay])
         state_builders.append(sb_out)
@@ -156,6 +201,9 @@ def make_neuron_neuroglancer_link(
     shorten="always",
     show_inputs=False,
     show_outputs=False,
+    sort_inputs=True,
+    sort_outputs=True,
+    sort_ascending=False,
     contrast=None,
     timestamp=None,
     view_kws=None,
@@ -178,6 +226,9 @@ def make_neuron_neuroglancer_link(
                              'never' don't shorten link
         show_inputs (bool, optional): whether to include input synapses. Defaults to False.
         show_outputs (bool, optional): whether to include output synapses. Defaults to False.
+        sort_inputs (bool, optional): whether to sort inputs by presynaptic root id, ordered by synapse count. Defaults to True.
+        sort_outputs (bool, optional): whether to sort inputs by presynaptic root id, ordered by postsynaptic synapse count. Defaults to True.
+        sort_ascending (bool, optional): If sorting, whether to sort ascending (lowest synapse count to highest). Defaults to False.
         contrast (list, optional): Two elements specifying the black level and white level as
             floats between 0 and 1, by default None. If None, no contrast
             is set.
@@ -206,6 +257,10 @@ def make_neuron_neuroglancer_link(
             timestamp=timestamp,
             desired_resolution=client.info.viewer_resolution(),
         )
+        if sort_inputs:
+            syn_in_df = sort_dataframe_by_root_id(
+                syn_in_df, pre_pt_root_id_col, ascending=sort_ascending, drop=True
+            )
         if point_column not in syn_in_df.columns:
             raise ValueError("column pt_column={pt_column} not in synapse table")
         dataframes.append(syn_in_df)
@@ -215,6 +270,10 @@ def make_neuron_neuroglancer_link(
             timestamp=timestamp,
             desired_resolution=client.info.viewer_resolution(),
         )
+        if sort_outputs:
+            syn_out_df = sort_dataframe_by_root_id(
+                syn_out_df, post_pt_root_id_col, ascending=sort_ascending, drop=True
+            )
         dataframes.append(syn_out_df)
     sb = make_pre_post_statebuilder(
         client,
