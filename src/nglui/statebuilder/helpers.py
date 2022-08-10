@@ -33,10 +33,12 @@ def make_point_statebuilder(
         client (CAVEclient): CAVEclient configured for the datastack desired
         point_column (str, optional): column in dataframe to pull points from. Defaults to "pt_position".
         linked_seg_column (str, optional): column to link to segmentation, None for no column. Defaults to "pt_root_id".
-        contrast (_type_, optional): _description_. Defaults to None.
-
+        contrast (list, optional):  list-like, optional
+            Two elements specifying the black level and white level as
+            floats between 0 and 1, by default None. If None, no contrast
+            is set.
     Returns:
-        _type_: _description_
+        StateBuilder: a statebuilder to make points with linked segmentations
     """
     img_layer, seg_layer = from_client(client, contrast=contrast)
     point_mapper = PointMapper(
@@ -55,7 +57,7 @@ def make_pre_post_statebuilder(
     client: CAVEclient,
     show_inputs: bool = False,
     show_outputs: bool = False,
-    contrast: dict = None,
+    contrast: list = None,
     view_kws: dict = None,
     point_column="ctr_pt_position",
     pre_pt_root_id_col="pre_pt_root_id",
