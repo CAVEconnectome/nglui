@@ -243,7 +243,7 @@ class AnnotationMapperBase(object):
         if self.linked_segmentation_column is not None:
             seg_array = data[self.linked_segmentation_column]
             linked_segs = [
-                row if len(np.atleast_1d(row)) > 0 else None for row in seg_array
+                row if len(np.atleast_1d(row)) > 0 else None for row in seg_array.values
             ]
         else:
             linked_segs = [None for x in range(len(data))]
