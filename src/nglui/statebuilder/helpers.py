@@ -11,6 +11,9 @@ from caveclient import CAVEclient
 import pandas as pd
 from IPython.display import HTML
 
+DEFAULT_POSTSYN_COLOR = (0.227, 0.459, 0.718)
+DEFAULT_PRESYN_COLOR = (0.894, 0.102, 0.110)
+
 CONTRAST_CONFIG = {
     "minnie65_phase3_v1": {
         "contrast_controls": True,
@@ -70,6 +73,7 @@ def make_point_statebuilder(
     contrast=None,
     view_kws=None,
     point_layer_name="pts",
+    color=None,
 ):
     """make a state builder that puts points on a single column with a linked segmentaton id
 
@@ -98,6 +102,7 @@ def make_point_statebuilder(
         mapping_rules=[point_mapper],
         linked_segmentation_layer=seg_layer.name,
         data_resolution=data_resolution,
+        color=color,
     )
     if view_kws is None:
         view_kws = {}
@@ -122,6 +127,8 @@ def make_pre_post_statebuilder(
     dataframe_resolution_post=None,
     input_layer_name="syns_in",
     output_layer_name="syns_out",
+    input_layer_color=DEFAULT_POSTSYN_COLOR,
+    output_layer_color=DEFAULT_PRESYN_COLOR,
 ):
     """Function to generate ChainedStateBuilder with optional pre and post synaptic
     annotation layers
@@ -171,6 +178,7 @@ def make_pre_post_statebuilder(
             mapping_rules=[input_point_mapper],
             linked_segmentation_layer=seg_layer.name,
             data_resolution=dataframe_resolution_post,
+            color=input_layer_color,
         )
         sb_in = StateBuilder([inputs_lay])
         state_builders.append(sb_in)
@@ -184,6 +192,7 @@ def make_pre_post_statebuilder(
             mapping_rules=[output_point_mapper],
             linked_segmentation_layer=seg_layer.name,
             data_resolution=dataframe_resolution_pre,
+            color=output_layer_color,
         )
         sb_out = StateBuilder([outputs_lay])
         state_builders.append(sb_out)
@@ -252,6 +261,7 @@ def make_synapse_neuroglancer_link(
     view_kws=None,
     pre_post_columns=None,
     neuroglancer_link_text="Neuroglancer Link",
+    color=None,
 ):
     if point_column not in synapse_df.columns:
         raise ValueError(f"point_column={point_column} not in dataframe")
@@ -278,6 +288,7 @@ def make_synapse_neuroglancer_link(
         contrast=contrast,
         view_kws=view_kws,
         point_layer_name="synapses",
+        color=color,
     )
     return package_state(
         synapse_df, sb, client, shorten, return_as, ngl_url, neuroglancer_link_text
@@ -294,6 +305,8 @@ def make_neuron_neuroglancer_link(
     sort_inputs=True,
     sort_outputs=True,
     sort_ascending=False,
+    input_color=DEFAULT_POSTSYN_COLOR,
+    output_color=DEFAULT_PRESYN_COLOR,
     contrast=None,
     timestamp=None,
     view_kws=None,
@@ -380,6 +393,8 @@ def make_neuron_neuroglancer_link(
         post_pt_root_id_col=post_pt_root_id_col,
         input_layer_name=input_layer_name,
         output_layer_name=output_layer_name,
+        input_layer_color=input_color,
+        output_layer_color=output_color,
         dataframe_resolution_pre=data_resolution_pre,
         dataframe_resolution_post=data_resolution_post,
     )

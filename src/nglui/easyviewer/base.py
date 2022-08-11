@@ -155,7 +155,7 @@ def _EasyViewerFactory(compatibility_mode=False):
                     )
                 s.layers.append(name=layer_name, layer=new_layer)
                 if color is not None:
-                    s.layers[layer_name].annotationColor = color
+                    s.layers[layer_name].annotationColor = utils.parse_color(color)
 
             if tags is not None and not compatibility_mode:
                 self.add_annotation_tags(layer_name=layer_name, tags=tags)
@@ -164,7 +164,7 @@ def _EasyViewerFactory(compatibility_mode=False):
             """Set the color for the annotation layer"""
             if layer_name in [l.name for l in self.state.layers]:
                 with self.txn() as s:
-                    s.layers[layer_name].annotationColor = color
+                    s.layers[layer_name].annotationColor = utils.parse_color(color)
             else:
                 pass
 
@@ -430,7 +430,7 @@ def _EasyViewerFactory(compatibility_mode=False):
             with self.txn() as s:
                 if seg_colors is not None:
                     seg_colors = {
-                        str(oid): k for oid, k in seg_colors.items() if k is not None
+                        str(oid): utils.parse_color(k) for oid, k in seg_colors.items() if k is not None
                     }
                     s.layers[layer_name]._json_data["segmentColors"] = seg_colors
 

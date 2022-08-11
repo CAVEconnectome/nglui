@@ -46,6 +46,10 @@ class SelectionMapper(object):
     ):
         if isinstance(data_columns, str):
             data_columns = [data_columns]
+        if fixed_id_colors is not None:
+            fixed_id_colors = np.atleast_1d(fixed_id_colors).tolist()
+        if fixed_ids is not None:
+            fixed_ids = np.atleast_1d(fixed_ids).tolist()
         self._config = dict(
             data_columns=data_columns,
             fixed_ids=fixed_ids,

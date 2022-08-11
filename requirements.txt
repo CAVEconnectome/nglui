@@ -2,3 +2,4 @@ numpy>=1.11.0
 pandas>=1.0.0
 ipython
 six
+webcolors
