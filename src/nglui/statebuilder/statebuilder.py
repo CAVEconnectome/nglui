@@ -35,13 +35,14 @@ class StateBuilder:
                 state_server = client.state.state_service_endpoint
             if url_prefix is None:
                 url_prefix = client.info.viewer_site()
+            if resolution is None:
+                resolution = client.info.viewer_resolution().tolist()
+
         if url_prefix is None:
             url_prefix = default_neuroglancer_base
 
         self._base_state = base_state
         self._layers = layers
-        if resolution is None:
-            resolution = client.info.viewer_resolution().tolist()
         self._resolution = resolution
         self._url_prefix = url_prefix
         self._state_server = state_server

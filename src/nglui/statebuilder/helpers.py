@@ -11,8 +11,8 @@ from caveclient import CAVEclient
 import pandas as pd
 from IPython.display import HTML
 
-DEFAULT_POSTSYN_COLOR = (0.227, 0.459, 0.718)
-DEFAULT_PRESYN_COLOR = (0.894, 0.102, 0.110)
+DEFAULT_POSTSYN_COLOR = (0.25098039, 0.87843137, 0.81568627)  # CSS3 color turquise
+DEFAULT_PRESYN_COLOR = (1.0, 0.38823529, 0.27843137)  # CSS3 color tomato
 
 CONTRAST_CONFIG = {
     "minnie65_phase3_v1": {
@@ -108,7 +108,6 @@ def make_point_statebuilder(
         view_kws = {}
     return StateBuilder(
         [img_layer, seg_layer, ann_layer],
-        resolution=client.info.viewer_resolution(),
         client=client,
         view_kws=view_kws,
     )
@@ -162,9 +161,7 @@ def make_pre_post_statebuilder(
         view_kws = {}
     sb1 = StateBuilder(
         layers=[img_layer, seg_layer],
-        resolution=client.info.viewer_resolution(),
-        view_kws=view_kws,
-        state_server=client.state.state_service_endpoint,
+        client=client,
     )
 
     state_builders = [sb1]
@@ -180,7 +177,7 @@ def make_pre_post_statebuilder(
             data_resolution=dataframe_resolution_post,
             color=input_layer_color,
         )
-        sb_in = StateBuilder([inputs_lay])
+        sb_in = StateBuilder([inputs_lay], client=client)
         state_builders.append(sb_in)
     if show_outputs:
         output_point_mapper = PointMapper(
@@ -194,7 +191,7 @@ def make_pre_post_statebuilder(
             data_resolution=dataframe_resolution_pre,
             color=output_layer_color,
         )
-        sb_out = StateBuilder([outputs_lay])
+        sb_out = StateBuilder([outputs_lay], client=client)
         state_builders.append(sb_out)
     return ChainedStateBuilder(state_builders)
 

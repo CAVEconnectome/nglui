@@ -25,6 +25,8 @@ def _multipoint_transform(row, pt_columns, squeeze_cols):
 
 
 def _data_scaler(data_resolution, viewer_resolution):
+    if viewer_resolution is None:
+        return np.array([1, 1, 1]).reshape((1,3))
     if data_resolution is None:
         data_resolution = viewer_resolution
     return (np.array(data_resolution) / np.array(viewer_resolution)).reshape((1, 3))
