@@ -26,7 +26,7 @@ class StateBuilder:
         base_state=None,
         url_prefix=None,
         state_server=None,
-        resolution=[4, 4, 40],
+        resolution=None,
         view_kws={},
         client=None,
     ):
@@ -40,6 +40,8 @@ class StateBuilder:
 
         self._base_state = base_state
         self._layers = layers
+        if resolution is None:
+            resolution = client.info.viewer_resolution().tolist()
         self._resolution = resolution
         self._url_prefix = url_prefix
         self._state_server = state_server
