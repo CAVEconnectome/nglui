@@ -96,7 +96,7 @@ def make_point_statebuilder(
     )
     return StateBuilder(
         [img_layer, seg_layer, ann_layer],
-        state_server=client.state.client.state._server_address,
+        state_server=client.state._server_address,
         resolution=client.info.viewer_resolution(),
         client=client,
         view_kws=view_kws,
@@ -151,6 +151,7 @@ def make_pre_post_statebuilder(
         layers=[img_layer, seg_layer],
         resolution=client.info.viewer_resolution(),
         view_kws=view_kws,
+        state_server=client.state.state_service_endpoint,
     )
 
     state_builders = [sb1]
@@ -328,7 +329,7 @@ def make_neuron_neuroglancer_link(
     Returns:
         str: url of neuroglancer link with saved state
     """
-    if type(root_ids) == int:
+    if not isinstance(root_ids, Iterable):
         root_ids = [root_ids]
     df1 = pd.DataFrame({"root_id": root_ids})
     dataframes = [df1]
