@@ -65,6 +65,7 @@ def make_point_statebuilder(
     client: CAVEclient,
     point_column="pt_position",
     linked_seg_column="pt_root_id",
+    data_resolution=None,
     group_column=None,
     contrast=None,
     view_kws=None,
@@ -96,6 +97,7 @@ def make_point_statebuilder(
         point_layer_name,
         mapping_rules=[point_mapper],
         linked_segmentation_layer=seg_layer.name,
+        data_resolution=data_resolution,
     )
     if view_kws is None:
         view_kws = {}
@@ -243,11 +245,11 @@ def make_synapse_neuroglancer_link(
     shorten="always",
     contrast=None,
     point_column="ctr_pt_position",
+    dataframe_resolution=None,
     group_connections=True,
     link_pre_and_post=True,
     ngl_url=None,
     view_kws=None,
-    dataframe_resolution=None,
     pre_post_columns=None,
     neuroglancer_link_text="Neuroglancer Link",
 ):
@@ -272,6 +274,7 @@ def make_synapse_neuroglancer_link(
         point_column=point_column,
         linked_seg_column=linked_columns,
         group_column=group_column,
+        data_resolution=dataframe_resolution,
         contrast=contrast,
         view_kws=view_kws,
         point_layer_name="synapses",
