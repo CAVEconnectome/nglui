@@ -68,6 +68,7 @@ def make_point_statebuilder(
     group_column=None,
     contrast=None,
     view_kws=None,
+    point_layer_name="pts",
 ):
     """make a state builder that puts points on a single column with a linked segmentaton id
 
@@ -92,7 +93,9 @@ def make_point_statebuilder(
         group_column=group_column,
     )
     ann_layer = AnnotationLayerConfig(
-        "pts", mapping_rules=[point_mapper], linked_segmentation_layer=seg_layer.name
+        point_layer_name,
+        mapping_rules=[point_mapper],
+        linked_segmentation_layer=seg_layer.name,
     )
     if view_kws is None:
         view_kws = {}
@@ -271,6 +274,7 @@ def make_synapse_neuroglancer_link(
         group_column=group_column,
         contrast=contrast,
         view_kws=view_kws,
+        point_layer_name="synapses",
     )
     return package_state(
         synapse_df, sb, client, shorten, return_as, ngl_url, neuroglancer_link_text
