@@ -26,7 +26,7 @@ class StateBuilder:
         base_state=None,
         url_prefix=None,
         state_server=None,
-        resolution=[4, 4, 40],
+        resolution=None,
         view_kws={},
         client=None,
     ):
@@ -35,6 +35,9 @@ class StateBuilder:
                 state_server = client.state.state_service_endpoint
             if url_prefix is None:
                 url_prefix = client.info.viewer_site()
+            if resolution is None:
+                resolution = client.info.viewer_resolution().tolist()
+
         if url_prefix is None:
             url_prefix = default_neuroglancer_base
 
@@ -91,7 +94,7 @@ class StateBuilder:
         data : pandas.DataFrame, optional
             DataFrame to use as a point source. By default None, for which
             it will return only the base_state and any fixed values.
-        base_state : str, optional
+        base_state : dict, optional
             Initial state to build on, expressed as Neuroglancer JSON. By default None
         return_as : ['url', 'viewer', 'html', 'json', 'dict', 'shared'], optional
             Choice of output types. Note that if a viewer is returned, the state is not reset.

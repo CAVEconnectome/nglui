@@ -7,6 +7,8 @@ from .mappers import (
     BoundingBoxMapper,
 )
 from datetime import datetime
+import numpy as np
+import numbers
 
 DEFAULT_IMAGE_LAYER = "img"
 DEFAULT_SEG_LAYER = "seg"
@@ -241,20 +243,58 @@ class SegmentationLayerConfig(LayerConfigBase):
     def data_resolution(self):
         return self._config.get("data_resolution", None)
 
-    def add_selection_map(self, selected_ids_column=None, fixed_ids=None):
+    def add_selection_map(
+        self,
+        selected_ids_column=None,
+        fixed_ids=None,
+        fixed_id_colors=None,
+        color_column=None,
+    ):
         if self._selection_map is not None:
             if isinstance(selected_ids_column, str):
                 selected_ids_column = [selected_ids_column]
-            if self._selection_map is not None:
-                data_columns = self._selection_map.data_columns.extend(
-                    selected_ids_column
-                )
-            fixed_ids = self._selection_map.fixed_ids.extend(fixed_ids)
+            if selected_ids_column is not None:
+                data_columns = self._selection_map.data_columns + selected_ids_column
+            else:
+                data_columns = self._selection_map.data_columns
+            if fixed_ids is not None:
+                new_fixed_ids = np.concatenate(
+                    (self._selection_map.fixed_ids.tolist(), np.atleast_1d(fixed_ids))
+                ).tolist()
+                old_fixed_id_colors = self._selection_map.fixed_id_colors
+                if len(old_fixed_id_colors) > len(
+                    self._selection_map.fixed_ids.tolist()
+                ):
+                    old_fixed_id_colors = old_fixed_id_colors[
+                        : len(len(self._selection_map.fixed_ids.tolist()))
+                    ]
+                else:
+                    while len(old_fixed_id_colors) < len(
+                        self._selection_map.fixed_ids.tolist()
+                    ):
+                        old_fixed_id_colors += [None]
+                if fixed_id_colors is None:
+                    fixed_id_colors = len(fixed_ids) * [None]
+                elif isinstance(fixed_id_colors, str) or isinstance(
+                    fixed_ids, numbers.Number
+                ):
+                    fixed_id_colors = [fixed_id_colors]
+                new_fixed_id_colors = old_fixed_id_colors + fixed_id_colors
+            else:
+                new_fixed_ids = self._selection_map.fixed_ids
+                new_fixed_id_colors = self._selection_map.fixed_id_colors
+            if color_column is None:
+                color_column = self._selection_map.color_column
         else:
             data_columns = selected_ids_column
+            new_fixed_ids = fixed_ids
+            new_fixed_id_colors = fixed_id_colors
 
         self._selection_map = SelectionMapper(
-            data_columns=data_columns, fixed_ids=fixed_ids
+            data_columns=data_columns,
+            fixed_ids=new_fixed_ids,
+            fixed_id_colors=new_fixed_id_colors,
+            color_column=color_column,
         )
 
     def _specific_rendering(
