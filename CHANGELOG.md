@@ -3,6 +3,23 @@
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
 <!-- ## Unreleased -->
+## [2.10.0] - 2022-08-11
+
+### Added
+
+- **StateBuilder** A number of helper functions to produce common states have been added to statebuilder.
+You can use the function `make_neuron_neuroglancer_link` to generate a link with one or more root ids and, optionally, their synapses.
+Further, you can use the function `make_synapse_neuroglancer_link` to generate a state from a synapse dataframe.
+- **StateBuilder** Linked segmentations and annotation groups now support multiple columns.
+For linked segmentations, this adds multiple root ids per annotation.
+For groups, each unique combinations of values gets its own group.
+- **StateBuilder** and **EasyViewer** Colors for layers or segment ids can now be in RGB tuples with values between 0--1 or CSS3 named colors, not just hex.
+- **StateBuilder** When using the `client=` argument, viewer resolution is inferred from the client info and does not need to be passed as an additional argument.
+
+### Fixed
+
+- **StateBuilder** For SegmentationLayerConfigs, adding selection maps via `add_selection_map` is more robust.
+
 ## [2.7.2] - 2021-06-13
 
 ### Fixed
@@ -38,6 +55,7 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 - **Parser**: `get_selected_ids` does what it says for a layer.
 
 ### Fixed
+
 - **Parser**: Getting annotations with tags/descriptions/etc works.
 - **StateBuilder**: `return_as` parameter works with ChainedStateBuilder now
 
