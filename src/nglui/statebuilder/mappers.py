@@ -256,8 +256,9 @@ class AnnotationMapperBase(object):
             descriptions = [None for x in range(len(data))]
         return descriptions
 
-    def _add_groups(self, groups, annos):
-        vals, inverse = np.unique(groups, return_inverse=True)
+    def _add_groups(self, data, annos):
+        ngroups = data.groupby(self.group_column).ngroup()
+        vals, inverse = np.unique(ngroups, return_inverse=True)
         inv_inds = np.flatnonzero(~pd.isnull(vals))
         group_annos = []
 
@@ -365,8 +366,7 @@ class PointMapper(AnnotationMapperBase):
             for pt, d, ls, t in zip(pts, descriptions, linked_segs, tags)
         ]
         if self.group_column is not None:
-            groups = data[self.group_column].values[relinds]
-            annos = self._add_groups(groups, annos)
+            annos = self._add_groups(data, annos)
 
         return annos
 
@@ -455,8 +455,7 @@ class LineMapper(AnnotationMapperBase):
         ]
 
         if self.group_column is not None:
-            groups = data[self.group_column].values[relinds]
-            annos = self._add_groups(groups, annos)
+            annos = self._add_groups(data, annos)
 
         return annos
 
@@ -556,8 +555,7 @@ class SphereMapper(AnnotationMapperBase):
         ]
 
         if self.group_column is not None:
-            groups = data[self.group_column].values[relinds]
-            annos = self._add_groups(groups, annos)
+            annos = self._add_groups(data, annos)
 
         return annos
 
@@ -622,8 +620,7 @@ class BoundingBoxMapper(AnnotationMapperBase):
         ]
 
         if self.group_column is not None:
-            groups = data[self.group_column].values[relinds]
-            annos = self._add_groups(groups, annos)
+            annos = self._add_groups(data, annos)
 
         return annos
 
