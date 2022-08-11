@@ -260,6 +260,45 @@ def make_synapse_neuroglancer_link(
     neuroglancer_link_text="Neuroglancer Link",
     color=None,
 ):
+    """_summary_
+
+    Args:
+        synapse_df (pandas.DataFrame): dataframe where each row is a synapse
+        client (caveclient.CAVEclient): a caveclient
+        return_as (str, optional): how to return url.
+            'html' as a ipython html element
+            'url' as a url string
+            'json' as dictionary state.
+            Defaults to "html".
+        shorten (str, optional): whether to shorten link, 'always' will always shorten,
+             'if_long' will shorten it if it's beyond a size MAX_URL_LENGTH.
+             'never' will never shorten. Defaults to "always".
+        contrast (list, optional): Two elements specifying the black level and white level as
+            floats between 0 and 1, by default None. If None, no contrast is set.
+        point_column (str, optional): column in dataframe to take synapse position from. Defaults to "ctr_pt_position".
+        dataframe_resolution (list, optional): list of length 3 specifying resolution units of position column.
+            If None, will attempt to get resolution from dataframe metadata. If no metadata exists,
+            will assume it's in client.info.viewer_resolution(). Defaults to None.
+        group_connections (bool, optional): whether to group synapses in the same connection (between the same neurons).
+            Defaults to True.
+        link_pre_and_post (bool, optional): whether to make link the synapse annotations
+            to the pre and post synaptic partners. Defaults to True.
+        ngl_url (_type_, optional): what neuroglancer to use. Defaults to None.
+            If None will default to client.info.viewer_site().
+            If that is None will default to DEFAULT_NGL.
+        view_kws (dict, optional): viewer dictionary to control neuroglancer viewer. Defaults to None.
+        pre_post_columns (list, optional): [pre,post] column names for pre and post synaptic root_ids. Defaults to None.
+            If None will assume ['pre_pt_root_id', 'post_pt_root_id']
+        neuroglancer_link_text (str, optional): Text to use in returning html link. Defaults to "Neuroglancer Link".
+        color (list(float) or str, optional): color of synapse points as rgb list [0,1],
+            or hex string, or common name (see webcolors documentation)
+
+    Raises:
+        ValueError: If the point_column is not in the dataframe
+
+    Returns:
+        Ipython.HTML, str, or json: a representation of the neuroglancer state.Type depends on return_as
+    """
     if point_column not in synapse_df.columns:
         raise ValueError(f"point_column={point_column} not in dataframe")
     if pre_post_columns is None:
@@ -329,9 +368,10 @@ def make_neuron_neuroglancer_link(
         sort_inputs (bool, optional): whether to sort inputs by presynaptic root id, ordered by synapse count. Defaults to True.
         sort_outputs (bool, optional): whether to sort inputs by presynaptic root id, ordered by postsynaptic synapse count. Defaults to True.
         sort_ascending (bool, optional): If sorting, whether to sort ascending (lowest synapse count to highest). Defaults to False.
+        input_color (list(float) or str, optional): color of input points as rgb list [0,1], or hex string, or common name (see webcolors documentation)
+        output_color (list(float) or str, optional): color of output points as rgb list [0,1], or hex string, or common name (see webcolors documentation)
         contrast (list, optional): Two elements specifying the black level and white level as
-            floats between 0 and 1, by default None. If None, no contrast
-            is set.
+            floats between 0 and 1, by default None. If None, no contrast is set.
         timestamp (datetime.datetime, optional): timestamp to do query. Defaults to None, will use materialized version.
         view_kws (dict, optional): view_kws to configure statebuilder, see nglui.StateBuilder . Defaults to None.
         point_column (str, optional): column to pull points for synapses from. Defaults to "ctr_pt_position".
@@ -345,7 +385,7 @@ def make_neuron_neuroglancer_link(
         ValueError: If the point column is not present in the synapse table
 
     Returns:
-        str: url of neuroglancer link with saved state
+        Ipython.HTML, str, or json: a representation of the neuroglancer state.Type depends on return_as
     """
     if not isinstance(root_ids, Iterable):
         root_ids = [root_ids]
