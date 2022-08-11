@@ -365,22 +365,32 @@ def make_neuron_neuroglancer_link(
                              'never' don't shorten link
         show_inputs (bool, optional): whether to include input synapses. Defaults to False.
         show_outputs (bool, optional): whether to include output synapses. Defaults to False.
-        sort_inputs (bool, optional): whether to sort inputs by presynaptic root id, ordered by synapse count. Defaults to True.
-        sort_outputs (bool, optional): whether to sort inputs by presynaptic root id, ordered by postsynaptic synapse count. Defaults to True.
-        sort_ascending (bool, optional): If sorting, whether to sort ascending (lowest synapse count to highest). Defaults to False.
-        input_color (list(float) or str, optional): color of input points as rgb list [0,1], or hex string, or common name (see webcolors documentation)
-        output_color (list(float) or str, optional): color of output points as rgb list [0,1], or hex string, or common name (see webcolors documentation)
+        sort_inputs (bool, optional): whether to sort inputs by presynaptic root id, ordered by synapse count.
+            Defaults to True.
+        sort_outputs (bool, optional): whether to sort inputs by presynaptic root id, ordered by postsynaptic synapse count.
+            Defaults to True.
+        sort_ascending (bool, optional): If sorting, whether to sort ascending (lowest synapse count to highest).
+            Defaults to False.
+        input_color (list(float) or str, optional): color of input points as rgb list [0,1],
+            or hex string, or common name (see webcolors documentation)
+        output_color (list(float) or str, optional): color of output points as rgb list [0,1],
+            or hex string, or common name (see webcolors documentation)
         contrast (list, optional): Two elements specifying the black level and white level as
             floats between 0 and 1, by default None. If None, no contrast is set.
         timestamp (datetime.datetime, optional): timestamp to do query. Defaults to None, will use materialized version.
-        view_kws (dict, optional): view_kws to configure statebuilder, see nglui.StateBuilder . Defaults to None.
+        view_kws (dict, optional): view_kws to configure statebuilder, see nglui.StateBuilder.
+            Defaults to None.
         point_column (str, optional): column to pull points for synapses from. Defaults to "ctr_pt_position".
-        pre_pt_root_id_col (str, optional): column to pull pre synaptic ids for synapses from. Defaults to "pre_pt_root_id".
-        post_pt_root_id_col (str, optional): column to pull post synaptic ids for synapses from. Defaults to "post_pt_root_id".
+        pre_pt_root_id_col (str, optional): column to pull pre synaptic ids for synapses from.
+            Defaults to "pre_pt_root_id".
+        post_pt_root_id_col (str, optional): column to pull post synaptic ids for synapses from.
+            Defaults to "post_pt_root_id".
         input_layer_name (str, optional): name of layer for inputs. Defaults to "syns_in".
         output_layer_name (str, optional): name of layer for outputs. Defaults to "syns_out".
-        ngl_url (str, optional): url to use for neuroglancer. Defaults to None (will use default viewer set in datastack)
-        link_text (str, optional): text to use for html return. Defaults to Neuroglancer Link
+        ngl_url (str, optional): url to use for neuroglancer.
+            Defaults to None (will use default viewer set in datastack)
+        link_text (str, optional): text to use for html return.
+            Defaults to 'Neuroglancer Link'
     Raises:
         ValueError: If the point column is not present in the synapse table
 
