@@ -430,7 +430,9 @@ def _EasyViewerFactory(compatibility_mode=False):
             with self.txn() as s:
                 if seg_colors is not None:
                     seg_colors = {
-                        str(oid): utils.parse_color(k) for oid, k in seg_colors.items() if k is not None
+                        str(oid): utils.parse_color(k)
+                        for oid, k in seg_colors.items()
+                        if k is not None
                     }
                     s.layers[layer_name]._json_data["segmentColors"] = seg_colors
 
@@ -476,16 +478,21 @@ def _EasyViewerFactory(compatibility_mode=False):
             if supervoxels_blue is None:
                 supervoxels_blue = [None for x in points_blue]
 
+            if self.state.voxel_size is None:
+                voxel_size = [4, 4, 40]
+            else:
+                voxel_size = self.state.voxel_size
+
             annos_red = neuroglancer.annotationHolder()
             for pt, sv_id in zip(points_red, supervoxels_red):
                 annos_red.annotations.append(
-                    _multicut_annotation(pt * self.state.voxel_size, seg_id, sv_id)
+                    _multicut_annotation(pt * voxel_size, seg_id, sv_id)
                 )
 
             annos_blue = neuroglancer.annotationHolder()
             for pt, sv_id in zip(points_blue, supervoxels_blue):
                 annos_blue.annotations.append(
-                    _multicut_annotation(pt * self.state.voxel_size, seg_id, sv_id)
+                    _multicut_annotation(pt * voxel_size, seg_id, sv_id)
                 )
 
             self.add_selected_objects(layer_name, [seg_id])

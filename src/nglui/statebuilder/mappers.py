@@ -26,7 +26,7 @@ def _multipoint_transform(row, pt_columns, squeeze_cols):
 
 def _data_scaler(data_resolution, viewer_resolution):
     if viewer_resolution is None:
-        return np.array([1, 1, 1]).reshape((1,3))
+        return np.array([1, 1, 1]).reshape((1, 3))
     if data_resolution is None:
         data_resolution = viewer_resolution
     return (np.array(data_resolution) / np.array(viewer_resolution)).reshape((1, 3))
@@ -263,7 +263,7 @@ class AnnotationMapperBase(object):
         return descriptions
 
     def _add_groups(self, data, annos):
-        ngroups = data.groupby(self.group_column).ngroup()
+        ngroups = data.groupby(self.group_column).ngroup().replace({-1: np.nan})
         vals, inverse = np.unique(ngroups, return_inverse=True)
         inv_inds = np.flatnonzero(~pd.isnull(vals))
         group_annos = []
