@@ -94,9 +94,10 @@ def make_point_statebuilder(
     ann_layer = AnnotationLayerConfig(
         "pts", mapping_rules=[point_mapper], linked_segmentation_layer=seg_layer.name
     )
+    if view_kws is None:
+        view_kws = {}
     return StateBuilder(
         [img_layer, seg_layer, ann_layer],
-        state_server=client.state._server_address,
         resolution=client.info.viewer_resolution(),
         client=client,
         view_kws=view_kws,
