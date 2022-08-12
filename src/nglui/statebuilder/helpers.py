@@ -161,6 +161,7 @@ def make_pre_post_statebuilder(
         view_kws = {}
     sb1 = StateBuilder(
         layers=[img_layer, seg_layer],
+        view_kws=view_kws,
         client=client,
     )
 
