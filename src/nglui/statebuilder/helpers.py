@@ -159,10 +159,7 @@ def make_pre_post_statebuilder(
 
     if view_kws is None:
         view_kws = {}
-    sb1 = StateBuilder(
-        layers=[img_layer, seg_layer],
-        client=client,
-    )
+    sb1 = StateBuilder(layers=[img_layer, seg_layer], client=client, view_kws=view_kws)
 
     state_builders = [sb1]
     if show_inputs:
