@@ -171,17 +171,12 @@ def make_pre_post_statebuilder(
         followed by optionally synapse output dataframe.
     """
 
-   
     img_layer, seg_layer = from_client(client, contrast=contrast)
     seg_layer.add_selection_map(selected_ids_column="root_id")
 
     if view_kws is None:
         view_kws = {}
-    if view_kws.get()
-    sb1 = StateBuilder(
-        layers=[img_layer, seg_layer],
-        client=client,
-    )
+    sb1 = StateBuilder(layers=[img_layer, seg_layer], client=client, view_kws=view_kws)
 
     state_builders = [sb1]
     if show_inputs:
@@ -226,20 +221,26 @@ def make_state_url(df, sb, client, ngl_url=None):
     return url
 
 
-def make_url_robust(df:pd.DataFrame, sb:StateBuilder, client:CAVEclient, shorten:str="if_long", ngl_url:str=None):
+def make_url_robust(
+    df: pd.DataFrame,
+    sb: StateBuilder,
+    client: CAVEclient,
+    shorten: str = "if_long",
+    ngl_url: str = None,
+):
     """Generate a url from a neuroglancer state. If too long, return through state server
 
     Args:
         df (pandas.DataFrame): dataframe to pass through statebuilder
         sb (nglui.statebuilder.StateBuilder): statebuilder to generate link with
         client (caveclient.CAVEclient): client to interact with state server with and get defaults from
-        shorten (str, optional): How to shorten link. one of 'if_long', 'always', 'never'. 
-            'if_long' will use the state server to shorten links longer than nglui.statebuilder.MAX_URL_LENGTH 
+        shorten (str, optional): How to shorten link. one of 'if_long', 'always', 'never'.
+            'if_long' will use the state server to shorten links longer than nglui.statebuilder.MAX_URL_LENGTH
             (set to 1,750,000).
             'always' will always use the state server to shorten the url
             'never' will always return the full url.  Defaults to "if_long".
-        ngl_url (str, optional): neuroglancer deployment to make url with. 
-            Defaults to None, which will use the default in the passed sb StateBuilder  
+        ngl_url (str, optional): neuroglancer deployment to make url with.
+            Defaults to None, which will use the default in the passed sb StateBuilder
 
     Returns:
         str: a url containing the state created by the statebuilder.
@@ -257,8 +258,17 @@ def make_url_robust(df:pd.DataFrame, sb:StateBuilder, client:CAVEclient, shorten
         raise (ValueError('shorten should be one of ["if_long", "always", "never"]'))
     return url
 
-def package_state(df:pd.DataFrame, sb:StateBuilder, client:CAVEclient, shorten:str, return_as:str, ngl_url:str, link_text:str):
-    """a function to automate creating a state from a statebuilder and 
+
+def package_state(
+    df: pd.DataFrame,
+    sb: StateBuilder,
+    client: CAVEclient,
+    shorten: str,
+    return_as: str,
+    ngl_url: str,
+    link_text: str,
+):
+    """a function to automate creating a state from a statebuilder and
     a dataframe, return it in the desired format, shortening if desired.
 
     Args:
@@ -266,7 +276,7 @@ def package_state(df:pd.DataFrame, sb:StateBuilder, client:CAVEclient, shorten:s
         sb (StateBuilder): StateBuilder to generate links with
         client (CAVEclient): caveclient to get default ngl_url and iteract with state viewer
         shorten (str): one of ["if_long", "always", "never"]
-            'if_long' will use the state server to shorten links longer than nglui.statebuilder.MAX_URL_LENGTH 
+            'if_long' will use the state server to shorten links longer than nglui.statebuilder.MAX_URL_LENGTH
             (set to 1,750,000).
             'always' will always use the state server to shorten the url
             'never' will always return the full url.  Defaults to "if_long".
