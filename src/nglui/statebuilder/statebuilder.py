@@ -30,6 +30,35 @@ class StateBuilder:
         view_kws={},
         client=None,
     ):
+        """_summary_
+
+        Args:
+            layers (list, optional): list of nglui.statebuilder.layers.LayerConfigBase to add. Defaults to [].
+            base_state (dict, optional): json state to add to. Defaults to None.
+            url_prefix (str, optional): http(s) path to neuroglancer deployment to use. 
+                Defaults to None, which will use https://neuromancer-seung-import.appspot.com
+            state_server (str, optional): state server to post links to. Defaults to None.
+            resolution (list, optional): 3 element vector controlling the viewer resolution. Defaults to None.
+            view_kws (dict, optional): dictionary controlling view parameters. Defaults to {}.
+                keys are:
+                show_slices: Boolean
+                    sets if slices are shown in the 3d view. Defaults to False.
+                layout: str
+                    `xy-3d`/`xz-3d`/`yz-3d` (sections plus 3d pane), `xy`/`yz`/`xz`/`3d` (only one pane), or `4panel` (all panes). Default is `xy-3d`.
+                show_axis_lines: Boolean
+                    determines if the axis lines are shown in the middle of each view.
+                show_scale_bar: Boolean
+                    toggles showing the scale bar.
+                orthographic : Boolean
+                    toggles orthographic view in the 3d pane.
+                position* : 3-element vector
+                    determines the centered location.
+                zoom_image : float
+                    Zoom level for the imagery in units of nm per voxel. Defaults to 8.
+                zoom_3d : float
+                    Zoom level for the 3d pane. Defaults to 2000. Smaller numbers are more zoomed in.
+            client (caveclient.CAVEclient, optional): a caveclient to get defaults from. Defaults to None.
+        """
         if client is not None:
             if state_server is None:
                 state_server = client.state.state_service_endpoint

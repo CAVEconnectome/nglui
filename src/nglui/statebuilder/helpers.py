@@ -142,6 +142,23 @@ def make_pre_post_statebuilder(
             floats between 0 and 1, by default None. If None, no contrast
             is set.
         view_kws (dict, optional): view_kws to configure statebuilder, see nglui.StateBuilder . Defaults to None.
+            keys are:
+                show_slices: Boolean
+                    sets if slices are shown in the 3d view. Defaults to False.
+                layout: str
+                    `xy-3d`/`xz-3d`/`yz-3d` (sections plus 3d pane), `xy`/`yz`/`xz`/`3d` (only one pane), or `4panel` (all panes). Default is `xy-3d`.
+                show_axis_lines: Boolean
+                    determines if the axis lines are shown in the middle of each view.
+                show_scale_bar: Boolean
+                    toggles showing the scale bar.
+                orthographic : Boolean
+                    toggles orthographic view in the 3d pane.
+                position* : 3-element vector
+                    determines the centered location.
+                zoom_image : float
+                    Zoom level for the imagery in units of nm per voxel. Defaults to 8.
+                zoom_3d : float
+                    Zoom level for the 3d pane. Defaults to 2000. Smaller numbers are more zoomed in.
         point_column (str, optional): column to pull points for synapses from. Defaults to "ctr_pt_position".
         pre_pt_root_id_col (str, optional): column to pull pre synaptic ids for synapses from. Defaults to "pre_pt_root_id".
         post_pt_root_id_col (str, optional): column to pull post synaptic ids for synapses from. Defaults to "post_pt_root_id".
@@ -154,11 +171,13 @@ def make_pre_post_statebuilder(
         followed by optionally synapse output dataframe.
     """
 
+   
     img_layer, seg_layer = from_client(client, contrast=contrast)
     seg_layer.add_selection_map(selected_ids_column="root_id")
 
     if view_kws is None:
         view_kws = {}
+    if view_kws.get()
     sb1 = StateBuilder(
         layers=[img_layer, seg_layer],
         client=client,
@@ -207,8 +226,25 @@ def make_state_url(df, sb, client, ngl_url=None):
     return url
 
 
-def make_url_robust(df, sb, client, shorten="if_long", ngl_url=None):
-    """Generate a url from a neuroglancer state. If too long, return through state server"""
+def make_url_robust(df:pd.DataFrame, sb:StateBuilder, client:CAVEclient, shorten:str="if_long", ngl_url:str=None):
+    """Generate a url from a neuroglancer state. If too long, return through state server
+
+    Args:
+        df (pandas.DataFrame): dataframe to pass through statebuilder
+        sb (nglui.statebuilder.StateBuilder): statebuilder to generate link with
+        client (caveclient.CAVEclient): client to interact with state server with and get defaults from
+        shorten (str, optional): How to shorten link. one of 'if_long', 'always', 'never'. 
+            'if_long' will use the state server to shorten links longer than nglui.statebuilder.MAX_URL_LENGTH 
+            (set to 1,750,000).
+            'always' will always use the state server to shorten the url
+            'never' will always return the full url.  Defaults to "if_long".
+        ngl_url (str, optional): neuroglancer deployment to make url with. 
+            Defaults to None, which will use the default in the passed sb StateBuilder  
+
+    Returns:
+        str: a url containing the state created by the statebuilder.
+    """
+
     if shorten == "if_long":
         url = sb.render_state(df, return_as="url", url_prefix=ngl_url)
         if len(url) > MAX_URL_LENGTH:
@@ -221,8 +257,29 @@ def make_url_robust(df, sb, client, shorten="if_long", ngl_url=None):
         raise (ValueError('shorten should be one of ["if_long", "always", "never"]'))
     return url
 
+def package_state(df:pd.DataFrame, sb:StateBuilder, client:CAVEclient, shorten:str, return_as:str, ngl_url:str, link_text:str):
+    """a function to automate creating a state from a statebuilder and 
+    a dataframe, return it in the desired format, shortening if desired.
 
-def package_state(df, sb, client, shorten, return_as, ngl_url, link_text):
+    Args:
+        df (pd.DataFrame): dataframe to pass to the sb:StateBuilder
+        sb (StateBuilder): StateBuilder to generate links with
+        client (CAVEclient): caveclient to get default ngl_url and iteract with state viewer
+        shorten (str): one of ["if_long", "always", "never"]
+            'if_long' will use the state server to shorten links longer than nglui.statebuilder.MAX_URL_LENGTH 
+            (set to 1,750,000).
+            'always' will always use the state server to shorten the url
+            'never' will always return the full url.  Defaults to "if_long".
+        return_as (str): one of ['html', 'url', 'json']
+            'html' will return an ipython clickable link
+            'url' will return a string with the url
+            'json' will return the state as a dictionary
+        ngl_url (str): neuroglancer url to use, if None will use client.info.viewer_site()
+        link_text (str): if returning as html, what text to show for the link.
+
+    Returns:
+       HTML, str or dict : state in format specified by return_as
+    """
     if ngl_url is None:
         ngl_url = client.info.viewer_site()
         if ngl_url is None:
@@ -287,6 +344,23 @@ def make_synapse_neuroglancer_link(
             If None will default to client.info.viewer_site().
             If that is None will default to DEFAULT_NGL.
         view_kws (dict, optional): viewer dictionary to control neuroglancer viewer. Defaults to None.
+            keys are:
+                show_slices: Boolean
+                    sets if slices are shown in the 3d view. Defaults to False.
+                layout: str
+                    `xy-3d`/`xz-3d`/`yz-3d` (sections plus 3d pane), `xy`/`yz`/`xz`/`3d` (only one pane), or `4panel` (all panes). Default is `xy-3d`.
+                show_axis_lines: Boolean
+                    determines if the axis lines are shown in the middle of each view.
+                show_scale_bar: Boolean
+                    toggles showing the scale bar.
+                orthographic : Boolean
+                    toggles orthographic view in the 3d pane.
+                position* : 3-element vector
+                    determines the centered location.
+                zoom_image : float
+                    Zoom level for the imagery in units of nm per voxel. Defaults to 8.
+                zoom_3d : float
+                    Zoom level for the 3d pane. Defaults to 2000. Smaller numbers are more zoomed in.
         pre_post_columns (list, optional): [pre,post] column names for pre and post synaptic root_ids. Defaults to None.
             If None will assume ['pre_pt_root_id', 'post_pt_root_id']
         neuroglancer_link_text (str, optional): Text to use in returning html link. Defaults to "Neuroglancer Link".
@@ -380,6 +454,23 @@ def make_neuron_neuroglancer_link(
         timestamp (datetime.datetime, optional): timestamp to do query. Defaults to None, will use materialized version.
         view_kws (dict, optional): view_kws to configure statebuilder, see nglui.StateBuilder.
             Defaults to None.
+            keys are:
+                show_slices: Boolean
+                    sets if slices are shown in the 3d view. Defaults to False.
+                layout: str
+                    `xy-3d`/`xz-3d`/`yz-3d` (sections plus 3d pane), `xy`/`yz`/`xz`/`3d` (only one pane), or `4panel` (all panes). Default is `xy-3d`.
+                show_axis_lines: Boolean
+                    determines if the axis lines are shown in the middle of each view.
+                show_scale_bar: Boolean
+                    toggles showing the scale bar.
+                orthographic : Boolean
+                    toggles orthographic view in the 3d pane.
+                position* : 3-element vector
+                    determines the centered location.
+                zoom_image : float
+                    Zoom level for the imagery in units of nm per voxel. Defaults to 8.
+                zoom_3d : float
+                    Zoom level for the 3d pane. Defaults to 2000. Smaller numbers are more zoomed in.
         point_column (str, optional): column to pull points for synapses from. Defaults to "ctr_pt_position".
         pre_pt_root_id_col (str, optional): column to pull pre synaptic ids for synapses from.
             Defaults to "pre_pt_root_id".
