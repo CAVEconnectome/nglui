@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from ..easyviewer.base import SEGMENTATION_LAYER_TYPES
 
 
@@ -176,6 +177,10 @@ def _get_line_annotations(state, layer_name):
     return _get_type_annotations(state, layer_name, "line")
 
 
+def _get_bbox_annotations(state, layer_name):
+    return _get_type_annotations(state, layer_name, "line")
+
+
 def _get_group_annotations(state, layer_name):
     return _get_type_annotations(state, layer_name, "collection")
 
@@ -196,6 +201,12 @@ def _extract_line_data(annos):
     return [ptA, ptB]
 
 
+def _extract_bbox_data(annos):
+    ptA = [anno.get("pointA") for anno in annos]
+    ptB = [anno.get("pointB") for anno in annos]
+    return [ptA, ptB]
+
+
 def _extract_group_data(annos):
     pt = [anno.get("source") for anno in annos]
     anno_id = [anno.get("id") for anno in annos]
@@ -206,6 +217,7 @@ _get_map = {
     "point": _get_point_annotations,
     "line": _get_line_annotations,
     "sphere": _get_sphere_annotations,
+    "bbox": _get_bbox_annotations,
     "group": _get_group_annotations,
 }
 
@@ -213,6 +225,7 @@ _extraction_map = {
     "point": _extract_point_data,
     "line": _extract_line_data,
     "sphere": _extract_sphere_data,
+    "bbox": _extract_bbox_data,
     "group": _extract_group_data,
 }
 
@@ -329,6 +342,49 @@ def line_annotations(
     """
     return _generic_annotations(
         state, layer_name, description, linked_segmentations, tags, group, "line"
+    )
+
+
+def bbox_annotations(
+    state,
+    layer_name,
+    description=False,
+    linked_segmentations=False,
+    tags=False,
+    group=False,
+):
+    """Get all bounding box annotation points and other info from a layer.
+
+    Parameters
+    ----------
+    state : dict
+        Neuroglancer state as JSON dict
+    layer_name : str
+        Layer name
+    description : bool, optional
+        If True, also returns descriptions as well. By default False
+    linked_segmentations : bool, optional
+        If True, also returns list of linked segmentations, by default False
+    tags : bool, optional
+        If True, also returns list of tags, by default False
+
+    Returns
+    -------
+    anno_points_A : list
+        List of N 3-element points (as list) of the first point in each bbox.
+    anno_points_B : list
+        List of N 3-element points (as list) of the second point in each bbox.
+    anno_descriptions : list
+        List of N strings (or None), only returned if description=True.
+    anno_linked_segmentations : list
+        List of N lists of object ids. Only returned if linked_segmentations=True.
+    anno_tags : list
+        List of N lists of tag ids. Only returned if tags=True.
+    anno_group : list
+        List of group ids (as string) or None for annotations. Only returned if group=True
+    """
+    return _generic_annotations(
+        state, layer_name, description, linked_segmentations, tags, group, "bbox"
     )
 
 
@@ -482,3 +538,138 @@ def extract_multicut(state, seg_layer=None):
             svids.append(np.nan)
 
     return np.array(pts), np.array(side), np.array(svids), root_id
+
+
+def annotation_dataframe(state):
+    """Return all annotations across all annotation layers in the state.
+
+    Parameters
+    ----------
+    state : dict
+        Neuroglancer state dictionary
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe with columns layer, anno_type, point, pointB, linked_segmentation, tags, anno_id, group_id, description.
+    """
+
+    lns = []
+    points = []
+    anno_types = []
+    pointBs = []
+    linked_segs = []
+    tags = []
+    group_ids = []
+    descs = []
+
+    for ln in annotation_layers(state):
+        # Points
+        p_pt, p_desc, p_seg, p_tag, p_grp = point_annotations(
+            state,
+            ln,
+            description=True,
+            linked_segmentations=True,
+            tags=True,
+            group=True,
+        )
+        n_p_pts = len(p_pt)
+        p_type = ["point"] * n_p_pts
+        p_ln = [ln] * n_p_pts
+        p_ptB = [np.nan] * n_p_pts
+
+        lns.append(p_ln)
+        points.append(p_pt)
+        anno_types.append(p_type)
+        pointBs.append(p_ptB)
+        linked_segs.append(p_seg)
+        tags.append(p_tag)
+        group_ids.append(p_grp)
+        descs.append(p_desc)
+
+        # Lines
+        l_ptA, l_ptB, l_desc, l_seg, l_tag, l_grp = line_annotations(
+            state,
+            ln,
+            description=True,
+            linked_segmentations=True,
+            tags=True,
+            group=True,
+        )
+        n_l_pts = len(l_ptA)
+        l_type = ["line"] * n_l_pts
+        l_ln = [ln] * n_l_pts
+
+        lns.append(l_ln)
+        points.append(l_ptA)
+        anno_types.append(l_type)
+        pointBs.append(l_ptB)
+        linked_segs.append(l_seg)
+        tags.append(l_tag)
+        group_ids.append(l_grp)
+        descs.append(l_desc)
+
+        # Spheres
+        s_ptA, s_ptB, s_desc, s_seg, s_tag, s_grp = sphere_annotations(
+            state,
+            ln,
+            description=True,
+            linked_segmentations=True,
+            tags=True,
+            group=True,
+        )
+        n_s_pts = len(s_ptA)
+        s_type = ["sphere"] * n_s_pts
+        s_ln = [ln] * n_s_pts
+
+        lns.append(s_ln)
+        points.append(s_ptA)
+        anno_types.append(s_type)
+        pointBs.append(s_ptB)
+        linked_segs.append(s_seg)
+        tags.append(s_tag)
+        group_ids.append(s_grp)
+        descs.append(s_desc)
+
+        # Bboxes
+        b_ptA, b_ptB, b_desc, b_seg, b_tag, b_grp = bbox_annotations(
+            state,
+            ln,
+            description=True,
+            linked_segmentations=True,
+            tags=True,
+            group=True,
+        )
+        n_b_pts = len(b_ptA)
+        b_type = ["bbox"] * n_b_pts
+        b_ln = [ln] * n_b_pts
+
+        lns.append(b_ln)
+        points.append(b_ptA)
+        anno_types.append(b_type)
+        pointBs.append(b_ptB)
+        linked_segs.append(b_seg)
+        tags.append(b_tag)
+        group_ids.append(b_grp)
+        descs.append(b_desc)
+
+    def _concat_list(d):
+        d_out = []
+        for x in d:
+            for y in x:
+                d_out.append(y)
+        return d_out
+
+    df = pd.DataFrame(
+        {
+            "layer": _concat_list(lns),
+            "anno_type": _concat_list(anno_types),
+            "point": _concat_list(points),
+            "pointB": _concat_list(pointBs),
+            "linked_segmentation": _concat_list(linked_segs),
+            "tags": _concat_list(tags),
+            "group_id": _concat_list(group_ids),
+            "description": _concat_list(descs),
+        }
+    )
+    return df
