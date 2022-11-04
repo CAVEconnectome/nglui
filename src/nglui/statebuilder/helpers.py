@@ -263,10 +263,10 @@ def package_state(
     df: pd.DataFrame,
     sb: StateBuilder,
     client: CAVEclient,
-    shorten: str,
-    return_as: str,
-    ngl_url: str,
-    link_text: str,
+    shorten: str = "if_long",
+    return_as: str = "url",
+    ngl_url: str = None,
+    link_text: str = "Neuroglancer Link",
 ):
     """a function to automate creating a state from a statebuilder and
     a dataframe, return it in the desired format, shortening if desired.
