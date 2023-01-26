@@ -146,7 +146,7 @@ class AnnotationMapperBase(object):
         share_linked_segmentations,
         multipoint,
         collapse_groups,
-        split_points=False,
+        split_positions=False,
         mapping_set=None,
     ):
 
@@ -163,7 +163,7 @@ class AnnotationMapperBase(object):
             share_linked_segmentations=share_linked_segmentations,
             multipoint=multipoint,
             collapse_groups=collapse_groups,
-            split_points=split_points,
+            split_positions=split_positions,
             mapping_set=mapping_set,
         )
         self._tag_map = None
@@ -225,8 +225,8 @@ class AnnotationMapperBase(object):
             return pd.DataFrame.from_records([r for r in chain.from_iterable(rows)])
 
     @property
-    def split_points(self):
-        return self._config.get('split_points')
+    def split_positions(self):
+        return self._config.get('split_positions')
 
     @property
     def mapping_set(self):
@@ -276,13 +276,14 @@ class AnnotationMapperBase(object):
         return anno_tags
 
     def _process_columns(self, data, skip_columns=[]):
-        if self.split_points and not self.array_data:
+        if self.split_positions and not self.array_data:
             data = data.copy()
             for col in self.data_columns:
                 if col in skip_columns:
                     continue
                 split_cols = [f'{col}_{suf}' for suf in ["x", "y", "z"]]
                 data[col] = np.vstack(data[split_cols].values).tolist()
+            return data
         else:
             return data
 
@@ -381,6 +382,7 @@ class PointMapper(AnnotationMapperBase):
         set_position=False,
         multipoint=False,
         collapse_groups=False,
+        split_positions=False,
         mapping_set=None,
     ):
         super(PointMapper, self).__init__(
@@ -395,6 +397,7 @@ class PointMapper(AnnotationMapperBase):
             set_position=set_position,
             multipoint=multipoint,
             collapse_groups=collapse_groups,
+            split_positions=split_positions,
             mapping_set=mapping_set,
         )
 
@@ -483,6 +486,7 @@ class LineMapper(AnnotationMapperBase):
         set_position=False,
         multipoint=False,
         collapse_groups=False,
+        split_positions=False,
         mapping_set=None,
     ):
         super(LineMapper, self).__init__(
@@ -497,6 +501,7 @@ class LineMapper(AnnotationMapperBase):
             set_position=set_position,
             multipoint=multipoint,
             collapse_groups=collapse_groups,
+            split_positions=split_positions,
             mapping_set=mapping_set,
         )
 
@@ -589,6 +594,7 @@ class SphereMapper(AnnotationMapperBase):
         set_position=False,
         multipoint=False,
         collapse_groups=False,
+        split_positions=False,
         mapping_set=None,
     ):
         super(SphereMapper, self).__init__(
@@ -603,6 +609,7 @@ class SphereMapper(AnnotationMapperBase):
             set_position=set_position,
             multipoint=multipoint,
             collapse_groups=collapse_groups,
+            split_positions=split_positions,
             mapping_set=mapping_set,
         )
         self._z_multiplier = z_multiplier
@@ -706,6 +713,7 @@ class BoundingBoxMapper(AnnotationMapperBase):
         set_position=False,
         multipoint=False,
         collapse_groups=False,
+        split_positions=False,
         mapping_set=None,
     ):
         super(BoundingBoxMapper, self).__init__(
@@ -720,6 +728,7 @@ class BoundingBoxMapper(AnnotationMapperBase):
             set_position=set_position,
             multipoint=multipoint,
             collapse_groups=collapse_groups,
+            split_positions=split_positions,
             mapping_set=mapping_set,
         )
 
