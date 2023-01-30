@@ -4,7 +4,6 @@ import pandas as pd
 from collections.abc import Collection
 from itertools import chain
 
-
 def _multipoint_transform(row, pt_columns, squeeze_cols):
     """Reshape dataframe to accomodate multiple points in a single row"""
     pts = {pcol: np.atleast_2d(row[pcol]) for pcol in pt_columns}
@@ -49,8 +48,6 @@ class SelectionMapper(object):
         If set, assumes data is passed as a dictionary and uses this string to as the key for the data to use.
         Note that using a mapping_set for one Mapper requires all Mappers use them. You cannot mix and match
         specificed mapping sets and ordered lists.
-
-
     """
 
     def __init__(
@@ -275,6 +272,16 @@ class AnnotationMapperBase(object):
             anno_tags = [[None] for x in range(len(data))]
         return anno_tags
 
+
+    def _parse_data(self, data):
+        if self.mapping_set is not None:
+            if not isinstance(data, dict):
+                raise ValueError('If mapping sets are used, dataframes must be provided as values in a dictionary')
+            data = data.get(self.mapping_set)
+            if data is None:
+                raise Warning(f'Mapping set "{self.mapping_set}" not found in data')
+        return data
+
     def _process_columns(self, data, skip_columns=[]):
         if self.split_positions and not self.array_data:
             data = data.copy()
@@ -286,6 +293,21 @@ class AnnotationMapperBase(object):
             return data
         else:
             return data
+
+    def _preprocess_data(self, data, skip_columns=[], squeeze_cols=[]):
+        data = self._parse_data(data)
+        data = self._process_columns(data, skip_columns=skip_columns)
+        data = self._process_array_data(data)
+
+        if self.multipoint:
+            data = self.multipoint_reshape(
+                data, pt_columns=self.data_columns, squeeze_cols=squeeze_cols
+            )
+        return data
+
+    def _process_array_data(self, data):
+        # Set per subclass
+        return None
 
     def _render_data(self, data, data_resolution, viewer_resolution):
         # Set per subclass
@@ -330,6 +352,9 @@ class AnnotationMapperBase(object):
 
 
     def _get_position(self, data, data_resolution=None, viewer_resolution=None):
+        # Parse data because get_position is called by the layer, not the render_annotation fucntion.
+        data = self._preprocess_data(data, skip_columns=self.data_columns[1:])
+
         if len(data) > 0 and self.set_position is True:
             pt = np.atleast_2d(data[self.data_columns[0]].iloc[0])[0]
             if data_resolution and viewer_resolution:
@@ -379,7 +404,7 @@ class PointMapper(AnnotationMapperBase):
         group_column=None,
         gather_linked_segmentations=True,
         share_linked_segmentations=False,
-        set_position=False,
+        set_position=True,
         multipoint=False,
         collapse_groups=False,
         split_positions=False,
@@ -404,23 +429,14 @@ class PointMapper(AnnotationMapperBase):
     def _default_array_data_columns(self):
         return ["pt"]
 
-    def _render_data(self, data, data_resolution, viewer_resolution):
-        "Transforms data to neuroglancer annotations"
-
-        if self.mapping_set is not None:
-            if not isinstance(data, dict):
-                raise ValueError('If mapping sets are used, dataframes must be provided as values in a dictionary')
-            data = data.get(self.mapping_set)
-            if data is None:
-                raise Warning(f'Mapping set "{self.mapping_set}" not found in data')
-
-        data = self._process_columns(data)
-
+    def _process_array_data(self, data):
         if self.array_data:
             data = pd.DataFrame(data={"pt": np.array(data).tolist()})
+        return data
 
-        if self.multipoint:
-            data = self.multipoint_reshape(data, pt_columns=self.data_columns)
+    def _render_data(self, data, data_resolution, viewer_resolution):
+        "Transforms data to neuroglancer annotations"
+        data = self._preprocess_data(data)
 
         col = self.data_columns[0]
         relinds = ~pd.isnull(data[col])
@@ -483,7 +499,7 @@ class LineMapper(AnnotationMapperBase):
         group_column=None,
         gather_linked_segmentations=True,
         share_linked_segmentations=False,
-        set_position=False,
+        set_position=True,
         multipoint=False,
         collapse_groups=False,
         split_positions=False,
@@ -508,26 +524,16 @@ class LineMapper(AnnotationMapperBase):
     def _default_array_data_columns(self):
         return ["pt_a", "pt_b"]
 
-    def _render_data(self, data, data_resolution, viewer_resolution):
-        "Transforms data to neuroglancer annotations"
-        
-        if self.mapping_set is not None:
-            if not isinstance(data, dict):
-                raise ValueError('If mapping sets are used, dataframes must be provided as values in a dictionary')
-            data = data.get(self.mapping_set)
-            if data is None:
-                raise Warning(f'Mapping set "{self.mapping_set}" not found in data')
-
-        
-        data = self._process_columns(data)
-
+    def _process_array_data(self, data):
         if self.array_data:
             data = pd.DataFrame(
                 data={"pt_a": data[0].tolist(), "pt_b": data[1].tolist()}
             )
+        return data
 
-        if self.multipoint:
-            data = self.multipoint_reshape(data, pt_columns=self.data_columns)
+    def _render_data(self, data, data_resolution, viewer_resolution):
+        "Transforms data to neuroglancer annotations"
+        data = self._preprocess_data(data)
 
         colA, colB = self.data_columns
         relinds = np.logical_and(~pd.isnull(data[colA]), ~pd.isnull(data[colB]))
@@ -591,7 +597,7 @@ class SphereMapper(AnnotationMapperBase):
         gather_linked_segmentations=True,
         share_linked_segmentations=False,
         z_multiplier=0.1,
-        set_position=False,
+        set_position=True,
         multipoint=False,
         collapse_groups=False,
         split_positions=False,
@@ -617,26 +623,16 @@ class SphereMapper(AnnotationMapperBase):
     def _default_array_data_columns(self):
         return ["ctr_pt", "rad"]
 
-    def _render_data(self, data, data_resolution, viewer_resolution):
-        "Transforms data to neuroglancer annotations"
-        
-        if self.mapping_set is not None:
-            if not isinstance(data, dict):
-                raise ValueError('If mapping sets are used, dataframes must be provided as values in a dictionary')
-            data = data.get(self.mapping_set)
-            if data is None:
-                raise Warning(f'Mapping set "{self.mapping_set}" not found in data')
-
-        data = self._process_columns(data, skip_columns=['rad'])
-
+    def _process_array_data(self, data):
         if self.array_data:
             data = pd.DataFrame(data={"ctr_pt": data[0].tolist(), "rad": data[1]})
+        return data
 
+    def _render_data(self, data, data_resolution, viewer_resolution):
+        "Transforms data to neuroglancer annotations"
         col_ctr, col_rad = self.data_columns
-        if self.multipoint:
-            data = self.multipoint_reshape(
-                data, pt_columns=self.data_columns, squeeze_cols=[col_rad]
-            )
+
+        data = self._preprocess_data(data, skip_columns=['rad'], squeeze_cols=[col_rad])
 
         relinds = np.logical_and(~pd.isnull(data[col_ctr]), ~pd.isnull(data[col_rad]))
 
@@ -710,7 +706,7 @@ class BoundingBoxMapper(AnnotationMapperBase):
         group_column=None,
         gather_linked_segmentations=True,
         share_linked_segmentations=False,
-        set_position=False,
+        set_position=True,
         multipoint=False,
         collapse_groups=False,
         split_positions=False,
@@ -735,25 +731,16 @@ class BoundingBoxMapper(AnnotationMapperBase):
     def _default_array_data_columns(self):
         return ["pt_a", "pt_b"]
 
-    def _render_data(self, data, data_resolution, viewer_resolution):
-        "Transforms data to neuroglancer annotations"
-        
-        if self.mapping_set is not None:
-            if not isinstance(data, dict):
-                raise ValueError('If mapping sets are used, dataframes must be provided as values in a dictionary')
-            data = data.get(self.mapping_set)
-            if data is None:
-                raise Warning(f'Mapping set "{self.mapping_set}" not found in data')
-
-        data = self._process_columns(data)
-
+    def _process_array_data(self, data):
         if self.array_data:
             data = pd.DataFrame(
                 data={"pt_a": data[0].tolist(), "pt_b": data[1].tolist()}
             )
-
-        if self.multipoint:
-            data = self.multipoint_reshape(data, pt_columns=self.data_columns)
+        return data
+    
+    def _render_data(self, data, data_resolution, viewer_resolution):
+        "Transforms data to neuroglancer annotations"
+        data = self._preprocess_data(data)
 
         colA, colB = self.data_columns
         relinds = np.logical_and(~pd.isnull(data[colA]), ~pd.isnull(data[colB]))
