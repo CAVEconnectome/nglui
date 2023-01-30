@@ -195,7 +195,6 @@ def test_view_options(soma_df, image_layer):
         soma_df["pt_position"].loc[0]
     )
 
-
 def test_chained(pre_syn_df, post_syn_df, image_layer):
     # First state builder
 
@@ -222,6 +221,26 @@ def test_chained(pre_syn_df, post_syn_df, image_layer):
     chained_sb = ChainedStateBuilder([postsyn_sb, presyn_sb])
     state = chained_sb.render_state([post_syn_df, pre_syn_df], return_as="dict")
     assert len(state["layers"]) == 3
+
+def test_mapping_sets(pre_syn_df, post_syn_df, image_layer):
+    postsyn_mapper = LineMapper(
+        point_column_a="pre_pt_position", point_column_b="ctr_pt_position", mapping_set='post',
+    )
+    postsyn_annos = AnnotationLayerConfig(
+        "post", color="#00CCCC", mapping_rules=postsyn_mapper
+    )
+
+    presyn_mapper = LineMapper(
+        point_column_a="ctr_pt_position", point_column_b="post_pt_position", mapping_set='pre'
+    )
+    presyn_annos = AnnotationLayerConfig(
+        "pre", color="#CC1111", mapping_rules=presyn_mapper
+    )
+
+    sb = StateBuilder([image_layer, postsyn_annos, presyn_annos])
+    state = sb.render_state({'pre': pre_syn_df, 'post': post_syn_df}, return_as='dict')
+    assert len(state['layers'][1]['annotations']) > 0
+    assert len(state['layers'][2]['annotations']) > 0
 
 
 def test_split_points(split_point_df, seg_path_graphene):
