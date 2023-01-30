@@ -103,8 +103,6 @@ class SelectionMapper(object):
         """Uses the rules to generate a list of ids from a dataframe."""
         if self.mapping_set is not None:
             data = data.get(self.mapping_set)
-            if data is None:
-                raise Warning(f'Mapping set "{self.mapping_set}" not found in data')
 
         selected_ids = []
 
@@ -278,8 +276,6 @@ class AnnotationMapperBase(object):
             if not isinstance(data, dict):
                 raise ValueError('If mapping sets are used, dataframes must be provided as values in a dictionary')
             data = data.get(self.mapping_set)
-            if data is None:
-                raise Warning(f'Mapping set "{self.mapping_set}" not found in data')
         return data
 
     def _process_columns(self, data, skip_columns=[]):
@@ -296,6 +292,9 @@ class AnnotationMapperBase(object):
 
     def _preprocess_data(self, data, skip_columns=[], squeeze_cols=[]):
         data = self._parse_data(data)
+        if data is None:
+            return None
+
         data = self._process_columns(data, skip_columns=skip_columns)
         data = self._process_array_data(data)
 
@@ -354,6 +353,8 @@ class AnnotationMapperBase(object):
     def _get_position(self, data, data_resolution=None, viewer_resolution=None):
         # Parse data because get_position is called by the layer, not the render_annotation fucntion.
         data = self._preprocess_data(data, skip_columns=self.data_columns[1:])
+        if data is None:
+            return None
 
         if len(data) > 0 and self.set_position is True:
             pt = np.atleast_2d(data[self.data_columns[0]].iloc[0])[0]
@@ -437,6 +438,8 @@ class PointMapper(AnnotationMapperBase):
     def _render_data(self, data, data_resolution, viewer_resolution):
         "Transforms data to neuroglancer annotations"
         data = self._preprocess_data(data)
+        if data is None:
+            return []
 
         col = self.data_columns[0]
         relinds = ~pd.isnull(data[col])
@@ -534,6 +537,8 @@ class LineMapper(AnnotationMapperBase):
     def _render_data(self, data, data_resolution, viewer_resolution):
         "Transforms data to neuroglancer annotations"
         data = self._preprocess_data(data)
+        if data is None:
+            return []
 
         colA, colB = self.data_columns
         relinds = np.logical_and(~pd.isnull(data[colA]), ~pd.isnull(data[colB]))
@@ -633,6 +638,8 @@ class SphereMapper(AnnotationMapperBase):
         col_ctr, col_rad = self.data_columns
 
         data = self._preprocess_data(data, skip_columns=['rad'], squeeze_cols=[col_rad])
+        if data is None:
+            return []
 
         relinds = np.logical_and(~pd.isnull(data[col_ctr]), ~pd.isnull(data[col_rad]))
 
@@ -741,6 +748,8 @@ class BoundingBoxMapper(AnnotationMapperBase):
     def _render_data(self, data, data_resolution, viewer_resolution):
         "Transforms data to neuroglancer annotations"
         data = self._preprocess_data(data)
+        if data is None:
+            return []
 
         colA, colB = self.data_columns
         relinds = np.logical_and(~pd.isnull(data[colA]), ~pd.isnull(data[colB]))
@@ -808,7 +817,7 @@ class SplitPointMapper(object):
 
     def _render_data(self, df, data_resolution, viewer_resolution):
         if self.mapping_set is not None:
-            df = df.get('self.mapping_set')
+            df = df.get(self.mapping_set)
 
         if len(df) == 0:
             return None, np.atleast_2d([]), np.atleast_2d([]), []
