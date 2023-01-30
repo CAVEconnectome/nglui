@@ -13,6 +13,7 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 - **EasyViewer** At long last, you can set the background color in `set_view_options` with the argument `background_color`. As elsewhere, this uses [webcolors](https://webcolors.readthedocs.io/) to deal with color parsing, so it can take names or rgb or hex.
 - **StateBuilder** StateBuilder can now set the background color in in `view_kws` with the key `background_color`.
 - **StateBuilder** *Mapping sets* offer a new and simple iapproach to having multiple dataframes with different mapping rules.
+- **StateBuilder** Mapping rules can handle dataframes where the point position components are split across different columns, assuming that the suffices are always `_x`, `_y`, and `_z`. Set `split_positions=True` in the mapping rule to use this.
 
 ### Changed
 - **StateBuilder** Mapping rules now default to `set_position = True`.
