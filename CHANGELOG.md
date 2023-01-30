@@ -3,6 +3,16 @@
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
 <!-- ## Unreleased -->
+## [2.12.0] - 2023-01-30
+
+### Added
+- **EasyViewer** At long last, you can set the background color in `set_view_options` with the argument `background_color`. As elsewhere, this uses [webcolors](https://webcolors.readthedocs.io/) to deal with color parsing, so it can take names or rgb or hex.
+- **StateBuilder** StateBuilder can now set the background color in in `view_kws` with the key `background_color`.
+- **StateBuilder** *Mapping sets* offer a new and simple iapproach to having multiple dataframes with different mapping rules.
+
+### Changed
+- **StateBuilder** Mapping rules now default to `set_position = True`.
+
 ## [2.10.0] - 2022-08-11
 
 ### Added
