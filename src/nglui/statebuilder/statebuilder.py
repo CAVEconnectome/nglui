@@ -38,7 +38,7 @@ class StateBuilder:
             url_prefix (str, optional): http(s) path to neuroglancer deployment to use. 
                 Defaults to None, which will use https://neuromancer-seung-import.appspot.com
             state_server (str, optional): state server to post links to. Defaults to None.
-            resolution (list, optional): 3 element vector controlling the viewer resolution. Defaults to None.
+            resolution (list, optional): 3 element vector controlling the viewer resolution. Defaults to None. If None and a client is set, uses the client viewer resolution.
             view_kws (dict, optional): dictionary controlling view parameters. Defaults to {}.
                 keys are:
                 show_slices: Boolean
@@ -57,6 +57,8 @@ class StateBuilder:
                     Zoom level for the imagery in units of nm per voxel. Defaults to 8.
                 zoom_3d : float
                     Zoom level for the 3d pane. Defaults to 2000. Smaller numbers are more zoomed in.
+                background_color : str or list
+                    Sets the background color of the 3d view. Arguments can be rgb values, hex colors, or named web colors. Defaults to black.
             client (caveclient.CAVEclient, optional): a caveclient to get defaults from. Defaults to None.
         """
         if client is not None:

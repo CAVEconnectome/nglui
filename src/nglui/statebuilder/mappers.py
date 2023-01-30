@@ -4,7 +4,6 @@ import pandas as pd
 from collections.abc import Collection
 from itertools import chain
 
-
 def _multipoint_transform(row, pt_columns, squeeze_cols):
     """Reshape dataframe to accomodate multiple points in a single row"""
     pts = {pcol: np.atleast_2d(row[pcol]) for pcol in pt_columns}
@@ -41,10 +40,18 @@ class SelectionMapper(object):
         Name (or list of names) of the data columns to get ids from. Default is None.
     fixed_ids : list, optional
         List of ids to select irrespective of data.
+    fixed_id_colors : list, optional
+        List of colors associated with the fixed ids list.
+    color_column : str, optional
+        Column name with color data per row
+    mapping_set : str, optional
+        If set, assumes data is passed as a dictionary and uses this string to as the key for the data to use.
+        Note that using a mapping_set for one Mapper requires all Mappers use them. You cannot mix and match
+        specificed mapping sets and ordered lists.
     """
 
     def __init__(
-        self, data_columns=None, fixed_ids=None, fixed_id_colors=None, color_column=None
+        self, data_columns=None, fixed_ids=None, fixed_id_colors=None, color_column=None, mapping_set=None,
     ):
         if isinstance(data_columns, str):
             data_columns = [data_columns]
@@ -57,6 +64,7 @@ class SelectionMapper(object):
             fixed_ids=fixed_ids,
             fixed_id_colors=fixed_id_colors,
             color_column=color_column,
+            mapping_set=mapping_set,
         )
 
     @property
@@ -86,9 +94,20 @@ class SelectionMapper(object):
     def color_column(self):
         return self._config.get("color_column", None)
 
+    @property
+    def mapping_set(self):
+        return self._config.get("mapping_set", None)
+
+
     def selected_ids(self, data):
         """Uses the rules to generate a list of ids from a dataframe."""
+        if self.mapping_set is not None:
+            data = data.get(self.mapping_set)
+            if data is None:
+                raise Warning(f'Mapping set "{self.mapping_set}" not found in data')
+
         selected_ids = []
+
         if data is not None:
             for col in self.data_columns:
                 selected_ids.append(data[col].values.astype(np.uint64))
@@ -124,6 +143,8 @@ class AnnotationMapperBase(object):
         share_linked_segmentations,
         multipoint,
         collapse_groups,
+        split_positions=False,
+        mapping_set=None,
     ):
 
         self._config = dict(
@@ -139,6 +160,8 @@ class AnnotationMapperBase(object):
             share_linked_segmentations=share_linked_segmentations,
             multipoint=multipoint,
             collapse_groups=collapse_groups,
+            split_positions=split_positions,
+            mapping_set=mapping_set,
         )
         self._tag_map = None
 
@@ -199,6 +222,14 @@ class AnnotationMapperBase(object):
             return pd.DataFrame.from_records([r for r in chain.from_iterable(rows)])
 
     @property
+    def split_positions(self):
+        return self._config.get('split_positions')
+
+    @property
+    def mapping_set(self):
+        return self._config.get('mapping_set', None)
+
+    @property
     def tag_map(self):
         if self._tag_map is None:
             return {}
@@ -241,6 +272,43 @@ class AnnotationMapperBase(object):
             anno_tags = [[None] for x in range(len(data))]
         return anno_tags
 
+
+    def _parse_data(self, data):
+        if self.mapping_set is not None:
+            if not isinstance(data, dict):
+                raise ValueError('If mapping sets are used, dataframes must be provided as values in a dictionary')
+            data = data.get(self.mapping_set)
+            if data is None:
+                raise Warning(f'Mapping set "{self.mapping_set}" not found in data')
+        return data
+
+    def _process_columns(self, data, skip_columns=[]):
+        if self.split_positions and not self.array_data:
+            data = data.copy()
+            for col in self.data_columns:
+                if col in skip_columns:
+                    continue
+                split_cols = [f'{col}_{suf}' for suf in ["x", "y", "z"]]
+                data[col] = np.vstack(data[split_cols].values).tolist()
+            return data
+        else:
+            return data
+
+    def _preprocess_data(self, data, skip_columns=[], squeeze_cols=[]):
+        data = self._parse_data(data)
+        data = self._process_columns(data, skip_columns=skip_columns)
+        data = self._process_array_data(data)
+
+        if self.multipoint:
+            data = self.multipoint_reshape(
+                data, pt_columns=self.data_columns, squeeze_cols=squeeze_cols
+            )
+        return data
+
+    def _process_array_data(self, data):
+        # Set per subclass
+        return None
+
     def _render_data(self, data, data_resolution, viewer_resolution):
         # Set per subclass
         return None
@@ -282,7 +350,11 @@ class AnnotationMapperBase(object):
         annos.extend(group_annos)
         return annos
 
+
     def _get_position(self, data, data_resolution=None, viewer_resolution=None):
+        # Parse data because get_position is called by the layer, not the render_annotation fucntion.
+        data = self._preprocess_data(data, skip_columns=self.data_columns[1:])
+
         if len(data) > 0 and self.set_position is True:
             pt = np.atleast_2d(data[self.data_columns[0]].iloc[0])[0]
             if data_resolution and viewer_resolution:
@@ -317,6 +389,10 @@ class PointMapper(AnnotationMapperBase):
         data.
     multipoint: bool, optional
         If True, permits multiple points in a given row, sharing data in other columns. Default is False.
+    collapse_groups: bool, optional
+        If True, groups are toggled closed in the annotation view.
+    mapping_set: str, optional
+        If given, assumes data is passed as a dictionary and uses this string to as the key for the data to use.
     """
 
     def __init__(
@@ -328,9 +404,11 @@ class PointMapper(AnnotationMapperBase):
         group_column=None,
         gather_linked_segmentations=True,
         share_linked_segmentations=False,
-        set_position=False,
+        set_position=True,
         multipoint=False,
         collapse_groups=False,
+        split_positions=False,
+        mapping_set=None,
     ):
         super(PointMapper, self).__init__(
             type="point",
@@ -344,17 +422,21 @@ class PointMapper(AnnotationMapperBase):
             set_position=set_position,
             multipoint=multipoint,
             collapse_groups=collapse_groups,
+            split_positions=split_positions,
+            mapping_set=mapping_set,
         )
 
     def _default_array_data_columns(self):
         return ["pt"]
 
-    def _render_data(self, data, data_resolution, viewer_resolution):
+    def _process_array_data(self, data):
         if self.array_data:
             data = pd.DataFrame(data={"pt": np.array(data).tolist()})
+        return data
 
-        if self.multipoint:
-            data = self.multipoint_reshape(data, pt_columns=self.data_columns)
+    def _render_data(self, data, data_resolution, viewer_resolution):
+        "Transforms data to neuroglancer annotations"
+        data = self._preprocess_data(data)
 
         col = self.data_columns[0]
         relinds = ~pd.isnull(data[col])
@@ -402,8 +484,11 @@ class LineMapper(AnnotationMapperBase):
     multipoint: bool, optional
         If True, permits multiple points in a given row, sharing data in other columns.
         Each point row must have the same number of points. Default is False.
+    collapse_groups: bool, optional
+        If True, groups are toggled closed in the annotation view.
+    mapping_set: str, optional
+        If set, assumes data is passed as a dictionary and uses this string to as the key for the data to use.
     """
-
     def __init__(
         self,
         point_column_a=None,
@@ -414,9 +499,11 @@ class LineMapper(AnnotationMapperBase):
         group_column=None,
         gather_linked_segmentations=True,
         share_linked_segmentations=False,
-        set_position=False,
+        set_position=True,
         multipoint=False,
         collapse_groups=False,
+        split_positions=False,
+        mapping_set=None,
     ):
         super(LineMapper, self).__init__(
             type="line",
@@ -430,19 +517,23 @@ class LineMapper(AnnotationMapperBase):
             set_position=set_position,
             multipoint=multipoint,
             collapse_groups=collapse_groups,
+            split_positions=split_positions,
+            mapping_set=mapping_set,
         )
 
     def _default_array_data_columns(self):
         return ["pt_a", "pt_b"]
 
-    def _render_data(self, data, data_resolution, viewer_resolution):
+    def _process_array_data(self, data):
         if self.array_data:
             data = pd.DataFrame(
                 data={"pt_a": data[0].tolist(), "pt_b": data[1].tolist()}
             )
+        return data
 
-        if self.multipoint:
-            data = self.multipoint_reshape(data, pt_columns=self.data_columns)
+    def _render_data(self, data, data_resolution, viewer_resolution):
+        "Transforms data to neuroglancer annotations"
+        data = self._preprocess_data(data)
 
         colA, colB = self.data_columns
         relinds = np.logical_and(~pd.isnull(data[colA]), ~pd.isnull(data[colB]))
@@ -489,6 +580,10 @@ class SphereMapper(AnnotationMapperBase):
     multipoint: bool, optional
         If True, permits multiple points in a given row, sharing data in other columns.
         Each point row must have the same number of points. Default is False.
+    collapse_groups: bool, optional
+        If True, groups are toggled closed in the annotation view.
+    mapping_set: str, optional
+        If set, assumes data is passed as a dictionary and uses this string to as the key for the data to use.
     """
 
     def __init__(
@@ -502,9 +597,11 @@ class SphereMapper(AnnotationMapperBase):
         gather_linked_segmentations=True,
         share_linked_segmentations=False,
         z_multiplier=0.1,
-        set_position=False,
+        set_position=True,
         multipoint=False,
         collapse_groups=False,
+        split_positions=False,
+        mapping_set=None,
     ):
         super(SphereMapper, self).__init__(
             type="sphere",
@@ -518,21 +615,24 @@ class SphereMapper(AnnotationMapperBase):
             set_position=set_position,
             multipoint=multipoint,
             collapse_groups=collapse_groups,
+            split_positions=split_positions,
+            mapping_set=mapping_set,
         )
         self._z_multiplier = z_multiplier
 
     def _default_array_data_columns(self):
         return ["ctr_pt", "rad"]
 
-    def _render_data(self, data, data_resolution, viewer_resolution):
+    def _process_array_data(self, data):
         if self.array_data:
             data = pd.DataFrame(data={"ctr_pt": data[0].tolist(), "rad": data[1]})
+        return data
 
+    def _render_data(self, data, data_resolution, viewer_resolution):
+        "Transforms data to neuroglancer annotations"
         col_ctr, col_rad = self.data_columns
-        if self.multipoint:
-            data = self.multipoint_reshape(
-                data, pt_columns=self.data_columns, squeeze_cols=[col_rad]
-            )
+
+        data = self._preprocess_data(data, skip_columns=['rad'], squeeze_cols=[col_rad])
 
         relinds = np.logical_and(~pd.isnull(data[col_ctr]), ~pd.isnull(data[col_rad]))
 
@@ -567,6 +667,35 @@ class SphereMapper(AnnotationMapperBase):
 
 
 class BoundingBoxMapper(AnnotationMapperBase):
+    """Sets rules to map dataframes to bounding box annotations
+
+    Parameters
+    ----------
+    point_column_a : str
+        Column name with 3d position data for the first point of the bounding box.
+        Must be set if array_data is False (the default)
+    point_column_b : str
+        Column name with 3d position data for the second point of the bounding box.
+        Must be set if array_data is False (the default)
+    decription_column : str, optional
+        Column name with string data for annotation descriptions
+    linked_segmentation_column : str, optional
+        Column name for root ids to link to annotations
+    tag_column : str, optional
+        Column name for categorical tag data. Tags must match those set in the annotation layer.
+    group_column : str, optional
+        Column name for grouping data. Data in this row should be numeric with possible NaNs.
+        Rows with the same non-NaN value will be collected into a grouped annotation.
+    set_position : bool, optional
+        If set to True, moves the position to center on the first point in the data (using point_column_a).
+    multipoint: bool, optional
+        If True, permits multiple points in a given row, sharing data in other columns.
+        Each point row must have the same number of points. Default is False.
+    collapse_groups: bool, optional
+        If True, groups are toggled closed in the annotation view.
+    mapping_set: str, optional
+        If set, assumes data is passed as a dictionary and uses this string to as the key for the data to use.
+    """
     def __init__(
         self,
         point_column_a=None,
@@ -577,9 +706,11 @@ class BoundingBoxMapper(AnnotationMapperBase):
         group_column=None,
         gather_linked_segmentations=True,
         share_linked_segmentations=False,
-        set_position=False,
+        set_position=True,
         multipoint=False,
         collapse_groups=False,
+        split_positions=False,
+        mapping_set=None,
     ):
         super(BoundingBoxMapper, self).__init__(
             type="axis_aligned_bounding_box",
@@ -592,21 +723,24 @@ class BoundingBoxMapper(AnnotationMapperBase):
             share_linked_segmentations=share_linked_segmentations,
             set_position=set_position,
             multipoint=multipoint,
-            collapse_groups=False,
+            collapse_groups=collapse_groups,
+            split_positions=split_positions,
+            mapping_set=mapping_set,
         )
 
     def _default_array_data_columns(self):
         return ["pt_a", "pt_b"]
 
-    def _render_data(self, data, data_resolution, viewer_resolution):
-
+    def _process_array_data(self, data):
         if self.array_data:
             data = pd.DataFrame(
                 data={"pt_a": data[0].tolist(), "pt_b": data[1].tolist()}
             )
-
-        if self.multipoint:
-            data = self.multipoint_reshape(data, pt_columns=self.data_columns)
+        return data
+    
+    def _render_data(self, data, data_resolution, viewer_resolution):
+        "Transforms data to neuroglancer annotations"
+        data = self._preprocess_data(data)
 
         colA, colB = self.data_columns
         relinds = np.logical_and(~pd.isnull(data[colA]), ~pd.isnull(data[colB]))
@@ -662,6 +796,7 @@ class SplitPointMapper(object):
         team_names=["red", "blue"],
         supervoxel_column=None,
         focus=True,
+        mapping_set=None,
     ):
         self.id_column = id_column
         self.point_column = point_column
@@ -669,8 +804,12 @@ class SplitPointMapper(object):
         self.team_names = team_names
         self.supervoxel_column = supervoxel_column
         self.focus = focus
+        self.mapping_set = mapping_set
 
     def _render_data(self, df, data_resolution, viewer_resolution):
+        if self.mapping_set is not None:
+            df = df.get('self.mapping_set')
+
         if len(df) == 0:
             return None, np.atleast_2d([]), np.atleast_2d([]), []
 

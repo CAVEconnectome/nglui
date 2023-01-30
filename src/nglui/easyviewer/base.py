@@ -348,7 +348,31 @@ def _EasyViewerFactory(compatibility_mode=False):
             position=None,
             zoom_image=None,
             zoom_3d=None,
+            background_color=None,
         ):
+            """Set options relating to the neuroglancer view state. Only changes the values of the parameters provided.
+
+            Parameters
+            ----------
+            show_slices : bool, optional
+                Show slice cutout in the 3d view, by default None
+            layout : str, optional
+                Change the layout type ('xy', 'yz', 'zx', '3d', 'xy-3d', 'yz-3d', 'zx-3d', or '4panel'), by default None
+            show_axis_lines : bool, optional
+                Show the red/blue/green lines indicating the axis directions, by default None
+            show_scale_bar : bool, optional
+                Controls showing of scale bar, by default None
+            orthographic : bool, optional
+                Controls whether the 3d perspective view is orthographic or not, by default None
+            position : list, optional
+                Sets the location of center point of the view in Neuroglancer coordinates, by default None
+            zoom_image : int, optional
+                Sets the zoom factor for the imagery, by default None
+            zoom_3d : int, optional
+                Sets the zoom factor for the 3d view, by default None
+            background_color : list or str, optional
+                hex, rgb, or named color for the background of the 3d viewer, by default None
+            """
             with self.txn() as s:
                 if show_slices is not None:
                     s.showSlices = show_slices
@@ -375,6 +399,8 @@ def _EasyViewerFactory(compatibility_mode=False):
                         s.projectionScale = zoom_3d
                     else:
                         s.perspectiveZoom = zoom_3d
+                if background_color is not None:
+                    s.perspectiveViewBackgroundColor = utils.parse_color(background_color)
 
         def set_segmentation_view_options(
             self,
