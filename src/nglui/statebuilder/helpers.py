@@ -5,6 +5,7 @@ from .layers import (
     SegmentationLayerConfig,
     AnnotationLayerConfig,
     PointMapper,
+    LineMapper,
 )
 from .statebuilder import ChainedStateBuilder, StateBuilder
 from caveclient import CAVEclient
@@ -64,12 +65,74 @@ def sort_dataframe_by_root_id(
         return df.sort_values(by=[num_column, root_id_column], ascending=ascending)
 
 
+def make_line_statebuilder(
+    client: CAVEclient,
+    point_column_a="pre_pt_position",
+    point_column_b="post_pt_position",
+    linked_seg_column="pt_root_id",
+    description_column=None,
+    tag_column=None,
+    data_resolution=None,
+    group_column=None,
+    contrast=None,
+    view_kws=None,
+    point_layer_name="lines",
+    color=None,
+    split_positions=False,
+):
+    """make a state builder that puts points on a single column with a linked segmentaton id
+
+    Args:
+        client (CAVEclient): CAVEclient configured for the datastack desired
+        point_column (str, optional): column in dataframe to pull points from. Defaults to "pt_position".
+        linked_seg_column (str, optional): column to link to segmentation, None for no column. Defaults to "pt_root_id".
+        group_columns (str, or list, optional): column(s) to group annotations by, None for no grouping (default=None)
+        tag_column (str, optional): column to use for tags, None for no tags (default=None)
+        description_column (str, optional): column to use for descriptions, None for no descriptions (default=None)
+        contrast (list, optional):  list-like, optional
+            Two elements specifying the black level and white level as
+            floats between 0 and 1, by default None. If None, no contrast
+            is set.
+        view_kws (dict, optional): dict, optional
+            dictionary of view keywords to configure neuroglancer view
+        split_positions (bool, optional): whether the position column into x,y,z columns. Defaults to False.
+    Returns:
+        StateBuilder: a statebuilder to make points with linked segmentations
+    """
+    img_layer, seg_layer = from_client(client, contrast=contrast)
+    line_mapper = LineMapper(
+        point_column_a=point_column_a,
+        point_column_b=point_column_b,
+        linked_segmentation_column=linked_seg_column,
+        tag_column=tag_column,
+        description_column=description_column,
+        group_column=group_column,
+        split_positions=split_positions,
+    )
+    ann_layer = AnnotationLayerConfig(
+        point_layer_name,
+        mapping_rules=[line_mapper],
+        linked_segmentation_layer=seg_layer.name,
+        data_resolution=data_resolution,
+        color=color,
+    )
+    if view_kws is None:
+        view_kws = {}
+    return StateBuilder(
+        [img_layer, seg_layer, ann_layer],
+        client=client,
+        view_kws=view_kws,
+    )
+
+
 def make_point_statebuilder(
     client: CAVEclient,
     point_column="pt_position",
     linked_seg_column="pt_root_id",
     data_resolution=None,
     group_column=None,
+    tag_column=None,
+    description_column=None,
     contrast=None,
     view_kws=None,
     point_layer_name="pts",
@@ -83,6 +146,8 @@ def make_point_statebuilder(
         point_column (str, optional): column in dataframe to pull points from. Defaults to "pt_position".
         linked_seg_column (str, optional): column to link to segmentation, None for no column. Defaults to "pt_root_id".
         group_columns (str, or list, optional): column(s) to group annotations by, None for no grouping (default=None)
+        tag_column (str, optional): column to use for tags, None for no tags (default=None)
+        description_column (str, optional): column to use for descriptions, None for no descriptions (default=None)
         contrast (list, optional):  list-like, optional
             Two elements specifying the black level and white level as
             floats between 0 and 1, by default None. If None, no contrast
@@ -97,6 +162,8 @@ def make_point_statebuilder(
     point_mapper = PointMapper(
         point_column=point_column,
         linked_segmentation_column=linked_seg_column,
+        tag_column=tag_column,
+        description_column=description_column,
         group_column=group_column,
         split_positions=split_positions,
     )
