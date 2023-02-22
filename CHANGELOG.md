@@ -3,6 +3,11 @@
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
 <!-- ## Unreleased -->
+## [2.13.0] - 2023-02-21
+### Added
+- **StateBuilder** Adding a helper function for basic line annotation states
+- **StateBuilder** Helper functions can take `split_position` argument.
+
 ## [2.12.1] - 2023-01-30
 ### Fixed
 - **StateBuilder** Handle None data correctly with mapping sets.
