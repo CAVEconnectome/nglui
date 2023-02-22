@@ -3,6 +3,7 @@ from nglui import annotation
 import pandas as pd
 from collections.abc import Collection
 from itertools import chain
+from .utils import is_split_position, split_position_columns
 
 def _multipoint_transform(row, pt_columns, squeeze_cols):
     """Reshape dataframe to accomodate multiple points in a single row"""
@@ -21,6 +22,22 @@ def _multipoint_transform(row, pt_columns, squeeze_cols):
             for r in rows:
                 r[col] = row[col]
     return rows
+
+def _multipoint_transform_split(df, multi_columns=[]):
+    col_data = {}
+    for col in df.columns:
+        col_data[col] = []
+    for _, row in df.iterrows():
+        if len(multi_columns)>0:
+            n_pts = len(row[multi_columns[0]])
+        else:
+            n_pts = 1
+        for col in df.columns:
+            if col in multi_columns:
+                col_data[col].extend(row[col])
+            else:
+                col_data[col].extend(n_pts*[row[col]])
+    return pd.DataFrame(col_data)
 
 
 def _data_scaler(data_resolution, viewer_resolution):
@@ -141,7 +158,7 @@ class AnnotationMapperBase(object):
         share_linked_segmentations,
         multipoint,
         collapse_groups,
-        split_positions=False,
+        split_positions=None,
         mapping_set=None,
     ):
 
@@ -211,13 +228,19 @@ class AnnotationMapperBase(object):
         if data is None or len(data) == 0:
             return data
         else:
-            rows = data.apply(
-                lambda x: _multipoint_transform(
-                    x, pt_columns=pt_columns, squeeze_cols=squeeze_cols
-                ),
-                axis=1,
-            ).tolist()
-            return pd.DataFrame.from_records([r for r in chain.from_iterable(rows)])
+            if not self.split_positions:
+                rows = data.apply(
+                    lambda x: _multipoint_transform(
+                        x, pt_columns=pt_columns, squeeze_cols=squeeze_cols
+                    ),
+                    axis=1,
+                ).tolist()
+                return pd.DataFrame.from_records([r for r in chain.from_iterable(rows)])
+            else:
+                split_cols = []
+                for pt_col in pt_columns:
+                    split_cols.extend(split_position_columns(pt_col))
+                return _multipoint_transform_split(data, split_cols)
 
     @property
     def split_positions(self):
@@ -279,7 +302,20 @@ class AnnotationMapperBase(object):
         return data
 
     def _process_columns(self, data, skip_columns=[]):
-        if self.split_positions and not self.array_data:
+        if self.split_positions is not None:
+            split_positions = self.split_positions
+        else:
+            is_split = np.bool([is_split(col, data) for col in self.data_columns])
+            if np.all(~is_split):
+                split_positions = False
+            if np.any(is_split):
+                split_positions = True
+                # Check that the split applies the the correct columns, in case multiple are used
+                for col, spl in zip(self.data_columns, is_split):
+                    if spl:
+                        skip_columns.append(col)
+            
+        if split_positions and not self.array_data:
             data = data.copy()
             for col in self.data_columns:
                 if col in skip_columns:
@@ -295,13 +331,14 @@ class AnnotationMapperBase(object):
         if data is None:
             return None
 
-        data = self._process_columns(data, skip_columns=skip_columns)
-        data = self._process_array_data(data)
-
         if self.multipoint:
             data = self.multipoint_reshape(
                 data, pt_columns=self.data_columns, squeeze_cols=squeeze_cols
             )
+
+        data = self._process_columns(data, skip_columns=skip_columns)
+        data = self._process_array_data(data)
+
         return data
 
     def _process_array_data(self, data):
