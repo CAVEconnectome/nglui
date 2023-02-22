@@ -5,6 +5,7 @@ from .layers import (
     SegmentationLayerConfig,
     AnnotationLayerConfig,
     PointMapper,
+    LineMapper,
 )
 from .statebuilder import ChainedStateBuilder, StateBuilder
 from caveclient import CAVEclient
@@ -64,16 +65,20 @@ def sort_dataframe_by_root_id(
         return df.sort_values(by=[num_column, root_id_column], ascending=ascending)
 
 
-def make_point_statebuilder(
+def make_line_statebuilder(
     client: CAVEclient,
-    point_column="pt_position",
+    point_column_a="pre_pt_position",
+    point_column_b="post_pt_position",
     linked_seg_column="pt_root_id",
+    description_column=None,
+    tag_column=None,
     data_resolution=None,
     group_column=None,
     contrast=None,
     view_kws=None,
-    point_layer_name="pts",
+    point_layer_name="lines",
     color=None,
+    split_positions=False,
 ):
     """make a state builder that puts points on a single column with a linked segmentaton id
 
@@ -82,12 +87,74 @@ def make_point_statebuilder(
         point_column (str, optional): column in dataframe to pull points from. Defaults to "pt_position".
         linked_seg_column (str, optional): column to link to segmentation, None for no column. Defaults to "pt_root_id".
         group_columns (str, or list, optional): column(s) to group annotations by, None for no grouping (default=None)
+        tag_column (str, optional): column to use for tags, None for no tags (default=None)
+        description_column (str, optional): column to use for descriptions, None for no descriptions (default=None)
         contrast (list, optional):  list-like, optional
             Two elements specifying the black level and white level as
             floats between 0 and 1, by default None. If None, no contrast
             is set.
         view_kws (dict, optional): dict, optional
             dictionary of view keywords to configure neuroglancer view
+        split_positions (bool, optional): whether the position column into x,y,z columns. Defaults to False.
+    Returns:
+        StateBuilder: a statebuilder to make points with linked segmentations
+    """
+    img_layer, seg_layer = from_client(client, contrast=contrast)
+    line_mapper = LineMapper(
+        point_column_a=point_column_a,
+        point_column_b=point_column_b,
+        linked_segmentation_column=linked_seg_column,
+        tag_column=tag_column,
+        description_column=description_column,
+        group_column=group_column,
+        split_positions=split_positions,
+    )
+    ann_layer = AnnotationLayerConfig(
+        point_layer_name,
+        mapping_rules=[line_mapper],
+        linked_segmentation_layer=seg_layer.name,
+        data_resolution=data_resolution,
+        color=color,
+    )
+    if view_kws is None:
+        view_kws = {}
+    return StateBuilder(
+        [img_layer, seg_layer, ann_layer],
+        client=client,
+        view_kws=view_kws,
+    )
+
+
+def make_point_statebuilder(
+    client: CAVEclient,
+    point_column="pt_position",
+    linked_seg_column="pt_root_id",
+    data_resolution=None,
+    group_column=None,
+    tag_column=None,
+    description_column=None,
+    contrast=None,
+    view_kws=None,
+    point_layer_name="pts",
+    color=None,
+    split_positions=False,
+):
+    """make a state builder that puts points on a single column with a linked segmentaton id
+
+    Args:
+        client (CAVEclient): CAVEclient configured for the datastack desired
+        point_column (str, optional): column in dataframe to pull points from. Defaults to "pt_position".
+        linked_seg_column (str, optional): column to link to segmentation, None for no column. Defaults to "pt_root_id".
+        group_columns (str, or list, optional): column(s) to group annotations by, None for no grouping (default=None)
+        tag_column (str, optional): column to use for tags, None for no tags (default=None)
+        description_column (str, optional): column to use for descriptions, None for no descriptions (default=None)
+        contrast (list, optional):  list-like, optional
+            Two elements specifying the black level and white level as
+            floats between 0 and 1, by default None. If None, no contrast
+            is set.
+        view_kws (dict, optional): dict, optional
+            dictionary of view keywords to configure neuroglancer view
+        split_positions (bool, optional): whether the position column into x,y,z columns. Defaults to False.
     Returns:
         StateBuilder: a statebuilder to make points with linked segmentations
     """
@@ -95,7 +162,10 @@ def make_point_statebuilder(
     point_mapper = PointMapper(
         point_column=point_column,
         linked_segmentation_column=linked_seg_column,
+        tag_column=tag_column,
+        description_column=description_column,
         group_column=group_column,
+        split_positions=split_positions,
     )
     ann_layer = AnnotationLayerConfig(
         point_layer_name,
@@ -128,6 +198,7 @@ def make_pre_post_statebuilder(
     output_layer_name="syns_out",
     input_layer_color=DEFAULT_POSTSYN_COLOR,
     output_layer_color=DEFAULT_PRESYN_COLOR,
+    split_positions=False,
 ):
     """Function to generate ChainedStateBuilder with optional pre and post synaptic
     annotation layers
@@ -164,7 +235,7 @@ def make_pre_post_statebuilder(
         post_pt_root_id_col (str, optional): column to pull post synaptic ids for synapses from. Defaults to "post_pt_root_id".
         input_layer_name (str, optional): name of layer for inputs. Defaults to "syns_in".
         output_layer_name (str, optional): name of layer for outputs. Defaults to "syns_out".
-
+        split_positions (bool, optional): whether the position column is split into x,y,z columns. Defaults to False.
     Returns:
         ChainedStateBuilder: An instance of a ChainedStateBuilder configured to accept
         a list  starting with None followed by optionally synapse input dataframe
@@ -182,7 +253,9 @@ def make_pre_post_statebuilder(
     if show_inputs:
         # First state builder
         input_point_mapper = PointMapper(
-            point_column=point_column, linked_segmentation_column=pre_pt_root_id_col
+            point_column=point_column,
+            linked_segmentation_column=pre_pt_root_id_col,
+            split_positions=split_positions,
         )
         inputs_lay = AnnotationLayerConfig(
             input_layer_name,
@@ -197,6 +270,7 @@ def make_pre_post_statebuilder(
         output_point_mapper = PointMapper(
             point_column=point_column,
             linked_segmentation_column=post_pt_root_id_col,
+            split_positions=split_positions,
         )
         outputs_lay = AnnotationLayerConfig(
             output_layer_name,
@@ -326,6 +400,7 @@ def make_synapse_neuroglancer_link(
     pre_post_columns=None,
     neuroglancer_link_text="Neuroglancer Link",
     color=None,
+    split_positions=False,
 ):
     """_summary_
 
@@ -376,6 +451,7 @@ def make_synapse_neuroglancer_link(
         neuroglancer_link_text (str, optional): Text to use in returning html link. Defaults to "Neuroglancer Link".
         color (list(float) or str, optional): color of synapse points as rgb list [0,1],
             or hex string, or common name (see webcolors documentation)
+        split_positions (bool, optional): whether the position column are splits into x,y,z columns.
 
     Raises:
         ValueError: If the point_column is not in the dataframe
@@ -409,6 +485,7 @@ def make_synapse_neuroglancer_link(
         view_kws=view_kws,
         point_layer_name="synapses",
         color=color,
+        split_positions=split_positions,
     )
     return package_state(
         synapse_df, sb, client, shorten, return_as, ngl_url, neuroglancer_link_text
@@ -509,6 +586,7 @@ def make_neuron_neuroglancer_link(
             post_ids=root_ids,
             timestamp=timestamp,
             desired_resolution=client.info.viewer_resolution(),
+            split_positions=True,
         )
         data_resolution_pre = syn_in_df.attrs["dataframe_resolution"]
         if sort_inputs:
@@ -523,6 +601,7 @@ def make_neuron_neuroglancer_link(
             pre_ids=root_ids,
             timestamp=timestamp,
             desired_resolution=client.info.viewer_resolution(),
+            split_positions=True,
         )
         data_resolution_post = syn_out_df.attrs["dataframe_resolution"]
         if sort_outputs:
@@ -545,6 +624,7 @@ def make_neuron_neuroglancer_link(
         output_layer_color=output_color,
         dataframe_resolution_pre=data_resolution_pre,
         dataframe_resolution_post=data_resolution_post,
+        split_positions=True,
     )
     return package_state(dataframes, sb, client, shorten, return_as, ngl_url, link_text)
 
