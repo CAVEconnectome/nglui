@@ -301,6 +301,7 @@ def make_url_robust(
     client: CAVEclient,
     shorten: str = "if_long",
     ngl_url: str = None,
+    max_url_length = MAX_URL_LENGTH,
 ):
     """Generate a url from a neuroglancer state. If too long, return through state server
 
@@ -322,7 +323,7 @@ def make_url_robust(
 
     if shorten == "if_long":
         url = sb.render_state(df, return_as="url", url_prefix=ngl_url)
-        if len(url) > MAX_URL_LENGTH:
+        if len(url) > max_url_length:
             url = make_state_url(df, sb, client, ngl_url=ngl_url)
     elif shorten == "always":
         url = make_state_url(df, sb, client)
