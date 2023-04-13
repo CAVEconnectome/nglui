@@ -1,10 +1,6 @@
 from nglui import EasyViewer
 from nglui.easyviewer.utils import default_neuroglancer_base
-import pandas as pd
-import numpy as np
-from collections.abc import Collection
 from IPython.display import HTML
-from .utils import bucket_of_values
 
 DEFAULT_VIEW_KWS = {
     "layout": "xy-3d",

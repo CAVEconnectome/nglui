@@ -1,6 +1,8 @@
 from collections.abc import Iterable
 import numpy as np
+import re
 
+SPLIT_SUFFIXES = ['x', 'y', 'z']
 
 def bucket_of_values(col, data, item_is_array=False, array_width=3):
     """
@@ -33,3 +35,31 @@ def bucket_of_values(col, data, item_is_array=False, array_width=3):
             return np.concatenate(dataseries.values)
         else:
             return dataseries.values
+
+
+def is_split_position(pt_col, df, suffixes=SPLIT_SUFFIXES):
+    if pt_col in df.columns:
+        return True
+    prefix_found = []
+    for suf in suffixes:
+        prefix_found.append( np.any([re.search(f"^{pt_col}_{suf}", col) is not None for col in df.columns]) )
+    if np.all(prefix_found):
+        return True
+    else:
+        raise ValueError(f'Point column "{pt_col}" not found directly or as split position')
+
+def is_split_split_position(pt_col, df, suffixes=SPLIT_SUFFIXES):
+    is_split_split = []
+    for suf in suffixes:
+        split_name = pt_col.split('_')
+        expected_name = '_'.join(split_name[:-1]) + f'_{suf}_{split_name[-1]}'
+        is_split_split.append(expected_name in df.columns)
+    return np.all(is_split_split)
+    
+def assemble_split_points(pt_col, df, suffixes=SPLIT_SUFFIXES):
+    cols = split_position_columns(pt_col, suffixes)
+    return np.vstack(df[cols].values)
+
+
+def split_position_columns(pt_col, suffixes=SPLIT_SUFFIXES):
+    return [f"{pt_col}_{suf}" for suf in suffixes]
