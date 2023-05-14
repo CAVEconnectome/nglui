@@ -48,7 +48,7 @@ class LayerConfigBase(object):
     ):
         self._config = dict(
             type=type,
-            name=name,
+            name=str(name),
             source=source,
             color=color,
             active=active,
