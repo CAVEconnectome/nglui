@@ -189,11 +189,10 @@ def _EasyViewerFactory(compatibility_mode=False):
                 layer_name (str): name of layer to be displayed in neuroglancer ui.
                 layer_type (str): can be: 'points, ellipse or line' only
             """
+            if compatibility_mode:
+                annotations = [annotation_compatibility.convert_annotation(anno) for anno in annotations]
             with self.txn() as s:
-                for anno in annotations:
-                    if compatibility_mode:
-                        anno = annotation_compatibility.convert_annotation(anno)
-                    s.layers[layer_name].annotations.append(anno)
+                s.layers[layer_name].annotations.extend(annotations)
 
         def remove_annotations(self, layer_name, anno_ids):
             if isinstance(anno_ids, str):
