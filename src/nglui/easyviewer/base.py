@@ -194,6 +194,18 @@ def _EasyViewerFactory(compatibility_mode=False):
             with self.txn() as s:
                 s.layers[layer_name].annotations.extend(annotations)
 
+        def add_multilayer_annotations(self, layer_anno_dict):
+            """
+            layer_anno_dict is a layer_name to annotation list dict.
+            """
+            with self.txn() as s:
+                for ln, annos in layer_anno_dict.items():
+                    if annos is None:
+                        continue 
+                    if compatibility_mode:
+                        annos = [annotation_compatibility.convert_annotation(anno) for anno in annos]
+                    s.layers[ln].annotations.extend(annos)
+
         def remove_annotations(self, layer_name, anno_ids):
             if isinstance(anno_ids, str):
                 anno_ids = [anno_ids]
