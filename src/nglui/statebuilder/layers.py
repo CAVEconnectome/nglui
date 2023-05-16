@@ -86,22 +86,40 @@ class LayerConfigBase(object):
     def active(self):
         return self._config.get("active", False)
 
+    @active.setter
+    def active(self, val):
+        self._config["active"] = val
+
     def _render_layer(
-        self, viewer, data, compatibility_mode=False, viewer_resolution=None
+        self, viewer, data, compatibility_mode=False, viewer_resolution=None, return_annos=False
     ):
         """Applies rendering rules"""
-        self._specific_rendering(
+        annos = self._specific_rendering(
             viewer,
             data,
             compatibility_mode=compatibility_mode,
             viewer_resolution=viewer_resolution,
+            return_annos=return_annos,
         )
         if self.active:
             viewer.set_selected_layer(self.name)
-        return viewer
+        if return_annos:
+            return annos
+        else:
+            pass
+
+    def _add_layer(
+            self, viewer
+    ):
+        "Subclass implements layer addition rules"
+        pass
+
+    def _set_view_options(self, *args, **kwargs):
+        "Subclass implements own rules"
+        pass
 
     def _specific_rendering(
-        self, viewer, data, compatibility_mode=False, viewer_resolution=None
+        self, viewer, data, compatibility_mode=False, viewer_resolution=None, return_annos=False,
     ):
         """Subclasses implement specific rendering rules"""
         pass
@@ -146,10 +164,12 @@ class ImageLayerConfig(LayerConfigBase):
         self._black = black
         self._white = white
 
-    def _specific_rendering(
-        self, viewer, data, compatibility_mode=False, viewer_resolution=None
-    ):
+    def _add_layer(self, viewer):
         viewer.add_image_layer(self.name, self.source)
+
+    def _specific_rendering(
+        self, viewer, data, compatibility_mode=False, viewer_resolution=None, return_annos=False,
+    ):
         if self._contrast_controls:
             viewer.add_contrast_shader(self.name, black=self._black, white=self._white)
 
@@ -297,11 +317,12 @@ class SegmentationLayerConfig(LayerConfigBase):
             color_column=color_column,
         )
 
-    def _specific_rendering(
-        self, viewer, data, compatibility_mode=False, viewer_resolution=None
-    ):
+    def _add_layer(self, viewer):
         viewer.add_segmentation_layer(self.name, self.source)
 
+    def _specific_rendering(
+        self, viewer, data, compatibility_mode=False, viewer_resolution=None, return_annos=False,
+    ):
         if self._selection_map is not None:
             selected_ids = self._selection_map.selected_ids(data)
             colors = self._selection_map.seg_colors(data)
@@ -332,6 +353,7 @@ class SegmentationLayerConfig(LayerConfigBase):
         if not compatibility_mode:
             viewer.set_timestamp(self.name, self.timestamp)
         viewer.set_segmentation_view_options(self.name, **self._view_kws)
+        pass
 
 
 class AnnotationLayerConfig(LayerConfigBase):
@@ -419,9 +441,7 @@ class AnnotationLayerConfig(LayerConfigBase):
     def data_resolution(self):
         return self._config.get("data_resolution", None)
 
-    def _specific_rendering(
-        self, viewer, data, compatibility_mode=False, viewer_resolution=None
-    ):
+    def _add_layer(self, viewer):
         viewer.add_annotation_layer(
             self.name,
             color=self.color,
@@ -431,6 +451,28 @@ class AnnotationLayerConfig(LayerConfigBase):
             brackets_show_segmentation=self.brackets_show_segmentation,
             tags=self._tags,
         )
+
+    def _set_view_options(self, viewer, data, viewer_resolution=None):
+        pos = None
+        if data is not None:
+            if self.filter_query is not None:
+                data = data.query(self.filter_query)
+            for rule in self._annotation_map_rules:
+                pos = rule._get_position(
+                        data,
+                        data_resolution=self.data_resolution,
+                        viewer_resolution=viewer_resolution,
+                    )
+                viewer.set_view_options(
+                    position=pos
+                )
+                if pos is not None:
+                    break
+        return pos
+
+    def _specific_rendering(
+        self, viewer, data, compatibility_mode=False, viewer_resolution=None, return_annos=False,
+    ):
         annos = []
         for rule in self._annotation_map_rules:
             rule.tag_map = self._tags
@@ -445,12 +487,8 @@ class AnnotationLayerConfig(LayerConfigBase):
                             viewer_resolution=viewer_resolution,
                         )
                     )
-                    viewer.set_view_options(
-                        position=rule._get_position(
-                            data,
-                            data_resolution=self.data_resolution,
-                            viewer_resolution=viewer_resolution,
-                        )
-                    )
-
-        viewer.add_annotations(self.name, annos)
+        if return_annos:
+            return annos
+        else:
+            viewer.add_annotations(self.name, annos)
+            pass

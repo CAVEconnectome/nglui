@@ -3,6 +3,14 @@
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
 <!-- ## Unreleased -->
+## [2.14.1] - 2023-05-14
+### Fixed
+- **StateBuilder** Recast all layer names as strings to avoid issues with numeric.
+
+## [2.14.0] - 2023-04-12
+### Fixed
+- **StateBuilder** Fixed various issues with stacking multiple points into a single row.
+
 ## [2.13.0] - 2023-02-21
 ### Added
 - **StateBuilder** Adding a helper function for basic line annotation states

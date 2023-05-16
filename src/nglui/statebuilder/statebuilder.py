@@ -104,6 +104,15 @@ class StateBuilder:
             self._temp_viewer.set_resolution(self._resolution)
 
         self._temp_viewer.set_view_options(**self._view_kws)
+        for l in self._layers:
+            l._add_layer(self._temp_viewer)
+
+    def handle_positions(self, data):
+        for l in self._layers[::-1]:
+            pos = l._set_view_options(self._temp_viewer, data, viewer_resolution=self._resolution)
+            if pos is not None:
+                break
+        pass
 
     def render_state(
         self,
@@ -146,14 +155,16 @@ class StateBuilder:
         self.initialize_state(
             base_state=base_state, compatibility_mode=compatibility_mode
         )
-
-        if url_prefix is None:
-            url_prefix = self._url_prefix
+        self.handle_positions(data)
 
         self._render_layers(
             data,
             compatibility_mode=compatibility_mode,
         )
+
+
+        if url_prefix is None:
+            url_prefix = self._url_prefix
 
         if return_as == "viewer":
             return self.viewer
@@ -182,13 +193,23 @@ class StateBuilder:
             raise ValueError("No appropriate return type selected")
 
     def _render_layers(self, data, compatibility_mode):
+        # Inactivate all layers except last.
+        found_active = False
+        for l in self._layers[::-1]:
+            if l.active and not found_active:
+                found_active = True
+            else:
+                l.active = False
+        anno_dict = {}
         for layer in self._layers:
-            layer._render_layer(
+            anno_dict[layer.name] = layer._render_layer(
                 self._temp_viewer,
                 data,
                 compatibility_mode=compatibility_mode,
                 viewer_resolution=self._resolution,
+                return_annos=True,
             )
+        self._temp_viewer.add_multilayer_annotations(anno_dict)
 
     @property
     def viewer(self):

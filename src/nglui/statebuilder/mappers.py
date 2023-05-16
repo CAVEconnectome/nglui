@@ -294,11 +294,17 @@ class AnnotationMapperBase(object):
         return anno_tags
 
 
-    def _parse_data(self, data):
+    def _parse_data(self, data, first=False):
         if self.mapping_set is not None:
             if not isinstance(data, dict):
                 raise ValueError('If mapping sets are used, dataframes must be provided as values in a dictionary')
             data = data.get(self.mapping_set)
+        if first and data is not None:
+            if len(data) > 0:
+                if isinstance(data, pd.DataFrame):
+                    data = data.iloc[[0]]
+                else:
+                    data = np.array(data)[0].reshape(1,-1)
         return data
 
     def _process_columns(self, data, skip_columns=[]):
@@ -326,8 +332,8 @@ class AnnotationMapperBase(object):
         else:
             return data
 
-    def _preprocess_data(self, data, skip_columns=[], squeeze_cols=[]):
-        data = self._parse_data(data)
+    def _preprocess_data(self, data, skip_columns=[], squeeze_cols=[], first=False):
+        data = self._parse_data(data, first=first)
         if data is None:
             return None
 
@@ -388,8 +394,8 @@ class AnnotationMapperBase(object):
 
 
     def _get_position(self, data, data_resolution=None, viewer_resolution=None):
-        # Parse data because get_position is called by the layer, not the render_annotation fucntion.
-        data = self._preprocess_data(data, skip_columns=self.data_columns[1:])
+        # Parse data because get_position is called by the layer, not the render_annotation function.
+        data = self._preprocess_data(data, skip_columns=self.data_columns[1:], first=True)
         if data is None:
             return None
 
