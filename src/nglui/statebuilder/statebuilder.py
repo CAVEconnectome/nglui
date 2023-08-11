@@ -1,5 +1,6 @@
 from nglui.easyviewer import EasyViewer
 from nglui.easyviewer.utils import default_neuroglancer_base
+from nglui.easyviewer.ev_base.nglite.json_utils import encode_json
 from IPython.display import HTML
 
 DEFAULT_VIEW_KWS = {
@@ -182,11 +183,9 @@ class StateBuilder:
             self.initialize_state()
             return out
         elif return_as == "json":
-            from json import dumps
-
             out = self._temp_viewer.state.to_json()
             self.initialize_state()
-            return dumps(out)
+            return encode_json(out)
         else:
             raise ValueError("No appropriate return type selected")
 
