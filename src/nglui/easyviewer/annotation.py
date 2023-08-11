@@ -1,4 +1,4 @@
-from nglui.nglite import (
+from .ev_base.nglite import (
     LineAnnotation,
     PointAnnotation,
     EllipsoidAnnotation,

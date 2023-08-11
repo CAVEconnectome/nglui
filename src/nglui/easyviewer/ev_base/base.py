@@ -3,6 +3,8 @@ from typing import Union, List, Dict, Tuple, Optional
 
 from abc import ABC, abstractmethod
 
+SEGMENTATION_LAYER_TYPES = ["segmentation", "segmentation_with_graph"]
+
 class EasyViewerBase(ABC):
     def __init__(self):
         pass
@@ -54,7 +56,7 @@ class EasyViewerBase(ABC):
         """
         with self.txn() as s:
             s.layers[layer_name] = self._SegmentationLayer(
-                s, source=source, **kwargs
+                source=source, **kwargs
             )
     
     def add_image_layer(self, layer_name, source, **kwargs):

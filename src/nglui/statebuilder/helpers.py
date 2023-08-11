@@ -515,6 +515,7 @@ def make_neuron_neuroglancer_link(
     output_layer_name="syns_out",
     ngl_url=None,
     link_text="Neuroglancer Link",
+    target_site=None,
 ):
     """function to create a neuroglancer link view of a neuron, optionally including inputs and outputs
 
@@ -594,8 +595,6 @@ def make_neuron_neuroglancer_link(
             syn_in_df = sort_dataframe_by_root_id(
                 syn_in_df, pre_pt_root_id_col, ascending=sort_ascending, drop=True
             )
-        if point_column not in syn_in_df.columns:
-            raise ValueError("column pt_column={pt_column} not in synapse table")
         dataframes.append(syn_in_df)
     if show_outputs:
         syn_out_df = client.materialize.synapse_query(

@@ -401,7 +401,7 @@ class AnnotationMapperBase(object):
 
         if len(data) > 0 and self.set_position is True:
             pt = np.atleast_2d(data[self.data_columns[0]].iloc[0])[0]
-            if data_resolution and viewer_resolution:
+            if data_resolution is not None and viewer_resolution is not None:
                 pt = pt * np.array(data_resolution) / np.array(viewer_resolution)
             return list(pt)
         else:

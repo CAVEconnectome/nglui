@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
-from ..easyviewer.base import SEGMENTATION_LAYER_TYPES
-
+from ..easyviewer.ev_base.base import SEGMENTATION_LAYER_TYPES
 
 def layer_names(state):
     """Get all layer names in the state

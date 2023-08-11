@@ -91,13 +91,12 @@ class LayerConfigBase(object):
         self._config["active"] = val
 
     def _render_layer(
-        self, viewer, data, compatibility_mode=False, viewer_resolution=None, return_annos=False
+        self, viewer, data, viewer_resolution=None, return_annos=False
     ):
         """Applies rendering rules"""
         annos = self._specific_rendering(
             viewer,
             data,
-            compatibility_mode=compatibility_mode,
             viewer_resolution=viewer_resolution,
             return_annos=return_annos,
         )
@@ -119,7 +118,7 @@ class LayerConfigBase(object):
         pass
 
     def _specific_rendering(
-        self, viewer, data, compatibility_mode=False, viewer_resolution=None, return_annos=False,
+        self, viewer, data, viewer_resolution=None, return_annos=False,
     ):
         """Subclasses implement specific rendering rules"""
         pass
@@ -168,7 +167,7 @@ class ImageLayerConfig(LayerConfigBase):
         viewer.add_image_layer(self.name, self.source)
 
     def _specific_rendering(
-        self, viewer, data, compatibility_mode=False, viewer_resolution=None, return_annos=False,
+        self, viewer, data, viewer_resolution=None, return_annos=False,
     ):
         if self._contrast_controls:
             viewer.add_contrast_shader(self.name, black=self._black, white=self._white)
@@ -321,14 +320,14 @@ class SegmentationLayerConfig(LayerConfigBase):
         viewer.add_segmentation_layer(self.name, self.source)
 
     def _specific_rendering(
-        self, viewer, data, compatibility_mode=False, viewer_resolution=None, return_annos=False,
+        self, viewer, data, viewer_resolution=None, return_annos=False,
     ):
         if self._selection_map is not None:
             selected_ids = self._selection_map.selected_ids(data)
             colors = self._selection_map.seg_colors(data)
             viewer.add_selected_objects(self.name, selected_ids, colors)
 
-        if self._split_point_map is not None and not compatibility_mode:
+        if self._split_point_map is not None:
             (
                 seg_id,
                 points_red,
@@ -350,8 +349,7 @@ class SegmentationLayerConfig(LayerConfigBase):
                 self._split_point_map.focus,
             )
 
-        if not compatibility_mode:
-            viewer.set_timestamp(self.name, self.timestamp)
+        viewer.set_timestamp(self.name, self.timestamp)
         viewer.set_segmentation_view_options(self.name, **self._view_kws)
         pass
 
@@ -471,7 +469,7 @@ class AnnotationLayerConfig(LayerConfigBase):
         return pos
 
     def _specific_rendering(
-        self, viewer, data, compatibility_mode=False, viewer_resolution=None, return_annos=False,
+        self, viewer, data, viewer_resolution=None, return_annos=False,
     ):
         annos = []
         for rule in self._annotation_map_rules:

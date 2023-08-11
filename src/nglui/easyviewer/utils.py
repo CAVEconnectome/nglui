@@ -1,4 +1,4 @@
-from .. import nglite as neuroglancer
+from .ev_base import nglite as neuroglancer
 import numpy as np
 import pandas as pd
 import webcolors

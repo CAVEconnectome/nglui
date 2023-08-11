@@ -1,14 +1,12 @@
 # Seung lab branch of easyviewer
 
-from .base import EasyViewerBase 
+from .base import EasyViewerBase, SEGMENTATION_LAYER_TYPES
 from . import utils
 import re
-import nglite as neuroglancer
+from . import nglite as neuroglancer
 from typing import Union, List, Dict, Tuple, Optional
 from numpy import issubdtype, integer, uint64, vstack
 from collections import OrderedDict
-
-SEGMENTATION_LAYER_TYPES = ["segmentation", "segmentation_with_graph"]
 
 class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
     def __init__(self, **kwargs):
