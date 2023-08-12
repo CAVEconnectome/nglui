@@ -203,7 +203,7 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         **kwargs,
     ):
         if self.state.layers[layer_name].type not in SEGMENTATION_LAYER_TYPES:
-            return
+            raise ValueError("Layer is not a segmentation layer")
         with self.txn() as s:
             l = s.layers[layer_name]
             if alpha_selected is not None:

@@ -12,7 +12,7 @@ else:
     use_ngl = True
 from . import utils, annotation_compatibility
 
-from .base import EasyViewerBase
+from .base import EasyViewerBase, SEGMENTATION_LAYER_TYPES
 from typing import Union, List, Dict, Tuple, Optional
 from numpy import issubdtype, integer, uint64, vstack
 from collections import OrderedDict
@@ -140,7 +140,26 @@ class EasyViewerMainline(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         zoom_3d: Optional[float] = None,
         background_color: Optional[Tuple[float]] = None,
     )->None:
-        pass
+        with self.txn() as s:
+            if show_slices is not None:
+                s.showSlices = show_slices
+            if layout is not None:
+                s.layout = layout
+            if show_axis_lines is not None:
+                s.showAxisLines = show_axis_lines
+            if show_scale_bar is not None:
+                s.showScaleBar  = show_scale_bar
+            if orthographic is not None:
+                s.layout.orthographic_projection = orthographic 
+            if position is not None:
+                s.position = position
+            if zoom_image is not None:
+                s.crossSectionScale = zoom_image
+            if zoom_3d is not None:
+                s.projectionScale = zoom_3d
+            if background_color is not None:
+                s.perspectiveViewBackgroundColor = utils.parse_color(background_color)
+
 
     def set_segmentation_view_options(
         self,
@@ -150,6 +169,8 @@ class EasyViewerMainline(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         alpha_unselected: Optional[float] = None,
         **kwargs,
     ):
+        if self.state.layers[layer_name].type not in SEGMENTATION_LAYER_TYPES:
+            raise ValueError("Layer is not a segmentation layer")
         pass
 
     def set_timestamp(
