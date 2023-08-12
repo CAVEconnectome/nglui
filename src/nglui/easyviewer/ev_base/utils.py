@@ -1,5 +1,6 @@
 import numbers
 import webcolors
+import re
 
 def parse_color(clr):
     if clr is None:

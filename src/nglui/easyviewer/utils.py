@@ -8,6 +8,7 @@ import numbers
 SegmentationLayer = neuroglancer.viewer_state.SegmentationLayer
 
 default_neuroglancer_base = "https://neuromancer-seung-import.appspot.com/"
+default_mainline_neuroglancer_base = "https://ngl.cave-explorer.org/"
 
 
 def omit_nones(seg_list):
