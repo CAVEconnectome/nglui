@@ -1,5 +1,5 @@
 from nglui.easyviewer import EasyViewer
-from nglui.easyviewer.utils import default_neuroglancer_base
+from ..easyviewer.ev_base.utils import default_neuroglancer_base
 from nglui.easyviewer.ev_base.nglite.json_utils import encode_json
 from IPython.display import HTML
 

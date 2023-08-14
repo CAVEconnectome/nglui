@@ -483,6 +483,7 @@ class AnnotationLayerConfig(LayerConfigBase):
                             data,
                             data_resolution=self.data_resolution,
                             viewer_resolution=viewer_resolution,
+                            viewer=viewer,
                         )
                     )
         if return_annos:

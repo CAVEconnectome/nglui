@@ -310,3 +310,93 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
             self.set_selected_layer(layer_name)
             ctr_pt = vstack([points_red, points_blue]).mean(axis=0)
             self.set_view_options(position=ctr_pt, zoom_3d=100)
+
+    @staticmethod
+    def point_annotation(
+        point,
+        id=None,
+        description=None,
+        linked_segmentation=None,
+        tag_ids=None,
+    ):
+        return neuroglancer.point_annotation(
+            point=point,
+            id=id,
+            description=description,
+            linked_segmentation=linked_segmentation,
+            tag_ids=tag_ids,
+        )
+    
+    @staticmethod
+    def line_annotation(
+        pointA,
+        pointB,
+        id=None,
+        description=None,
+        linked_segmentation=None,
+        tag_ids=None,
+    ):
+        return neuroglancer.line_annotation(
+            a=pointA,
+            b=pointB,
+            id=id,
+            description=description,
+            linked_segmentation=linked_segmentation,
+            tag_ids=tag_ids,
+        )
+
+    @staticmethod
+    def ellipsoid_annotation(
+        center,
+        radii,
+        id=None,
+        description=None,
+        linked_segmentation=None,
+        tag_ids=None,
+    ):
+        return neuroglancer.ellipsoid_annotation(
+            center=center,
+            radii=radii,
+            id=id,
+            description=description,
+            linked_segmentation=linked_segmentation,
+            tag_ids=tag_ids,
+        )
+
+    @staticmethod
+    def bounding_box_annotation(
+        pointA,
+        pointB,
+        id=None,
+        description=None,
+        linked_segmentation=None,
+        tag_ids=None,
+    ):
+        return neuroglancer.bounding_box_annotation(
+            pointA=pointA,
+            pointB=pointB,
+            id=id,
+            description=description,
+            linked_segmentation=linked_segmentation,
+            tag_ids=tag_ids,
+        )
+    
+    @staticmethod
+    def group_annotations(
+        annotations,
+        source=None,
+        id=None,
+        return_all=True,
+        gather_linked_segmentations=True,
+        share_linked_segmentations=False,
+        children_visible=True,
+    ):
+        return neuroglancer.group_annotations(
+            annotations,
+            source=source,
+            id=id,
+            return_all=return_all,
+            gather_linked_segmentations=gather_linked_segmentations,
+            share_linked_segmentations=share_linked_segmentations,
+            children_visible=children_visible,
+        )

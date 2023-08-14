@@ -10,7 +10,7 @@ except ImportError:
     use_ngl = False
 else:
     use_ngl = True
-from . import utils, annotation_compatibility
+from . import utils
 
 from .base import EasyViewerBase, SEGMENTATION_LAYER_TYPES
 from typing import Union, List, Dict, Tuple, Optional
@@ -25,9 +25,17 @@ def nanometer_dimension(resolution):
         units="nm",
     )
 
-class EasyViewerMainline(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
+class UnservedViewer(neuroglancer.viewer_base.UnsynchronizedViewerBase):
     def __init__(self, **kwargs):
-        super(neuroglancer.UnsynchronizedViewer, self).__init__(**kwargs)
+        super().__init__(**kwargs)
+        self._default_viewer_url = kwargs.pop('default_viewer_url', utils.default_mainline_neuroglancer_base)
+
+    def get_server_url(self):
+        return self._default_viewer_url
+
+class EasyViewerMainline(UnservedViewer, EasyViewerBase):
+    def __init__(self, **kwargs):
+        super(UnservedViewer, self).__init__(**kwargs)
         super(EasyViewerBase, self).__init__(**kwargs)
 
     def load_url(self, url) -> None:
@@ -49,8 +57,7 @@ class EasyViewerMainline(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
             s.dimensions = nanometer_dimension(resolution)
 
     def set_state_server(self, state_server) -> None:
-        Warning('State server is set by neuroglancer deployment for this viewer type.')
-        pass
+        raise Warning('State server is set by neuroglancer deployment for this viewer type.')
 
     def add_annotation_layer(
         self,
@@ -72,16 +79,16 @@ class EasyViewerMainline(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         else:
             filter_by_segmentation = []
 
-        if linked_segmentation_layer is True:
+        if linked_segmentation_layer is not None:
             linked_segmentation_layer = {'segments': linked_segmentation_layer}
         else:
             linked_segmentation_layer = {}
 
         with self.txn() as s:
             new_layer = self._AnnotationLayer(
+                dimensions=self.state.dimensions,
                 linked_segmentation_layer=linked_segmentation_layer,
                 filter_by_segmentation=filter_by_segmentation,
-                dimensions=self.state.dimensions,
             )
             s.layers.append(name=layer_name, layer=new_layer)
             if color is not None:
@@ -90,16 +97,8 @@ class EasyViewerMainline(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         if tags is not None:
             raise Warning('Tags are not supported by this viewer type.')
         
-    def _convert_annotations(
-        self,
-        annotations: List) -> List:
-        return [
-            annotation_compatibility.convert_annotation(anno) for anno in annotations
-        ]
-
     def add_annotation_tags(self, layer_name, tags):
-        Warning('Annotation tags are not supported by this viewer type.')
-        pass
+        raise Warning('Annotation tags are not supported by this viewer type.')
 
     def as_url(
         self,
@@ -117,8 +116,7 @@ class EasyViewerMainline(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
 
 
     def select_annotation(self, layer_name, annotation_id):
-        Warning('Annotation selection is not supported by this viewer type.')
-        pass
+        raise Warning('Annotation selection is not supported by this viewer type.')
 
     def add_selected_objects(
             self,
@@ -178,6 +176,7 @@ class EasyViewerMainline(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         layer_name,
         timestamp: Optional[int] = None,
     ):
+        raise Warning("Timestamp setting is not yet enabled for this viewer type.")
         pass
 
     def set_multicut_points(
@@ -191,4 +190,91 @@ class EasyViewerMainline(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         focus=True,
     ):
         pass
+
+    @staticmethod
+    def point_annotation(
+        point,
+        id=None,
+        description=None,
+        linked_segmentation=None,
+    ):
+        segments = utils.omit_nones(linked_segmentation)
+        if id is None:
+            id = neuroglancer.random_token.make_random_token()
+        return neuroglancer.PointAnnotation(
+            point=list(point),
+            id=id,
+            description=description,
+            segments=[[int(x) for x in segments]],
+        )
     
+    @staticmethod
+    def line_annotation(
+        pointA,
+        pointB,
+        id=None,
+        description=None,
+        linked_segmentation=None,
+    ):
+        segments = utils.omit_nones(linked_segmentation)
+        if id is None:
+            id = neuroglancer.random_token.make_random_token()
+        return neuroglancer.LineAnnotation(
+            point_a=list(pointA),
+            point_b=list(pointB),
+            id=id,
+            description=description,
+            segments=[[int(x) for x in segments]],
+        )
+
+    @staticmethod
+    def ellipsoid_annotation(
+        center,
+        radii,
+        id=None,
+        description=None,
+        linked_segmentation=None,
+    ):
+        segments = utils.omit_nones(linked_segmentation)
+        if id is None:
+            id = neuroglancer.random_token.make_random_token()
+        return neuroglancer.EllipsoidAnnotation(
+            center=list(center),
+            radii=list(radii),
+            id=id,
+            description=description,
+            segments=[[int(x) for x in segments]],
+        )
+    
+    @staticmethod
+    def bounding_box_annotation(
+        pointA,
+        pointB,
+        id=None,
+        description=None,
+        linked_segmentation=None,
+    ):
+        segments = utils.omit_nones(linked_segmentation)
+        if id is None:
+            id = neuroglancer.random_token.make_random_token()
+        return neuroglancer.AxisAlignedBoundingBoxAnnotation(
+            point_a=list(pointA),
+            point_b=list(pointB),
+            id=id,
+            description=description,
+            segments=[[int(x) for x in segments]],
+        )
+
+    @staticmethod
+    def group_annotations(
+        annotations,
+        source=None,
+        id=None,
+        return_all=True,
+        gather_linked_segmentations=True,
+        share_linked_segmentations=False,
+        children_visible=True,
+    ):
+        raise Warning(
+            'Annotation groups are not yet supported by this viewer type.'
+        )

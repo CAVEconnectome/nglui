@@ -7,6 +7,7 @@ SEGMENTATION_LAYER_TYPES = ["segmentation", "segmentation_with_graph"]
 
 class EasyViewerBase(ABC):
     def __init__(self):
+        self._default_viewer_url = None
         pass
 
     def __repr__(self):
@@ -111,18 +112,11 @@ class EasyViewerBase(ABC):
             for ln in layer_names:
                 s.layers[ln].annotations._data = []
 
-    @abstractmethod
-    def _convert_annotations(
-            self,
-            annotations: List) -> List:
-        pass
-
     def add_annotations(
             self,
             layer_name: str,
             annotations: List,
         ):
-        annotations = self._convert_annotations(annotations)        
         with self.txn() as s:
             s.layers[layer_name].annotations.extend(annotations)
 
@@ -137,7 +131,6 @@ class EasyViewerBase(ABC):
             for ln, annos in layer_anno_dict.items():
                 if annos is None:
                     continue 
-                annos = self._convert_annotations(annos)
                 s.layers[ln].annotations.extend(annos)
 
     def remove_annotations(self, layer_name, anno_ids):
@@ -264,3 +257,69 @@ class EasyViewerBase(ABC):
     ):
         pass
     
+    @staticmethod
+    @abstractmethod
+    def point_annotation(
+        point,
+        id=None,
+        **kwargs,
+    ):
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def line_annotation(
+        pointA,
+        pointB,
+        id=None,
+        **kwargs,
+    ):
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def ellipsoid_annotation(
+        center,
+        radii,
+        id=None,
+        **kwargs,
+    ):
+        pass
+
+    @classmethod
+    def sphere_annotation(
+        cls,
+        center,
+        radius,
+        z_multiplier,
+        **kwargs,
+    ):
+        return cls.ellipsoid_annotation(
+            center,
+            [radius, radius, radius * z_multiplier],
+            **kwargs,
+        )
+
+    @staticmethod
+    @abstractmethod
+    def bounding_box_annotation(
+        pointA,
+        pointB,
+        id=None,
+        **kwargs,
+    ):
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def group_annotations(
+        annotations,
+        source=None,
+        id=None,
+        return_all=True,
+        gather_linked_segmentations=True,
+        share_linked_segmentations=False,
+        children_visible=True,
+    ):
+        pass
+
