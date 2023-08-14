@@ -114,9 +114,17 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         else:
             return ngl_url
 
+    def set_selected_layer(self, layer_name):
+        with self.txn() as s:
+            s.selected_layer = neuroglancer.SelectedLayerState({'visible': True, 'layer': layer_name}) 
 
     def select_annotation(self, layer_name, annotation_id):
+        self.set_selected_layer(layer_name)
         raise Warning('Annotation selection is not supported by this viewer type.')
+
+    def assign_colors(self, layer_name, seg_colors):
+        with self.txn() as s:
+            s.layers[layer_name].segmentColors = seg_colors
 
     def add_selected_objects(
             self,
@@ -124,7 +132,16 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
             oids: List[int],
             colors: List | Dict | None = None
         ) -> None:
-        pass
+        if issubdtype(type(oids), integer):
+            oids = [oids]
+        with self.txn() as s:
+            s.layers[segmentation_layer].segments.update(oids)
+        if colors is not None:
+            if isinstance(colors, dict):
+                self.assign_colors(segmentation_layer, colors)
+            elif len(colors) == len(oids):
+                seg_colors = {oid: clr for oid, clr in zip(oids, colors)}
+                self.assign_colors(segmentation_layer, seg_colors)
 
     def set_view_options(
         self,

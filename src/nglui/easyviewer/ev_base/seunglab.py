@@ -111,9 +111,13 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
     def select_annotation(self, layer_name, anno_id):
         if layer_name in self.layer_names:
             with self.txn() as s:
-                s.layers[layer_name]._json_data["selectedAnnotation"] = aid
+                s.layers[layer_name]._json_data["selectedAnnotation"] = id
         self.set_selected_layer(layer_name)
 
+    def set_selected_layer(self, layer_name):
+        with self.txn() as s:
+            s.selectedLayer.layer = layer_name
+        
 
     def add_selected_objects(
         self, 
@@ -137,6 +141,27 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
             elif len(colors) == len(oids):
                 seg_colors = {str(oid): clr for oid, clr in zip(oids, colors)}
                 self.assign_colors(segmentation_layer, seg_colors)
+
+
+    def assign_colors(self, layer_name, seg_colors):
+        """Assign colors to root ids in a segmentation layer
+
+        Parameters
+        ----------
+        layer_name : str,
+            Segmentation layer name
+        seg_colors : dict
+            dict with root ids as keys and colors as values.
+        """
+        with self.txn() as s:
+            if seg_colors is not None:
+                seg_colors = {
+                    str(oid): utils.parse_color(k)
+                    for oid, k in seg_colors.items()
+                    if k is not None
+                }
+                s.layers[layer_name]._json_data["segmentColors"] = seg_colors
+
  
 
     def set_view_options(

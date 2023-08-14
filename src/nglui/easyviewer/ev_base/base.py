@@ -167,9 +167,9 @@ class EasyViewerBase(ABC):
     ) -> str:
         pass
 
+    @abstractmethod
     def set_selected_layer(self, layer_name):
-        with self.txn() as s:
-            s.selectedLayer.layer = layer_name
+        pass
 
     @abstractmethod
     def select_annotation(self, layer_name, anno_id):
@@ -225,6 +225,7 @@ class EasyViewerBase(ABC):
     ):
         pass
 
+    @abstractmethod
     def assign_colors(self, layer_name, seg_colors):
         """Assign colors to root ids in a segmentation layer
 
@@ -235,14 +236,7 @@ class EasyViewerBase(ABC):
         seg_colors : dict
             dict with root ids as keys and colors as values.
         """
-        with self.txn() as s:
-            if seg_colors is not None:
-                seg_colors = {
-                    str(oid): utils.parse_color(k)
-                    for oid, k in seg_colors.items()
-                    if k is not None
-                }
-                s.layers[layer_name]._json_data["segmentColors"] = seg_colors
+        pass
 
     @abstractmethod
     def set_multicut_points(
