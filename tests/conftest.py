@@ -9,6 +9,9 @@ import json
 def viewer():
     return EasyViewer(target_site='seunglab')
 
+@pytest.fixture(scope="session")
+def viewer_cave_explorer():
+    return EasyViewer(target_site='mainline')
 
 @pytest.fixture(scope="session")
 def img_path():
