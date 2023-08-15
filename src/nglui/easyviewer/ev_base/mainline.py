@@ -220,7 +220,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         supervoxels_blue=None,
         focus=True,
     ):
-        pass
+        Warning('Setting multicut is not yet enabled for this viewer type')
 
     @staticmethod
     def point_annotation(

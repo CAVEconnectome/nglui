@@ -1,8 +1,7 @@
 import pytest
 import numpy as np
-import pandas as pd
 from collections import OrderedDict
-from nglui.statebuilder import *
+from nglui.statebuilder import (ImageLayerConfig, SegmentationLayerConfig, AnnotationLayerConfig, StateBuilder, PointMapper, LineMapper, SphereMapper, SplitPointMapper, ChainedStateBuilder)
 
 
 @pytest.fixture
@@ -56,8 +55,8 @@ def test_segmentation_layer(soma_df, seg_path_precomputed):
     sb = StateBuilder(layers=[seg_layer])
     state = sb.render_state(soma_df, return_as="dict")
     print(state["layers"])
-    assert "648518346349538466" in state["layers"][0]["segments"]
-    assert "1000" in state["layers"][0]["segments"]
+    assert 648518346349538466 in state["layers"][0]["segments"]
+    assert 1000 in state["layers"][0]["segments"]
 
 
 def test_segmentation_layer_color(soma_df, seg_path_precomputed):
@@ -70,8 +69,7 @@ def test_segmentation_layer_color(soma_df, seg_path_precomputed):
     )
     sb = StateBuilder(layers=[seg_layer])
     state = sb.render_state(soma_df, return_as="dict")
-    print(state["layers"])
-    assert state["layers"][0]["segmentColors"]["648518346349538715"] == "#e32f27"
+    assert state["layers"][0]['segmentColors']["648518346349538715"] == "#e32f27"
 
 
 def test_segmentation_layer_options(soma_df, seg_path_precomputed):
@@ -143,7 +141,7 @@ def test_annotations_linked(soma_df, soma_df_Int64, seg_path_precomputed):
 
     sb = StateBuilder([seg_layer, anno_layer])
     state = sb.render_state(soma_df, return_as="dict")
-    assert "648518346349538715" in state["layers"][1]["annotations"][3]["segments"]
+    assert 648518346349538715 in state["layers"][1]["annotations"][3]["segments"]
 
     state = sb.render_state(soma_df_Int64, return_as="dict")
     assert len(state["layers"][1]["annotations"][0]["segments"]) == 0
@@ -157,7 +155,7 @@ def test_annotation_tags(soma_df):
 
     sb = StateBuilder([anno_layer])
     state = sb.render_state(soma_df, return_as="dict")
-    assert '2' in state["layers"][0]["annotations"][1]["tagIds"]
+    assert 2 in state["layers"][0]["annotations"][1]["tagIds"]
 
 
 def test_annotation_groups(pre_syn_df):

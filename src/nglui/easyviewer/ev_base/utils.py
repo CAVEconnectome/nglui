@@ -1,12 +1,9 @@
-from . import nglite as neuroglancer
 import numpy as np
 import pandas as pd
 import webcolors
 import re
 import numbers
 from urllib.parse import urlparse
-
-SegmentationLayer = neuroglancer.viewer_state.SegmentationLayer
 
 default_neuroglancer_base = "https://neuromancer-seung-import.appspot.com/"
 default_mainline_neuroglancer_base = "https://ngl.cave-explorer.org/"

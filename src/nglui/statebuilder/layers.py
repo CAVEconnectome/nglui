@@ -338,6 +338,7 @@ class SegmentationLayerConfig(LayerConfigBase):
                 data,
                 data_resolution=self.data_resolution,
                 viewer_resolution=viewer_resolution,
+                viewer=viewer,
             )
             viewer.set_multicut_points(
                 self.name,

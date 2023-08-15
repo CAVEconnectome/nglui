@@ -180,10 +180,6 @@ class AnnotationMapperBase(object):
         self._tag_map = None
 
     @property
-    def viewer(self):
-        return self._viewer
-
-    @property
     def type(self):
         return self._config.get("type", None)
 
@@ -375,7 +371,7 @@ class AnnotationMapperBase(object):
             descriptions = [None for x in range(len(data))]
         return descriptions
 
-    def _add_groups(self, data, annos):
+    def _add_groups(self, data, annos, viewer):
         ngroups = data.groupby(self.group_column).ngroup().replace({-1: np.nan})
         vals, inverse = np.unique(ngroups, return_inverse=True)
         inv_inds = np.flatnonzero(~pd.isnull(vals))
@@ -384,7 +380,7 @@ class AnnotationMapperBase(object):
         for ii in inv_inds:
             anno_to_group = [annos[jj] for jj in np.flatnonzero(inverse == ii)]
             group_annos.append(
-                self.viewer.group_annotations(
+                viewer.group_annotations(
                     anno_to_group,
                     return_all=False,
                     gather_linked_segmentations=self.gather_linked_segmentations,
@@ -503,7 +499,7 @@ class PointMapper(AnnotationMapperBase):
             for pt, d, ls, t in zip(pts, descriptions, linked_segs, tags)
         ]
         if self.group_column is not None:
-            annos = self._add_groups(data, annos)
+            annos = self._add_groups(data, annos, viewer)
 
         return annos
 
@@ -603,7 +599,7 @@ class LineMapper(AnnotationMapperBase):
         ]
 
         if self.group_column is not None:
-            annos = self._add_groups(data, annos)
+            annos = self._add_groups(data, annos, viewer)
 
         return annos
 
@@ -714,7 +710,7 @@ class SphereMapper(AnnotationMapperBase):
         ]
 
         if self.group_column is not None:
-            annos = self._add_groups(data, annos)
+            annos = self._add_groups(data, annos, viewer)
 
         return annos
 
@@ -815,7 +811,7 @@ class BoundingBoxMapper(AnnotationMapperBase):
         ]
 
         if self.group_column is not None:
-            annos = self._add_groups(data, annos)
+            annos = self._add_groups(data, annos, viewer)
 
         return annos
 

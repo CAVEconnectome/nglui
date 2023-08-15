@@ -161,7 +161,7 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
                     for oid, k in seg_colors.items()
                     if k is not None
                 }
-                s.layers[layer_name]._json_data["segmentColors"] = seg_colors
+                s.layers[layer_name].segmentColors = seg_colors
 
  
 
@@ -402,8 +402,8 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         **kwargs,
     ):
         return neuroglancer.bounding_box_annotation(
-            pointA=pointA,
-            pointB=pointB,
+            point_a=pointA,
+            point_b=pointB,
             id=id,
             description=description,
             linked_segmentation=linked_segmentation,

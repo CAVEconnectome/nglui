@@ -19,3 +19,4 @@ from .viewer_config_state import MapEntry, PrefetchState, ScaleBarOptions
 from .equivalence_map import EquivalenceMap
 from .url_state import to_url, parse_url
 from . import skeleton
+from .annotation import *

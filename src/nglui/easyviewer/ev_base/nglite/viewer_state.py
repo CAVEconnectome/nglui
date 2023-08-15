@@ -274,6 +274,8 @@ class SegmentationLayer(Layer, _AnnotationLayerOptions):
     mesh_render_scale = meshRenderScale = wrapped_property(
         "meshRenderScale", optional(float, 10)
     )
+    segment_colors = segmentColors = wrapped_property(
+        'segmentColors', optional(typed_string_map(str)))
 
     @staticmethod
     def interpolate(a, b, t):

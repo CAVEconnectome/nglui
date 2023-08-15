@@ -7,7 +7,7 @@ import json
 
 @pytest.fixture(scope="session")
 def viewer():
-    return EasyViewer()
+    return EasyViewer(target_site='seunglab')
 
 
 @pytest.fixture(scope="session")
