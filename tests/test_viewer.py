@@ -18,7 +18,7 @@ def test_viewer_layers(viewer, img_path, seg_path_precomputed, seg_path_graphene
     assert id_val in viewer.state.layers["seg_graph"].segments
 
 
-def test_viewer_layers_mainline(viewer_cave_explorer, img_path, seg_path_precomputed, seg_path_graphene):
+def test_viewer_layers_cave_explorer(viewer_cave_explorer, img_path, seg_path_precomputed, seg_path_graphene):
     viewer_cave_explorer.add_image_layer("img", img_path)
     assert "img" in viewer_cave_explorer.layer_names
 
