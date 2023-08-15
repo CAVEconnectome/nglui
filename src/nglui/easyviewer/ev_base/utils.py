@@ -4,6 +4,7 @@ import pandas as pd
 import webcolors
 import re
 import numbers
+from urllib.parse import urlparse
 
 SegmentationLayer = neuroglancer.viewer_state.SegmentationLayer
 
@@ -35,3 +36,23 @@ def parse_color(clr):
             return webcolors.name_to_hex(clr)
     else:
         return webcolors.rgb_to_hex([int(255 * x) for x in clr])
+
+def parse_graphene_header(source, target):
+    qry = urlparse(source)
+    if qry.scheme=='graphene':
+        if target == 'seunglab':
+            return _parse_to_seunglab(qry)
+        elif target == 'mainline' or target == 'cave-explorer':
+            return _parse_to_mainline(qry)
+    else:
+        return source
+
+def _parse_to_seunglab(qry):
+    return f"{qry.scheme}://https:{qry.path}"
+
+def _parse_to_mainline(qry):
+    if 'https' in qry.netloc:
+        return f"{qry.scheme}://middleauth+https:{qry.path}"
+    else:
+        return f"{qry.scheme}://middleauth+http:{qry.path}"
+    

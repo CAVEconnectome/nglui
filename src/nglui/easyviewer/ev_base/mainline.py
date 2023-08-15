@@ -47,6 +47,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         return neuroglancer.viewer_state.ImageLayer(source=source, **kwargs)
     
     def _SegmentationLayer(self, source, **kwargs):
+        source = utils.parse_graphene_header(source, target='mainline')
         return neuroglancer.viewer_state.SegmentationLayer(source=source, **kwargs)
     
     def _AnnotationLayer(self, *args, **kwargs):
