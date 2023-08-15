@@ -57,7 +57,8 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
             s.dimensions = nanometer_dimension(resolution)
 
     def set_state_server(self, state_server) -> None:
-        raise Warning('State server is set by neuroglancer deployment for this viewer type.')
+        Warning('State server is set by neuroglancer deployment for this viewer type.')
+        pass
 
     def add_annotation_layer(
         self,
@@ -119,7 +120,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
             s.selected_layer = neuroglancer.SelectedLayerState({'visible': True, 'layer': layer_name}) 
 
     def select_annotation(self, layer_name, annotation_id):
-        self.set_selected_layer(layer_name)
+        # self.set_selected_layer(layer_name)
         raise Warning('Annotation selection is not supported by this viewer type.')
 
     def assign_colors(self, layer_name, seg_colors):
@@ -182,18 +183,30 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         alpha_selected: Optional[float] = None,
         alpha_3d: Optional[float] =None,
         alpha_unselected: Optional[float] = None,
+        silhouette_value: Optional[float] = None,
         **kwargs,
     ):
         if self.state.layers[layer_name].type not in SEGMENTATION_LAYER_TYPES:
             raise ValueError("Layer is not a segmentation layer")
-        pass
+        with self.txn() as s:
+            l = s.layers[layer_name]
+            if alpha_selected is not None:
+                l.selectedAlpha = alpha_selected
+            if alpha_3d is not None:
+                l.objectAlpha = alpha_3d
+            if alpha_unselected is not None:
+                l.notSelectedAlpha = alpha_unselected
+            if silhouette_value is not None:
+                l.meshSilhouetteRendering = silhouette_value
+            
 
     def set_timestamp(
         self,
         layer_name,
         timestamp: Optional[int] = None,
     ):
-        raise Warning("Timestamp setting is not yet enabled for this viewer type.")
+        if timestamp is not None:
+            raise Warning("Timestamp setting is not yet enabled for this viewer type.")
         pass
 
     def set_multicut_points(
@@ -214,6 +227,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         id=None,
         description=None,
         linked_segmentation=None,
+        **kwargs,
     ):
         segments = utils.omit_nones(linked_segmentation)
         if id is None:
@@ -232,6 +246,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         id=None,
         description=None,
         linked_segmentation=None,
+        **kwargs,
     ):
         segments = utils.omit_nones(linked_segmentation)
         if id is None:
@@ -251,6 +266,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         id=None,
         description=None,
         linked_segmentation=None,
+        **kwargs,
     ):
         segments = utils.omit_nones(linked_segmentation)
         if id is None:
@@ -270,6 +286,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         id=None,
         description=None,
         linked_segmentation=None,
+        **kwargs,
     ):
         segments = utils.omit_nones(linked_segmentation)
         if id is None:
@@ -291,7 +308,9 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         gather_linked_segmentations=True,
         share_linked_segmentations=False,
         children_visible=True,
+        **kwargs,
     ):
-        raise Warning(
+        Warning(
             'Annotation groups are not yet supported by this viewer type.'
         )
+        pass

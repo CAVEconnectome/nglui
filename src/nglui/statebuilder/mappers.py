@@ -392,7 +392,7 @@ class AnnotationMapperBase(object):
                     children_visible=not self.collapse_groups,
                 )
             )
-        annos.extend(group_annos)
+        annos.extend([g for g in group_annos if g is not None])
         return annos
 
 

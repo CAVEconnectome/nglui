@@ -25,6 +25,7 @@ class StateBuilder:
         resolution=None,
         view_kws={},
         client=None,
+        target_site=None,
     ):
         """_summary_
 
@@ -73,6 +74,7 @@ class StateBuilder:
         self._resolution = resolution
         self._url_prefix = url_prefix
         self._state_server = state_server
+        self._target_site = target_site
 
         base_kws = DEFAULT_VIEW_KWS.copy()
         base_kws.update(view_kws)
@@ -152,6 +154,9 @@ class StateBuilder:
         """
         if base_state is None:
             base_state = self._base_state
+        if target_site is None:
+            target_site = self._target_site
+
         self.initialize_state(
             base_state=base_state, target_site=target_site
         )

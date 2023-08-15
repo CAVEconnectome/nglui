@@ -343,6 +343,7 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         description=None,
         linked_segmentation=None,
         tag_ids=None,
+        **kwargs,
     ):
         return neuroglancer.point_annotation(
             point=point,
@@ -378,6 +379,7 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         description=None,
         linked_segmentation=None,
         tag_ids=None,
+        **kwargs,
     ):
         return neuroglancer.ellipsoid_annotation(
             center=center,
@@ -396,6 +398,7 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         description=None,
         linked_segmentation=None,
         tag_ids=None,
+        **kwargs,
     ):
         return neuroglancer.bounding_box_annotation(
             pointA=pointA,
@@ -415,6 +418,7 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         gather_linked_segmentations=True,
         share_linked_segmentations=False,
         children_visible=True,
+        **kwargs,
     ):
         return neuroglancer.group_annotations(
             annotations,
