@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from dataclasses import dataclass
 import numpy as np
 import re
 
@@ -63,3 +64,16 @@ def assemble_split_points(pt_col, df, suffixes=SPLIT_SUFFIXES):
 
 def split_position_columns(pt_col, suffixes=SPLIT_SUFFIXES):
     return [f"{pt_col}_{suf}" for suf in suffixes]
+
+
+
+def check_target_site(ngl_url, client):
+    """
+    Check neuroglancer info to determine which kind of site a neuroglancer URL is.
+    """
+    ngl_info = client.state.get_neuroglancer_info(ngl_url)
+    if len(ngl_info)==0:
+        return 'seunglab'
+    else:
+        return "cave-explorer"
+    

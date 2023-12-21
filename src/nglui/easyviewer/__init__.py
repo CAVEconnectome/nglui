@@ -8,4 +8,4 @@ def EasyViewer(
     elif target_site == 'mainline' or target_site == 'cave-explorer':
         return EasyViewerMainline()
     else:
-        raise ValueError(f'Unknown target: {target_site}. Must be one of "seunglab" or "mainline/cave-explorer"')
+        raise ValueError(f'Unknown target: {target_site}. Must be one of "seunglab" or "mainline"/"cave-explorer"')

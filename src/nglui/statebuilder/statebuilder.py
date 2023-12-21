@@ -2,6 +2,7 @@ from nglui.easyviewer import EasyViewer
 from ..easyviewer.ev_base.utils import default_neuroglancer_base
 from nglui.easyviewer.ev_base.nglite.json_utils import encode_json
 from IPython.display import HTML
+from .utils import check_target_site
 
 DEFAULT_VIEW_KWS = {
     "layout": "xy-3d",
@@ -65,6 +66,8 @@ class StateBuilder:
                 url_prefix = client.info.viewer_site()
             if resolution is None:
                 resolution = client.info.viewer_resolution().tolist()
+            if target_site is None:
+                target_site = check_target_site(url_prefix, client)
 
         if url_prefix is None:
             url_prefix = default_neuroglancer_base
@@ -155,7 +158,8 @@ class StateBuilder:
         if base_state is None:
             base_state = self._base_state
         if target_site is None:
-            target_site = self._target_site
+            if self._target_site is not None:
+                target_site = self._target_site        
 
         self.initialize_state(
             base_state=base_state, target_site=target_site
