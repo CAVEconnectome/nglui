@@ -1,4 +1,4 @@
-from nglui.nglite import (
+from . import (
     LineAnnotation,
     PointAnnotation,
     EllipsoidAnnotation,
@@ -6,7 +6,7 @@ from nglui.nglite import (
     CollectionAnnotation,
     random_token,
 )
-from .utils import omit_nones
+from ..utils import omit_nones
 from numpy import unique, concatenate
 
 

@@ -1,5 +1,4 @@
 import numpy as np
-from nglui import annotation
 import pandas as pd
 from collections.abc import Collection
 from itertools import chain
@@ -351,7 +350,7 @@ class AnnotationMapperBase(object):
         # Set per subclass
         return None
 
-    def _render_data(self, data, data_resolution, viewer_resolution):
+    def _render_data(self, data, data_resolution, viewer_resolution, viewer):
         # Set per subclass
         return None
 
@@ -372,7 +371,7 @@ class AnnotationMapperBase(object):
             descriptions = [None for x in range(len(data))]
         return descriptions
 
-    def _add_groups(self, data, annos):
+    def _add_groups(self, data, annos, viewer):
         ngroups = data.groupby(self.group_column).ngroup().replace({-1: np.nan})
         vals, inverse = np.unique(ngroups, return_inverse=True)
         inv_inds = np.flatnonzero(~pd.isnull(vals))
@@ -381,7 +380,7 @@ class AnnotationMapperBase(object):
         for ii in inv_inds:
             anno_to_group = [annos[jj] for jj in np.flatnonzero(inverse == ii)]
             group_annos.append(
-                annotation.group_annotations(
+                viewer.group_annotations(
                     anno_to_group,
                     return_all=False,
                     gather_linked_segmentations=self.gather_linked_segmentations,
@@ -389,7 +388,7 @@ class AnnotationMapperBase(object):
                     children_visible=not self.collapse_groups,
                 )
             )
-        annos.extend(group_annos)
+        annos.extend([g for g in group_annos if g is not None])
         return annos
 
 
@@ -478,7 +477,7 @@ class PointMapper(AnnotationMapperBase):
             data = pd.DataFrame(data={"pt": np.array(data).tolist()})
         return data
 
-    def _render_data(self, data, data_resolution, viewer_resolution):
+    def _render_data(self, data, data_resolution, viewer_resolution, viewer):
         "Transforms data to neuroglancer annotations"
         data = self._preprocess_data(data)
         if data is None:
@@ -494,13 +493,13 @@ class PointMapper(AnnotationMapperBase):
         linked_segs = self._linked_segmentations(data[relinds])
         tags = self._assign_tags(data)
         annos = [
-            annotation.point_annotation(
+            viewer.point_annotation(
                 pt, description=d, linked_segmentation=ls, tag_ids=t
             )
             for pt, d, ls, t in zip(pts, descriptions, linked_segs, tags)
         ]
         if self.group_column is not None:
-            annos = self._add_groups(data, annos)
+            annos = self._add_groups(data, annos, viewer)
 
         return annos
 
@@ -577,7 +576,7 @@ class LineMapper(AnnotationMapperBase):
             )
         return data
 
-    def _render_data(self, data, data_resolution, viewer_resolution):
+    def _render_data(self, data, data_resolution, viewer_resolution, viewer):
         "Transforms data to neuroglancer annotations"
         data = self._preprocess_data(data)
         if data is None:
@@ -593,14 +592,14 @@ class LineMapper(AnnotationMapperBase):
         linked_segs = self._linked_segmentations(data[relinds])
         tags = self._assign_tags(data)
         annos = [
-            annotation.line_annotation(
+            viewer.line_annotation(
                 ptA, ptB, description=d, linked_segmentation=ls, tag_ids=t
             )
             for ptA, ptB, d, ls, t in zip(ptAs, ptBs, descriptions, linked_segs, tags)
         ]
 
         if self.group_column is not None:
-            annos = self._add_groups(data, annos)
+            annos = self._add_groups(data, annos, viewer)
 
         return annos
 
@@ -676,7 +675,7 @@ class SphereMapper(AnnotationMapperBase):
             data = pd.DataFrame(data={"ctr_pt": data[0].tolist(), "rad": data[1]})
         return data
 
-    def _render_data(self, data, data_resolution, viewer_resolution):
+    def _render_data(self, data, data_resolution, viewer_resolution, viewer):
         "Transforms data to neuroglancer annotations"
         col_ctr, col_rad = self.data_columns
 
@@ -699,7 +698,7 @@ class SphereMapper(AnnotationMapperBase):
         linked_segs = self._linked_segmentations(data[relinds])
         tags = self._assign_tags(data)
         annos = [
-            annotation.sphere_annotation(
+            viewer.sphere_annotation(
                 pt,
                 r,
                 description=d,
@@ -711,7 +710,7 @@ class SphereMapper(AnnotationMapperBase):
         ]
 
         if self.group_column is not None:
-            annos = self._add_groups(data, annos)
+            annos = self._add_groups(data, annos, viewer)
 
         return annos
 
@@ -788,7 +787,7 @@ class BoundingBoxMapper(AnnotationMapperBase):
             )
         return data
     
-    def _render_data(self, data, data_resolution, viewer_resolution):
+    def _render_data(self, data, data_resolution, viewer_resolution, viewer):
         "Transforms data to neuroglancer annotations"
         data = self._preprocess_data(data)
         if data is None:
@@ -805,14 +804,14 @@ class BoundingBoxMapper(AnnotationMapperBase):
         linked_segs = self._linked_segmentations(data[relinds])
         tags = self._assign_tags(data)
         annos = [
-            annotation.bounding_box_annotation(
+            viewer.bounding_box_annotation(
                 ptA, ptB, description=d, linked_segmentation=ls, tag_ids=t
             )
             for ptA, ptB, d, ls, t in zip(ptAs, ptBs, descriptions, linked_segs, tags)
         ]
 
         if self.group_column is not None:
-            annos = self._add_groups(data, annos)
+            annos = self._add_groups(data, annos, viewer)
 
         return annos
 
@@ -858,7 +857,7 @@ class SplitPointMapper(object):
         self.focus = focus
         self.mapping_set = mapping_set
 
-    def _render_data(self, df, data_resolution, viewer_resolution):
+    def _render_data(self, df, data_resolution, viewer_resolution, viewer):
         if self.mapping_set is not None:
             df = df.get(self.mapping_set)
 

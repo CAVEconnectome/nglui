@@ -1,6 +1,8 @@
-from nglui import EasyViewer
-from nglui.easyviewer.utils import default_neuroglancer_base
+from nglui.easyviewer import EasyViewer
+from ..easyviewer.ev_base.utils import default_neuroglancer_base
+from nglui.easyviewer.ev_base.nglite.json_utils import encode_json
 from IPython.display import HTML
+from .utils import check_target_site
 
 DEFAULT_VIEW_KWS = {
     "layout": "xy-3d",
@@ -8,7 +10,6 @@ DEFAULT_VIEW_KWS = {
     "show_slices": False,
     "zoom_3d": 2000,
 }
-
 
 class StateBuilder:
     """A class for schematic mapping data frames into neuroglancer states.
@@ -25,6 +26,7 @@ class StateBuilder:
         resolution=None,
         view_kws={},
         client=None,
+        target_site=None,
     ):
         """_summary_
 
@@ -64,6 +66,8 @@ class StateBuilder:
                 url_prefix = client.info.viewer_site()
             if resolution is None:
                 resolution = client.info.viewer_resolution().tolist()
+            if target_site is None:
+                target_site = check_target_site(url_prefix, client)
 
         if url_prefix is None:
             url_prefix = default_neuroglancer_base
@@ -73,21 +77,22 @@ class StateBuilder:
         self._resolution = resolution
         self._url_prefix = url_prefix
         self._state_server = state_server
+        self._target_site = target_site
 
         base_kws = DEFAULT_VIEW_KWS.copy()
         base_kws.update(view_kws)
         self._view_kws = base_kws
 
-    def _reset_state(self, base_state=None, compatibility_mode=False):
+    def _reset_state(self, base_state=None, target_site=None):
         """
         Resets the neuroglancer state status to a default viewer.
         """
         if base_state is None:
             base_state = self._base_state
-        self._temp_viewer = EasyViewer(compatibility_mode=compatibility_mode)
+        self._temp_viewer = EasyViewer(target_site=target_site)
         self._temp_viewer.set_state(base_state)
 
-    def initialize_state(self, base_state=None, compatibility_mode=False):
+    def initialize_state(self, base_state=None, target_site=None):
         """Generate a new Neuroglancer state with layers as needed for the schema.
 
         Parameters
@@ -95,7 +100,7 @@ class StateBuilder:
         base_state : str, optional
             Optional initial state to build on, described by its JSON. By default None.
         """
-        self._reset_state(base_state, compatibility_mode=compatibility_mode)
+        self._reset_state(base_state, target_site=target_site)
 
         if self._state_server is not None:
             self._temp_viewer.set_state_server(self._state_server)
@@ -121,7 +126,7 @@ class StateBuilder:
         return_as="url",
         url_prefix=None,
         link_text="Neuroglancer Link",
-        compatibility_mode=False,
+        target_site=None,
     ):
         """Build a Neuroglancer state out of a DataFrame.
 
@@ -152,14 +157,17 @@ class StateBuilder:
         """
         if base_state is None:
             base_state = self._base_state
+        if target_site is None:
+            if self._target_site is not None:
+                target_site = self._target_site        
+
         self.initialize_state(
-            base_state=base_state, compatibility_mode=compatibility_mode
+            base_state=base_state, target_site=target_site
         )
         self.handle_positions(data)
 
         self._render_layers(
             data,
-            compatibility_mode=compatibility_mode,
         )
 
 
@@ -184,15 +192,13 @@ class StateBuilder:
             self.initialize_state()
             return out
         elif return_as == "json":
-            from json import dumps
-
             out = self._temp_viewer.state.to_json()
             self.initialize_state()
-            return dumps(out)
+            return encode_json(out)
         else:
             raise ValueError("No appropriate return type selected")
 
-    def _render_layers(self, data, compatibility_mode):
+    def _render_layers(self, data,):
         # Inactivate all layers except last.
         found_active = False
         for l in self._layers[::-1]:
@@ -205,7 +211,6 @@ class StateBuilder:
             anno_dict[layer.name] = layer._render_layer(
                 self._temp_viewer,
                 data,
-                compatibility_mode=compatibility_mode,
                 viewer_resolution=self._resolution,
                 return_annos=True,
             )
@@ -236,7 +241,7 @@ class ChainedStateBuilder:
         return_as="url",
         url_prefix=default_neuroglancer_base,
         link_text="Neuroglancer Link",
-        compatibility_mode=False,
+        target_site=None,
     ):
         """Generate a single neuroglancer state by addatively applying an ordered collection of
         dataframes to an collection of StateBuilder renders.
@@ -263,7 +268,6 @@ class ChainedStateBuilder:
                 data=data,
                 base_state=temp_state,
                 return_as="dict",
-                compatibility_mode=compatibility_mode,
             )
         last_builder = self._statebuilders[-1]
         return last_builder.render_state(
@@ -272,5 +276,4 @@ class ChainedStateBuilder:
             return_as=return_as,
             url_prefix=url_prefix,
             link_text=link_text,
-            compatibility_mode=compatibility_mode,
         )

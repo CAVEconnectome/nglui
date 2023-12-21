@@ -1,4 +1,5 @@
-from nglui.easyviewer import EasyViewer, annotation
+from nglui.easyviewer import EasyViewer
+
 from . import statebuilder
 from . import nglite
 from . import parser

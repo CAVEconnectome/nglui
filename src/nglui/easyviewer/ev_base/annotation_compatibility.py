@@ -4,7 +4,6 @@ from neuroglancer import (
     EllipsoidAnnotation,
     AxisAlignedBoundingBoxAnnotation,
 )
-from nglui.easyviewer.utils import omit_nones
 
 
 def convert_annotation(anno):
