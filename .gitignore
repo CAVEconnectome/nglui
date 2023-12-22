@@ -109,3 +109,5 @@ var/
 .vscode
 *.orig
 *.sublime-workspace
+
+docs/.quarto/
