@@ -2,33 +2,51 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
-<!-- ## Unreleased -->
+## [3.0.0] – 2023-12-20
+
+### Added
+
+- **StateBuilder** and **EasyViewer** Substantial refactor, adding basic support for the main Google Neuroglancer branch and the Cave-Explorer/Spelunker deployments coming online with CAVE.
+Most functionality should be seamless, with the client checking for version.
+Currently, only the [Cave-Explorer](https://ngl.cave-explorer.org/) and [Spelunker]((https://ngl.cave-explorer.org/)) deployments are fully supported for this automated version check, as the response depends on a build-specific version.json file.
+If no automated version is set or one wants to override any settings, the `target_site` argument can be set to `cave-explorer` or `mainline` for the main Google branch or `seunglab` for the older Seung-lab branch.
+
+
 ## [2.14.1] - 2023-05-14
+
 ### Fixed
+
 - **StateBuilder** Recast all layer names as strings to avoid issues with numeric.
 
 ## [2.14.0] - 2023-04-12
 ### Fixed
+
 - **StateBuilder** Fixed various issues with stacking multiple points into a single row.
 
 ## [2.13.0] - 2023-02-21
+
 ### Added
+
 - **StateBuilder** Adding a helper function for basic line annotation states
 - **StateBuilder** Helper functions can take `split_position` argument.
 
 ## [2.12.1] - 2023-01-30
+
 ### Fixed
+
 - **StateBuilder** Handle None data correctly with mapping sets.
 
 ## [2.12.0] - 2023-01-30
 
 ### Added
+
 - **EasyViewer** At long last, you can set the background color in `set_view_options` with the argument `background_color`. As elsewhere, this uses [webcolors](https://webcolors.readthedocs.io/) to deal with color parsing, so it can take names or rgb or hex.
 - **StateBuilder** StateBuilder can now set the background color in in `view_kws` with the key `background_color`.
 - **StateBuilder** *Mapping sets* offer a new and simple iapproach to having multiple dataframes with different mapping rules.
 - **StateBuilder** Mapping rules can handle dataframes where the point position components are split across different columns, assuming that the suffices are always `_x`, `_y`, and `_z`. Set `split_positions=True` in the mapping rule to use this.
 
 ### Changed
+
 - **StateBuilder** Mapping rules now default to `set_position = True`.
 
 ## [2.10.0] - 2022-08-11
