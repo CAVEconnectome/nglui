@@ -1,0 +1,43 @@
+# statebuilder.helpers.make_neuron_neuroglancer_link { #nglui.statebuilder.helpers.make_neuron_neuroglancer_link }
+
+`statebuilder.helpers.make_neuron_neuroglancer_link(client, root_ids, return_as='html', shorten='always', show_inputs=False, show_outputs=False, sort_inputs=True, sort_outputs=True, sort_ascending=False, input_color=DEFAULT_POSTSYN_COLOR, output_color=DEFAULT_PRESYN_COLOR, contrast=None, timestamp=None, view_kws=None, point_column='ctr_pt_position', pre_pt_root_id_col='pre_pt_root_id', post_pt_root_id_col='post_pt_root_id', input_layer_name='syns_in', output_layer_name='syns_out', ngl_url=None, link_text='Neuroglancer Link', target_site=None)`
+
+function to create a neuroglancer link view of a neuron, optionally including inputs and outputs
+
+## Parameters
+
+| Name                  | Type                       | Description                                                                                                                                                                                                          | Default                 |
+|-----------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------|
+| `client`              | caveclient.CAVEclient      | A CAVEclient configured for the datastack to visualize.                                                                                                                                                              | _required_              |
+| `root_ids`            | typing.Iterable\[int\]     | The root_ids to build the visualization around.                                                                                                                                                                      | _required_              |
+| `return_as`           | str                        | How to return the URL or state. Valid options are: - 'html': Returns an IPython HTML element. - 'json': Returns a dictionary representing the Neuroglancer state. - 'url': Returns a URL string. Defaults to 'html'. | `'html'`                |
+| `shorten`             | str                        | Whether to shorten the link. Valid options are: - 'always': Always shorten the link. - 'if_long': Shorten the link if it exceeds MAX_URL_LENGTH. - 'never': Never shorten the link. Defaults to 'if_long'.           | `'always'`              |
+| `show_inputs`         | bool                       | Whether to include input synapses. Defaults to False.                                                                                                                                                                | `False`                 |
+| `show_outputs`        | bool                       | Whether to include output synapses. Defaults to False.                                                                                                                                                               | `False`                 |
+| `sort_inputs`         | bool                       | Whether to sort input synapses by presynaptic root id, ordered by synapse count. Defaults to True.                                                                                                                   | `True`                  |
+| `sort_outputs`        | bool                       | Whether to sort output synapses by presynaptic root id, ordered by postsynaptic synapse count. Defaults to True.                                                                                                     | `True`                  |
+| `sort_ascending`      | bool                       | If sorting, whether to sort ascending (lowest synapse count to highest). Defaults to False.                                                                                                                          | `False`                 |
+| `input_color`         | list(float) or str         | Color of input synapse points as an RGB list [0, 1], hex string, or common name.                                                                                                                                     | `DEFAULT_POSTSYN_COLOR` |
+| `output_color`        | list(float) or str         | Color of output synapse points as an RGB list [0, 1], hex string, or common name.                                                                                                                                    | `DEFAULT_PRESYN_COLOR`  |
+| `contrast`            | list                       | List of two floats between 0 and 1, specifying the black and white levels. If None, no contrast is set.                                                                                                              | `None`                  |
+| `timestamp`           | datetime.datetime.datetime | Timestamp to use for the query. Defaults to None, which will use the materialized version.                                                                                                                           | `None`                  |
+| `view_kws`            | dict                       | Dictionary containing viewer settings for Neuroglancer. See nglui.StateBuilder for options. See the previous docstring for details on available keys.                                                                | `None`                  |
+| `point_column`        | str                        | Column to pull synapse positions from. Defaults to "ctr_pt_position".                                                                                                                                                | `'ctr_pt_position'`     |
+| `pre_pt_root_id_col`  | str                        | Column to pull presynaptic IDs for synapses from. Defaults to "pre_pt_root_id".                                                                                                                                      | `'pre_pt_root_id'`      |
+| `post_pt_root_id_col` | str                        | Column to pull postsynaptic IDs for synapses from. Defaults to "post_pt_root_id".                                                                                                                                    | `'post_pt_root_id'`     |
+| `input_layer_name`    | str                        | Name of the layer for input synapses. Defaults to "syns_in".                                                                                                                                                         | `'syns_in'`             |
+| `output_layer_name`   | str                        | Name of the layer for output synapses. Defaults to "syns_out".                                                                                                                                                       | `'syns_out'`            |
+| `ngl_url`             | str                        | URL of the Neuroglancer instance to use. Defaults to the default viewer set in the datastack.                                                                                                                        | `None`                  |
+| `link_text`           | str                        | Text to use for the HTML return. Defaults to 'Neuroglancer Link'.                                                                                                                                                    | `'Neuroglancer Link'`   |
+
+## Raises
+
+| Type       | Description                                                        |
+|------------|--------------------------------------------------------------------|
+| ValueError | If the specified point column is not present in the synapse table. |
+
+## Returns
+
+| Type                       | Description                                                                       |
+|----------------------------|-----------------------------------------------------------------------------------|
+| IPython.HTML, str, or dict | Representation of the Neuroglancer state, depending on the `return_as` parameter. |

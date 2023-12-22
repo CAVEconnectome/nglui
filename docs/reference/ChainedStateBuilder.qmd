@@ -1,0 +1,34 @@
+# ChainedStateBuilder { #nglui.statebuilder.statebuilder.ChainedStateBuilder }
+
+`statebuilder.statebuilder.ChainedStateBuilder(self, statebuilders)`
+
+Builds a collection of states that sequentially add annotations based on a sequence of dataframes.
+
+## Parameters
+
+| Name            | Type   | Description                                                           | Default    |
+|-----------------|--------|-----------------------------------------------------------------------|------------|
+| `statebuilders` | list   | List of DataStateBuilders, in same order as dataframes will be passed | _required_ |
+
+## Methods
+
+| Name | Description |
+| --- | --- |
+| [render_state](#nglui.statebuilder.statebuilder.ChainedStateBuilder.render_state) | Generate a single neuroglancer state by addatively applying an ordered collection of |
+
+### render_state { #nglui.statebuilder.statebuilder.ChainedStateBuilder.render_state }
+
+`statebuilder.statebuilder.ChainedStateBuilder.render_state(data_list=None, base_state=None, return_as='url', url_prefix=default_neuroglancer_base, link_text='Neuroglancer Link', target_site=None)`
+
+Generate a single neuroglancer state by addatively applying an ordered collection of
+dataframes to an collection of StateBuilder renders.
+Parameters
+    data_list : Collection of DataFrame. The order must match the order of StateBuilders
+                contained in the class on creation.
+    base_state : JSON neuroglancer state (optional, default is None).
+                 Used as a base state for adding everything else to.
+    return_as: ['url', 'viewer', 'html', 'json']. optional, default='url'.
+               Sets how the state is returned. Note that if a viewer is returned,
+               the state is not reset to default.
+    url_prefix: string, optional (default is https://neuromancer-seung-import.appspot.com).
+                Overrides the default neuroglancer url for url generation.

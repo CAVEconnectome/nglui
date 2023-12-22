@@ -1,0 +1,18 @@
+# parser.base.view_settings { #nglui.parser.base.view_settings }
+
+`parser.base.view_settings(state)`
+
+Get all data about the view state in neuroglancer: position,
+image zoom, orientation and zoom of the 3d view, and voxel size.
+
+## Parameters
+
+| Name    | Type   | Description                     | Default    |
+|---------|--------|---------------------------------|------------|
+| `state` | dict   | Neuroglancer state as JSON dict | _required_ |
+
+## Returns
+
+| Type   | Description                                                                                        |
+|--------|----------------------------------------------------------------------------------------------------|
+| dict   | Dictionary with keys: position, zoomFactor, perspectiveOrientation, perspectiveZoom, and voxelSize |

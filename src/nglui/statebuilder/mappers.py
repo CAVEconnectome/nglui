@@ -414,10 +414,7 @@ class PointMapper(AnnotationMapperBase):
     ----------
     point_column : str, optional
         Column name with 3d position data
-    array_data : bool, optional
-        If True, the expected data is a Nx3 numpy array. This will only work for point positions,
-        to use any other features you must build a dataframe.
-    decription_column : str, optional
+    description_column : str, optional
         Column name with string data for annotation descriptions
     linked_segmentation_column : str, optional
         Column name for root ids to link to annotations
@@ -437,7 +434,6 @@ class PointMapper(AnnotationMapperBase):
     mapping_set: str, optional
         If given, assumes data is passed as a dictionary and uses this string to as the key for the data to use.
     """
-
     def __init__(
         self,
         point_column=None,
@@ -515,7 +511,7 @@ class LineMapper(AnnotationMapperBase):
     point_column_b : str
         Column name with 3d position data for the first point of the line.
         Must be set if array_data is False (the default)
-    decription_column : str, optional
+    description_column : str, optional
         Column name with string data for annotation descriptions
     linked_segmentation_column : str, optional
         Column name for root ids to link to annotations
@@ -613,7 +609,7 @@ class SphereMapper(AnnotationMapperBase):
         Column name with 3d position data for the center of the sphere
     radius_column : str
         Column name with a radius for the sphere (in nm)
-    decription_column : str, optional
+    description_column : str, optional
         Column name with string data for annotation descriptions
     linked_segmentation_column : str, optional
         Column name for root ids to link to annotations
@@ -726,7 +722,7 @@ class BoundingBoxMapper(AnnotationMapperBase):
     point_column_b : str
         Column name with 3d position data for the second point of the bounding box.
         Must be set if array_data is False (the default)
-    decription_column : str, optional
+    description_column : str, optional
         Column name with string data for annotation descriptions
     linked_segmentation_column : str, optional
         Column name for root ids to link to annotations

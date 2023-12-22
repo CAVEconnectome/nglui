@@ -1,0 +1,54 @@
+website:
+  sidebar:
+  - contents:
+    - reference/index.qmd
+    - contents:
+      - contents:
+        - reference/statebuilder.ImageLayerConfig.qmd
+        - reference/statebuilder.SegmentationLayerConfig.qmd
+        - reference/statebuilder.AnnotationLayerConfig.qmd
+        section: Layers
+      - contents:
+        - reference/statebuilder.PointMapper.qmd
+        - reference/statebuilder.LineMapper.qmd
+        - reference/statebuilder.SphereMapper.qmd
+        - reference/statebuilder.BoundingBoxMapper.qmd
+        - reference/statebuilder.SplitPointMapper.qmd
+        section: Mapping Rules
+      - contents:
+        - reference/statebuilder.StateBuilder.qmd
+        - reference/statebuilder.ChainedStateBuilder.qmd
+        section: StateBuilder Classes
+      - contents:
+        - reference/statebuilder.helpers.from_client.qmd
+        - reference/statebuilder.helpers.sort_dataframe_by_root_id.qmd
+        - reference/statebuilder.helpers.make_line_statebuilder.qmd
+        - reference/statebuilder.helpers.make_point_statebuilder.qmd
+        - reference/statebuilder.helpers.make_pre_post_statebuilder.qmd
+        - reference/statebuilder.helpers.make_state_url.qmd
+        - reference/statebuilder.helpers.make_url_robust.qmd
+        - reference/statebuilder.helpers.package_state.qmd
+        - reference/statebuilder.helpers.make_synapse_neuroglancer_link.qmd
+        - reference/statebuilder.helpers.make_neuron_neuroglancer_link.qmd
+        section: Helpers
+      section: StateBuilder Functions
+    - contents:
+      - contents:
+        - reference/parser.base.layer_names.qmd
+        - reference/parser.base.image_layers.qmd
+        - reference/parser.base.segmentation_layers.qmd
+        - reference/parser.base.annotation_layers.qmd
+        - reference/parser.base.tag_dictionary.qmd
+        - reference/parser.base.get_layer.qmd
+        - reference/parser.base.view_settings.qmd
+        - reference/parser.base.get_selected_ids.qmd
+        - reference/parser.base.point_annotations.qmd
+        - reference/parser.base.line_annotations.qmd
+        - reference/parser.base.sphere_annotations.qmd
+        - reference/parser.base.group_annotations.qmd
+        - reference/parser.base.extract_multicut.qmd
+        - reference/parser.base.annotation_dataframe.qmd
+        section: Parser Tools
+      section: Parser
+    id: reference
+  - id: dummy-sidebar

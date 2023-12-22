@@ -1,0 +1,20 @@
+# statebuilder.LineMapper { #nglui.statebuilder.LineMapper }
+
+`statebuilder.LineMapper(self, point_column_a=None, point_column_b=None, description_column=None, linked_segmentation_column=None, tag_column=None, group_column=None, gather_linked_segmentations=True, share_linked_segmentations=False, set_position=True, multipoint=False, collapse_groups=False, split_positions=False, mapping_set=None)`
+
+Sets rules to map dataframes to line annotations
+
+## Parameters
+
+| Name                         | Type   | Description                                                                                                                                                         | Default   |
+|------------------------------|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|
+| `point_column_a`             | str    | Column name with 3d position data for the first point of the line. Must be set if array_data is False (the default)                                                 | `None`    |
+| `point_column_b`             | str    | Column name with 3d position data for the first point of the line. Must be set if array_data is False (the default)                                                 | `None`    |
+| `description_column`         | str    | Column name with string data for annotation descriptions                                                                                                            | `None`    |
+| `linked_segmentation_column` | str    | Column name for root ids to link to annotations                                                                                                                     | `None`    |
+| `tag_column`                 | str    | Column name for categorical tag data. Tags must match those set in the annotation layer.                                                                            | `None`    |
+| `group_column`               | str    | Column name for grouping data. Data in this row should be numeric with possible NaNs. Rows with the same non-NaN value will be collected into a grouped annotation. | `None`    |
+| `set_position`               | bool   | If set to True, moves the position to center on the first point in the data (using point_column_a).                                                                 | `True`    |
+| `multipoint`                 |        | If True, permits multiple points in a given row, sharing data in other columns. Each point row must have the same number of points. Default is False.               | `False`   |
+| `collapse_groups`            |        | If True, groups are toggled closed in the annotation view.                                                                                                          | `False`   |
+| `mapping_set`                |        | If set, assumes data is passed as a dictionary and uses this string to as the key for the data to use.                                                              | `None`    |

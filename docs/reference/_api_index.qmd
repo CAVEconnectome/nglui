@@ -1,0 +1,74 @@
+#  {.doc .doc-index}
+
+## StateBuilder Functions
+
+### Layers
+
+Instantiating types of layers
+
+| | |
+| --- | --- |
+| [statebuilder.ImageLayerConfig](statebuilder.ImageLayerConfig.qmd#nglui.statebuilder.ImageLayerConfig) | Image layer configuration class. |
+| [statebuilder.SegmentationLayerConfig](statebuilder.SegmentationLayerConfig.qmd#nglui.statebuilder.SegmentationLayerConfig) | Configuration class for segmentation layers |
+| [statebuilder.AnnotationLayerConfig](statebuilder.AnnotationLayerConfig.qmd#nglui.statebuilder.AnnotationLayerConfig) | Configuration class for annotation layers |
+
+### Mapping Rules
+
+Rules for mapping data to annotations
+
+| | |
+| --- | --- |
+| [statebuilder.PointMapper](statebuilder.PointMapper.qmd#nglui.statebuilder.PointMapper) | Sets rules to map dataframes to point annotations |
+| [statebuilder.LineMapper](statebuilder.LineMapper.qmd#nglui.statebuilder.LineMapper) | Sets rules to map dataframes to line annotations |
+| [statebuilder.SphereMapper](statebuilder.SphereMapper.qmd#nglui.statebuilder.SphereMapper) | Sets rules to map dataframes to sphere annotations |
+| [statebuilder.BoundingBoxMapper](statebuilder.BoundingBoxMapper.qmd#nglui.statebuilder.BoundingBoxMapper) | Sets rules to map dataframes to bounding box annotations |
+| [statebuilder.SplitPointMapper](statebuilder.SplitPointMapper.qmd#nglui.statebuilder.SplitPointMapper) | Mapper to create split points in a segmentation layer. |
+
+### StateBuilder Classes
+
+Tools for data-generated neuroglancer state creation
+
+| | |
+| --- | --- |
+| [statebuilder.StateBuilder](statebuilder.StateBuilder.qmd#nglui.statebuilder.StateBuilder) | A class for schematic mapping data frames into neuroglancer states. |
+| [statebuilder.ChainedStateBuilder](statebuilder.ChainedStateBuilder.qmd#nglui.statebuilder.ChainedStateBuilder) | Builds a collection of states that sequentially add annotations based on a sequence of dataframes. |
+
+### Helpers
+
+Tools for common types of states
+
+| | |
+| --- | --- |
+| [statebuilder.helpers.from_client](statebuilder.helpers.from_client.qmd#nglui.statebuilder.helpers.from_client) | Generate basic image and segmentation layers from a FrameworkClient |
+| [statebuilder.helpers.sort_dataframe_by_root_id](statebuilder.helpers.sort_dataframe_by_root_id.qmd#nglui.statebuilder.helpers.sort_dataframe_by_root_id) | Sort a dataframe so that rows belonging to the same root id are together, ordered by how many times the root id appears. |
+| [statebuilder.helpers.make_line_statebuilder](statebuilder.helpers.make_line_statebuilder.qmd#nglui.statebuilder.helpers.make_line_statebuilder) | Generate a state builder that puts points on a single column with a linked segmentaton id |
+| [statebuilder.helpers.make_point_statebuilder](statebuilder.helpers.make_point_statebuilder.qmd#nglui.statebuilder.helpers.make_point_statebuilder) | Generate a state builder that puts points on a single column with a linked segmentaton id |
+| [statebuilder.helpers.make_pre_post_statebuilder](statebuilder.helpers.make_pre_post_statebuilder.qmd#nglui.statebuilder.helpers.make_pre_post_statebuilder) | Function to generate ChainedStateBuilder with optional pre and post synaptic |
+| [statebuilder.helpers.make_state_url](statebuilder.helpers.make_state_url.qmd#nglui.statebuilder.helpers.make_state_url) | Generate a url from a neuroglancer state via a state server. |
+| [statebuilder.helpers.make_url_robust](statebuilder.helpers.make_url_robust.qmd#nglui.statebuilder.helpers.make_url_robust) | Generate a url from a neuroglancer state. If too long, return through state server, |
+| [statebuilder.helpers.package_state](statebuilder.helpers.package_state.qmd#nglui.statebuilder.helpers.package_state) | Automate creating a state from a statebuilder and |
+| [statebuilder.helpers.make_synapse_neuroglancer_link](statebuilder.helpers.make_synapse_neuroglancer_link.qmd#nglui.statebuilder.helpers.make_synapse_neuroglancer_link) | Generate a neuroglancer link from a synapse dataframe as returned from CAVEclient.materialize.synapse_query. |
+| [statebuilder.helpers.make_neuron_neuroglancer_link](statebuilder.helpers.make_neuron_neuroglancer_link.qmd#nglui.statebuilder.helpers.make_neuron_neuroglancer_link) | function to create a neuroglancer link view of a neuron, optionally including inputs and outputs |
+
+## Parser
+
+### Parser Tools
+
+Simple tools for parsing neuroglancer states
+
+| | |
+| --- | --- |
+| [parser.base.layer_names](parser.base.layer_names.qmd#nglui.parser.base.layer_names) | Get all layer names in the state |
+| [parser.base.image_layers](parser.base.image_layers.qmd#nglui.parser.base.image_layers) | Get all image layer names in the state |
+| [parser.base.segmentation_layers](parser.base.segmentation_layers.qmd#nglui.parser.base.segmentation_layers) | Get all segmentation layer names in the state |
+| [parser.base.annotation_layers](parser.base.annotation_layers.qmd#nglui.parser.base.annotation_layers) | Get all annotation layer names in the state |
+| [parser.base.tag_dictionary](parser.base.tag_dictionary.qmd#nglui.parser.base.tag_dictionary) | Get the tag id to string dictionary for a layer |
+| [parser.base.get_layer](parser.base.get_layer.qmd#nglui.parser.base.get_layer) | Gets the contents of the layer based on the layer name. |
+| [parser.base.view_settings](parser.base.view_settings.qmd#nglui.parser.base.view_settings) | Get all data about the view state in neuroglancer: position, |
+| [parser.base.get_selected_ids](parser.base.get_selected_ids.qmd#nglui.parser.base.get_selected_ids) | Get a list of selected ids in a segmentation layer |
+| [parser.base.point_annotations](parser.base.point_annotations.qmd#nglui.parser.base.point_annotations) | Get all point annotation points and other info from a layer. |
+| [parser.base.line_annotations](parser.base.line_annotations.qmd#nglui.parser.base.line_annotations) | Get all line annotation points and other info from a layer. |
+| [parser.base.sphere_annotations](parser.base.sphere_annotations.qmd#nglui.parser.base.sphere_annotations) | Get all sphere annotation points and other info from a layer. |
+| [parser.base.group_annotations](parser.base.group_annotations.qmd#nglui.parser.base.group_annotations) | All group annotations and their associated points |
+| [parser.base.extract_multicut](parser.base.extract_multicut.qmd#nglui.parser.base.extract_multicut) | Extract information entered into the multicut graph operation |
+| [parser.base.annotation_dataframe](parser.base.annotation_dataframe.qmd#nglui.parser.base.annotation_dataframe) | Return all annotations across all annotation layers in the state. |

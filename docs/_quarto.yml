@@ -1,0 +1,91 @@
+project:
+  type: website
+
+website:
+  title: "NGLui Documentation"
+  page-navigation: true
+  navbar:
+    left:
+      - href: index.qmd
+        text: About
+      - text: Tutorials
+        menu:
+          - tutorials/statebuilder.qmd
+          - tutorials/parser.qmd
+      - href: reference/index.qmd
+        text: Function Reference
+    tools:
+      - icon: github
+        text: Github
+        href: http://github.com/seung-lab/NeuroglancerAnnotationUI
+
+theme:
+  - flatly
+   
+metadata-files:
+  - _sidebar.yml
+
+quartodoc:
+  style: 'pkgdown'
+  title: ''
+  sidebar: _sidebar.yml
+  dir: reference
+  out_index: _api_index.qmd
+  package: nglui
+
+  sections:
+    - title: StateBuilder Functions
+    - subtitle: Layers
+      desc: Instantiating types of layers
+      contents:
+        - name: statebuilder.ImageLayerConfig
+        - name: statebuilder.SegmentationLayerConfig
+          children: embedded
+        - name: statebuilder.AnnotationLayerConfig
+          children: embedded
+    - subtitle: Mapping Rules
+      desc: Rules for mapping data to annotations
+      contents:
+        - statebuilder.PointMapper
+        - statebuilder.LineMapper
+        - statebuilder.SphereMapper
+        - statebuilder.BoundingBoxMapper
+        - statebuilder.SplitPointMapper
+    - subtitle: StateBuilder Classes
+      desc: Tools for data-generated neuroglancer state creation
+      contents:
+        - name: statebuilder.StateBuilder
+          children: embedded
+        - name: statebuilder.ChainedStateBuilder
+          children: embedded
+    - subtitle: Helpers
+      desc: Tools for common types of states
+      contents:
+        - statebuilder.helpers.from_client
+        - statebuilder.helpers.sort_dataframe_by_root_id
+        - statebuilder.helpers.make_line_statebuilder
+        - statebuilder.helpers.make_point_statebuilder
+        - statebuilder.helpers.make_pre_post_statebuilder
+        - statebuilder.helpers.make_state_url
+        - statebuilder.helpers.make_url_robust
+        - statebuilder.helpers.package_state
+        - statebuilder.helpers.make_synapse_neuroglancer_link
+        - statebuilder.helpers.make_neuron_neuroglancer_link
+    - title: Parser
+    - subtitle: Parser Tools
+      desc: Simple tools for parsing neuroglancer states
+      contents:
+        - parser.base.layer_names
+        - parser.base.image_layers
+        - parser.base.segmentation_layers
+        - parser.base.annotation_layers
+        - parser.base.tag_dictionary
+        - parser.base.get_layer
+        - parser.base.view_settings
+        - parser.base.get_selected_ids
+        - parser.base.point_annotations
+        - parser.base.line_annotations
+        - parser.base.sphere_annotations
+        - parser.base.group_annotations
+        - parser.base.extract_multicut
+        - parser.base.annotation_dataframe

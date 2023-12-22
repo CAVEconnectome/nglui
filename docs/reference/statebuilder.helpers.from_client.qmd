@@ -1,0 +1,21 @@
+# statebuilder.helpers.from_client { #nglui.statebuilder.helpers.from_client }
+
+`statebuilder.helpers.from_client(client, image_name=None, segmentation_name=None, contrast=None)`
+
+Generate basic image and segmentation layers from a FrameworkClient
+
+## Parameters
+
+| Name                | Type                             | Description                                                                                                                      | Default    |
+|---------------------|----------------------------------|----------------------------------------------------------------------------------------------------------------------------------|------------|
+| `client`            | caveclient.caveclient.CAVEclient | A CAVEclient with a specified datastack                                                                                          | _required_ |
+| `image_name`        | str                              | Name for the image layer, by default None.                                                                                       | `None`     |
+| `segmentation_name` | str                              | Name for the segmentation layer, by default None                                                                                 | `None`     |
+| `contrast`          | list - like                      | Two elements specifying the black level and white level as floats between 0 and 1, by default None. If None, no contrast is set. | `None`     |
+
+## Returns
+
+| Type                                       | Description                                            |
+|--------------------------------------------|--------------------------------------------------------|
+| nglui.statebuilder.layers.ImageLayerConfig | Image layer with default values from the client        |
+| nglui.statebuilder.layers.ImageLayerConfig | Segmentation layer with default values from the client |

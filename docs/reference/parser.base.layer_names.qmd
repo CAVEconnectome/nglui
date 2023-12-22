@@ -1,0 +1,17 @@
+# parser.base.layer_names { #nglui.parser.base.layer_names }
+
+`parser.base.layer_names(state)`
+
+Get all layer names in the state
+
+## Parameters
+
+| Name    | Type   | Description                       | Default    |
+|---------|--------|-----------------------------------|------------|
+| `state` | dict   | Neuroglancer state as a JSON dict | _required_ |
+
+## Returns
+
+| Type   | Description         |
+|--------|---------------------|
+| list   | List of layer names |

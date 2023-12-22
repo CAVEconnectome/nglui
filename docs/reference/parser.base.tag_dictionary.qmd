@@ -1,0 +1,18 @@
+# parser.base.tag_dictionary { #nglui.parser.base.tag_dictionary }
+
+`parser.base.tag_dictionary(state, layer_name)`
+
+Get the tag id to string dictionary for a layer
+
+## Parameters
+
+| Name         | Type     | Description   | Default    |
+|--------------|----------|---------------|------------|
+| `state`      | dict     |               | _required_ |
+| `layer_name` | \[type\] | [description] | _required_ |
+
+## Returns
+
+| Type     | Description   |
+|----------|---------------|
+| \[type\] | [description] |

@@ -1,0 +1,11 @@
+# initialize_state { #nglui.statebuilder.statebuilder.StateBuilder.initialize_state }
+
+`statebuilder.statebuilder.StateBuilder.initialize_state(base_state=None, target_site=None)`
+
+Generate a new Neuroglancer state with layers as needed for the schema.
+
+## Parameters
+
+| Name         | Type   | Description                                                                 | Default   |
+|--------------|--------|-----------------------------------------------------------------------------|-----------|
+| `base_state` | str    | Optional initial state to build on, described by its JSON. By default None. | `None`    |

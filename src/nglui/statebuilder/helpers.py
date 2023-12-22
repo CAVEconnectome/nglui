@@ -1,4 +1,3 @@
-from multiprocessing.sharedctypes import Value
 from typing import Iterable
 from .layers import (
     ImageLayerConfig,
@@ -9,6 +8,7 @@ from .layers import (
 )
 from .statebuilder import ChainedStateBuilder, StateBuilder
 from caveclient import CAVEclient
+from caveclient.endpoints import fallback_ngl_endpoint
 import pandas as pd
 from IPython.display import HTML
 
@@ -23,7 +23,7 @@ CONTRAST_CONFIG = {
     }
 }
 MAX_URL_LENGTH = 1_750_000
-DEFAULT_NGL = "https://neuromancer-seung-import.appspot.com/"
+DEFAULT_NGL = fallback_ngl_endpoint
 
 
 def sort_dataframe_by_root_id(
@@ -80,24 +80,37 @@ def make_line_statebuilder(
     color=None,
     split_positions=False,
 ):
-    """make a state builder that puts points on a single column with a linked segmentaton id
+    """Generate a state builder that puts points on a single column with a linked segmentaton id
 
-    Args:
-        client (CAVEclient): CAVEclient configured for the datastack desired
-        point_column (str, optional): column in dataframe to pull points from. Defaults to "pt_position".
-        linked_seg_column (str, optional): column to link to segmentation, None for no column. Defaults to "pt_root_id".
-        group_columns (str, or list, optional): column(s) to group annotations by, None for no grouping (default=None)
-        tag_column (str, optional): column to use for tags, None for no tags (default=None)
-        description_column (str, optional): column to use for descriptions, None for no descriptions (default=None)
-        contrast (list, optional):  list-like, optional
-            Two elements specifying the black level and white level as
-            floats between 0 and 1, by default None. If None, no contrast
-            is set.
-        view_kws (dict, optional): dict, optional
-            dictionary of view keywords to configure neuroglancer view
-        split_positions (bool, optional): whether the position column into x,y,z columns. Defaults to False.
-    Returns:
-        StateBuilder: a statebuilder to make points with linked segmentations
+    Parameters
+    ----------
+    client : CAVEclient
+        CAVEclient configured for the datastack desired
+    point_column_a : str, optional
+        column in dataframe to pull points from. Defaults to "pre_pt_position".
+    point_column_b : str, optional
+        column in dataframe to pull points from. Defaults to "post_pt_position".
+    linked_seg_column : str, optional
+        column to link to segmentation, None for no column. Defaults to "pt_root_id".
+    group_column : str, or list, optional
+        column(s) to group annotations by, None for no grouping (default=None)
+    tag_column : str, optional
+        column to use for tags, None for no tags (default=None)
+    description_column : str, optional
+        column to use for descriptions, None for no descriptions (default=None)
+    contrast : list, optional
+        Two elements specifying the black level and white level as
+        floats between 0 and 1, by default None. If None, no contrast
+        is set.
+    view_kws : dict, optional
+        dictionary of view keywords to configure neuroglancer view
+    split_positions : bool, optional
+        whether the position column into x,y,z columns. Defaults to False.
+
+    Returns
+    -------
+    StateBuilder:
+        A statebuilder to make points with linked segmentations
     """
     img_layer, seg_layer = from_client(client, contrast=contrast)
     line_mapper = LineMapper(
@@ -139,24 +152,35 @@ def make_point_statebuilder(
     color=None,
     split_positions=False,
 ):
-    """make a state builder that puts points on a single column with a linked segmentaton id
+    """Generate a state builder that puts points on a single column with a linked segmentaton id
 
-    Args:
-        client (CAVEclient): CAVEclient configured for the datastack desired
-        point_column (str, optional): column in dataframe to pull points from. Defaults to "pt_position".
-        linked_seg_column (str, optional): column to link to segmentation, None for no column. Defaults to "pt_root_id".
-        group_columns (str, or list, optional): column(s) to group annotations by, None for no grouping (default=None)
-        tag_column (str, optional): column to use for tags, None for no tags (default=None)
-        description_column (str, optional): column to use for descriptions, None for no descriptions (default=None)
-        contrast (list, optional):  list-like, optional
-            Two elements specifying the black level and white level as
-            floats between 0 and 1, by default None. If None, no contrast
-            is set.
-        view_kws (dict, optional): dict, optional
-            dictionary of view keywords to configure neuroglancer view
-        split_positions (bool, optional): whether the position column into x,y,z columns. Defaults to False.
-    Returns:
-        StateBuilder: a statebuilder to make points with linked segmentations
+    Parameters
+    -----------
+    client : CAVEclient
+        CAVEclient configured for the datastack desired
+    point_column : str, optional
+        Column in dataframe to pull points from. Defaults to "pt_position".
+    linked_seg_column : str, optional
+        column to link to segmentation, None for no column. Defaults to "pt_root_id".
+    group_column : str, or list, optional
+        column(s) to group annotations by, None for no grouping (default=None)
+    tag_column : str, optional)
+        column to use for tags, None for no tags (default=None)
+    description_column : str, optional
+        column to use for descriptions, None for no descriptions (default=None)
+    contrast : list, optional
+        Two elements specifying the black level and white level as
+        floats between 0 and 1, by default None. If None, no contrast
+        is set.
+    view_kws : dict, optional
+        dictionary of view keywords to configure neuroglancer view
+    split_positions : bool, optional
+        whether the position column into x,y,z columns. Defaults to False.
+
+    Returns
+    -------
+    StateBuilder:
+        A statebuilder to make points with linked segmentations
     """
     img_layer, seg_layer = from_client(client, contrast=contrast)
     point_mapper = PointMapper(
@@ -203,41 +227,54 @@ def make_pre_post_statebuilder(
     """Function to generate ChainedStateBuilder with optional pre and post synaptic
     annotation layers
 
-    Args:
-        client (CAVEclient): a CAVEclient configured for datastack to visualize
-        root_id (int): a rootID to build around
-        show_inputs (bool, optional): whether to show input synapses. Defaults to False.
-        show_outputs (bool, optional): whether to show output synapses.. Defaults to False.
-        contrast (list, optional):  list-like, optional
-            Two elements specifying the black level and white level as
-            floats between 0 and 1, by default None. If None, no contrast
-            is set.
-        view_kws (dict, optional): view_kws to configure statebuilder, see nglui.StateBuilder . Defaults to None.
-            keys are:
-                show_slices: Boolean
-                    sets if slices are shown in the 3d view. Defaults to False.
-                layout: str
-                    `xy-3d`/`xz-3d`/`yz-3d` (sections plus 3d pane), `xy`/`yz`/`xz`/`3d` (only one pane), or `4panel` (all panes). Default is `xy-3d`.
-                show_axis_lines: Boolean
-                    determines if the axis lines are shown in the middle of each view.
-                show_scale_bar: Boolean
-                    toggles showing the scale bar.
-                orthographic : Boolean
-                    toggles orthographic view in the 3d pane.
-                position* : 3-element vector
-                    determines the centered location.
-                zoom_image : float
-                    Zoom level for the imagery in units of nm per voxel. Defaults to 8.
-                zoom_3d : float
-                    Zoom level for the 3d pane. Defaults to 2000. Smaller numbers are more zoomed in.
-        point_column (str, optional): column to pull points for synapses from. Defaults to "ctr_pt_position".
-        pre_pt_root_id_col (str, optional): column to pull pre synaptic ids for synapses from. Defaults to "pre_pt_root_id".
-        post_pt_root_id_col (str, optional): column to pull post synaptic ids for synapses from. Defaults to "post_pt_root_id".
-        input_layer_name (str, optional): name of layer for inputs. Defaults to "syns_in".
-        output_layer_name (str, optional): name of layer for outputs. Defaults to "syns_out".
-        split_positions (bool, optional): whether the position column is split into x,y,z columns. Defaults to False.
-    Returns:
-        ChainedStateBuilder: An instance of a ChainedStateBuilder configured to accept
+    Parameters
+    ----------
+    client : CAVEclient
+        a CAVEclient configured for datastack to visualize
+    show_inputs : bool, optional
+        whether to show input synapses. Defaults to False.
+    show_outputs : bool, optional
+        whether to show output synapses.. Defaults to False.
+    contrast : list, optional
+        Two elements specifying the black level and white level as
+        floats between 0 and 1, by default None. If None, no contrast
+        is set.
+    view_kws : dict, optional
+        view_kws to configure statebuilder, see nglui.StateBuilder. Defaults to None.
+        keys are:
+            show_slices: Boolean
+                sets if slices are shown in the 3d view. Defaults to False.
+            layout: str
+                `xy-3d`/`xz-3d`/`yz-3d` (sections plus 3d pane), `xy`/`yz`/`xz`/`3d` (only one pane), or `4panel` (all panes). Default is `xy-3d`.
+            show_axis_lines: Boolean
+                determines if the axis lines are shown in the middle of each view.
+            show_scale_bar: Boolean
+                toggles showing the scale bar.
+            orthographic : Boolean
+                toggles orthographic view in the 3d pane.
+            position* : 3-element vector
+                determines the centered location.
+            zoom_image : float
+                Zoom level for the imagery in units of nm per voxel. Defaults to 8.
+            zoom_3d : float
+                Zoom level for the 3d pane. Defaults to 2000. Smaller numbers are more zoomed in.
+    point_column : str, optional
+        column to pull points for synapses from. Defaults to "ctr_pt_position".
+    pre_pt_root_id_col : str, optional
+        column to pull pre synaptic ids for synapses from. Defaults to "pre_pt_root_id".
+    post_pt_root_id_col : str, optional
+        column to pull post synaptic ids for synapses from. Defaults to "post_pt_root_id".
+    input_layer_name : str, optional
+        name of layer for inputs. Defaults to "syns_in".
+    output_layer_name : str, optional
+        name of layer for outputs. Defaults to "syns_out".
+    split_positions : bool, optional
+        whether the position column is split into x,y,z columns. Defaults to False.
+
+    Returns
+    -------
+    ChainedStateBuilder:
+        An instance of a ChainedStateBuilder configured to accept
         a list  starting with None followed by optionally synapse input dataframe
         followed by optionally synapse output dataframe.
     """
@@ -284,8 +321,30 @@ def make_pre_post_statebuilder(
     return ChainedStateBuilder(state_builders)
 
 
-def make_state_url(df, sb, client, ngl_url=None):
-    state = sb.render_state(df, return_as="dict")
+def make_state_url(df, sb, client, ngl_url=None, target_site=None):
+    """Generate a url from a neuroglancer state via a state server.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Dataframe to pass through statebuilder
+    sb : statebuilder.StateBuilder
+        Statebuilder to use to render data for link
+    client : CAVEclient
+        CAVEclient configured with a state server
+    ngl_url : str, optional
+        Neuroglancer deployment URL, by default None
+    target_site : str, optional
+        Type of neuroglancer deployment to build link for, by default None.
+        This value overrides automatic checking based on the provided url.
+        Use `seunglab` for a Seung-lab branch and either `mainline` or `cave-explorer` for the Cave Explorer or main Google branch.
+
+    Returns
+    -------
+    str
+        Url to the uploaded neuroglancer state.
+    """
+    state = sb.render_state(df, return_as="dict", target_site=target_site)
     state_id = client.state.upload_state_json(state)
     if ngl_url is None:
         ngl_url = client.info.viewer_site()
@@ -301,34 +360,55 @@ def make_url_robust(
     client: CAVEclient,
     shorten: str = "if_long",
     ngl_url: str = None,
-    max_url_length = MAX_URL_LENGTH,
+    max_url_length=MAX_URL_LENGTH,
+    target_site=None,
 ):
-    """Generate a url from a neuroglancer state. If too long, return through state server
+    """Generate a url from a neuroglancer state. If too long, return through state server,
+    othewise return a url containing the data directly.
 
-    Args:
-        df (pandas.DataFrame): dataframe to pass through statebuilder
-        sb (nglui.statebuilder.StateBuilder): statebuilder to generate link with
-        client (caveclient.CAVEclient): client to interact with state server with and get defaults from
-        shorten (str, optional): How to shorten link. one of 'if_long', 'always', 'never'.
-            'if_long' will use the state server to shorten links longer than nglui.statebuilder.MAX_URL_LENGTH
-            (set to 1,750,000).
-            'always' will always use the state server to shorten the url
-            'never' will always return the full url.  Defaults to "if_long".
-        ngl_url (str, optional): neuroglancer deployment to make url with.
-            Defaults to None, which will use the default in the passed sb StateBuilder
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Dataframe to pass through statebuilder
+    sb : statebuilder.StateBuilder
+        Statebuilder to use to render data for link
+    client : CAVEclient
+        CAVEclient configured with a state server
+    shorten : str, optional
+        How to shorten link. one of 'if_long', 'always', 'never'.
+        'if_long' will use the state server to shorten links longer than nglui.statebuilder.MAX_URL_LENGTH
+        (set to 1,750,000).
+        'always' will always use the state server to shorten the url
+        'never' will always return the full url.  Defaults to "if_long".
+    ngl_url : str, optional
+        Neuroglancer deployment URL, by default None
+    max_url_length : int, optional
+        Maximum length of url to return directly, by default 1_750_000
+    target_site : str, optional
+        Type of neuroglancer deployment to build link for, by default None.
+        This value overrides automatic checking based on the provided url.
+        Use `seunglab` for a Seung-lab branch and either `mainline` or `cave-explorer` for the Cave Explorer or main Google branch.
 
-    Returns:
-        str: a url containing the state created by the statebuilder.
+    Returns
+    -------
+    str
+        URL containing the state created by the statebuilder.
     """
 
     if shorten == "if_long":
-        url = sb.render_state(df, return_as="url", url_prefix=ngl_url)
+        url = sb.render_state(
+            df, return_as="url", url_prefix=ngl_url, target_site=target_site
+        )
         if len(url) > max_url_length:
-            url = make_state_url(df, sb, client, ngl_url=ngl_url)
+            url = make_state_url(
+                df, sb, client, ngl_url=ngl_url, target_site=target_site
+            )
     elif shorten == "always":
-        url = make_state_url(df, sb, client)
+        url = make_state_url(df, sb, client, target_site=target_site)
     elif shorten == "never":
-        url = sb.render_state(df, return_as="url", url_prefix=ngl_url)
+        url = sb.render_state(
+            df, return_as="url", url_prefix=ngl_url, target_site=target_site
+        )
     else:
         raise (ValueError('shorten should be one of ["if_long", "always", "never"]'))
     return url
@@ -342,28 +422,45 @@ def package_state(
     return_as: str = "url",
     ngl_url: str = None,
     link_text: str = "Neuroglancer Link",
+    target_site: str = None,
 ):
-    """a function to automate creating a state from a statebuilder and
+    """Automate creating a state from a statebuilder and
     a dataframe, return it in the desired format, shortening if desired.
 
-    Args:
-        df (pd.DataFrame): dataframe to pass to the sb:StateBuilder
-        sb (StateBuilder): StateBuilder to generate links with
-        client (CAVEclient): caveclient to get default ngl_url and iteract with state viewer
-        shorten (str): one of ["if_long", "always", "never"]
-            'if_long' will use the state server to shorten links longer than nglui.statebuilder.MAX_URL_LENGTH
-            (set to 1,750,000).
-            'always' will always use the state server to shorten the url
-            'never' will always return the full url.  Defaults to "if_long".
-        return_as (str): one of ['html', 'url', 'json']
-            'html' will return an ipython clickable link
-            'url' will return a string with the url
-            'json' will return the state as a dictionary
-        ngl_url (str): neuroglancer url to use, if None will use client.info.viewer_site()
-        link_text (str): if returning as html, what text to show for the link.
+    # Convert below to numpydoc
 
-    Returns:
-       HTML, str or dict : state in format specified by return_as
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Dataframe to pass through statebuilder
+    sb : statebuilder.StateBuilder
+        Statebuilder to use to render data for link
+    client : CAVEclient
+        CAVEclient configured with a state server
+    shorten : str, optional
+        How to shorten link. one of 'if_long', 'always', 'never'.
+        'if_long' will use the state server to shorten links longer than nglui.statebuilder.MAX_URL_LENGTH
+        (set to 1,750,000).
+        'always' will always use the state server to shorten the url
+        'never' will always return the full url.  Defaults to "if_long".
+    return_as : str, optional
+        How to return the state. one of 'html', 'url', 'json'.
+        'html' will return an ipython clickable link
+        'url' will return a string with the url
+        'json' will return the state as a dictionary
+    ngl_url : str, optional
+        Neuroglancer deployment URL, by default None
+    link_text : str, optional
+        Text to use for the link, by default "Neuroglancer Link"
+    target_site : str, optional
+        Type of neuroglancer deployment to build link for, by default None.
+        This value overrides automatic checking based on the provided url.
+        Use `seunglab` for a Seung-lab branch and either `mainline` or `cave-explorer` for the Cave Explorer or main Google branch.
+
+    Returns
+    -------
+    HTML, str or dict
+        state in format specified by return_as
     """
     if ngl_url is None:
         ngl_url = client.info.viewer_site()
@@ -371,13 +468,15 @@ def package_state(
             ngl_url = DEFAULT_NGL
 
     if (return_as == "html") or (return_as == "url"):
-        url = make_url_robust(df, sb, client, shorten=shorten, ngl_url=ngl_url)
+        url = make_url_robust(
+            df, sb, client, shorten=shorten, ngl_url=ngl_url, target_site=target_site
+        )
         if return_as == "html":
             return HTML(f'<a href="{url}">{link_text}</a>')
         else:
             return url
     elif return_as == "json":
-        return sb.render_state(df, return_as=return_as)
+        return sb.render_state(df, return_as=return_as, target_site=target_site)
     else:
         raise (
             ValueError(
@@ -402,63 +501,77 @@ def make_synapse_neuroglancer_link(
     neuroglancer_link_text="Neuroglancer Link",
     color=None,
     split_positions=False,
+    target_site=None,
 ):
-    """_summary_
+    """Generate a neuroglancer link from a synapse dataframe as returned from CAVEclient.materialize.synapse_query.
 
-    Args:
-        synapse_df (pandas.DataFrame): dataframe where each row is a synapse
-        client (caveclient.CAVEclient): a caveclient
-        return_as (str, optional): how to return url.
-            'html' as a ipython html element
-            'url' as a url string
-            'json' as dictionary state.
-            Defaults to "html".
-        shorten (str, optional): whether to shorten link, 'always' will always shorten,
-             'if_long' will shorten it if it's beyond a size MAX_URL_LENGTH.
-             'never' will never shorten. Defaults to "always".
-        contrast (list, optional): Two elements specifying the black level and white level as
-            floats between 0 and 1, by default None. If None, no contrast is set.
-        point_column (str, optional): column in dataframe to take synapse position from. Defaults to "ctr_pt_position".
-        dataframe_resolution (list, optional): list of length 3 specifying resolution units of position column.
-            If None, will attempt to get resolution from dataframe metadata. If no metadata exists,
-            will assume it's in client.info.viewer_resolution(). Defaults to None.
-        group_connections (bool, optional): whether to group synapses in the same connection (between the same neurons).
-            Defaults to True.
-        link_pre_and_post (bool, optional): whether to make link the synapse annotations
-            to the pre and post synaptic partners. Defaults to True.
-        ngl_url (_type_, optional): what neuroglancer to use. Defaults to None.
-            If None will default to client.info.viewer_site().
-            If that is None will default to DEFAULT_NGL.
-        view_kws (dict, optional): viewer dictionary to control neuroglancer viewer. Defaults to None.
-            keys are:
-                show_slices: Boolean
-                    sets if slices are shown in the 3d view. Defaults to False.
-                layout: str
-                    `xy-3d`/`xz-3d`/`yz-3d` (sections plus 3d pane), `xy`/`yz`/`xz`/`3d` (only one pane), or `4panel` (all panes). Default is `xy-3d`.
-                show_axis_lines: Boolean
-                    determines if the axis lines are shown in the middle of each view.
-                show_scale_bar: Boolean
-                    toggles showing the scale bar.
-                orthographic : Boolean
-                    toggles orthographic view in the 3d pane.
-                position* : 3-element vector
-                    determines the centered location.
-                zoom_image : float
-                    Zoom level for the imagery in units of nm per voxel. Defaults to 8.
-                zoom_3d : float
-                    Zoom level for the 3d pane. Defaults to 2000. Smaller numbers are more zoomed in.
-        pre_post_columns (list, optional): [pre,post] column names for pre and post synaptic root_ids. Defaults to None.
-            If None will assume ['pre_pt_root_id', 'post_pt_root_id']
-        neuroglancer_link_text (str, optional): Text to use in returning html link. Defaults to "Neuroglancer Link".
-        color (list(float) or str, optional): color of synapse points as rgb list [0,1],
-            or hex string, or common name (see webcolors documentation)
-        split_positions (bool, optional): whether the position column are splits into x,y,z columns.
+    Parameters
+    ----------
+    synapse_df : pandas.DataFrame
+        DataFrame where each row represents a synapse.
+    client : caveclient.CAVEclient
+        A CAVEclient instance.
+    return_as : str, optional
+        How to return the URL. Valid options are:
+        - 'html': Returns an IPython HTML element.
+        - 'url': Returns a URL string.
+        - 'json': Returns a dictionary representing the Neuroglancer state.
+        Defaults to 'html'.
+    shorten : str, optional
+        Whether to shorten the link. Valid options are:
+        - 'always': Always shorten the link.
+        - 'if_long': Shorten the link if it exceeds MAX_URL_LENGTH.
+        - 'never': Never shorten the link.
+        Defaults to 'always'.
+    contrast : list, optional
+        List of two floats between 0 and 1, specifying the black and white levels.
+        If None, no contrast is set.
+    point_column : str, optional
+        Column in the DataFrame containing synapse positions. Defaults to 'ctr_pt_position'.
+    dataframe_resolution : list, optional
+        List of length 3, specifying the resolution units of the position column.
+        If None, attempts to get the resolution from DataFrame metadata or client.info.viewer_resolution().
+    group_connections : bool, optional
+        Whether to group synapses within the same connection (between the same neurons).
+        Defaults to True.
+    link_pre_and_post : bool, optional
+        Whether to link the synapse annotations to the pre- and post-synaptic partners.
+        Defaults to True.
+    ngl_url : str, optional
+        URL of the Neuroglancer instance to use. Defaults to client.info.viewer_site() or DEFAULT_NGL.
+    view_kws : dict, optional
+        Dictionary containing viewer settings for Neuroglancer. Available keys:
+        - show_slices: Boolean, sets if slices are shown in the 3D view.
+        - layout: str, specifies the viewer layout (e.g., 'xy-3d', '4panel').
+        - show_axis_lines: Boolean, determines if axis lines are shown.
+        - show_scale_bar: Boolean, toggles the scale bar.
+        - orthographic: Boolean, toggles orthographic view in the 3D pane.
+        - position: 3-element vector, sets the centered location.
+        - zoom_image: float, zoom level for the imagery in nm per voxel.
+        - zoom_3d: float, zoom level for the 3D pane.
+    pre_post_columns : list, optional
+        List of two strings, specifying the column names for pre- and post-synaptic root_ids.
+        Defaults to ['pre_pt_root_id', 'post_pt_root_id'].
+    neuroglancer_link_text : str, optional
+        Text to use in the returned HTML link. Defaults to 'Neuroglancer Link'.
+    color : list(float) or str, optional
+        Color of synapse points as an RGB list [0, 1], hex string, or common name.
+    split_positions : bool, optional
+        Whether the position column is split into x, y, and z columns.
+    target_site : str, optional
+        Type of neuroglancer deployment to build link for, by default None.
+        This value overrides automatic checking based on the provided url.
+        Use `seunglab` for a Seung-lab branch and either `mainline` or `cave-explorer` for the Cave Explorer or main Google branch.
 
-    Raises:
-        ValueError: If the point_column is not in the dataframe
+    Returns
+    -------
+    IPython.HTML, str, or dict
+        Representation of the Neuroglancer state, depending on the `return_as` parameter.
 
-    Returns:
-        Ipython.HTML, str, or json: a representation of the neuroglancer state.Type depends on return_as
+    Raises
+    ------
+    ValueError
+        If the specified `point_column` is not found in the DataFrame.
     """
     if point_column not in synapse_df.columns:
         raise ValueError(f"point_column={point_column} not in dataframe")
@@ -489,7 +602,14 @@ def make_synapse_neuroglancer_link(
         split_positions=split_positions,
     )
     return package_state(
-        synapse_df, sb, client, shorten, return_as, ngl_url, neuroglancer_link_text
+        synapse_df,
+        sb,
+        client,
+        shorten,
+        return_as,
+        ngl_url,
+        neuroglancer_link_text,
+        target_site=target_site,
     )
 
 
@@ -519,63 +639,73 @@ def make_neuron_neuroglancer_link(
 ):
     """function to create a neuroglancer link view of a neuron, optionally including inputs and outputs
 
-    Args:
-        client (_type_): a CAVEclient configured for datastack to visualize
-        root_ids (Iterable[int]): root_ids to build around
-        return_as (str, optional): one of 'html', 'json', 'url'. (default 'html')
-        shorten (str, optional): if 'always' make a state link always
-                             'if_long' make a state link if the json is too long (default)
-                             'never' don't shorten link
-        show_inputs (bool, optional): whether to include input synapses. Defaults to False.
-        show_outputs (bool, optional): whether to include output synapses. Defaults to False.
-        sort_inputs (bool, optional): whether to sort inputs by presynaptic root id, ordered by synapse count.
-            Defaults to True.
-        sort_outputs (bool, optional): whether to sort inputs by presynaptic root id, ordered by postsynaptic synapse count.
-            Defaults to True.
-        sort_ascending (bool, optional): If sorting, whether to sort ascending (lowest synapse count to highest).
-            Defaults to False.
-        input_color (list(float) or str, optional): color of input points as rgb list [0,1],
-            or hex string, or common name (see webcolors documentation)
-        output_color (list(float) or str, optional): color of output points as rgb list [0,1],
-            or hex string, or common name (see webcolors documentation)
-        contrast (list, optional): Two elements specifying the black level and white level as
-            floats between 0 and 1, by default None. If None, no contrast is set.
-        timestamp (datetime.datetime, optional): timestamp to do query. Defaults to None, will use materialized version.
-        view_kws (dict, optional): view_kws to configure statebuilder, see nglui.StateBuilder.
-            Defaults to None.
-            keys are:
-                show_slices: Boolean
-                    sets if slices are shown in the 3d view. Defaults to False.
-                layout: str
-                    `xy-3d`/`xz-3d`/`yz-3d` (sections plus 3d pane), `xy`/`yz`/`xz`/`3d` (only one pane), or `4panel` (all panes). Default is `xy-3d`.
-                show_axis_lines: Boolean
-                    determines if the axis lines are shown in the middle of each view.
-                show_scale_bar: Boolean
-                    toggles showing the scale bar.
-                orthographic : Boolean
-                    toggles orthographic view in the 3d pane.
-                position* : 3-element vector
-                    determines the centered location.
-                zoom_image : float
-                    Zoom level for the imagery in units of nm per voxel. Defaults to 8.
-                zoom_3d : float
-                    Zoom level for the 3d pane. Defaults to 2000. Smaller numbers are more zoomed in.
-        point_column (str, optional): column to pull points for synapses from. Defaults to "ctr_pt_position".
-        pre_pt_root_id_col (str, optional): column to pull pre synaptic ids for synapses from.
-            Defaults to "pre_pt_root_id".
-        post_pt_root_id_col (str, optional): column to pull post synaptic ids for synapses from.
-            Defaults to "post_pt_root_id".
-        input_layer_name (str, optional): name of layer for inputs. Defaults to "syns_in".
-        output_layer_name (str, optional): name of layer for outputs. Defaults to "syns_out".
-        ngl_url (str, optional): url to use for neuroglancer.
-            Defaults to None (will use default viewer set in datastack)
-        link_text (str, optional): text to use for html return.
-            Defaults to 'Neuroglancer Link'
-    Raises:
-        ValueError: If the point column is not present in the synapse table
+    Parameters
+    ----------
+    client : CAVEclient
+        A CAVEclient configured for the datastack to visualize.
+    root_ids : Iterable[int]
+        The root_ids to build the visualization around.
+    return_as : str, optional
+        How to return the URL or state. Valid options are:
+        - 'html': Returns an IPython HTML element.
+        - 'json': Returns a dictionary representing the Neuroglancer state.
+        - 'url': Returns a URL string.
+        Defaults to 'html'.
+    shorten : str, optional
+        Whether to shorten the link. Valid options are:
+        - 'always': Always shorten the link.
+        - 'if_long': Shorten the link if it exceeds MAX_URL_LENGTH.
+        - 'never': Never shorten the link.
+        Defaults to 'if_long'.
+    show_inputs : bool, optional
+        Whether to include input synapses. Defaults to False.
+    show_outputs : bool, optional
+        Whether to include output synapses. Defaults to False.
+    sort_inputs : bool, optional
+        Whether to sort input synapses by presynaptic root id, ordered by synapse count.
+        Defaults to True.
+    sort_outputs : bool, optional
+        Whether to sort output synapses by presynaptic root id, ordered by postsynaptic synapse count.
+        Defaults to True.
+    sort_ascending : bool, optional
+        If sorting, whether to sort ascending (lowest synapse count to highest).
+        Defaults to False.
+    input_color : list(float) or str, optional
+        Color of input synapse points as an RGB list [0, 1], hex string, or common name.
+    output_color : list(float) or str, optional
+        Color of output synapse points as an RGB list [0, 1], hex string, or common name.
+    contrast : list, optional
+        List of two floats between 0 and 1, specifying the black and white levels.
+        If None, no contrast is set.
+    timestamp : datetime.datetime, optional
+        Timestamp to use for the query. Defaults to None, which will use the materialized version.
+    view_kws : dict, optional
+        Dictionary containing viewer settings for Neuroglancer. See nglui.StateBuilder for options.
+        See the previous docstring for details on available keys.
+    point_column : str, optional
+        Column to pull synapse positions from. Defaults to "ctr_pt_position".
+    pre_pt_root_id_col : str, optional
+        Column to pull presynaptic IDs for synapses from. Defaults to "pre_pt_root_id".
+    post_pt_root_id_col : str, optional
+        Column to pull postsynaptic IDs for synapses from. Defaults to "post_pt_root_id".
+    input_layer_name : str, optional
+        Name of the layer for input synapses. Defaults to "syns_in".
+    output_layer_name : str, optional
+        Name of the layer for output synapses. Defaults to "syns_out".
+    ngl_url : str, optional
+        URL of the Neuroglancer instance to use. Defaults to the default viewer set in the datastack.
+    link_text : str, optional
+        Text to use for the HTML return. Defaults to 'Neuroglancer Link'.
 
-    Returns:
-        Ipython.HTML, str, or json: a representation of the neuroglancer state.Type depends on return_as
+    Raises
+    ------
+    ValueError
+        If the specified point column is not present in the synapse table.
+
+    Returns
+    -------
+    IPython.HTML, str, or dict
+        Representation of the Neuroglancer state, depending on the `return_as` parameter.
     """
     if not isinstance(root_ids, Iterable):
         root_ids = [root_ids]
@@ -626,7 +756,16 @@ def make_neuron_neuroglancer_link(
         dataframe_resolution_post=data_resolution_post,
         split_positions=True,
     )
-    return package_state(dataframes, sb, client, shorten, return_as, ngl_url, link_text)
+    return package_state(
+        dataframes,
+        sb,
+        client,
+        shorten,
+        return_as,
+        ngl_url,
+        link_text,
+        target_site=target_site,
+    )
 
 
 def from_client(client, image_name=None, segmentation_name=None, contrast=None):
@@ -634,8 +773,8 @@ def from_client(client, image_name=None, segmentation_name=None, contrast=None):
 
     Parameters
     ----------
-    client : annotationframeworkclient.FrameworkClient
-        A FrameworkClient with a specified datastack
+    client : caveclient.CAVEclient
+        A CAVEclient with a specified datastack
     image_name : str, optional
         Name for the image layer, by default None.
     segmentation_name : str, optional

@@ -1,0 +1,24 @@
+# statebuilder.helpers.make_url_robust { #nglui.statebuilder.helpers.make_url_robust }
+
+`statebuilder.helpers.make_url_robust(df, sb, client, shorten='if_long', ngl_url=None, max_url_length=MAX_URL_LENGTH, target_site=None)`
+
+Generate a url from a neuroglancer state. If too long, return through state server,
+othewise return a url containing the data directly.
+
+## Parameters
+
+| Name             | Type                                                                         | Description                                                                                                                                                                                                                                                                                                    | Default          |
+|------------------|------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------|
+| `df`             | pandas.pandas.DataFrame                                                      | Dataframe to pass through statebuilder                                                                                                                                                                                                                                                                         | _required_       |
+| `sb`             | nglui.statebuilder.statebuilder.nglui.statebuilder.statebuilder.StateBuilder | Statebuilder to use to render data for link                                                                                                                                                                                                                                                                    | _required_       |
+| `client`         | caveclient.CAVEclient                                                        | CAVEclient configured with a state server                                                                                                                                                                                                                                                                      | _required_       |
+| `shorten`        | str                                                                          | How to shorten link. one of 'if_long', 'always', 'never'. 'if_long' will use the state server to shorten links longer than nglui.statebuilder.MAX_URL_LENGTH (set to 1,750,000). 'always' will always use the state server to shorten the url 'never' will always return the full url.  Defaults to "if_long". | `'if_long'`      |
+| `ngl_url`        | str                                                                          | Neuroglancer deployment URL, by default None                                                                                                                                                                                                                                                                   | `None`           |
+| `max_url_length` | int                                                                          | Maximum length of url to return directly, by default 1_750_000                                                                                                                                                                                                                                                 | `MAX_URL_LENGTH` |
+| `target_site`    | str                                                                          | Type of neuroglancer deployment to build link for, by default None. This value overrides automatic checking based on the provided url. Use `seunglab` for a Seung-lab branch and either `mainline` or `cave-explorer` for the Cave Explorer or main Google branch.                                             | `None`           |
+
+## Returns
+
+| Type   | Description                                           |
+|--------|-------------------------------------------------------|
+| str    | URL containing the state created by the statebuilder. |

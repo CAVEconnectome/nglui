@@ -269,6 +269,19 @@ class SegmentationLayerConfig(LayerConfigBase):
         fixed_id_colors=None,
         color_column=None,
     ):
+        """Add rules for selecting active segment ids and their colors
+
+        Parameters
+        ----------
+        selected_ids_column : str, optional
+            Dataframe column to use for adding selected segment ids to the segmentation layer, by default None
+        fixed_ids : int or list, optional
+            Add one or more segment ids to be active, independent of the data, by default None
+        fixed_id_colors : list, optional
+            Add a list of colors (hex, rgb, or CSS3 string) to assign to the fixed ids, by default None
+        color_column : str, optional
+            Dataframe column to use for adding selected segment colors, by default None
+        """
         if self._selection_map is not None:
             if isinstance(selected_ids_column, str):
                 selected_ids_column = [selected_ids_column]

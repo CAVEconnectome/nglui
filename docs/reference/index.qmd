@@ -1,0 +1,21 @@
+---
+name: function intro
+format:
+  html: 
+    grid:
+      sidebar-width: 300px
+      body-width: 900px
+---
+
+# Function Intro
+This site provides basic documentation for the functions in `NGLui`.
+Please see the [tutorials](../tutorials/index.qmd) for more information about how to use them.
+
+Note that `nglui` spans two public submodules responsible for different tasks.
+
+- `StateBuilder` handles data-driven Neuroglancer state generation (hence the package name).
+- `Parser` extracts information from Neuroglancer states, as represented by dictionaries.
+
+---
+
+{{< include /reference/_api_index.qmd >}}

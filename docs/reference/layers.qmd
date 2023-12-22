@@ -1,0 +1,112 @@
+# layers { #nglui.statebuilder.layers }
+
+`statebuilder.layers`
+
+
+
+## Classes
+
+| Name | Description |
+| --- | --- |
+| [AnnotationLayerConfig](#nglui.statebuilder.layers.AnnotationLayerConfig) | Configuration class for annotation layers |
+| [ImageLayerConfig](#nglui.statebuilder.layers.ImageLayerConfig) | Image layer configuration class. |
+| [LayerConfigBase](#nglui.statebuilder.layers.LayerConfigBase) | Base class for configuring layers |
+| [SegmentationLayerConfig](#nglui.statebuilder.layers.SegmentationLayerConfig) | Configuration class for segmentation layers |
+
+## AnnotationLayerConfig { #nglui.statebuilder.layers.AnnotationLayerConfig }
+
+`statebuilder.layers.AnnotationLayerConfig(self, name=None, color=None, linked_segmentation_layer=None, mapping_rules=[], array_data=False, tags=None, active=True, filter_by_segmentation=False, brackets_show_segmentation=True, selection_shows_segmentation=True, filter_query=None, data_resolution=None)`
+
+Configuration class for annotation layers
+
+### Parameters
+
+| Name                        | Type                                                                                                                             | Description                                                                                                                                                                              | Default   |
+|-----------------------------|----------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|
+| `name`                      | str                                                                                                                              | Layer name. By default, 'annos'                                                                                                                                                          | `None`    |
+| `color`                     | str                                                                                                                              | Hex color code with an initial #. By default, None                                                                                                                                       | `None`    |
+| `linked_segmentation_layer` | str                                                                                                                              | Name of a linked segmentation layer for selected ids. By default, None                                                                                                                   | `None`    |
+| `mapping_rules`             | (nglui.statebuilder.mappers.PointMapper, nglui.statebuilder.mappers.LineMapper, nglui.statebuilder.mappers.SphereMapper or list) | One rule or a list of rules mapping data to annotations. By default, []                                                                                                                  | `[]`      |
+| `array_data`                | bool                                                                                                                             | If True, allows simple mapping where one or more arrays are passed instead of a dataframe. Only allows basic annotation creation, no tags, linked segmentations, or other rich features. | `False`   |
+| `tags`                      | list                                                                                                                             | List of tags for the layer.                                                                                                                                                              | `None`    |
+| `active`                    | bool                                                                                                                             | If True, makes the layer selected. Default is True (unlike for image/segmentation layers).                                                                                               | `True`    |
+
+## ImageLayerConfig { #nglui.statebuilder.layers.ImageLayerConfig }
+
+`statebuilder.layers.ImageLayerConfig(self, source, name=None, active=False, contrast_controls=False, black=0.0, white=1.0)`
+
+Image layer configuration class.
+
+This provides the rules for setting up an image layer in neuroglancer.
+
+### Parameters
+
+| Name                | Type   | Description                                                                                    | Default    |
+|---------------------|--------|------------------------------------------------------------------------------------------------|------------|
+| `source`            | str    | Cloudpath to an image source                                                                   | _required_ |
+| `name`              | str    | Name of the image layer. By default, 'img'.                                                    | `None`     |
+| `active`            | bool   | If True, makes the layer active in neuroglancer. Default is False.                             | `False`    |
+| `contrast_controls` | bool   | If True, gives the layer a user-controllable brightness and contrast shader. Default is False. | `False`    |
+| `black`             | float  | If contrast_controls is True, sets the default black level. Default is 0.0.                    | `0.0`      |
+| `white`             | float  | If contrast_controls is True, sets the default white level. Default is 1.0.                    | `1.0`      |
+
+## LayerConfigBase { #nglui.statebuilder.layers.LayerConfigBase }
+
+`statebuilder.layers.LayerConfigBase(self, name, type, source, color, active)`
+
+Base class for configuring layers
+
+### Parameters
+
+| Name     | Type   | Description                                 | Default    |
+|----------|--------|---------------------------------------------|------------|
+| `name`   | str    | Layer name for reference and display        | _required_ |
+| `type`   | str    | Layer type. Usually handled by the subclass | _required_ |
+| `source` | str    | Datasource for the layer                    | _required_ |
+| `color`  | str    | Hex string (with starting hash).            | _required_ |
+| `active` | (bool) | If True, becomes a selected layer.          | _required_ |
+
+## SegmentationLayerConfig { #nglui.statebuilder.layers.SegmentationLayerConfig }
+
+`statebuilder.layers.SegmentationLayerConfig(self, source, name=None, selected_ids_column=None, fixed_ids=None, fixed_id_colors=None, color_column=None, active=False, alpha_selected=0.3, alpha_3d=1, alpha_unselected=0, split_point_map=None, view_kws=None, timestamp=None, data_resolution=None)`
+
+Configuration class for segmentation layers
+
+### Parameters
+
+| Name                  | Type                         | Description                                                                                                                                                                                             | Default    |
+|-----------------------|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|
+| `source`              | str                          | Segmentation source                                                                                                                                                                                     | _required_ |
+| `name`                | (str, optional)              | Layer name.                                                                                                                                                                                             | `None`     |
+| `selected_ids_column` | str or list-like, optional.  | Column name (or list of column names) to use for selected ids.                                                                                                                                          | `None`     |
+| `fixed_ids`           | list-like, optional.         | List of root ids to select directly.                                                                                                                                                                    | `None`     |
+| `fixed_id_colors`     | list-like, optional.         | List of colors for fixed ids. Should be the same length as fixed_ids, although null entries can be padded with None values.                                                                             | `None`     |
+| `color_column`        | str, optional.               | # at the begining. Column to use for color values for selected objects. Values should be RGB hex strings with a                                                                                         | `None`     |
+| `active`              | bool, optional.              | If True, makes the layer selected. Default is False.                                                                                                                                                    | `False`    |
+| `alpha_selected`      |                              | Opacity of selected segmentations in the image layer. Optional, default is 0.3.                                                                                                                         | `0.3`      |
+| `alpha_3d`            |                              | Opacity of meshes. Optional, default is 1.                                                                                                                                                              | `1`        |
+| `alpha_unselected`    |                              | Opacity of unselected segments. Optional, default is 0.                                                                                                                                                 | `0`        |
+| `split_point_map`     |                              | If not None, provides an object to map the dataframe input to multicut points. Default is None.                                                                                                         | `None`     |
+| `view_kws`            | dict, optional.              | Keyword arguments for viewer.set_segmentation_view_options. Sets selected (and unselected) segmetation alpha values. Defaults to values in DEFAULT_SEGMENTATION_VIEW_KWS dict specified in this module. | `None`     |
+| `timestamp`           | float or datetime, optional. | Timestamp at which to fix the chunkedgraph in either unix epoch or datetime format. Optional, default is None.                                                                                          | `None`     |
+
+### Methods
+
+| Name | Description |
+| --- | --- |
+| [add_selection_map](#nglui.statebuilder.layers.SegmentationLayerConfig.add_selection_map) | Add rules for selecting active segment ids and their colors |
+
+#### add_selection_map { #nglui.statebuilder.layers.SegmentationLayerConfig.add_selection_map }
+
+`statebuilder.layers.SegmentationLayerConfig.add_selection_map(selected_ids_column=None, fixed_ids=None, fixed_id_colors=None, color_column=None)`
+
+Add rules for selecting active segment ids and their colors
+
+##### Parameters
+
+| Name                  | Type        | Description                                                                                        | Default   |
+|-----------------------|-------------|----------------------------------------------------------------------------------------------------|-----------|
+| `selected_ids_column` | str         | Dataframe column to use for adding selected segment ids to the segmentation layer, by default None | `None`    |
+| `fixed_ids`           | int or list | Add one or more segment ids to be active, independent of the data, by default None                 | `None`    |
+| `fixed_id_colors`     | list        | Add a list of colors (hex, rgb, or CSS3 string) to assign to the fixed ids, by default None        | `None`    |
+| `color_column`        | str         | Dataframe column to use for adding selected segment colors, by default None                        | `None`    |

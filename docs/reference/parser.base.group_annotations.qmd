@@ -1,0 +1,25 @@
+# parser.base.group_annotations { #nglui.parser.base.group_annotations }
+
+`parser.base.group_annotations(state, layer_name, description=False, linked_segmentations=False, tags=False)`
+
+All group annotations and their associated points
+
+## Parameters
+
+| Name                   | Type   | Description                                                          | Default    |
+|------------------------|--------|----------------------------------------------------------------------|------------|
+| `state`                | dict   | Neuroglancer state as JSON dict                                      | _required_ |
+| `layer_name`           | str    | Annotation layer name                                                | _required_ |
+| `description`          | bool   | If True, also returns descriptions as well. By default False         | `False`    |
+| `linked_segmentations` | bool   | If True, also returns list of linked segmentations, by default False | `False`    |
+| `tags`                 | bool   | If True, also returns list of tags, by default False                 | `False`    |
+
+## Returns
+
+| Type   | Description                                                                |
+|--------|----------------------------------------------------------------------------|
+| list   | List of N 3-element points                                                 |
+| list   | List of N id strings for groups.                                           |
+| list   | List of N strings (or None), only returned if description=True.            |
+| list   | List of N lists of object ids. Only returned if linked_segmentations=True. |
+| list   | List of N lists of tag ids. Only returned if tags=True.                    |

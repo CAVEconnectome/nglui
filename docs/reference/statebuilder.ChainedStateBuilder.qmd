@@ -1,0 +1,11 @@
+# statebuilder.ChainedStateBuilder { #nglui.statebuilder.ChainedStateBuilder }
+
+`statebuilder.ChainedStateBuilder(self, statebuilders)`
+
+Builds a collection of states that sequentially add annotations based on a sequence of dataframes.
+
+## Parameters
+
+| Name            | Type   | Description                                                           | Default    |
+|-----------------|--------|-----------------------------------------------------------------------|------------|
+| `statebuilders` | list   | List of DataStateBuilders, in same order as dataframes will be passed | _required_ |

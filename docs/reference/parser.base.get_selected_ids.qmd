@@ -1,0 +1,18 @@
+# parser.base.get_selected_ids { #nglui.parser.base.get_selected_ids }
+
+`parser.base.get_selected_ids(state, layer=None)`
+
+Get a list of selected ids in a segmentation layer
+
+## Parameters
+
+| Name    | Type   | Description                                                                                                            | Default    |
+|---------|--------|------------------------------------------------------------------------------------------------------------------------|------------|
+| `state` | dict   | State dict                                                                                                             | _required_ |
+| `layer` | str    | Segmentation layer name, if needed. If None and only one segmentation layer is present, default to it. By default None | `None`     |
+
+## Returns
+
+| Type   | Description       |
+|--------|-------------------|
+| list   | List of root ids. |
