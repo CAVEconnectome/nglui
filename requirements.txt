@@ -5,3 +5,4 @@ six
 webcolors
 requests
 caveclient>=5.14.0
+neuroglancer<=2.36
