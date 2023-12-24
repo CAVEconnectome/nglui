@@ -2,6 +2,13 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.0.1] – 2023-12-20
+
+### Fixed
+
+- Fixed an unnecessary import that caused an error.
+- Added python package neuroglancer to the requirements so versions with errors or incompatibilities can be avoided.
+
 ## [3.0.0] – 2023-12-20
 
 ### Added
