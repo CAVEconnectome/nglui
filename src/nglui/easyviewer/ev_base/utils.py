@@ -5,7 +5,7 @@ import re
 import numbers
 from urllib.parse import urlparse
 
-default_neuroglancer_base = "https://neuromancer-seung-import.appspot.com/"
+default_seunglab_neuroglancer_base = "https://neuromancer-seung-import.appspot.com/"
 default_mainline_neuroglancer_base = "https://ngl.cave-explorer.org/"
 
 def omit_nones(seg_list):
@@ -52,4 +52,18 @@ def _parse_to_mainline(qry):
         return f"{qry.scheme}://middleauth+https:{qry.path}"
     else:
         return f"{qry.scheme}://middleauth+http:{qry.path}"
+    
+def neuroglancer_url(url, target_site):
+    """
+    Check neuroglancer info to determine which kind of site a neuroglancer URL is.
+    """
+    if url is not None:
+        return url
+    elif target_site == 'seunglab':
+        return default_seunglab_neuroglancer_base
+    elif target_site == 'mainline' or target_site == 'cave-explorer':
+        return default_mainline_neuroglancer_base
+    else:
+        raise ValueError("Must specify either a URL or a target site (one of 'seunglab' or 'mainline'/'cave-explorer')")
+
     

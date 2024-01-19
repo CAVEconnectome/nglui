@@ -100,8 +100,7 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         as_html: Optional[bool] = False,
         link_text: Optional[str] = "Neuroglancer Link",
     ) -> str:
-        if prefix is None:
-            prefix = utils.default_neuroglancer_base
+        prefix = utils.neuroglancer_url(prefix, 'seunglab') # 'seunglab' hard-coded because of file.
         ngl_url = neuroglancer.to_url(self.state, prefix=prefix)
         if as_html:
             return '<a href="{}" target="_blank">{}</a>'.format(ngl_url, link_text)

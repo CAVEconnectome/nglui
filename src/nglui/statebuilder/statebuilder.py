@@ -1,8 +1,10 @@
 from nglui.easyviewer import EasyViewer
-from ..easyviewer.ev_base.utils import default_neuroglancer_base
+from ..easyviewer.ev_base.utils import neuroglancer_url, default_seunglab_neuroglancer_base
 from nglui.easyviewer.ev_base.nglite.json_utils import encode_json
 from IPython.display import HTML
 from .utils import check_target_site
+
+DEFAULT_TARGET_SITE = 'seunglab'
 
 DEFAULT_VIEW_KWS = {
     "layout": "xy-3d",
@@ -64,9 +66,9 @@ class StateBuilder:
                 resolution = client.info.viewer_resolution().tolist()
             if target_site is None:
                 target_site = check_target_site(url_prefix, client)
-
-        if url_prefix is None:
-            url_prefix = default_neuroglancer_base
+        if url_prefix is None and target_site is None:
+            target_site = DEFAULT_TARGET_SITE
+        url_prefix = neuroglancer_url(url_prefix, target_site)
 
         self._base_state = base_state
         self._layers = layers
@@ -235,7 +237,7 @@ class ChainedStateBuilder:
         data_list=None,
         base_state=None,
         return_as="url",
-        url_prefix=default_neuroglancer_base,
+        url_prefix=None,
         link_text="Neuroglancer Link",
         target_site=None,
     ):
@@ -252,6 +254,7 @@ class ChainedStateBuilder:
             url_prefix: string, optional (default is https://neuromancer-seung-import.appspot.com).
                         Overrides the default neuroglancer url for url generation.
         """
+
         if data_list is None:
             data_list = len(self._statebuilders) * [None]
 
@@ -264,6 +267,7 @@ class ChainedStateBuilder:
                 data=data,
                 base_state=temp_state,
                 return_as="dict",
+                target_site=target_site
             )
         last_builder = self._statebuilders[-1]
         return last_builder.render_state(
@@ -272,4 +276,5 @@ class ChainedStateBuilder:
             return_as=return_as,
             url_prefix=url_prefix,
             link_text=link_text,
+            target_site=target_site,
         )

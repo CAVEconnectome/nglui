@@ -12,11 +12,10 @@ else:
     use_ngl = True
 from . import utils
 
+from warnings import warn
 from .base import EasyViewerBase, SEGMENTATION_LAYER_TYPES
 from typing import Union, List, Dict, Tuple, Optional
-from numpy import issubdtype, integer, uint64, vstack
-from collections import OrderedDict
-import re
+from numpy import issubdtype, integer
 
 def nanometer_dimension(resolution):
     return neuroglancer.CoordinateSpace(
@@ -97,10 +96,10 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
                 s.layers[layer_name].annotationColor = utils.parse_color(color)
 
         if tags is not None:
-            raise Warning('Tags are not supported by this viewer type.')
+            warn('Tags are not supported by this viewer type.')
         
     def add_annotation_tags(self, layer_name, tags):
-        raise Warning('Annotation tags are not supported by this viewer type.')
+        warn('Annotation tags are not supported by this viewer type.')
 
     def as_url(
         self,
@@ -132,7 +131,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
             self,
             segmentation_layer: str,
             oids: List[int],
-            colors: List | Dict | None = None
+            colors: Optional[Union[List,  Dict]] = None
         ) -> None:
         if issubdtype(type(oids), integer):
             oids = [oids]
@@ -207,7 +206,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         timestamp: Optional[int] = None,
     ):
         if timestamp is not None:
-            raise Warning("Timestamp setting is not yet enabled for this viewer type.")
+            warn("Timestamp setting is not yet enabled for this viewer type.")
         pass
 
     def set_multicut_points(

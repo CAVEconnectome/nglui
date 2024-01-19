@@ -3,6 +3,9 @@ from dataclasses import dataclass
 import numpy as np
 import re
 
+FALLBACK_SEUNGLAB_NGL_URL = "https://neuroglancer.neuvue.io"
+FALLBACK_MAINLINE_NGL_URL = "https://ngl.cave-explorer.org"
+
 SPLIT_SUFFIXES = ['x', 'y', 'z']
 
 def bucket_of_values(col, data, item_is_array=False, array_width=3):
