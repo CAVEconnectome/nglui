@@ -9,8 +9,8 @@ from .layers import (
 from .statebuilder import ChainedStateBuilder, StateBuilder
 from caveclient import CAVEclient
 from caveclient.endpoints import fallback_ngl_endpoint
+from .utils import package_state
 import pandas as pd
-from IPython.display import HTML
 
 DEFAULT_POSTSYN_COLOR = (0.25098039, 0.87843137, 0.81568627)  # CSS3 color turquise
 DEFAULT_PRESYN_COLOR = (1.0, 0.38823529, 0.27843137)  # CSS3 color tomato
@@ -22,9 +22,7 @@ CONTRAST_CONFIG = {
         "white": 0.70,
     }
 }
-MAX_URL_LENGTH = 1_750_000
 DEFAULT_NGL = fallback_ngl_endpoint
-
 
 def sort_dataframe_by_root_id(
     df, root_id_column, ascending=False, num_column="n_times", drop=False
@@ -353,136 +351,6 @@ def make_state_url(df, sb, client, ngl_url=None, target_site=None):
     url = client.state.build_neuroglancer_url(state_id, ngl_url=ngl_url)
     return url
 
-
-def make_url_robust(
-    df: pd.DataFrame,
-    sb: StateBuilder,
-    client: CAVEclient,
-    shorten: str = "if_long",
-    ngl_url: str = None,
-    max_url_length=MAX_URL_LENGTH,
-    target_site=None,
-):
-    """Generate a url from a neuroglancer state. If too long, return through state server,
-    othewise return a url containing the data directly.
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        Dataframe to pass through statebuilder
-    sb : statebuilder.StateBuilder
-        Statebuilder to use to render data for link
-    client : CAVEclient
-        CAVEclient configured with a state server
-    shorten : str, optional
-        How to shorten link. one of 'if_long', 'always', 'never'.
-        'if_long' will use the state server to shorten links longer than nglui.statebuilder.MAX_URL_LENGTH
-        (set to 1,750,000).
-        'always' will always use the state server to shorten the url
-        'never' will always return the full url.  Defaults to "if_long".
-    ngl_url : str, optional
-        Neuroglancer deployment URL, by default None
-    max_url_length : int, optional
-        Maximum length of url to return directly, by default 1_750_000
-    target_site : str, optional
-        Type of neuroglancer deployment to build link for, by default None.
-        This value overrides automatic checking based on the provided url.
-        Use `seunglab` for a Seung-lab branch and either `mainline` or `cave-explorer` for the Cave Explorer or main Google branch.
-
-    Returns
-    -------
-    str
-        URL containing the state created by the statebuilder.
-    """
-
-    if shorten == "if_long":
-        url = sb.render_state(
-            df, return_as="url", url_prefix=ngl_url, target_site=target_site
-        )
-        if len(url) > max_url_length:
-            url = make_state_url(
-                df, sb, client, ngl_url=ngl_url, target_site=target_site
-            )
-    elif shorten == "always":
-        url = make_state_url(df, sb, client, target_site=target_site)
-    elif shorten == "never":
-        url = sb.render_state(
-            df, return_as="url", url_prefix=ngl_url, target_site=target_site
-        )
-    else:
-        raise (ValueError('shorten should be one of ["if_long", "always", "never"]'))
-    return url
-
-
-def package_state(
-    df: pd.DataFrame,
-    sb: StateBuilder,
-    client: CAVEclient,
-    shorten: str = "if_long",
-    return_as: str = "url",
-    ngl_url: str = None,
-    link_text: str = "Neuroglancer Link",
-    target_site: str = None,
-):
-    """Automate creating a state from a statebuilder and
-    a dataframe, return it in the desired format, shortening if desired.
-
-    # Convert below to numpydoc
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        Dataframe to pass through statebuilder
-    sb : statebuilder.StateBuilder
-        Statebuilder to use to render data for link
-    client : CAVEclient
-        CAVEclient configured with a state server
-    shorten : str, optional
-        How to shorten link. one of 'if_long', 'always', 'never'.
-        'if_long' will use the state server to shorten links longer than nglui.statebuilder.MAX_URL_LENGTH
-        (set to 1,750,000).
-        'always' will always use the state server to shorten the url
-        'never' will always return the full url.  Defaults to "if_long".
-    return_as : str, optional
-        How to return the state. one of 'html', 'url', 'json'.
-        'html' will return an ipython clickable link
-        'url' will return a string with the url
-        'json' will return the state as a dictionary
-    ngl_url : str, optional
-        Neuroglancer deployment URL, by default None
-    link_text : str, optional
-        Text to use for the link, by default "Neuroglancer Link"
-    target_site : str, optional
-        Type of neuroglancer deployment to build link for, by default None.
-        This value overrides automatic checking based on the provided url.
-        Use `seunglab` for a Seung-lab branch and either `mainline` or `cave-explorer` for the Cave Explorer or main Google branch.
-
-    Returns
-    -------
-    HTML, str or dict
-        state in format specified by return_as
-    """
-    if ngl_url is None:
-        ngl_url = client.info.viewer_site()
-        if ngl_url is None:
-            ngl_url = DEFAULT_NGL
-
-    if (return_as == "html") or (return_as == "url"):
-        url = make_url_robust(
-            df, sb, client, shorten=shorten, ngl_url=ngl_url, target_site=target_site
-        )
-        if return_as == "html":
-            return HTML(f'<a href="{url}">{link_text}</a>')
-        else:
-            return url
-    elif return_as == "json":
-        return sb.render_state(df, return_as=return_as, target_site=target_site)
-    else:
-        raise (
-            ValueError(
-                f'return_as={return_as} not a valid choice, choose one of "html", "url", or "json")'
-            )
-        )
 
 
 def make_synapse_neuroglancer_link(

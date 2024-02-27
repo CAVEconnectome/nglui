@@ -76,9 +76,9 @@ class EasyViewerBase(ABC):
 
     def add_contrast_shader(self, layer_name, black=0.0, white=1.0):
         shader_text = f"#uicontrol float black slider(min=0, max=1, default={black})\n#uicontrol float white slider(min=0, max=1, default={white})\nfloat rescale(float value) {{\n  return (value - black) / (white - black);\n}}\nvoid main() {{\n  float val = toNormalized(getDataValue());\n  if (val < black) {{\n    emitRGB(vec3(0,0,0));\n  }} else if (val > white) {{\n    emitRGB(vec3(1.0, 1.0, 1.0));\n  }} else {{\n    emitGrayscale(rescale(val));\n  }}\n}}\n"
-        self._update_layer_shader(layer_name, shader_text)
+        self.add_layer_shader(layer_name, shader_text)
 
-    def _update_layer_shader(self, layer_name, shader_text):
+    def add_layer_shader(self, layer_name, shader_text):
         with self.txn() as s:
             s.layers[layer_name]._json_data["shader"] = shader_text
 

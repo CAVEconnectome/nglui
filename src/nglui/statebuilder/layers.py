@@ -45,6 +45,7 @@ class LayerConfigBase(object):
         source,
         color,
         active,
+        shader,
     ):
         self._config = dict(
             type=type,
@@ -52,6 +53,7 @@ class LayerConfigBase(object):
             source=source,
             color=color,
             active=active,
+            shader=shader,
         )
 
     @property
@@ -86,6 +88,10 @@ class LayerConfigBase(object):
     def active(self):
         return self._config.get("active", False)
 
+    @property
+    def shader(self):
+        return self._config.get("shader", None)
+
     @active.setter
     def active(self, val):
         self._config["active"] = val
@@ -102,6 +108,8 @@ class LayerConfigBase(object):
         )
         if self.active:
             viewer.set_selected_layer(self.name)
+        if self.shader is not None:
+            viewer.add_layer_shader(self.name, self.shader)
         if return_annos:
             return annos
         else:
@@ -143,6 +151,9 @@ class ImageLayerConfig(LayerConfigBase):
         If contrast_controls is True, sets the default black level. Default is 0.0.
     white : float, optional
         If contrast_controls is True, sets the default white level. Default is 1.0.
+    shader : str, optional.
+        Content of the GL shader to apply to the layer. Optional, default is None.
+        Will override contrast_controls if set.
     """
 
     def __init__(
@@ -153,13 +164,17 @@ class ImageLayerConfig(LayerConfigBase):
         contrast_controls=False,
         black=0.0,
         white=1.0,
+        shader=None,
     ):
         if name is None:
             name = DEFAULT_IMAGE_LAYER
         super(ImageLayerConfig, self).__init__(
-            name=name, type="image", source=source, color=None, active=active
+            name=name, type="image", source=source, color=None, active=active, shader=shader,
         )
-        self._contrast_controls = contrast_controls
+        if shader is not None:
+            self._contrast_controls = False
+        else:
+            self._contrast_controls = contrast_controls
         self._black = black
         self._white = white
 
@@ -205,6 +220,10 @@ class SegmentationLayerConfig(LayerConfigBase):
         Keyword arguments for viewer.set_segmentation_view_options. Sets selected (and unselected) segmetation alpha values. Defaults to values in DEFAULT_SEGMENTATION_VIEW_KWS dict specified in this module.
     timestamp : float or datetime, optional.
         Timestamp at which to fix the chunkedgraph in either unix epoch or datetime format. Optional, default is None.
+    data_resolution : list-like, optional.
+        List of voxel sizes in nanometers. Optional, default is None.
+    shader : str, optional.
+        Content of the GL shader to apply to the layer. Optional, default is None.
     """
 
     def __init__(
@@ -223,12 +242,13 @@ class SegmentationLayerConfig(LayerConfigBase):
         view_kws=None,
         timestamp=None,
         data_resolution=None,
+        shader=None,
     ):
         if name is None:
             name = DEFAULT_SEG_LAYER
 
         super(SegmentationLayerConfig, self).__init__(
-            name=name, type="segmentation", source=source, color=None, active=active
+            name=name, type="segmentation", source=source, color=None, active=active, shader=shader,
         )
         self._config["data_resolution"] = data_resolution
 
@@ -388,6 +408,10 @@ class AnnotationLayerConfig(LayerConfigBase):
         List of tags for the layer.
     active : bool, optional
         If True, makes the layer selected. Default is True (unlike for image/segmentation layers).
+    data_resolution : list-like, optional.
+        List of voxel sizes in nanometers. Optional, default is None.
+    shader : str, optional.
+        Content of the GL shader to apply to the layer. Optional, default is None.
     """
 
     def __init__(
@@ -404,12 +428,13 @@ class AnnotationLayerConfig(LayerConfigBase):
         selection_shows_segmentation=True,
         filter_query=None,
         data_resolution=None,
+        shader=None,
     ):
         if name is None:
             name = DEFAULT_ANNO_LAYER
 
         super(AnnotationLayerConfig, self).__init__(
-            name=name, type="annotation", color=color, source=None, active=active
+            name=name, type="annotation", color=color, source=None, active=active, shader=shader
         )
         self._config["linked_segmentation_layer"] = linked_segmentation_layer
         self._config["filter_by_segmentation"] = filter_by_segmentation
