@@ -287,7 +287,7 @@ def typed_list(wrapped_type, validator=None):
                 values = [validator(x) for x in value]
                 self._data[key] = values
             else:
-                value = validator(x)
+                value = validator(value)
                 self._data[key] = value
 
         def __iter__(self):

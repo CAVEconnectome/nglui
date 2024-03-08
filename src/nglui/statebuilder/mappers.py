@@ -310,7 +310,7 @@ class AnnotationMapperBase(object):
         if self.split_positions is not None:
             split_positions = self.split_positions
         else:
-            is_split = np.bool([is_split(col, data) for col in self.data_columns])
+            is_split = np.bool([is_split_position(col, data) for col in self.data_columns])
             if np.all(~is_split):
                 split_positions = False
             if np.any(is_split):
