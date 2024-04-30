@@ -8,6 +8,7 @@ from typing import Union, List, Dict, Tuple, Optional
 from numpy import issubdtype, integer, uint64, vstack
 from collections import OrderedDict
 
+
 class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
     def __init__(self, **kwargs):
         super(neuroglancer.UnsynchronizedViewer, self).__init__(**kwargs)
@@ -28,16 +29,12 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
 
     def _SegmentationLayer(self, source, **kwargs):
         if re.search(r"^graphene://", source) is not None:
-            source = utils.parse_graphene_header(source, 'seunglab')
-            return neuroglancer.ChunkedgraphSegmentationLayer(
-                source=source, **kwargs
-            )
+            source = utils.parse_graphene_header(source, "seunglab")
+            return neuroglancer.ChunkedgraphSegmentationLayer(source=source, **kwargs)
         elif re.search(r"^precomputed://", source) is not None:
-            return neuroglancer.SegmentationLayer(
-                source=source, **kwargs
-            )
+            return neuroglancer.SegmentationLayer(source=source, **kwargs)
         else:
-            raise ValueError('Source must be either graphene:// or precomputed://')
+            raise ValueError("Source must be either graphene:// or precomputed://")
 
     def set_resolution(self, resolution) -> None:
         with self.txn() as s:
@@ -78,9 +75,7 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         if tags is not None:
             self.add_annotation_tags(layer_name=layer_name, tags=tags)
 
-    def _convert_annotations(
-        self,
-        annotations: List) -> List:
+    def _convert_annotations(self, annotations: List) -> List:
         """Pass through annotations, currently defaulting to seung lab format already"""
         return annotations
 
@@ -92,7 +87,7 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
             for tag_id, label in enumerate(tags)
         ]
         with self.txn() as s:
-            s.layers[layer_name]._json_data["annotationTags"] = tag_list
+            s.layers[layer_name].annotationTags = tag_list
 
     def as_url(
         self,
@@ -100,13 +95,14 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         as_html: Optional[bool] = False,
         link_text: Optional[str] = "Neuroglancer Link",
     ) -> str:
-        prefix = utils.neuroglancer_url(prefix, 'seunglab') # 'seunglab' hard-coded because of file.
+        prefix = utils.neuroglancer_url(
+            prefix, "seunglab"
+        )  # 'seunglab' hard-coded because of file.
         ngl_url = neuroglancer.to_url(self.state, prefix=prefix)
         if as_html:
             return '<a href="{}" target="_blank">{}</a>'.format(ngl_url, link_text)
         else:
             return ngl_url
-
 
     def select_annotation(self, layer_name, anno_id):
         if layer_name in self.layer_names:
@@ -117,10 +113,9 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
     def set_selected_layer(self, layer_name):
         with self.txn() as s:
             s.selectedLayer.layer = layer_name
-        
 
     def add_selected_objects(
-        self, 
+        self,
         segmentation_layer: str,
         oids: List[int],
         colors: Optional[Union[List, Dict]] = None,
@@ -142,7 +137,6 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
                 seg_colors = {str(oid): clr for oid, clr in zip(oids, colors)}
                 self.assign_colors(segmentation_layer, seg_colors)
 
-
     def assign_colors(self, layer_name, seg_colors):
         """Assign colors to root ids in a segmentation layer
 
@@ -162,12 +156,10 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
                 }
                 s.layers[layer_name].segmentColors = seg_colors
 
- 
-
     def set_view_options(
         self,
         show_slices: Optional[bool] = None,
-        layout: Optional[str]=None,
+        layout: Optional[str] = None,
         show_axis_lines: Optional[bool] = None,
         show_scale_bar: Optional[bool] = None,
         orthographic: Optional[bool] = None,
@@ -175,7 +167,7 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         zoom_image: Optional[float] = None,
         zoom_3d: Optional[float] = None,
         background_color: Optional[Tuple[float]] = None,
-    )->None:
+    ) -> None:
         """Set options relating to the neuroglancer view state. Only changes the values of the parameters provided.
 
         Parameters
@@ -223,7 +215,7 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         self,
         layer_name: str,
         alpha_selected: Optional[float] = None,
-        alpha_3d: Optional[float] =None,
+        alpha_3d: Optional[float] = None,
         alpha_unselected: Optional[float] = None,
         **kwargs,
     ):
@@ -260,7 +252,6 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
                 l.timestamp = int(timestamp)
             else:
                 l.timestamp = None
-
 
     def set_multicut_points(
         self,
@@ -352,7 +343,7 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
             linked_segmentation=linked_segmentation,
             tag_ids=tag_ids,
         )
-    
+
     @staticmethod
     def line_annotation(
         pointA,
@@ -408,7 +399,7 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
             linked_segmentation=linked_segmentation,
             tag_ids=tag_ids,
         )
-    
+
     @staticmethod
     def group_annotations(
         annotations,
