@@ -666,7 +666,7 @@ def _parse_layer_dataframe(state, ln, expand_tags):
     group_ids.append(b_grp)
     descs.append(b_desc)
 
-    return pd.DataFrame(
+    df = pd.DataFrame(
         {
             "layer": _concat_list(lns),
             "anno_type": _concat_list(anno_types),
@@ -678,6 +678,11 @@ def _parse_layer_dataframe(state, ln, expand_tags):
             "description": _concat_list(descs),
         }
     )
+    if expand_tags:
+        tag_dict = tag_dictionary(state, ln)
+        for k, v in tag_dict.items():
+            df[v] = df["tags"].apply(lambda x: k in x)
+    return df
 
 
 def annotation_dataframe(state, expand_tags=False):
@@ -688,12 +693,14 @@ def annotation_dataframe(state, expand_tags=False):
     state : dict
         Neuroglancer state dictionary
     expand_tags : bool, optional
-        If True, expand tags into separate boolean columns. By default False
+        If True, expand tags into separate boolean columns named by the tag label. By default False.
+        Note that if tag labels are duplicated in multiple layers, the values will appear in the same column.
 
     Returns
     -------
     pd.DataFrame
         Dataframe with columns layer, anno_type, point, pointB, linked_segmentation, tags, anno_id, group_id, description.
+        If expand_tags is True, an additional column will be added for each tag.
     """
     dfs = [
         _parse_layer_dataframe(state, ln, expand_tags)
