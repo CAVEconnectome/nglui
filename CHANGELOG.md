@@ -2,6 +2,29 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.1.0] - 2024-05-29
+
+### Added
+
+- The **Parser** function `annotation_dataframe` now has a parameter `expand_tags` that will create a boolean column for each tag in each annotation layer indicating if the annotation has that tag or not.
+
+### Fixed
+
+- **Parser** : Fixed bugs in getting bounding box annotations and in getting linked segmentations for Spelunker-style states.
+
+## [3.0.3] – 2024-4-30
+
+### Fixed
+
+- **StateBuilder** : Fixed a bug preventing tags from being set.
+
+## [3.0.2] – 2024-1-19
+
+### Fixed
+
+- Improve consistency of target_site argument in StateBuilder.
+
+
 ## [3.0.1] – 2023-12-20
 
 ### Fixed
