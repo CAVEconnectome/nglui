@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nglui"
+dynamic = ["version"]
+description = "Framework for data-driven generation of neuroglancer states."
+readme = "README.md"
+license = ""
+authors = [
+    { name = "Derrick Brittain", email = "caseysm@gmail.com" },
+    { name = "Casey Schneider-Mizell" },
+    { name = "Forrest Collman" },
+]
+dependencies = [
+    "caveclient>=5.14.0",
+    "ipython",
+    "neuroglancer<=2.36",
+    "numpy>=1.11.0",
+    "pandas>=1.0.0",
+    "requests",
+    "six",
+    "tables",
+    "webcolors",
+]
+
+[project.urls]
+Homepage = "https://github.com/seung-lab/NeuroglancerAnnotationUI"
+
+[tool.hatch.version]
+path = "nglui/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+]

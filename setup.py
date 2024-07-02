@@ -38,8 +38,7 @@ setup(
     url="https://github.com/seung-lab/NeuroglancerAnnotationUI",
     packages=find_packages('src'),
     package_dir={'': 'src'},
-    setup_requires=['pytest-runner'],
     tests_require=test_required,
     include_package_data=True,
-    install_requires=[required],  # external packages as dependencies
+    install_requires=required,  # external packages as dependencies
 )
