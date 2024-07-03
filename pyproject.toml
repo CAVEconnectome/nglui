@@ -7,7 +7,7 @@ name = "nglui"
 dynamic = ["version"]
 description = "Framework for data-driven generation of neuroglancer states."
 readme = "README.md"
-license = ""
+license = "MIT"
 authors = [
     { name = "Derrick Brittain", email = "caseysm@gmail.com" },
     { name = "Casey Schneider-Mizell" },
@@ -24,14 +24,20 @@ dependencies = [
     "tables",
     "webcolors",
 ]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+]
 
 [project.urls]
 Homepage = "https://github.com/seung-lab/NeuroglancerAnnotationUI"
 
 [tool.hatch.version]
-path = "nglui/__init__.py"
+path = "src/nglui/__init__.py"
 
 [tool.hatch.build.targets.sdist]
 include = [
     "/src",
 ]
+
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.9", "3.10", "3.11", "3.12"]
