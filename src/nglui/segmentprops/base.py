@@ -39,6 +39,19 @@ def sort_tag_arrays(x: list) -> list:
 
 
 @attrs.define
+class InlineProperties:
+    ids = attrs.field(type=list[int], converter=list_of_strings, kw_only=True)
+    properties = attrs.field(type=list[SegmentPropertyBase], default=[], kw_only=True)
+
+    def __len__(self):
+        return len(self.ids)
+
+    def __attrs_post_init__(self):
+        if len(self.properties) > 0:
+            _validate_properties(self.ids, self.properties)
+
+
+@attrs.define
 class LabelProperty(SegmentPropertyBase):
     id = attrs.field(init=False, default="label", type=str)
     type = attrs.field(init=False, default="label", type=str)
@@ -141,15 +154,10 @@ def build_segment_properties(
     ids: list[int],
     properties: list,
 ):
-    _validate_properties(ids, properties)
-    seg_prop_info = {
+    return {
         "@type": "neuroglancer_segment_properties",
-        "inline": {
-            "ids": [str(x) for x in list(ids)],
-            "properties": [prop_to_dict(prop) for prop in properties],
-        },
+        "inline": prop_to_dict(InlineProperties(ids=ids, properties=properties)),
     }
-    return seg_prop_info
 
 
 def _find_column_dtype(column):
