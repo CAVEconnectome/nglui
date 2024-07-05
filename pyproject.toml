@@ -16,7 +16,7 @@ authors = [
 dependencies = [
     "caveclient>=5.14.0",
     "ipython",
-    "neuroglancer<=2.36",
+    "neuroglancer",
     "numpy>=1.11.0",
     "pandas>=1.0.0",
     "requests",
