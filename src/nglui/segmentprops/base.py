@@ -179,11 +179,18 @@ def _find_column_dtype(column):
         raise ValueError(f"Column {column} has an unsupported data type {column.dtype}")
 
 
-def _tag_property_from_columns(df, cols, name="tags"):
+def _tag_descriptions(tags, tag_descriptions):
+    if tag_descriptions is None:
+        return None
+    else:
+        return [tag_descriptions.get(tag, tag) for tag in tags]
+
+
+def _tag_property_from_columns(df, cols, tag_descriptions=None, name="tags"):
     tags = []
     for col in cols:
         unique_tags = df[col].unique()
-        # df.unique works differently for categorical dtype columns and does not return an ndarray
+        # df.unique works differently for categorical dtype columns and does not return an ndarray so we have to check
         if isinstance(unique_tags, np.ndarray):
             unique_tags = sorted(unique_tags.tolist())
         else:
@@ -195,17 +202,27 @@ def _tag_property_from_columns(df, cols, name="tags"):
     tag_values = []
     for _, row in df.iterrows():
         tag_values.append([tag_map[tag] for tag in row[cols] if tag is not None])
-    return TagProperty(id=name, tags=tags, values=tag_values)
+    return TagProperty(
+        id=name,
+        tags=tags,
+        values=tag_values,
+        tag_descriptions=_tag_descriptions(tags, tag_descriptions),
+    )
 
 
-def _tag_property_from_bool_cols(df, col_list, name="tags"):
-    unique_tags = col_list
-    tag_map = {tag: i for i, tag in enumerate(unique_tags)}
+def _tag_property_from_bool_cols(df, col_list, tag_descriptions=None, name="tags"):
+    tags = col_list
+    tag_map = {tag: i for i, tag in enumerate(tags)}
     tag_values = [[] for _ in range(len(df))]
     for tv in tag_values:
         for loc in np.flatnonzero(df[tv]):
             tag_values[loc].append(tag_map[tv])
-    return TagProperty(id=name, tags=unique_tags, values=tag_values)
+    return TagProperty(
+        id=name,
+        tags=tags,
+        values=tag_values,
+        tag_descriptions=_tag_descriptions(tags, tag_descriptions),
+    )
 
 
 class SegmentProperties:
@@ -276,6 +293,7 @@ class SegmentProperties:
         number_cols: Optional[list[str]] = None,
         tag_value_cols: Optional[list[str]] = None,
         tag_bool_cols: Optional[list[list[str]]] = None,
+        tag_descriptions: Optional[dict] = None,
     ):
         ids = df[id_col].tolist()
         properties = {}
@@ -301,16 +319,17 @@ class SegmentProperties:
         if tag_value_cols:
             if isinstance(tag_value_cols, str):
                 tag_value_cols = [tag_value_cols]
-            if "tag_properties" not in properties:
-                properties["tag_properties"] = _tag_property_from_columns(
-                    df, tag_value_cols
-                )
+            properties["tag_properties"] = _tag_property_from_columns(
+                df,
+                tag_value_cols,
+                tag_descriptions,
+            )
         elif tag_bool_cols:
-            if isinstance(tag_bool_cols[0], str):
-                tag_bool_cols = [tag_bool_cols]
-            if "tag_properties" not in properties:
-                properties["tag_properties"] = []
-            properties["tag_properties"].extend(
-                _tag_property_from_bool_cols(df, col) for col in tag_value_cols
+            if "tag_properties" in properties:
+                raise ValueError("Cannot set both tag_value_cols and tag_bool_cols")
+            properties["tag_properties"] = _tag_property_from_bool_cols(
+                df,
+                tag_bool_cols,
+                tag_descriptions,
             )
         return cls(ids, **properties)
