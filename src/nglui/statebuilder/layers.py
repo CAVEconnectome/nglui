@@ -328,7 +328,7 @@ class SegmentationLayerConfig(LayerConfigBase):
         tag_descriptions: Optional[dict] = None,
         mapping_set: Optional[str] = None,
     ):
-        self._segment_property_map = {
+        segment_property_map = {
             "id_col": id_col,
             "label_col": label_col,
             "description_col": description_col,
@@ -337,8 +337,22 @@ class SegmentationLayerConfig(LayerConfigBase):
             "tag_value_cols": tag_value_cols,
             "tag_bool_cols": tag_bool_cols,
             "tag_descriptions": tag_descriptions,
-            "mapping_set": mapping_set,
         }
+        if mapping_set:
+            if not isinstance(self._segment_property_map, dict):
+                self._segment_property_map = {}
+            self._segment_property_map[mapping_set] = segment_property_map
+        else:
+            self._segment_property_map = segment_property_map
+
+    def _render_single_segment_prop(self, data, seg_prop_map, client):
+        props = SegmentProperties.from_dataframe(data, **seg_prop_map)
+        pid = client.state.upload_property_json(props.to_dict())
+        return client.state.build_neuroglancer_url(
+            pid,
+            target_site="cave-explorer",
+            format_propeties=True,
+        )
 
     def _render_segment_property_map(self, data, client, target_site=None):
         if target_site == "seunglab":
@@ -348,21 +362,22 @@ class SegmentationLayerConfig(LayerConfigBase):
             raise ValueError(
                 "Client must be provided to dynamically render segment properties"
             )
-
-        mapping_set = self._segment_property_map.get("mapping_set", None)
-        if mapping_set is not None:
-            data = data[mapping_set]
-
-        sp_vals = self._segment_property_map.copy()
-        sp_vals.pop("mapping_set")
-        props = SegmentProperties.from_dataframe(data, **sp_vals)
-
-        pid = client.state.upload_property_json(props.to_dict())
-        return client.state.build_neuroglancer_url(
-            pid,
-            target_site="cave-explorer",
-            format_propeties=True,
-        )
+        seg_prop_urls = []
+        if isinstance(data, dict):
+            for k, v in data.items():
+                if k in self._segment_property_map:
+                    seg_prop_urls.append(
+                        self._render_single_segment_prop(
+                            v, self._segment_property_map.get(k), client
+                        )
+                    )
+        else:
+            seg_prop_urls.append(
+                self._render_single_segment_prop(
+                    data, self._segment_property_map, client
+                )
+            )
+        return seg_prop_urls
 
     def add_selection_map(
         self,
@@ -456,8 +471,8 @@ class SegmentationLayerConfig(LayerConfigBase):
                 target_site = "cave-explorer"
             else:
                 target_site = "seunglab"
-            seg_prop_url = self._render_segment_property_map(data, client, target_site)
-            if seg_prop_url is not None:
+            seg_prop_urls = self._render_segment_property_map(data, client, target_site)
+            for seg_prop_url in seg_prop_urls:
                 viewer.append_source_to_segmentation_layer(self.name, seg_prop_url)
 
         if self._split_point_map is not None:
