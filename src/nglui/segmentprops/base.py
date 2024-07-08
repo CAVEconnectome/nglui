@@ -1,11 +1,12 @@
 import attrs
 import numpy as np
+import pandas as pd
 from typing import Optional, Union
 from functools import partial
 from itertools import chain
 
 """
-Options and validation for neuroglancer segment properties based on
+Options and validation for neuroglancer segment properties based on the segment properties spec:
 https://github.com/google/neuroglancer/blob/master/src/datasource/precomputed/segment_properties.md
 """
 
@@ -132,7 +133,7 @@ class TagProperty(SegmentPropertyBase):
 
 
 def prop_filter(attr, value):
-    "Filters out None for optional attributes for use in'attrs.asdict' conversion"
+    "Filters out None for optional attributes for use in 'attrs.asdict' conversion"
     return value is not None or attr.name not in NONE_ATTR_FILTERS
 
 
@@ -285,16 +286,48 @@ class SegmentProperties:
     @classmethod
     def from_dataframe(
         cls,
-        df,
+        df: pd.DataFrame,
         id_col: str = "pt_root_id",
         label_col: Optional[str] = None,
         description_col: Optional[str] = None,
-        string_cols: Optional[list[str]] = None,
-        number_cols: Optional[list[str]] = None,
-        tag_value_cols: Optional[list[str]] = None,
-        tag_bool_cols: Optional[list[list[str]]] = None,
+        string_cols: Optional[Union[str, list[str]]] = None,
+        number_cols: Optional[Union[str, list[str]]] = None,
+        tag_value_cols: Optional[Union[str, list[str]]] = None,
+        tag_bool_cols: Optional[list[str]] = None,
         tag_descriptions: Optional[dict] = None,
     ):
+        """Generate a segment property object from a pandas dataframe based on column
+
+        Parameters
+        ----------
+        df : pd.DataFrame
+            Dataframe containing propeties
+        id_col : str, optional
+            Name of the column with object ids, by default "pt_root_id"
+        label_col : Optional[str], optional
+            Name of column to use for producing labels, by default None
+        description_col : Optional[str], optional
+            Name of column to use for producing descriptions, by default None
+        string_cols : Optional[Union[str, list[str]]], optional
+            Column (or list of columns) to use for string properties, by default None.
+            WARNING: Neuroglancer does not currently display these properties.
+        number_cols : Optional[Union[str, list[str]]], optional
+            Column (or list of columns) to use for numeric properties, by default None.
+        tag_value_cols : Optional[list[str]], optional
+            Column (or list of columns) to generate tags based on unique values.
+            Each column produces one tag per row based on the value, by default None
+        tag_bool_cols : Optional[list[str]], optional
+            List of columns to generate tags based on boolean values. Each column is a tag, and each id gets the tag if it has a True in its row.
+            Cannot be used if `tag_value_cols` is also used. y default None
+        tag_descriptions : Optional[dict], optional
+            Dictionary of tag values to long-form tag descriptions, by default None.
+            Tags without a key/value are passed through directly.
+
+        Returns
+        -------
+        SegmentProperties
+            Segment properties object
+        """
         ids = df[id_col].tolist()
         properties = {}
         if label_col:
@@ -333,3 +366,66 @@ class SegmentProperties:
                 tag_descriptions,
             )
         return cls(ids, **properties)
+
+    @classmethod
+    def from_dict(
+        cls,
+        seg_prop_dict: dict,
+    ):
+        """Generate a segment property object from a segment property dictionary
+
+        Parameters
+        ----------
+        seg_prop_dict : dict
+            Segment property dictionary, as imported from the json.
+
+        Returns
+        -------
+        SegmentProperties
+            Segment properties object
+        """
+        ids = seg_prop_dict["inline"]["ids"]
+        props = seg_prop_dict["inline"]["properties"]
+        prop_classes = {}
+        for prop in props:
+            if prop["type"] == "label":
+                prop_classes["label_property"] = LabelProperty(
+                    id=prop["id"],
+                    values=prop["values"],
+                    description=prop.get("description"),
+                )
+            elif prop["type"] == "description":
+                prop_classes["description_property"] = DescriptionProperty(
+                    id=prop["id"],
+                    values=prop["values"],
+                    description=prop.get("description"),
+                )
+            elif prop["type"] == "string":
+                if "string_properties" not in prop_classes:
+                    prop_classes["string_properties"] = []
+                prop_classes["string_properties"].append(
+                    StringProperty(
+                        id=prop["id"],
+                        values=prop["values"],
+                        description=prop.get("description"),
+                    )
+                )
+            elif prop["type"] == "number":
+                if "number_properties" not in prop_classes:
+                    prop_classes["number_properties"] = []
+                prop_classes["number_properties"].append(
+                    NumberProperty(
+                        id=prop["id"],
+                        values=prop["values"],
+                        data_type=prop["data_type"],
+                        description=prop.get("description"),
+                    )
+                )
+            elif prop["type"] == "tags":
+                prop_classes["tag_properties"] = TagProperty(
+                    id=prop["id"],
+                    tags=prop["tags"],
+                    values=prop["values"],
+                    tag_descriptions=prop.get("tag_descriptions"),
+                )
+        return cls(ids, **prop_classes)
