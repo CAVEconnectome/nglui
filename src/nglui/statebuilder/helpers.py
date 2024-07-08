@@ -797,8 +797,16 @@ def from_client(client, image_name=None, segmentation_name=None, contrast=None):
         )
     else:
         config = {"contrast_controls": True, "black": contrast[0], "white": contrast[1]}
-    img_layer = ImageLayerConfig(client.info.image_source(), name=image_name, **config)
-    seg_layer = SegmentationLayerConfig(
-        client.info.segmentation_source(), name=segmentation_name
-    )
+    if image_name is not False:
+        img_layer = ImageLayerConfig(
+            client.info.image_source(), name=image_name, **config
+        )
+    else:
+        img_layer = None
+    if segmentation_name is not False:
+        seg_layer = SegmentationLayerConfig(
+            client.info.segmentation_source(), name=segmentation_name
+        )
+    else:
+        seg_layer = None
     return img_layer, seg_layer

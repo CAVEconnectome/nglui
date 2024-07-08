@@ -1,10 +1,13 @@
 from nglui.easyviewer import EasyViewer
-from ..easyviewer.ev_base.utils import neuroglancer_url, default_seunglab_neuroglancer_base
+from ..easyviewer.ev_base.utils import (
+    neuroglancer_url,
+    default_seunglab_neuroglancer_base,
+)
 from nglui.easyviewer.ev_base.nglite.json_utils import encode_json
 from IPython.display import HTML
 from .utils import check_target_site
 
-DEFAULT_TARGET_SITE = 'seunglab'
+DEFAULT_TARGET_SITE = "seunglab"
 
 DEFAULT_VIEW_KWS = {
     "layout": "xy-3d",
@@ -13,6 +16,7 @@ DEFAULT_VIEW_KWS = {
     "zoom_3d": 2000,
 }
 
+
 class StateBuilder:
     """A class for schematic mapping data frames into neuroglancer states.
 
@@ -20,7 +24,7 @@ class StateBuilder:
     ----------
     layers (list, optional): list of nglui.statebuilder.layers.LayerConfigBase to add. Defaults to [].
     base_state (dict, optional): json state to add to. Defaults to None.
-    url_prefix (str, optional): http(s) path to neuroglancer deployment to use. 
+    url_prefix (str, optional): http(s) path to neuroglancer deployment to use.
         Defaults to None, which will use https://neuromancer-seung-import.appspot.com
     state_server (str, optional): state server to post links to. Defaults to None.
     resolution (list, optional): 3 element vector controlling the viewer resolution. Defaults to None. If None and a client is set, uses the client viewer resolution.
@@ -46,6 +50,7 @@ class StateBuilder:
             Sets the background color of the 3d view. Arguments can be rgb values, hex colors, or named web colors. Defaults to black.
     client (caveclient.CAVEclient, optional): a caveclient to get defaults from. Defaults to None.
     """
+
     def __init__(
         self,
         layers=[],
@@ -66,6 +71,7 @@ class StateBuilder:
                 resolution = client.info.viewer_resolution().tolist()
             if target_site is None:
                 target_site = check_target_site(url_prefix, client)
+        self._client = client
         if url_prefix is None and target_site is None:
             target_site = DEFAULT_TARGET_SITE
         url_prefix = neuroglancer_url(url_prefix, target_site)
@@ -112,7 +118,9 @@ class StateBuilder:
 
     def handle_positions(self, data):
         for l in self._layers[::-1]:
-            pos = l._set_view_options(self._temp_viewer, data, viewer_resolution=self._resolution)
+            pos = l._set_view_options(
+                self._temp_viewer, data, viewer_resolution=self._resolution
+            )
             if pos is not None:
                 break
         pass
@@ -157,17 +165,14 @@ class StateBuilder:
             base_state = self._base_state
         if target_site is None:
             if self._target_site is not None:
-                target_site = self._target_site        
+                target_site = self._target_site
 
-        self.initialize_state(
-            base_state=base_state, target_site=target_site
-        )
+        self.initialize_state(base_state=base_state, target_site=target_site)
         self.handle_positions(data)
 
         self._render_layers(
             data,
         )
-
 
         if url_prefix is None:
             url_prefix = self._url_prefix
@@ -176,27 +181,26 @@ class StateBuilder:
             return self.viewer
         elif return_as == "url":
             url = self._temp_viewer.as_url(prefix=url_prefix)
-            self.initialize_state()
             return url
         elif return_as == "html":
             out = self._temp_viewer.as_url(
                 prefix=url_prefix, as_html=True, link_text=link_text
             )
             out = HTML(out)
-            self.initialize_state()
             return out
         elif return_as == "dict":
             out = self._temp_viewer.state.to_json()
-            self.initialize_state()
             return out
         elif return_as == "json":
             out = self._temp_viewer.state.to_json()
-            self.initialize_state()
             return encode_json(out)
         else:
             raise ValueError("No appropriate return type selected")
 
-    def _render_layers(self, data,):
+    def _render_layers(
+        self,
+        data,
+    ):
         # Inactivate all layers except last.
         found_active = False
         for l in self._layers[::-1]:
@@ -211,6 +215,7 @@ class StateBuilder:
                 data,
                 viewer_resolution=self._resolution,
                 return_annos=True,
+                client=self._client,
             )
         self._temp_viewer.add_multilayer_annotations(anno_dict)
 
@@ -227,6 +232,7 @@ class ChainedStateBuilder:
     statebuilders : list
         List of DataStateBuilders, in same order as dataframes will be passed
     """
+
     def __init__(self, statebuilders):
         self._statebuilders = statebuilders
         if len(self._statebuilders) == 0:
@@ -267,7 +273,7 @@ class ChainedStateBuilder:
                 data=data,
                 base_state=temp_state,
                 return_as="dict",
-                target_site=target_site
+                target_site=target_site,
             )
         last_builder = self._statebuilders[-1]
         return last_builder.render_state(

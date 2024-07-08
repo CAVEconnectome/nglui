@@ -4,6 +4,7 @@ from collections.abc import Collection
 from itertools import chain
 from .utils import is_split_position, split_position_columns
 
+
 def _multipoint_transform(row, pt_columns, squeeze_cols):
     """Reshape dataframe to accomodate multiple points in a single row"""
     pts = {pcol: np.atleast_2d(row[pcol]) for pcol in pt_columns}
@@ -22,12 +23,13 @@ def _multipoint_transform(row, pt_columns, squeeze_cols):
                 r[col] = row[col]
     return rows
 
+
 def _multipoint_transform_split(df, multi_columns=[]):
     col_data = {}
     for col in df.columns:
         col_data[col] = []
     for _, row in df.iterrows():
-        if len(multi_columns)>0:
+        if len(multi_columns) > 0:
             n_pts = len(row[multi_columns[0]])
         else:
             n_pts = 1
@@ -35,7 +37,7 @@ def _multipoint_transform_split(df, multi_columns=[]):
             if col in multi_columns:
                 col_data[col].extend(row[col])
             else:
-                col_data[col].extend(n_pts*[row[col]])
+                col_data[col].extend(n_pts * [row[col]])
     return pd.DataFrame(col_data)
 
 
@@ -67,7 +69,12 @@ class SelectionMapper(object):
     """
 
     def __init__(
-        self, data_columns=None, fixed_ids=None, fixed_id_colors=None, color_column=None, mapping_set=None,
+        self,
+        data_columns=None,
+        fixed_ids=None,
+        fixed_id_colors=None,
+        color_column=None,
+        mapping_set=None,
     ):
         if isinstance(data_columns, str):
             data_columns = [data_columns]
@@ -114,7 +121,6 @@ class SelectionMapper(object):
     def mapping_set(self):
         return self._config.get("mapping_set", None)
 
-
     def selected_ids(self, data):
         """Uses the rules to generate a list of ids from a dataframe."""
         if self.mapping_set is not None:
@@ -129,6 +135,9 @@ class SelectionMapper(object):
         return np.concatenate(selected_ids)
 
     def seg_colors(self, data):
+        if self.mapping_set is not None:
+            data = data.get(self.mapping_set)
+
         colors = {}
         if len(self.fixed_id_colors) == len(self.fixed_ids):
             for ii, oid in enumerate(self.fixed_ids):
@@ -160,7 +169,6 @@ class AnnotationMapperBase(object):
         split_positions=None,
         mapping_set=None,
     ):
-
         self._config = dict(
             type=type,
             data_columns=data_columns,
@@ -243,11 +251,11 @@ class AnnotationMapperBase(object):
 
     @property
     def split_positions(self):
-        return self._config.get('split_positions')
+        return self._config.get("split_positions")
 
     @property
     def mapping_set(self):
-        return self._config.get('mapping_set', None)
+        return self._config.get("mapping_set", None)
 
     @property
     def tag_map(self):
@@ -292,25 +300,28 @@ class AnnotationMapperBase(object):
             anno_tags = [[None] for x in range(len(data))]
         return anno_tags
 
-
     def _parse_data(self, data, first=False):
         if self.mapping_set is not None:
             if not isinstance(data, dict):
-                raise ValueError('If mapping sets are used, dataframes must be provided as values in a dictionary')
+                raise ValueError(
+                    "If mapping sets are used, dataframes must be provided as values in a dictionary"
+                )
             data = data.get(self.mapping_set)
         if first and data is not None:
             if len(data) > 0:
                 if isinstance(data, pd.DataFrame):
                     data = data.iloc[[0]]
                 else:
-                    data = np.array(data)[0].reshape(1,-1)
+                    data = np.array(data)[0].reshape(1, -1)
         return data
 
     def _process_columns(self, data, skip_columns=[]):
         if self.split_positions is not None:
             split_positions = self.split_positions
         else:
-            is_split = np.bool([is_split_position(col, data) for col in self.data_columns])
+            is_split = np.bool(
+                [is_split_position(col, data) for col in self.data_columns]
+            )
             if np.all(~is_split):
                 split_positions = False
             if np.any(is_split):
@@ -319,13 +330,13 @@ class AnnotationMapperBase(object):
                 for col, spl in zip(self.data_columns, is_split):
                     if spl:
                         skip_columns.append(col)
-            
+
         if split_positions and not self.array_data:
             data = data.copy()
             for col in self.data_columns:
                 if col in skip_columns:
                     continue
-                split_cols = [f'{col}_{suf}' for suf in ["x", "y", "z"]]
+                split_cols = [f"{col}_{suf}" for suf in ["x", "y", "z"]]
                 data[col] = np.vstack(data[split_cols].values).tolist()
             return data
         else:
@@ -391,10 +402,11 @@ class AnnotationMapperBase(object):
         annos.extend([g for g in group_annos if g is not None])
         return annos
 
-
     def _get_position(self, data, data_resolution=None, viewer_resolution=None):
         # Parse data because get_position is called by the layer, not the render_annotation function.
-        data = self._preprocess_data(data, skip_columns=self.data_columns[1:], first=True)
+        data = self._preprocess_data(
+            data, skip_columns=self.data_columns[1:], first=True
+        )
         if data is None:
             return None
 
@@ -434,6 +446,7 @@ class PointMapper(AnnotationMapperBase):
     mapping_set: str, optional
         If given, assumes data is passed as a dictionary and uses this string to as the key for the data to use.
     """
+
     def __init__(
         self,
         point_column=None,
@@ -530,6 +543,7 @@ class LineMapper(AnnotationMapperBase):
     mapping_set: str, optional
         If set, assumes data is passed as a dictionary and uses this string to as the key for the data to use.
     """
+
     def __init__(
         self,
         point_column_a=None,
@@ -675,7 +689,7 @@ class SphereMapper(AnnotationMapperBase):
         "Transforms data to neuroglancer annotations"
         col_ctr, col_rad = self.data_columns
 
-        data = self._preprocess_data(data, skip_columns=['rad'], squeeze_cols=[col_rad])
+        data = self._preprocess_data(data, skip_columns=["rad"], squeeze_cols=[col_rad])
         if data is None:
             return []
 
@@ -741,6 +755,7 @@ class BoundingBoxMapper(AnnotationMapperBase):
     mapping_set: str, optional
         If set, assumes data is passed as a dictionary and uses this string to as the key for the data to use.
     """
+
     def __init__(
         self,
         point_column_a=None,
@@ -782,7 +797,7 @@ class BoundingBoxMapper(AnnotationMapperBase):
                 data={"pt_a": data[0].tolist(), "pt_b": data[1].tolist()}
             )
         return data
-    
+
     def _render_data(self, data, data_resolution, viewer_resolution, viewer):
         "Transforms data to neuroglancer annotations"
         data = self._preprocess_data(data)

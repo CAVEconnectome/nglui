@@ -7,6 +7,7 @@ from . import nglite as neuroglancer
 from typing import Union, List, Dict, Tuple, Optional
 from numpy import issubdtype, integer, uint64, vstack
 from collections import OrderedDict
+from warnings import warn
 
 
 class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
@@ -43,6 +44,18 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
     def set_state_server(self, state_server) -> None:
         with self.txn() as s:
             s._json_data["jsonStateServer"] = state_server
+
+    def add_segmentation_layer(self, layer_name, source, **kwargs):
+        """Add segmentation layer to viewer instance.
+
+        Attributes:
+            layer_name (str): name of layer to be displayed in neuroglancer ui.
+            source (str): source of neuroglancer segment layer
+        """
+        if type(source) is not str:
+            source = source[0]
+            warn("Only using first source in list for seung-lab segmentation layer")
+        super().add_segmentation_layer(layer_name, source, **kwargs)
 
     def add_annotation_layer(
         self,
