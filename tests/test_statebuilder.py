@@ -68,7 +68,9 @@ def test_basic_cave_explorer(image_layer, seg_layer_basic, anno_layer_basic):
     assert state.data == f'<a href="{state_url}" target="_blank">Neuroglancer Link</a>'
 
     state = sb.render_state(return_as="dict")
-    assert isinstance(state, OrderedDict)
+    assert isinstance(state, OrderedDict) or isinstance(
+        state, dict
+    )  # Cave-explorer uses dict
 
     state = sb.render_state(return_as="json")
     assert type(state) is str
@@ -89,8 +91,15 @@ def test_segmentation_layer(soma_df, seg_path_precomputed, target_site):
     sb = StateBuilder(layers=[seg_layer], target_site=target_site)
     state = sb.render_state(soma_df, return_as="dict")
     print(state["layers"])
-    assert 648518346349538466 in state["layers"][0]["segments"]
-    assert 1000 in state["layers"][0]["segments"]
+    assert (
+        648518346349538466 in state["layers"][0]["segments"]
+        or "648518346349538466"
+        in state["layers"][0]["segments"]  # Cave-explorer uses strings for ids
+    )
+    assert (
+        1000 in state["layers"][0]["segments"]
+        or "1000" in state["layers"][0]["segments"]
+    )
 
 
 @pytest.mark.parametrize("target_site", [None, "seunglab", "cave-explorer"])

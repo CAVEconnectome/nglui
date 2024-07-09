@@ -54,7 +54,7 @@ class InlineProperties:
 
 @attrs.define
 class LabelProperty(SegmentPropertyBase):
-    id = attrs.field(init=False, default="label", type=str)
+    id = attrs.field(default="label", type=str, kw_only=True)
     type = attrs.field(init=False, default="label", type=str)
     values = attrs.field(type=list, converter=list_of_strings, kw_only=True)
     description = attrs.field(type=Optional[str], default=None, kw_only=True)
@@ -65,7 +65,7 @@ class LabelProperty(SegmentPropertyBase):
 
 @attrs.define
 class DescriptionProperty(SegmentPropertyBase):
-    id = attrs.field(init=False, default="description", type=str)
+    id = attrs.field(default="description", type=str, kw_only=True)
     type = attrs.field(init=False, default="description", type=str)
     values = attrs.field(type=list, converter=list_of_strings, kw_only=True)
     description = attrs.field(type=Optional[str], default=None, kw_only=True)
@@ -109,7 +109,7 @@ class NumberProperty(SegmentPropertyBase):
 
 @attrs.define
 class TagProperty(SegmentPropertyBase):
-    id = attrs.field(type=str, kw_only=True)
+    id = attrs.field(type=str, kw_only=True, default="tags")
     type = attrs.field(init=False, type=str, default="tags")
     tags = attrs.field(
         type=list[str],
@@ -187,35 +187,30 @@ def _tag_descriptions(tags, tag_descriptions):
         return [tag_descriptions.get(tag, tag) for tag in tags]
 
 
-def _tag_property_from_columns(df, cols, tag_descriptions=None, name="tags"):
+def _make_tag_property(df, value_columns, bool_columns, tag_descriptions, name="tags"):
+    if value_columns is None:
+        value_columns = []
+    if bool_columns is None:
+        bool_columns = []
     tags = []
-    for col in cols:
+    for col in value_columns:
         unique_tags = df[col].unique()
         # df.unique works differently for categorical dtype columns and does not return an ndarray so we have to check
         if isinstance(unique_tags, np.ndarray):
-            unique_tags = sorted(unique_tags.tolist())
+            unique_tags = sorted([x for x in unique_tags.tolist() if x is not None])
         else:
             unique_tags = unique_tags.sort_values().tolist()
         if np.any(np.isin(tags, unique_tags)):
             raise ValueError("Tags across columns are not unique")
         tags.extend(unique_tags)
+    tags.extend(bool_columns)
     tag_map = {tag: i for i, tag in enumerate(tags) if tag is not None}
     tag_values = []
     for _, row in df.iterrows():
-        tag_values.append([tag_map[tag] for tag in row[cols] if tag is not None])
-    return TagProperty(
-        id=name,
-        tags=tags,
-        values=tag_values,
-        tag_descriptions=_tag_descriptions(tags, tag_descriptions),
-    )
-
-
-def _tag_property_from_bool_cols(df, col_list, tag_descriptions=None, name="tags"):
-    tags = col_list
-    tag_map = {tag: i for i, tag in enumerate(tags)}
-    tag_values = [[] for _ in range(len(df))]
-    for tv in tag_values:
+        tag_values.append(
+            [tag_map[tag] for tag in row[value_columns] if tag is not None]
+        )
+    for tv in bool_columns:
         for loc in np.flatnonzero(df[tv]):
             tag_values[loc].append(tag_map[tv])
     return TagProperty(
@@ -276,6 +271,15 @@ class SegmentProperties:
         )
         return single_prop_list + multi_prop_list
 
+    def __repr__(self):
+        return f"SegmentProperties ({len(self.ids)} segments, {len(self._property_list())} properties)"
+
+    def __str__(self):
+        return self.__repr__()
+
+    def property_description(self):
+        return [(prop.id, prop.type, len(prop)) for prop in self._property_list()]
+
     def to_dict(self):
         "Converts the segment properties to a dictionary for use in neuroglancer"
         return build_segment_properties(
@@ -317,8 +321,8 @@ class SegmentProperties:
             Column (or list of columns) to generate tags based on unique values.
             Each column produces one tag per row based on the value, by default None
         tag_bool_cols : Optional[list[str]], optional
-            List of columns to generate tags based on boolean values. Each column is a tag, and each id gets the tag if it has a True in its row.
-            Cannot be used if `tag_value_cols` is also used. y default None
+            List of columns to generate tags based on boolean values where each column is a tag, and each id gets the tag if it has a True in its row.
+            By default None.
         tag_descriptions : Optional[dict], optional
             Dictionary of tag values to long-form tag descriptions, by default None.
             Tags without a key/value are passed through directly.
@@ -337,10 +341,14 @@ class SegmentProperties:
                 values=df[description_col].tolist()
             )
         if string_cols:
+            if isinstance(string_cols, str):
+                string_cols = [string_cols]
             properties["string_properties"] = [
                 StringProperty(id=col, values=df[col].tolist()) for col in string_cols
             ]
         if number_cols:
+            if isinstance(number_cols, str):
+                number_cols = [number_cols]
             properties["number_properties"] = [
                 NumberProperty(
                     id=col,
@@ -349,19 +357,14 @@ class SegmentProperties:
                 )
                 for col in number_cols
             ]
-        if tag_value_cols:
+        if tag_value_cols or tag_bool_cols:
             if isinstance(tag_value_cols, str):
                 tag_value_cols = [tag_value_cols]
-            properties["tag_properties"] = _tag_property_from_columns(
+            if isinstance(tag_bool_cols, str):
+                tag_bool_cols = [tag_bool_cols]
+            properties["tag_properties"] = _make_tag_property(
                 df,
                 tag_value_cols,
-                tag_descriptions,
-            )
-        elif tag_bool_cols:
-            if "tag_properties" in properties:
-                raise ValueError("Cannot set both tag_value_cols and tag_bool_cols")
-            properties["tag_properties"] = _tag_property_from_bool_cols(
-                df,
                 tag_bool_cols,
                 tag_descriptions,
             )
@@ -390,13 +393,11 @@ class SegmentProperties:
         for prop in props:
             if prop["type"] == "label":
                 prop_classes["label_property"] = LabelProperty(
-                    id=prop["id"],
                     values=prop["values"],
                     description=prop.get("description"),
                 )
             elif prop["type"] == "description":
                 prop_classes["description_property"] = DescriptionProperty(
-                    id=prop["id"],
                     values=prop["values"],
                     description=prop.get("description"),
                 )
@@ -423,7 +424,6 @@ class SegmentProperties:
                 )
             elif prop["type"] == "tags":
                 prop_classes["tag_properties"] = TagProperty(
-                    id=prop["id"],
                     tags=prop["tags"],
                     values=prop["values"],
                     tag_descriptions=prop.get("tag_descriptions"),

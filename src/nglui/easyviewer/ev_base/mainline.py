@@ -158,7 +158,8 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         if issubdtype(type(oids), integer):
             oids = [oids]
         with self.txn() as s:
-            s.layers[segmentation_layer].segments.update(oids)
+            for oid in oids:
+                s.layers[segmentation_layer].segments.add(oid)
         if colors is not None:
             if isinstance(colors, dict):
                 self.assign_colors(segmentation_layer, colors)
