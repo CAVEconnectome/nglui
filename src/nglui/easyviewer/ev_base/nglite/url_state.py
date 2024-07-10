@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
 
 import collections
 import json
@@ -24,18 +23,18 @@ from . import viewer_state
 from .json_utils import json_encoder_default
 from .json_wrappers import to_json
 
-SINGLE_QUOTE_STRING_PATTERN = u"('(?:[^'\\\\]|(?:\\\\.))*')"
-DOUBLE_QUOTE_STRING_PATTERN = u'("(?:[^\'\\\\]|(?:\\\\.))*")'
+SINGLE_QUOTE_STRING_PATTERN = "('(?:[^'\\\\]|(?:\\\\.))*')"
+DOUBLE_QUOTE_STRING_PATTERN = '("(?:[^\'\\\\]|(?:\\\\.))*")'
 SINGLE_OR_DOUBLE_QUOTE_STRING_PATTERN = (
-    SINGLE_QUOTE_STRING_PATTERN + u"|" + DOUBLE_QUOTE_STRING_PATTERN
+    SINGLE_QUOTE_STRING_PATTERN + "|" + DOUBLE_QUOTE_STRING_PATTERN
 )
 DOUBLE_OR_SINGLE_QUOTE_STRING_PATTERN = (
-    DOUBLE_QUOTE_STRING_PATTERN + u"|" + SINGLE_QUOTE_STRING_PATTERN
+    DOUBLE_QUOTE_STRING_PATTERN + "|" + SINGLE_QUOTE_STRING_PATTERN
 )
 
 
-DOUBLE_QUOTE_PATTERN = u'^((?:[^"\'\\\\]|(?:\\\\.))*)"'
-SINGLE_QUOTE_PATTERN = u"^((?:[^\"'\\\\]|(?:\\\\.))*)'"
+DOUBLE_QUOTE_PATTERN = '^((?:[^"\'\\\\]|(?:\\\\.))*)"'
+SINGLE_QUOTE_PATTERN = "^((?:[^\"'\\\\]|(?:\\\\.))*)'"
 
 
 def _convert_string_literal(x, quote_initial, quote_replace, quote_search):
@@ -48,7 +47,7 @@ def _convert_string_literal(x, quote_initial, quote_replace, quote_search):
                 s += inner
                 break
             s += m.group(1)
-            s += u"\\"
+            s += "\\"
             s += quote_replace
             inner = inner[m.end() :]
         s += quote_replace
@@ -57,22 +56,22 @@ def _convert_string_literal(x, quote_initial, quote_replace, quote_search):
 
 
 def _convert_json_helper(x, desired_comma_char, desired_quote_char):
-    comma_search = u"[&_,]"
-    if desired_quote_char == u'"':
-        quote_initial = u"'"
+    comma_search = "[&_,]"
+    if desired_quote_char == '"':
+        quote_initial = "'"
         quote_search = DOUBLE_QUOTE_PATTERN
         string_literal_pattern = SINGLE_OR_DOUBLE_QUOTE_STRING_PATTERN
     else:
-        quote_initial = u'"'
+        quote_initial = '"'
         quote_search = SINGLE_QUOTE_PATTERN
         string_literal_pattern = DOUBLE_OR_SINGLE_QUOTE_STRING_PATTERN
-    s = u""
+    s = ""
     while x:
         m = re.search(string_literal_pattern, x)
         if m is None:
             before = x
-            x = u""
-            replacement = u""
+            x = ""
+            replacement = ""
         else:
             before = x[: m.start()]
             x = x[m.end() :]
@@ -89,11 +88,11 @@ def _convert_json_helper(x, desired_comma_char, desired_quote_char):
 
 
 def url_safe_to_json(x):
-    return _convert_json_helper(x, u",", u'"')
+    return _convert_json_helper(x, ",", '"')
 
 
 def json_to_url_safe(x):
-    return _convert_json_helper(x, u"_", u"'")
+    return _convert_json_helper(x, "_", "'")
 
 
 def url_fragment_to_json(fragment_value):
@@ -117,13 +116,13 @@ def parse_url(url):
 
 def to_url_fragment(state):
     json_string = json.dumps(
-        to_json(state), separators=(u",", u":"), default=json_encoder_default
+        to_json(state), separators=(",", ":"), default=json_encoder_default
     )
-    return urllib.parse.quote(json_string, safe=u"~@#$&()*!+=:;,.?/'")
+    return urllib.parse.quote(json_string, safe="~@#$&()*!+=:;,.?/'")
 
 
-default_neuroglancer_url = u"https://neuromancer-seung-import.appspot.com"
+default_neuroglancer_url = "https://neuromancer-seung-import.appspot.com"
 
 
 def to_url(state, prefix=default_neuroglancer_url):
-    return u"%s#!%s" % (prefix, to_url_fragment(state))
+    return "%s#!%s" % (prefix, to_url_fragment(state))

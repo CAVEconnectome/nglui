@@ -110,4 +110,4 @@ var/
 *.orig
 *.sublime-workspace
 
-docs/.quarto/
+docs/_site

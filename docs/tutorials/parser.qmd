@@ -1,7 +1,0 @@
----
-name: Parser Tutorial
----
-
-# Parser Tutorial
-
-Basics of how to use `nglui` parser.

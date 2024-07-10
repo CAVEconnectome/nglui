@@ -1,8 +1,8 @@
 from neuroglancer import (
+    AxisAlignedBoundingBoxAnnotation,
+    EllipsoidAnnotation,
     LineAnnotation,
     PointAnnotation,
-    EllipsoidAnnotation,
-    AxisAlignedBoundingBoxAnnotation,
 )
 
 

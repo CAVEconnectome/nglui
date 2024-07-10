@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
 
 import contextlib
 import json
@@ -56,7 +55,7 @@ class LocalVolumeManager(trackable_state.ChangeNotifier):
             self._dispatch_changed_callbacks()
 
 
-class ViewerCommonBase(object):
+class ViewerCommonBase:
     def __init__(self):
         self.token = make_random_token()
         self.config_state = trackable_state.TrackableState(

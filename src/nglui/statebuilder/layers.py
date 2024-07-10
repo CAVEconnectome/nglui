@@ -1,14 +1,16 @@
-from .mappers import (
-    SelectionMapper,
-    AnnotationMapperBase,
-    PointMapper,
-    LineMapper,
-    SphereMapper,
-    BoundingBoxMapper,
-)
-from datetime import datetime
-import numpy as np
 import numbers
+from datetime import datetime
+from typing import Optional, Union
+from warnings import warn
+
+import numpy as np
+
+from ..easyviewer import EasyViewerMainline
+from ..segmentprops.base import SegmentProperties
+from .mappers import (
+    AnnotationMapperBase,
+    SelectionMapper,
+)
 
 DEFAULT_IMAGE_LAYER = "img"
 DEFAULT_SEG_LAYER = "seg"
@@ -21,7 +23,7 @@ DEFAULT_SEGMENTATION_VIEW_KWS = {
 }
 
 
-class LayerConfigBase(object):
+class LayerConfigBase:
     """Base class for configuring layers
 
     Parameters
@@ -91,7 +93,7 @@ class LayerConfigBase(object):
         self._config["active"] = val
 
     def _render_layer(
-        self, viewer, data, viewer_resolution=None, return_annos=False
+        self, viewer, data, viewer_resolution=None, return_annos=False, client=None
     ):
         """Applies rendering rules"""
         annos = self._specific_rendering(
@@ -99,6 +101,7 @@ class LayerConfigBase(object):
             data,
             viewer_resolution=viewer_resolution,
             return_annos=return_annos,
+            client=client,
         )
         if self.active:
             viewer.set_selected_layer(self.name)
@@ -107,21 +110,21 @@ class LayerConfigBase(object):
         else:
             pass
 
-    def _add_layer(
-            self, viewer
-    ):
+    def _add_layer(self, viewer):
         "Subclass implements layer addition rules"
-        pass
 
     def _set_view_options(self, *args, **kwargs):
         "Subclass implements own rules"
-        pass
 
     def _specific_rendering(
-        self, viewer, data, viewer_resolution=None, return_annos=False,
+        self,
+        viewer,
+        data,
+        viewer_resolution=None,
+        return_annos=False,
+        client=None,
     ):
         """Subclasses implement specific rendering rules"""
-        pass
 
 
 class ImageLayerConfig(LayerConfigBase):
@@ -167,7 +170,12 @@ class ImageLayerConfig(LayerConfigBase):
         viewer.add_image_layer(self.name, self.source)
 
     def _specific_rendering(
-        self, viewer, data, viewer_resolution=None, return_annos=False,
+        self,
+        viewer,
+        data,
+        viewer_resolution=None,
+        return_annos=False,
+        client=None,
     ):
         if self._contrast_controls:
             viewer.add_contrast_shader(self.name, black=self._black, white=self._white)
@@ -205,6 +213,10 @@ class SegmentationLayerConfig(LayerConfigBase):
         Keyword arguments for viewer.set_segmentation_view_options. Sets selected (and unselected) segmetation alpha values. Defaults to values in DEFAULT_SEGMENTATION_VIEW_KWS dict specified in this module.
     timestamp : float or datetime, optional.
         Timestamp at which to fix the chunkedgraph in either unix epoch or datetime format. Optional, default is None.
+    mapping_set : str, optional.
+        Name of the mapping set, the key in the data dictionary for statebuilder. Optional, default is None.
+    segment_properties: str, optional
+        Location of a segment properties file. Optional, default is None.
     """
 
     def __init__(
@@ -223,6 +235,8 @@ class SegmentationLayerConfig(LayerConfigBase):
         view_kws=None,
         timestamp=None,
         data_resolution=None,
+        mapping_set=None,
+        segment_properties=None,
     ):
         if name is None:
             name = DEFAULT_SEG_LAYER
@@ -231,6 +245,7 @@ class SegmentationLayerConfig(LayerConfigBase):
             name=name, type="segmentation", source=source, color=None, active=active
         )
         self._config["data_resolution"] = data_resolution
+        self._config["segment_properties"] = segment_properties
 
         if selected_ids_column is not None or fixed_ids is not None:
             self._selection_map = SelectionMapper(
@@ -238,6 +253,7 @@ class SegmentationLayerConfig(LayerConfigBase):
                 fixed_ids=fixed_ids,
                 fixed_id_colors=fixed_id_colors,
                 color_column=color_column,
+                mapping_set=mapping_set,
             )
         else:
             self._selection_map = None
@@ -257,10 +273,106 @@ class SegmentationLayerConfig(LayerConfigBase):
             }
         base_seg_kws.update(view_kws)
         self._view_kws = view_kws
+        self._segment_property_map = None
 
     @property
     def data_resolution(self):
         return self._config.get("data_resolution", None)
+
+    @property
+    def segment_properties(self):
+        if isinstance(self._config.get("segment_properties"), str):
+            return [self._config.get("segment_properties")]
+        else:
+            return self._config.get("segment_properties", [])
+
+    @property
+    def source(self):
+        if self.segment_properties:
+            seg_prop_url = self.segment_properties
+        else:
+            seg_prop_url = []
+        if self._config.get("source"):
+            if isinstance(self._config.get("source"), str):
+                source = [self._config.get("source")]
+            else:
+                source = self._config.get("source")
+        else:
+            source = []
+        out = source + seg_prop_url
+        if len(out) == 1:
+            return out[0]
+        else:
+            return out
+
+    def add_segment_propeties(
+        self,
+        segment_property: str,
+    ):
+        self._config["segment_properties"] = segment_property
+
+    def add_segment_properties_map(
+        self,
+        id_col: str = "pt_root_id",
+        label_col: Optional[str] = None,
+        description_col: Optional[str] = None,
+        string_cols: Optional[Union[str, list[str]]] = None,
+        number_cols: Optional[Union[str, list[str]]] = None,
+        tag_value_cols: Optional[Union[str, list[str]]] = None,
+        tag_bool_cols: Optional[list[str]] = None,
+        tag_descriptions: Optional[dict] = None,
+        mapping_set: Optional[str] = None,
+    ):
+        segment_property_map = {
+            "id_col": id_col,
+            "label_col": label_col,
+            "description_col": description_col,
+            "string_cols": string_cols,
+            "number_cols": number_cols,
+            "tag_value_cols": tag_value_cols,
+            "tag_bool_cols": tag_bool_cols,
+            "tag_descriptions": tag_descriptions,
+        }
+        if mapping_set:
+            if not isinstance(self._segment_property_map, dict):
+                self._segment_property_map = {}
+            self._segment_property_map[mapping_set] = segment_property_map
+        else:
+            self._segment_property_map = segment_property_map
+
+    def _render_single_segment_prop(self, data, seg_prop_map, client):
+        props = SegmentProperties.from_dataframe(data, **seg_prop_map)
+        pid = client.state.upload_property_json(props.to_dict())
+        return client.state.build_neuroglancer_url(
+            pid,
+            target_site="cave-explorer",
+            format_propeties=True,
+        )
+
+    def _render_segment_property_map(self, data, client, target_site=None):
+        if target_site == "seunglab":
+            warn("Cannot render segment properties for seunglab")
+            return None
+        if client is None:
+            raise ValueError(
+                "Client must be provided to dynamically render segment properties"
+            )
+        seg_prop_urls = []
+        if isinstance(data, dict):
+            for k, v in data.items():
+                if k in self._segment_property_map:
+                    seg_prop_urls.append(
+                        self._render_single_segment_prop(
+                            v, self._segment_property_map.get(k), client
+                        )
+                    )
+        else:
+            seg_prop_urls.append(
+                self._render_single_segment_prop(
+                    data, self._segment_property_map, client
+                )
+            )
+        return seg_prop_urls
 
     def add_selection_map(
         self,
@@ -268,6 +380,7 @@ class SegmentationLayerConfig(LayerConfigBase):
         fixed_ids=None,
         fixed_id_colors=None,
         color_column=None,
+        mapping_set=None,
     ):
         """Add rules for selecting active segment ids and their colors
 
@@ -281,6 +394,8 @@ class SegmentationLayerConfig(LayerConfigBase):
             Add a list of colors (hex, rgb, or CSS3 string) to assign to the fixed ids, by default None
         color_column : str, optional
             Dataframe column to use for adding selected segment colors, by default None
+        mapping_set : str, optional
+            Name of the mapping set, the key in the data dictionary for statebuilder, by default None
         """
         if self._selection_map is not None:
             if isinstance(selected_ids_column, str):
@@ -327,18 +442,33 @@ class SegmentationLayerConfig(LayerConfigBase):
             fixed_ids=new_fixed_ids,
             fixed_id_colors=new_fixed_id_colors,
             color_column=color_column,
+            mapping_set=mapping_set,
         )
 
     def _add_layer(self, viewer):
         viewer.add_segmentation_layer(self.name, self.source)
 
     def _specific_rendering(
-        self, viewer, data, viewer_resolution=None, return_annos=False,
+        self,
+        viewer,
+        data,
+        viewer_resolution=None,
+        return_annos=False,
+        client=None,
     ):
         if self._selection_map is not None:
             selected_ids = self._selection_map.selected_ids(data)
             colors = self._selection_map.seg_colors(data)
             viewer.add_selected_objects(self.name, selected_ids, colors)
+
+        if self._segment_property_map is not None:
+            if isinstance(viewer, EasyViewerMainline):
+                target_site = "cave-explorer"
+            else:
+                target_site = "seunglab"
+            seg_prop_urls = self._render_segment_property_map(data, client, target_site)
+            for seg_prop_url in seg_prop_urls:
+                viewer.append_source_to_segmentation_layer(self.name, seg_prop_url)
 
         if self._split_point_map is not None:
             (
@@ -365,7 +495,6 @@ class SegmentationLayerConfig(LayerConfigBase):
 
         viewer.set_timestamp(self.name, self.timestamp)
         viewer.set_segmentation_view_options(self.name, **self._view_kws)
-        pass
 
 
 class AnnotationLayerConfig(LayerConfigBase):
@@ -471,19 +600,22 @@ class AnnotationLayerConfig(LayerConfigBase):
                 data = data.query(self.filter_query)
             for rule in self._annotation_map_rules:
                 pos = rule._get_position(
-                        data,
-                        data_resolution=self.data_resolution,
-                        viewer_resolution=viewer_resolution,
-                    )
-                viewer.set_view_options(
-                    position=pos
+                    data,
+                    data_resolution=self.data_resolution,
+                    viewer_resolution=viewer_resolution,
                 )
+                viewer.set_view_options(position=pos)
                 if pos is not None:
                     break
         return pos
 
     def _specific_rendering(
-        self, viewer, data, viewer_resolution=None, return_annos=False,
+        self,
+        viewer,
+        data,
+        viewer_resolution=None,
+        return_annos=False,
+        client=None,
     ):
         annos = []
         for rule in self._annotation_map_rules:
@@ -504,4 +636,3 @@ class AnnotationLayerConfig(LayerConfigBase):
             return annos
         else:
             viewer.add_annotations(self.name, annos)
-            pass

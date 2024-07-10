@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nglui"
+dynamic = ["version"]
+description = "Framework for data-driven generation of neuroglancer states."
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "Derrick Brittain", email = "caseysm@gmail.com" },
+    { name = "Casey Schneider-Mizell" },
+    { name = "Forrest Collman" },
+]
+dependencies = [
+    "caveclient>=5.14.0",
+    "ipython",
+    "neuroglancer",
+    "numpy>=1.11.0",
+    "pandas>=1.0.0",
+    "requests",
+    "six",
+    "tables",
+    "webcolors",
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+]
+
+[project.urls]
+Homepage = "https://github.com/seung-lab/NeuroglancerAnnotationUI"
+
+[tool.hatch.version]
+path = "src/nglui/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+]
+
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.9", "3.10", "3.11", "3.12"]
+
+[tool.hatch.envs.docs]
+dependencies = [
+  "mkdocs",
+  "mkdocs-material",
+  "mkdocstrings[python]",
+]
+[tool.hatch.envs.docs.scripts]
+build = "mkdocs build --clean --strict"
+serve = "mkdocs serve --dev-addr localhost:8000"

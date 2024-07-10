@@ -1,4 +1,3 @@
-import pytest
 # from nglui import annotation
 import numpy as np
 

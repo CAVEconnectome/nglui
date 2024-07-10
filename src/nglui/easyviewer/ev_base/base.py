@@ -1,18 +1,18 @@
-from . import utils
-from typing import Union, List, Dict, Tuple, Optional
-
 from abc import ABC, abstractmethod
+from typing import Dict, List, Optional, Tuple, Union
+
+from . import utils
 
 SEGMENTATION_LAYER_TYPES = ["segmentation", "segmentation_with_graph"]
+
 
 class EasyViewerBase(ABC):
     def __init__(self):
         self._default_viewer_url = None
-        pass
 
     def __repr__(self):
         return self.as_url()
-    
+
     def __repr_html__(self):
         return f'<a href="{self.as_url()}" target="_blank">Viewer</a>'
 
@@ -29,12 +29,12 @@ class EasyViewerBase(ABC):
     ) -> None:
         self.set_resolution(resolution)
         with self.txn() as s:
-                for ln, kws in image_layers.items():
-                    s.layers[ln] = self._ImageLayer(**kws)
-                for ln, kws in segmentation_layers.items():
-                    self._SegmentationLayer(s, **kws)
-                for ln, kws in annotation_layers.items():
-                    s.layers[ln] = self._AnnotationLayer(**kws)
+            for ln, kws in image_layers.items():
+                s.layers[ln] = self._ImageLayer(**kws)
+            for ln, kws in segmentation_layers.items():
+                self._SegmentationLayer(s, **kws)
+            for ln, kws in annotation_layers.items():
+                s.layers[ln] = self._AnnotationLayer(**kws)
 
     @abstractmethod
     def _ImageLayer(self, source, **kwargs):
@@ -56,19 +56,22 @@ class EasyViewerBase(ABC):
             source (str): source of neuroglancer segment layer
         """
         with self.txn() as s:
-            s.layers[layer_name] = self._SegmentationLayer(
-                source=source, **kwargs
-            )
-    
-    def add_image_layer(self, layer_name, source, **kwargs):
+            s.layers[layer_name] = self._SegmentationLayer(source=source, **kwargs)
+
+    def add_image_layer(self, layer_name, source, contrast_range=None, **kwargs):
         """Add segmentation layer to viewer instance.
 
         Attributes:
             layer_name (str): name of layer to be displayed in neuroglancer ui.
             source (str): source of neuroglancer image layer
+            contrast_range = (float, float): contrast range for image layer either in 0-1 (floats) or 0-255 (ints).
         """
         with self.txn() as s:
             s.layers[layer_name] = self._ImageLayer(source=source, **kwargs)
+        if contrast_range is not None:
+            self.add_contrast_shader(
+                layer_name, black=contrast_range[0], white=contrast_range[1]
+            )
 
     @abstractmethod
     def set_resolution(self, resolution) -> None:
@@ -76,9 +79,9 @@ class EasyViewerBase(ABC):
 
     def add_contrast_shader(self, layer_name, black=0.0, white=1.0):
         shader_text = f"#uicontrol float black slider(min=0, max=1, default={black})\n#uicontrol float white slider(min=0, max=1, default={white})\nfloat rescale(float value) {{\n  return (value - black) / (white - black);\n}}\nvoid main() {{\n  float val = toNormalized(getDataValue());\n  if (val < black) {{\n    emitRGB(vec3(0,0,0));\n  }} else if (val > white) {{\n    emitRGB(vec3(1.0, 1.0, 1.0));\n  }} else {{\n    emitGrayscale(rescale(val));\n  }}\n}}\n"
-        self._update_layer_shader(layer_name, shader_text)
+        self.update_shader(layer_name, shader_text)
 
-    def _update_layer_shader(self, layer_name, shader_text):
+    def update_shader(self, layer_name, shader_text):
         with self.txn() as s:
             s.layers[layer_name]._json_data["shader"] = shader_text
 
@@ -113,24 +116,24 @@ class EasyViewerBase(ABC):
                 s.layers[ln].annotations._data = []
 
     def add_annotations(
-            self,
-            layer_name: str,
-            annotations: List,
-        ):
+        self,
+        layer_name: str,
+        annotations: List,
+    ):
         with self.txn() as s:
             s.layers[layer_name].annotations.extend(annotations)
 
     def add_multilayer_annotations(
-            self,
-            layer_anno_dict: Dict[str, List],
-        ):
+        self,
+        layer_anno_dict: Dict[str, List],
+    ):
         """
         layer_anno_dict is a layer_name to annotation list dict.
         """
         with self.txn() as s:
             for ln, annos in layer_anno_dict.items():
                 if annos is None:
-                    continue 
+                    continue
                 s.layers[ln].annotations.extend(annos)
 
     def remove_annotations(self, layer_name, anno_ids):
@@ -148,7 +151,6 @@ class EasyViewerBase(ABC):
                             break
         except:
             self.update_message("Could not remove annotation")
-
 
     @abstractmethod
     def add_annotation_tags(self, layer_name, tags):
@@ -178,13 +180,13 @@ class EasyViewerBase(ABC):
     @property
     def layer_names(self):
         return [l.name for l in self.state.layers]
-    
+
     def selected_objects(self, segmentation_layer):
         return list(self.state.layers[segmentation_layer].segments)
 
     @abstractmethod
     def add_selected_objects(
-        self, 
+        self,
         segmentation_layer: str,
         oids: List[int],
         colors: Optional[Union[List, Dict]] = None,
@@ -195,7 +197,7 @@ class EasyViewerBase(ABC):
     def set_view_options(
         self,
         show_slices: Optional[bool] = None,
-        layout: Optional[str]=None,
+        layout: Optional[str] = None,
         show_axis_lines: Optional[bool] = None,
         show_scale_bar: Optional[bool] = None,
         orthographic: Optional[bool] = None,
@@ -203,7 +205,7 @@ class EasyViewerBase(ABC):
         zoom_image: Optional[float] = None,
         zoom_3d: Optional[float] = None,
         background_color: Optional[Tuple[float]] = None,
-    )->None:
+    ) -> None:
         pass
 
     @abstractmethod
@@ -211,7 +213,7 @@ class EasyViewerBase(ABC):
         self,
         layer_name: str,
         alpha_selected: Optional[float] = None,
-        alpha_3d: Optional[float] =None,
+        alpha_3d: Optional[float] = None,
         alpha_unselected: Optional[float] = None,
         **kwargs,
     ):
@@ -236,7 +238,6 @@ class EasyViewerBase(ABC):
         seg_colors : dict
             dict with root ids as keys and colors as values.
         """
-        pass
 
     @abstractmethod
     def set_multicut_points(
@@ -250,7 +251,7 @@ class EasyViewerBase(ABC):
         focus=True,
     ):
         pass
-    
+
     @staticmethod
     @abstractmethod
     def point_annotation(
@@ -316,4 +317,3 @@ class EasyViewerBase(ABC):
         children_visible=True,
     ):
         pass
-

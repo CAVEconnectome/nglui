@@ -2,5 +2,6 @@ from nglui.easyviewer import EasyViewer
 
 from . import statebuilder
 from . import parser
+from . import segmentprops
 
-__version__ = "3.1.0"
+__version__ = "3.2.0"
