@@ -2,6 +2,23 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.2.0] - 2024-07-10
+
+### Added
+
+- **SegmentProperties** : A new module has been created to build Segment Properties, which are a method of organizing information about segment IDs in a Neuroglancer segmentation layer.
+Segment Properties only work with the newer Google/Spelunker branches, and offer a way to add browsable and searchable metadata to segments that can be viewed in the viewer.
+- **StateBuilder** : Various changes were made to support segment properties from both explicit URLs and from data-driven mapping. See documentation for details.
+
+## Changed
+
+- **StateBuilder** : Image layers for spelunker now use native contrast controls.
+
+### Fixed
+
+- **StateBuilder** : Improvements to the use of `target_site` and `url_prefix` in general when both creating statebuilder and rendering states. In particular, the values in `render_state` should now correctly take precendence over the values in `StateBuilder` when both are set.
+
+
 ## [3.1.0] - 2024-05-29
 
 ### Added
