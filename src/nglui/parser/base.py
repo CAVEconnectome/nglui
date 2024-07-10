@@ -1,6 +1,6 @@
+
 import numpy as np
 import pandas as pd
-from itertools import chain
 
 from ..easyviewer.ev_base.base import SEGMENTATION_LAYER_TYPES
 

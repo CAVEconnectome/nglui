@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
 
 import contextlib
 import copy
@@ -25,7 +24,7 @@ class ConcurrentModificationError(RuntimeError):
     pass
 
 
-class ChangeNotifier(object):
+class ChangeNotifier:
     def __init__(self):
         self.__changed_callbacks = set()
         self.change_count = 0
@@ -142,4 +141,4 @@ class TrackableState(ChangeNotifier):
                 raise
 
     def __repr__(self):
-        return u"%s(%r)" % (type(self).__name__, self.state)
+        return "%s(%r)" % (type(self).__name__, self.state)

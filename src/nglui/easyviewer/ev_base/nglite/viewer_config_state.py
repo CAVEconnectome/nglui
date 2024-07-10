@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
 
 import base64
 import collections
@@ -77,7 +76,7 @@ class ActionState(JsonObjectWrapper):
     screenshot = wrapped_property("screenshot", optional(ScreenshotReply))
 
 
-class Actions(object):
+class Actions:
     def __init__(self, set_config):
         self._action_handlers = dict()
         self._set_config = set_config

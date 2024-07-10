@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
 
-from . import url_state, viewer_base
+from . import viewer_base
 
 
-class _ViewerHelper(object):
+class _ViewerHelper:
     """Mixin for implementing viewers based on the built-in server [kept for compatibility]."""
 
     def __init__(self):

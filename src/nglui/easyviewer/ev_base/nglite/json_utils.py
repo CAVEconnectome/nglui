@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
 
 import collections
 import json
@@ -34,9 +33,7 @@ def json_encoder_default(obj):
         return str(obj)
     elif isinstance(obj, np.floating):
         return float(obj)
-    elif isinstance(obj, np.ndarray):
-        return list(obj)
-    elif isinstance(obj, (set, frozenset)):
+    elif isinstance(obj, (frozenset, np.ndarray, set)):
         return list(obj)
     raise TypeError
 

@@ -1,7 +1,7 @@
-from collections.abc import Iterable
-from dataclasses import dataclass
-import numpy as np
 import re
+from collections.abc import Iterable
+
+import numpy as np
 
 FALLBACK_SEUNGLAB_NGL_URL = "https://neuroglancer.neuvue.io"
 FALLBACK_MAINLINE_NGL_URL = "https://ngl.cave-explorer.org"
@@ -29,16 +29,14 @@ def bucket_of_values(col, data, item_is_array=False, array_width=3):
                 return np.vstack(dataseries.values)
             else:
                 return dataseries.values[0].reshape(1, -1)
+        elif len(data) > 1:
+            return np.vstack(dataseries.map(np.vstack)).reshape(-1, array_width)
         else:
-            if len(data) > 1:
-                return np.vstack(dataseries.map(np.vstack)).reshape(-1, array_width)
-            else:
-                return np.vstack(dataseries).reshape(1, -1)
+            return np.vstack(dataseries).reshape(1, -1)
+    elif isinstance(dataseries.iloc[0], Iterable):
+        return np.concatenate(dataseries.values)
     else:
-        if isinstance(dataseries.iloc[0], Iterable):
-            return np.concatenate(dataseries.values)
-        else:
-            return dataseries.values
+        return dataseries.values
 
 
 def is_split_position(pt_col, df, suffixes=SPLIT_SUFFIXES):
@@ -59,7 +57,7 @@ def is_split_split_position(pt_col, df, suffixes=SPLIT_SUFFIXES):
         expected_name = '_'.join(split_name[:-1]) + f'_{suf}_{split_name[-1]}'
         is_split_split.append(expected_name in df.columns)
     return np.all(is_split_split)
-    
+
 def assemble_split_points(pt_col, df, suffixes=SPLIT_SUFFIXES):
     cols = split_position_columns(pt_col, suffixes)
     return np.vstack(df[cols].values)
@@ -79,4 +77,3 @@ def check_target_site(ngl_url, client):
         return 'seunglab'
     else:
         return "cave-explorer"
-    

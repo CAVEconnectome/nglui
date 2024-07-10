@@ -1,8 +1,8 @@
-from setuptools import setup
-import re
-import os
 import codecs
-from setuptools import find_packages
+import os
+import re
+
+from setuptools import find_packages, setup
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -21,10 +21,10 @@ def find_version(*file_paths):
     raise RuntimeError("Unable to find version string.")
 
 
-with open('requirements.txt', 'r') as f:
+with open('requirements.txt') as f:
     required = f.read().splitlines()
 
-with open('test_requirements.txt', 'r') as f:
+with open('test_requirements.txt') as f:
     test_required = f.read().splitlines()
 
 setup(

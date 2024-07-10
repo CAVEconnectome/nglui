@@ -1,6 +1,6 @@
+from neuroglancer.url_state import *
 from neuroglancer.viewer_base import UnsynchronizedViewerBase
 from neuroglancer.viewer_state import *
-from neuroglancer.url_state import *
 
 
 class Viewer(UnsynchronizedViewerBase):

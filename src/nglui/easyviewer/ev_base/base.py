@@ -1,7 +1,7 @@
-from . import utils
-from typing import Union, List, Dict, Tuple, Optional
-
 from abc import ABC, abstractmethod
+from typing import Dict, List, Optional, Tuple, Union
+
+from . import utils
 
 SEGMENTATION_LAYER_TYPES = ["segmentation", "segmentation_with_graph"]
 
@@ -9,7 +9,6 @@ SEGMENTATION_LAYER_TYPES = ["segmentation", "segmentation_with_graph"]
 class EasyViewerBase(ABC):
     def __init__(self):
         self._default_viewer_url = None
-        pass
 
     def __repr__(self):
         return self.as_url()
@@ -239,7 +238,6 @@ class EasyViewerBase(ABC):
         seg_colors : dict
             dict with root ids as keys and colors as values.
         """
-        pass
 
     @abstractmethod
     def set_multicut_points(

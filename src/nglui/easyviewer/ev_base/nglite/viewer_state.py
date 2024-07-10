@@ -13,7 +13,6 @@
 # limitations under the License.
 """Wrappers for representing the Neuroglancer viewer state."""
 
-from __future__ import absolute_import
 
 import collections
 import copy
@@ -189,7 +188,7 @@ def volume_source(x):
     return text_type(x)
 
 
-class _AnnotationLayerOptions(object):
+class _AnnotationLayerOptions:
     __slots__ = ()
     annotation_color = annotationColor = wrapped_property(
         "annotationColor", optional(text_type)
@@ -515,7 +514,7 @@ class ManagedLayer(JsonObjectWrapper):
 
 
 @export
-class Layers(object):
+class Layers:
     __slots__ = ("_layers", "_readonly")
     supports_readonly = True
 
@@ -568,18 +567,17 @@ class Layers(object):
                 self._layers.append(v)
             else:
                 self._layers[i] = v
-        else:
-            if isinstance(k, slice):
-                values = []
-                for x in v:
-                    if not isinstance(v, ManagedLayer):
-                        raise TypeError
-                    values.append(x)
-                self._layers[k] = values
-            else:
+        elif isinstance(k, slice):
+            values = []
+            for x in v:
                 if not isinstance(v, ManagedLayer):
                     raise TypeError
-                self._layers[k] = v
+                values.append(x)
+            self._layers[k] = values
+        else:
+            if not isinstance(v, ManagedLayer):
+                raise TypeError
+            self._layers[k] = v
 
     def clear(self):
         """Clears the list of layers."""

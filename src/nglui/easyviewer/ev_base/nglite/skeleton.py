@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
 
 import collections
 import io
@@ -22,7 +21,7 @@ import numpy as np
 import six
 
 
-class Skeleton(object):
+class Skeleton:
     def __init__(self, vertex_positions, edges, vertex_attributes=None):
         self.vertex_positions = np.array(vertex_positions, dtype="<f4")
         self.edges = np.array(edges, dtype="<u4")
@@ -59,7 +58,7 @@ VertexAttributeInfo = collections.namedtuple(
 )
 
 
-class SkeletonSource(object):
+class SkeletonSource:
     def __init__(self):
         self.vertex_attributes = collections.OrderedDict()
 

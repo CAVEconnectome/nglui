@@ -1,4 +1,4 @@
-from .ev_base import EasyViewerSeunglab, EasyViewerMainline
+from .ev_base import EasyViewerMainline, EasyViewerSeunglab
 
 
 def EasyViewer(

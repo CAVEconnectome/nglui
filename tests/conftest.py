@@ -1,17 +1,21 @@
-import pytest
-from nglui import EasyViewer
-import pandas as pd
-import numpy as np
 import json
+
+import numpy as np
+import pandas as pd
+import pytest
+
+from nglui import EasyViewer
 
 
 @pytest.fixture(scope="session")
 def viewer():
-    return EasyViewer(target_site='seunglab')
+    return EasyViewer(target_site="seunglab")
+
 
 @pytest.fixture(scope="session")
 def viewer_cave_explorer():
-    return EasyViewer(target_site='mainline')
+    return EasyViewer(target_site="mainline")
+
 
 @pytest.fixture(scope="session")
 def img_path():
@@ -42,7 +46,7 @@ def soma_df():
 def soma_df_Int64():
     df = pd.read_hdf("tests/testdata/test_data.h5", "soma").head(5)
     df["pt_root_id"] = df["pt_root_id"].astype("Int64")
-    df["pt_root_id"].iloc[0] = np.nan
+    df.loc[0, "pt_root_id"] = np.nan
     return df.head()
 
 
@@ -58,7 +62,7 @@ def post_syn_df():
 
 @pytest.fixture(scope="session")
 def test_state():
-    with open("tests/testdata/test_state.json", "r") as f:
+    with open("tests/testdata/test_state.json") as f:
         state = json.load(f)
     return state
 

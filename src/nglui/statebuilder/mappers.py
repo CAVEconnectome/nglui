@@ -1,7 +1,9 @@
-import numpy as np
-import pandas as pd
 from collections.abc import Collection
 from itertools import chain
+
+import numpy as np
+import pandas as pd
+
 from .utils import is_split_position, split_position_columns
 
 
@@ -49,7 +51,7 @@ def _data_scaler(data_resolution, viewer_resolution):
     return (np.array(data_resolution) / np.array(viewer_resolution)).reshape((1, 3))
 
 
-class SelectionMapper(object):
+class SelectionMapper:
     """Class for configuring object selections based on root id
 
     Parameters
@@ -152,7 +154,7 @@ class SelectionMapper(object):
         return colors
 
 
-class AnnotationMapperBase(object):
+class AnnotationMapperBase:
     def __init__(
         self,
         type,
@@ -234,20 +236,19 @@ class AnnotationMapperBase(object):
     def multipoint_reshape(self, data, pt_columns, squeeze_cols=[]):
         if data is None or len(data) == 0:
             return data
+        elif not self.split_positions:
+            rows = data.apply(
+                lambda x: _multipoint_transform(
+                    x, pt_columns=pt_columns, squeeze_cols=squeeze_cols
+                ),
+                axis=1,
+            ).tolist()
+            return pd.DataFrame.from_records([r for r in chain.from_iterable(rows)])
         else:
-            if not self.split_positions:
-                rows = data.apply(
-                    lambda x: _multipoint_transform(
-                        x, pt_columns=pt_columns, squeeze_cols=squeeze_cols
-                    ),
-                    axis=1,
-                ).tolist()
-                return pd.DataFrame.from_records([r for r in chain.from_iterable(rows)])
-            else:
-                split_cols = []
-                for pt_col in pt_columns:
-                    split_cols.extend(split_position_columns(pt_col))
-                return _multipoint_transform_split(data, split_cols)
+            split_cols = []
+            for pt_col in pt_columns:
+                split_cols.extend(split_position_columns(pt_col))
+            return _multipoint_transform_split(data, split_cols)
 
     @property
     def split_positions(self):
@@ -827,7 +828,7 @@ class BoundingBoxMapper(AnnotationMapperBase):
         return annos
 
 
-class SplitPointMapper(object):
+class SplitPointMapper:
     """Mapper to create split points in a segmentation layer.
 
     Parameters

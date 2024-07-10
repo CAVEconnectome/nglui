@@ -1,16 +1,18 @@
-import pytest
-import numpy as np
 from collections import OrderedDict
+
+import numpy as np
+import pytest
+
 from nglui.statebuilder import (
-    ImageLayerConfig,
-    SegmentationLayerConfig,
     AnnotationLayerConfig,
-    StateBuilder,
-    PointMapper,
+    ChainedStateBuilder,
+    ImageLayerConfig,
     LineMapper,
+    PointMapper,
+    SegmentationLayerConfig,
     SphereMapper,
     SplitPointMapper,
-    ChainedStateBuilder,
+    StateBuilder,
 )
 
 
@@ -68,9 +70,7 @@ def test_basic_cave_explorer(image_layer, seg_layer_basic, anno_layer_basic):
     assert state.data == f'<a href="{state_url}" target="_blank">Neuroglancer Link</a>'
 
     state = sb.render_state(return_as="dict")
-    assert isinstance(state, OrderedDict) or isinstance(
-        state, dict
-    )  # Cave-explorer uses dict
+    assert isinstance(state, (OrderedDict, dict))  # Cave-explorer uses dict
 
     state = sb.render_state(return_as="json")
     assert type(state) is str
@@ -197,6 +197,7 @@ def test_annotations_linked(soma_df, soma_df_Int64, seg_path_precomputed, target
     )
 
     state = sb.render_state(soma_df_Int64, return_as="dict")
+    print("TYPE IS", state["layers"][1]["annotations"][0]["segments"])
     assert len(np.squeeze(state["layers"][1]["annotations"][0]["segments"])) == 0
 
 

@@ -1,1 +1,7 @@
-from .base import *
+from .base import (
+    LabelProperty,
+    NumberProperty,
+    SegmentProperties,
+    StringProperty,
+    TagProperty,
+)

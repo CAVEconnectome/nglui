@@ -1,9 +1,10 @@
+from functools import partial
+from itertools import chain
+from typing import Optional, Union
+
 import attrs
 import numpy as np
 import pandas as pd
-from typing import Optional, Union
-from functools import partial
-from itertools import chain
 
 """
 Options and validation for neuroglancer segment properties based on the segment properties spec:
@@ -11,7 +12,7 @@ https://github.com/google/neuroglancer/blob/master/src/datasource/precomputed/se
 """
 
 
-class SegmentPropertyBase(object):
+class SegmentPropertyBase:
     pass
 
 
@@ -172,7 +173,7 @@ def _find_column_dtype(column):
     elif column.dtype == "object":
         try:
             column.astype("float32")
-        except Exception as e:
+        except Exception:
             raise ValueError(
                 f"Column {column} has an unsupported data type {column.dtype}"
             )

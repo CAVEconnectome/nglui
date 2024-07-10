@@ -5,10 +5,10 @@ Neuroglancer links. This can be installed with `pip install dashdataframe` or th
 github at https://github.com/AllenInstitute/DashDataFrame.
 '''
 
-import os
 import dash
 import pandas as pd
 from dashdataframe import configure_app
+
 from nglui import statebuilder
 
 FLASK_PORT = 8880

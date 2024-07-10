@@ -13,7 +13,6 @@
 # limitations under the License.
 """Facilities for converting JSON <-> Python objects"""
 
-from __future__ import absolute_import
 
 import collections
 import copy
@@ -23,8 +22,6 @@ import threading
 
 import numpy as np
 import six
-
-from six.moves import range
 
 from .json_utils import encode_json_for_repr
 
@@ -39,7 +36,7 @@ def to_json(value):
     return method()
 
 
-class JsonObjectWrapper(object):
+class JsonObjectWrapper:
     supports_readonly = True
 
     __slots__ = ("_json_data", "_cached_wrappers", "_lock", "_readonly")
@@ -75,7 +72,7 @@ class JsonObjectWrapper(object):
         return type(self)(copy.deepcopy(self.to_json(), memo))
 
     def __repr__(self):
-        return u"%s(%s)" % (type(self).__name__, encode_json_for_repr(self.to_json()))
+        return "%s(%s)" % (type(self).__name__, encode_json_for_repr(self.to_json()))
 
     def _get_wrapped(self, key, wrapped_type):
         with self._lock:
@@ -167,7 +164,7 @@ def optional(wrapper, default_value=None):
     return modified_wrapper
 
 
-class MapBase(object):
+class MapBase:
     pass
 
 
@@ -257,7 +254,7 @@ def typed_set(wrapped_type):
 def typed_list(wrapped_type, validator=None):
     validator = _normalize_validator(wrapped_type, validator)
 
-    class TypedList(object):
+    class TypedList:
         supports_readonly = True
         supports_validation = True
 

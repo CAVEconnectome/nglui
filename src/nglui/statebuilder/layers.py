@@ -1,18 +1,16 @@
-from typing import Optional, Union
-from .mappers import (
-    SelectionMapper,
-    AnnotationMapperBase,
-    PointMapper,
-    LineMapper,
-    SphereMapper,
-    BoundingBoxMapper,
-)
-from ..segmentprops.base import SegmentProperties
-from ..easyviewer import EasyViewerMainline
-from datetime import datetime
-from warnings import warn
-import numpy as np
 import numbers
+from datetime import datetime
+from typing import Optional, Union
+from warnings import warn
+
+import numpy as np
+
+from ..easyviewer import EasyViewerMainline
+from ..segmentprops.base import SegmentProperties
+from .mappers import (
+    AnnotationMapperBase,
+    SelectionMapper,
+)
 
 DEFAULT_IMAGE_LAYER = "img"
 DEFAULT_SEG_LAYER = "seg"
@@ -25,7 +23,7 @@ DEFAULT_SEGMENTATION_VIEW_KWS = {
 }
 
 
-class LayerConfigBase(object):
+class LayerConfigBase:
     """Base class for configuring layers
 
     Parameters
@@ -114,11 +112,9 @@ class LayerConfigBase(object):
 
     def _add_layer(self, viewer):
         "Subclass implements layer addition rules"
-        pass
 
     def _set_view_options(self, *args, **kwargs):
         "Subclass implements own rules"
-        pass
 
     def _specific_rendering(
         self,
@@ -129,7 +125,6 @@ class LayerConfigBase(object):
         client=None,
     ):
         """Subclasses implement specific rendering rules"""
-        pass
 
 
 class ImageLayerConfig(LayerConfigBase):
@@ -500,7 +495,6 @@ class SegmentationLayerConfig(LayerConfigBase):
 
         viewer.set_timestamp(self.name, self.timestamp)
         viewer.set_segmentation_view_options(self.name, **self._view_kws)
-        pass
 
 
 class AnnotationLayerConfig(LayerConfigBase):
@@ -642,4 +636,3 @@ class AnnotationLayerConfig(LayerConfigBase):
             return annos
         else:
             viewer.add_annotations(self.name, annos)
-            pass

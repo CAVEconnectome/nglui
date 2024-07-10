@@ -1,13 +1,18 @@
-from nglui.easyviewer import EasyViewer
-from ..easyviewer.ev_base.utils import (
-    neuroglancer_url,
-    default_seunglab_neuroglancer_base,
-)
-from nglui.easyviewer.ev_base.nglite.json_utils import encode_json
+from warnings import warn
+
 from IPython.display import HTML
+
+from nglui.easyviewer import EasyViewer
+from nglui.easyviewer.ev_base.nglite.json_utils import encode_json
+
+from ..easyviewer.ev_base.utils import (
+    default_seunglab_neuroglancer_base,
+    neuroglancer_url,
+)
 from .utils import check_target_site
 
 DEFAULT_TARGET_SITE = "seunglab"
+DEFAULT_URL = default_seunglab_neuroglancer_base
 
 DEFAULT_VIEW_KWS = {
     "layout": "xy-3d",
@@ -22,33 +27,49 @@ class StateBuilder:
 
     Parameters
     ----------
-    layers (list, optional): list of nglui.statebuilder.layers.LayerConfigBase to add. Defaults to [].
-    base_state (dict, optional): json state to add to. Defaults to None.
-    url_prefix (str, optional): http(s) path to neuroglancer deployment to use.
-        Defaults to None, which will use https://neuromancer-seung-import.appspot.com
-    state_server (str, optional): state server to post links to. Defaults to None.
-    resolution (list, optional): 3 element vector controlling the viewer resolution. Defaults to None. If None and a client is set, uses the client viewer resolution.
-    view_kws (dict, optional): dictionary controlling view parameters. Defaults to {}.
-        keys are:
-        show_slices: Boolean
-            sets if slices are shown in the 3d view. Defaults to False.
-        layout: str
-            `xy-3d`/`xz-3d`/`yz-3d` (sections plus 3d pane), `xy`/`yz`/`xz`/`3d` (only one pane), or `4panel` (all panes). Default is `xy-3d`.
-        show_axis_lines: Boolean
-            determines if the axis lines are shown in the middle of each view.
-        show_scale_bar: Boolean
-            toggles showing the scale bar.
-        orthographic : Boolean
-            toggles orthographic view in the 3d pane.
-        position* : 3-element vector
-            determines the centered location.
-        zoom_image : float
-            Zoom level for the imagery in units of nm per voxel. Defaults to 8.
-        zoom_3d : float
-            Zoom level for the 3d pane. Defaults to 2000. Smaller numbers are more zoomed in.
-        background_color : str or list
-            Sets the background color of the 3d view. Arguments can be rgb values, hex colors, or named web colors. Defaults to black.
-    client (caveclient.CAVEclient, optional): a caveclient to get defaults from. Defaults to None.
+    layers : list of nglui.statebuilder.layers.LayerConfigBase, optional
+        List of layers to add. Defaults to [].
+    base_state : dict, optional
+        JSON state to add to. Defaults to None.
+    url_prefix : str, optional
+        http(s) path to Neuroglancer deployment to use. Defaults to None,
+        which will use https://neuromancer-seung-import.appspot.com
+    state_server : str, optional
+        State server to post links to. Defaults to None.
+    resolution : list of float, optional
+        3-element vector controlling the viewer resolution. Defaults to None.
+        If None and a client is set, uses the client viewer resolution.
+    view_kws : dict, optional
+        Dictionary controlling view parameters. Defaults to {}.
+
+        Keys are:
+            show_slices : bool, optional
+                Sets if slices are shown in the 3d view. Defaults to False.
+            layout : str, optional
+                `xy-3d`/`xz-3d`/`yz-3d` (sections plus 3d pane),
+                `xy`/`yz`/`xz`/`3d` (only one pane), or `4panel` (all panes).
+                Default is `xy-3d`.
+            show_axis_lines : bool, optional
+                Determines if the axis lines are shown in the middle of each view.
+            show_scale_bar : bool, optional
+                Toggles showing the scale bar.
+            orthographic : bool, optional
+                Toggles orthographic view in the 3d pane.
+            position : list of float, optional (length-3)
+                Determines the centered location.
+            zoom_image : float, optional
+                Zoom level for the imagery in units of nm per voxel. Defaults to 8.
+            zoom_3d : float, optional
+                Zoom level for the 3d pane. Defaults to 2000. Smaller numbers are
+                more zoomed in.
+            background_color : str or list of float, optional
+                Sets the background color of the 3d view. Arguments can be rgb
+                values, hex colors, or named web colors. Defaults to black.
+    client : caveclient.CAVEclient, optional
+        A caveclient to get defaults from. Defaults to None.
+    target_site : str, optional
+        Target Neuroglancer category: either "seunglab" or "mainline"/"cave-explorer"/"spelunker". Defaults to None.
+        Will be looked up automatically based on ngl_url, if used.
     """
 
     def __init__(
@@ -72,8 +93,6 @@ class StateBuilder:
             if target_site is None:
                 target_site = check_target_site(url_prefix, client)
         self._client = client
-        if url_prefix is None and target_site is None:
-            target_site = DEFAULT_TARGET_SITE
         url_prefix = neuroglancer_url(url_prefix, target_site)
 
         self._base_state = base_state
@@ -123,7 +142,6 @@ class StateBuilder:
             )
             if pos is not None:
                 break
-        pass
 
     def render_state(
         self,
@@ -164,8 +182,18 @@ class StateBuilder:
         if base_state is None:
             base_state = self._base_state
         if target_site is None:
-            if self._target_site is not None:
-                target_site = self._target_site
+            target_site = self._target_site
+        if url_prefix is None:
+            url_prefix = self._url_prefix
+        if target_site is None and url_prefix is not None:
+            if self._client is not None:
+                target_site = check_target_site(url_prefix, self._client)
+        elif target_site is None and url_prefix is None:
+            target_site = DEFAULT_TARGET_SITE
+            url_prefix = DEFAULT_URL
+            warn(
+                'Deprecation warning: No target site or url prefix set, using default "seunglab" site. This will switch to "spelunker" in the future.'
+            )
 
         self.initialize_state(base_state=base_state, target_site=target_site)
         self.handle_positions(data)
@@ -273,6 +301,7 @@ class ChainedStateBuilder:
                 data=data,
                 base_state=temp_state,
                 return_as="dict",
+                url_prefix=url_prefix,
                 target_site=target_site,
             )
         last_builder = self._statebuilders[-1]

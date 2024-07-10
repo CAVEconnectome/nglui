@@ -1,13 +1,15 @@
 # Seung lab branch of easyviewer
 
-from .base import EasyViewerBase, SEGMENTATION_LAYER_TYPES
-from . import utils
 import re
-from . import nglite as neuroglancer
-from typing import Union, List, Dict, Tuple, Optional
-from numpy import issubdtype, integer, uint64, vstack
 from collections import OrderedDict
+from typing import Dict, List, Optional, Tuple, Union
 from warnings import warn
+
+from numpy import integer, issubdtype, uint64, vstack
+
+from . import nglite as neuroglancer
+from . import utils
+from .base import SEGMENTATION_LAYER_TYPES, EasyViewerBase
 
 
 class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
@@ -113,7 +115,7 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         )  # 'seunglab' hard-coded because of file.
         ngl_url = neuroglancer.to_url(self.state, prefix=prefix)
         if as_html:
-            return '<a href="{}" target="_blank">{}</a>'.format(ngl_url, link_text)
+            return f'<a href="{ngl_url}" target="_blank">{link_text}</a>'
         else:
             return ngl_url
 

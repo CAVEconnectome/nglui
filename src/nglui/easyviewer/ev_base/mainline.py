@@ -10,12 +10,13 @@ except ImportError:
     use_ngl = False
 else:
     use_ngl = True
-from . import utils
-
+from typing import Dict, List, Optional, Tuple, Union
 from warnings import warn
-from .base import EasyViewerBase, SEGMENTATION_LAYER_TYPES
-from typing import Union, List, Dict, Tuple, Optional
-from numpy import issubdtype, integer
+
+from numpy import integer, issubdtype
+
+from . import utils
+from .base import SEGMENTATION_LAYER_TYPES, EasyViewerBase
 
 
 def nanometer_dimension(resolution):
@@ -66,7 +67,6 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
 
     def set_state_server(self, state_server) -> None:
         Warning("State server is set by neuroglancer deployment for this viewer type.")
-        pass
 
     def add_annotation_layer(
         self,
@@ -119,7 +119,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
             prefix = utils.default_mainline_neuroglancer_base
         ngl_url = neuroglancer.to_url(self.state, prefix=prefix)
         if as_html:
-            return '<a href="{}" target="_blank">{}</a>'.format(ngl_url, link_text)
+            return f'<a href="{ngl_url}" target="_blank">{link_text}</a>'
         else:
             return ngl_url
 
@@ -130,9 +130,9 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
             )
 
     def add_contrast_shader(self, layer_name, black=0, white=255):
-        if isinstance(black, float):
+        if isinstance(black, float) and black < 1:
             black = int(black * 255)
-        if isinstance(white, float):
+        if isinstance(white, float) and white < 1:
             white = int(white * 255)
         with self.txn() as s:
             s.layers[
@@ -256,7 +256,6 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
     ):
         if timestamp is not None:
             warn("Timestamp setting is not yet enabled for this viewer type.")
-        pass
 
     def set_multicut_points(
         self,
@@ -360,4 +359,3 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         **kwargs,
     ):
         Warning("Annotation groups are not yet supported by this viewer type.")
-        pass

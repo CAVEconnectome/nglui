@@ -1,16 +1,17 @@
 from typing import Iterable
-from .layers import (
-    ImageLayerConfig,
-    SegmentationLayerConfig,
-    AnnotationLayerConfig,
-    PointMapper,
-    LineMapper,
-)
-from .statebuilder import ChainedStateBuilder, StateBuilder
+
+import pandas as pd
 from caveclient import CAVEclient
 from caveclient.endpoints import fallback_ngl_endpoint
-import pandas as pd
 from IPython.display import HTML
+
+from .layers import (
+    AnnotationLayerConfig,
+    ImageLayerConfig,
+    SegmentationLayerConfig,
+)
+from .mappers import LineMapper, PointMapper
+from .statebuilder import ChainedStateBuilder, StateBuilder
 
 DEFAULT_POSTSYN_COLOR = (0.25098039, 0.87843137, 0.81568627)  # CSS3 color turquise
 DEFAULT_PRESYN_COLOR = (1.0, 0.38823529, 0.27843137)  # CSS3 color tomato
@@ -20,7 +21,12 @@ CONTRAST_CONFIG = {
         "contrast_controls": True,
         "black": 0.35,
         "white": 0.70,
-    }
+    },
+    "minnie65_public": {
+        "contrast_controls": True,
+        "black": 0.35,
+        "white": 0.70,
+    },
 }
 MAX_URL_LENGTH = 1_750_000
 DEFAULT_NGL = fallback_ngl_endpoint
@@ -106,7 +112,10 @@ def make_line_statebuilder(
         dictionary of view keywords to configure neuroglancer view
     split_positions : bool, optional
         whether the position column into x,y,z columns. Defaults to False.
-
+    ngl_url : str, optional
+        URL of the Neuroglancer instance to use. Defaults to client.info.viewer_site() or DEFAULT_NGL.
+    target_site : str, optional
+        Category of Neuroglancer deployment to build link for. Defaults to None.
     Returns
     -------
     StateBuilder:
@@ -284,8 +293,8 @@ def make_pre_post_statebuilder(
 
     if view_kws is None:
         view_kws = {}
-    sb1 = StateBuilder(layers=[img_layer, seg_layer], client=client, view_kws=view_kws)
 
+    sb1 = StateBuilder(layers=[img_layer, seg_layer], client=client, view_kws=view_kws)
     state_builders = [sb1]
     if show_inputs:
         # First state builder
@@ -350,7 +359,9 @@ def make_state_url(df, sb, client, ngl_url=None, target_site=None):
         ngl_url = client.info.viewer_site()
         if ngl_url is None:
             ngl_url = DEFAULT_NGL
-    url = client.state.build_neuroglancer_url(state_id, ngl_url=ngl_url)
+    url = client.state.build_neuroglancer_url(
+        state_id, ngl_url=ngl_url, target_site=target_site
+    )
     return url
 
 
@@ -404,7 +415,7 @@ def make_url_robust(
                 df, sb, client, ngl_url=ngl_url, target_site=target_site
             )
     elif shorten == "always":
-        url = make_state_url(df, sb, client, target_site=target_site)
+        url = make_state_url(df, sb, client, ngl_url=ngl_url, target_site=target_site)
     elif shorten == "never":
         url = sb.render_state(
             df, return_as="url", url_prefix=ngl_url, target_site=target_site
@@ -476,7 +487,9 @@ def package_state(
         else:
             return url
     elif return_as == "json":
-        return sb.render_state(df, return_as=return_as, target_site=target_site)
+        return sb.render_state(
+            df, return_as=return_as, ngl_url=ngl_url, target_site=target_site
+        )
     else:
         raise (
             ValueError(
@@ -756,16 +769,17 @@ def make_neuron_neuroglancer_link(
         dataframe_resolution_post=data_resolution_post,
         split_positions=True,
     )
-    return package_state(
-        dataframes,
-        sb,
-        client,
-        shorten,
-        return_as,
-        ngl_url,
-        link_text,
-        target_site=target_site,
-    )
+    return sb, dataframes
+    # return package_state(
+    #     dataframes,
+    #     sb,
+    #     client,
+    #     shorten,
+    #     return_as,
+    #     ngl_url,
+    #     link_text,
+    #     target_site=target_site,
+    # )
 
 
 def from_client(client, image_name=None, segmentation_name=None, contrast=None):
