@@ -48,7 +48,9 @@ theme:
     
 markdown_extensions:
   - admonition
-
+  - attr_list
+  - md_in_html
+  
 plugins:
   - mkdocstrings:
       default_handler: python
