@@ -40,6 +40,17 @@ def sort_tag_arrays(x: list) -> list:
     return [sorted(y) for y in x]
 
 
+def is_null_value(value):
+    if value is None:
+        return True
+    elif pd.isna(value):
+        return True
+    elif value == "":
+        return True
+    else:
+        return False
+
+
 @attrs.define
 class InlineProperties:
     ids = attrs.field(type=list[int], converter=list_of_strings, kw_only=True)
@@ -287,6 +298,22 @@ class SegmentProperties:
             self.ids,
             self._property_list(),
         )
+
+    def to_dataframe(self):
+        "Converts the segment properties to a pandas dataframe"
+        df_dict = {"ids": self.ids}
+        for prop in self._property_list():
+            if (
+                isinstance(prop, LabelProperty)
+                or isinstance(prop, DescriptionProperty)
+                or isinstance(prop, StringProperty)
+                or isinstance(prop, NumberProperty)
+            ):
+                df_dict[prop.id] = prop.values
+            elif isinstance(prop, TagProperty):
+                for ii, tag in enumerate(prop.tags):
+                    df_dict[tag] = [ii in tags for tags in prop.values]
+        return pd.DataFrame(df_dict)
 
     @classmethod
     def from_dataframe(
