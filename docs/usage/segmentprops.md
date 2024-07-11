@@ -201,6 +201,8 @@ seg.add_segment_properties_map(
 ```
 
 The arguments follow the `SegmentProperties.from_dataframe` method.
+Segment property maps require a CAVEclient to be set when building the StateBuilder object, as the resulting properties need to be uploaded to the CAVE state server.
 In addition, if you want to use a different dataframe for segment properties than for data, you can specfify a `mapping_set`.
 Mapping sets are found throughout StateBuilder, and let you pass a dictionary of dataframes to use for different purposes, where the keys are these mapping set values.
 Note that if you use a mapping set anywhere, you have to specify them for all data rules in the state.
+

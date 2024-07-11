@@ -5,7 +5,7 @@ repo_name: CAVEconnectome/NGLui
 
 nav:
 - About: index.md
-- Usage:
+- How to Use:
     - usage/parser.md
     - usage/segmentprops.md
     - usage/statebuilder.md
