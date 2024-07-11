@@ -7,11 +7,11 @@ nav:
 - About: index.md
 - Usage:
     - usage/parser.md
-    - usage/segprops.md
+    - usage/segmentprops.md
     - usage/statebuilder.md
 - Function Reference:
     - reference/parser.md
-    - reference/segprops.md
+    - reference/segmentprops.md
     - reference/statebuilder.md
     - reference/easyviewer.md
 - Changelog: changelog.md
@@ -50,7 +50,7 @@ markdown_extensions:
   - admonition
   - attr_list
   - md_in_html
-  
+
 plugins:
   - mkdocstrings:
       default_handler: python

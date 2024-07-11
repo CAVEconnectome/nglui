@@ -112,10 +112,6 @@ def make_line_statebuilder(
         dictionary of view keywords to configure neuroglancer view
     split_positions : bool, optional
         whether the position column into x,y,z columns. Defaults to False.
-    ngl_url : str, optional
-        URL of the Neuroglancer instance to use. Defaults to client.info.viewer_site() or DEFAULT_NGL.
-    target_site : str, optional
-        Category of Neuroglancer deployment to build link for. Defaults to None.
     Returns
     -------
     StateBuilder:

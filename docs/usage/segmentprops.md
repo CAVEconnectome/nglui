@@ -14,7 +14,7 @@ There are four types of properties that can be viewed in Neuroglancer:
 * **Label**: A string that names each segment ID. Only one per ID per property list.
 * **Description**: A longer description of each segment ID. Only one per ID per property list.
 * **Tags**: A small collection of strings that can be used to filter segments. There can be more than one tag per ID.
-* **Numeric**: Numeric properties (e.g. depth, synapse count) for each cell. There can be more than one numeric property provided.
+* **Number**: Numeric properties (e.g. depth, synapse count) for each cell. There can be more than one numeric property provided.
 
 In addition, the specification allows *string properties*, but these are not currently shown in Neuroglancer.
 
@@ -23,7 +23,7 @@ In addition, the specification allows *string properties*, but these are not cur
   <figcaption>Segment properties help make Neuroglancer more browsable from data</figcaption>
 </figure>
 
-## Building from dataframes
+## Building segment properties
 
 The easiest way to work with segment properties is to build them from a dataframe.
 The only absolute requirement is that the dataframe has a column associated with segment IDs.
@@ -70,20 +70,57 @@ which will produce something like:
     'data_type': 'int32'}]}}
 ```
 
-Note that number of numerical properties are possible by passing a list of column names.
+Note that multiple numeric properties can be passed a list of column names.
 
-### Tag columns
+### Tag properties
 
 There are two ways to associate tags with segment IDs.
 When using the `tag_value_cols` argument, the unique values (except `None`) across all specified columns are used as tags.
 Values that are duplicated across different columns will be counted as a single tag.
+For tag value columns, the order is determined by the sorting of values.
+By default, this is alphabetical, but it will follow the order from [categorical data](https://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html) in pandas.
 
 If you need more fine control over the tags, you can use the `tag_bool_cols` argument.
 Here, a column name or list of column names are passed with the expectation that each *column name* represents a tag and if the value of a given row is `True`, the tag is associated with the segment ID.
+Here, the order will follow the order of the list.
 
-Both `tag_value_cols` and `tag_bool_cols` can be used together.
+Both `tag_value_cols` and `tag_bool_cols` can be used together, with the order being values followed by boolean columns.
 
-### Saving segment properties
+You can also specify `tag_descriptions`, a dictionary where the tag names are the keys and longer-form descriptions are the values.
+Any tag without a description will be passed through directly.
+
+### Number properties
+
+If you look at the JSON output above, you see that the `soma_depth` property has a field "data_type" that specifies the type of the numerical property, in this case `int32`.
+Data type values are inferred from the column dtype and safe conversions are validated.
+
+### Building segment properties manually
+
+It is also possible to build segment properties manually with the `SegmentProperties` class.
+Each type of property is represented by a different class: `LabelProperty`, `DescriptionProperty`, `TagProperty`, and `NumberProperty`.
+Each property type has required and optional arguments that are used to build the property.
+More details can be found in the [API reference](../reference/segmentprops.md).
+You can then either build a SegmentProperties object from these properties, for example:
+
+```python
+from nglui.segmentprops import SegmentProperties, LabelProperty, NumberProperty
+
+labels = LabelProperty(values=['cell_1', 'cell_2', 'cell_3'])
+numbers = NumberProperty(
+    id='hugeness',
+    values=[1,2,3],
+    data_type='float32',
+)
+props = SegmentProperties(
+    ids = [1,2,3],
+    label_property=labels,
+    number_properties=numbers, # Could be a list of NumberProperty objects as well.
+)
+```
+
+Note that validation happens on the `to_dict` method, so you can build invalid properties (such as different-length lists of ids and property values) without error.
+
+## Saving segment properties
 
 Segment properties must be hosted on a server to be used in Neuroglancer.
 There are two main approaches to this:
@@ -123,3 +160,47 @@ with open('info', 'w') as f:
 Next, create a directory in a web-accessible location (e.g. `https://my-server/my-property`) or public cloud bucket (e.g. `gs://my-bucket/my-property`) and upload the `info` file to that directory.
 
 The URL you will use to load the properties into Neuroglancer will be `precomputed://` followed by the URL of the directory or bucket (e.g. `precomputed://https://my-server/my-property` or `precomputed://gs://my-bucket/my-property`).
+
+#### Adding segment properties to Neuroglancer
+
+If saved segment properties with either of the two methods above, you will get a URL that you can load into Neuroglancer as a source for a segmentation layer.
+If you want to do this manually in a browser you have already have open, 
+
+## Segment properties in StateBuilder.
+
+The `StateBuilder` class lets you set either static segment properties or segment properties that are generated from a dataframe.
+
+To set static segment properties from a hosted JSON file, you simply set a segment properties value on the SegmentationLayerConfig.
+
+```python
+from nglui import statebuilder
+
+seg = statebuilder.SegmentationLayerConfig(
+    source="precomputed://gs://my-bucket/my-segmentation",
+    segment_properties='precomputed://https://my-server/my-property',
+)
+```
+
+and proceed to build the state as normal.
+
+#### Segment property maps
+
+Alternatively, you can set segment properties from data when you render the state.
+Here, we have to create the segmentation layer first and then set the segment property mapping on the layer.
+
+```python
+seg = statebuilder.SegmentationLayerConfig(
+    source="precomputed://gs://my-bucket/my-segmentation",
+
+
+seg.add_segment_properties_map(
+    label_col='id_ref',
+    tag_value_cols=['cell_type', 'classification_system'],
+    number_cols=['soma_depth'],
+)
+```
+
+The arguments follow the `SegmentProperties.from_dataframe` method.
+In addition, if you want to use a different dataframe for segment properties than for data, you can specfify a `mapping_set`.
+Mapping sets are found throughout StateBuilder, and let you pass a dictionary of dataframes to use for different purposes, where the keys are these mapping set values.
+Note that if you use a mapping set anywhere, you have to specify them for all data rules in the state.
