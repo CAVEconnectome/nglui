@@ -55,7 +55,7 @@ Segment Properties only work with the newer Google/Spelunker branches, and offer
 
 - **StateBuilder** and **EasyViewer** Substantial refactor, adding basic support for the main Google Neuroglancer branch and the Cave-Explorer/Spelunker deployments coming online with CAVE.
 Most functionality should be seamless, with the client checking for version.
-Currently, only the [Cave-Explorer](https://ngl.cave-explorer.org/) and [Spelunker]((https://ngl.cave-explorer.org/)) deployments are fully supported for this automated version check, as the response depends on a build-specific version.json file.
+Currently, only the [Cave-Explorer](https://ngl.cave-explorer.org/) and [Spelunker](https://spelunker.cave-explorer.org/) deployments are fully supported for this automated version check, as the response depends on a build-specific version.json file.
 If no automated version is set or one wants to override any settings, the `target_site` argument can be set to `cave-explorer` or `mainline` for the main Google branch or `seunglab` for the older Seung-lab branch.
 
 
