@@ -2,6 +2,12 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.2.1] - 2024-07-11
+
+### Added
+
+- **SegmentProperties** : Added a `.to_dataframe()` method for segment properties to convert them back to a dataframe.
+
 ## [3.2.0] - 2024-07-10
 
 ### Added
