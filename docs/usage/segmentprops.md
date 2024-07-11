@@ -164,7 +164,8 @@ The URL you will use to load the properties into Neuroglancer will be `precomput
 #### Adding segment properties to Neuroglancer
 
 If saved segment properties with either of the two methods above, you will get a URL that you can load into Neuroglancer as a source for a segmentation layer.
-If you want to do this manually in a browser you have already have open, 
+If you want to do this manually in a browser you have already have open, select the segmentation layer, go to the source tab, and click the `+` button to add a new source and paste the URL in.
+
 
 ## Segment properties in StateBuilder.
 
