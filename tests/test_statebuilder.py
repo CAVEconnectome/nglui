@@ -100,7 +100,6 @@ def test_segmentation_layer(soma_df, seg_path_precomputed, target_site):
 
     sb = StateBuilder(layers=[seg_layer], target_site=target_site)
     state = sb.render_state(soma_df, return_as="dict")
-    print(state["layers"])
     assert (
         648518346349538466 in state["layers"][0]["segments"]
         or "648518346349538466"
@@ -207,7 +206,6 @@ def test_annotations_linked(soma_df, soma_df_Int64, seg_path_precomputed, target
     )
 
     state = sb.render_state(soma_df_Int64, return_as="dict")
-    print("TYPE IS", state["layers"][1]["annotations"][0]["segments"])
     assert len(np.squeeze(state["layers"][1]["annotations"][0]["segments"])) == 0
 
 

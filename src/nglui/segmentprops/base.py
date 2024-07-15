@@ -222,8 +222,6 @@ def _make_tag_property(df, value_columns, bool_columns, tag_descriptions, name="
         else:
             unique_tags = unique_tags.sort_values().tolist()
             unique_tags = [x for x in unique_tags if not is_null_value(x)]
-        print("is Null:", is_null_value(""))
-        print("unique_tags:", unique_tags)
         if np.any(np.isin(tags, unique_tags)):
             raise ValueError("Tags across columns are not unique")
         tags.extend(unique_tags)
