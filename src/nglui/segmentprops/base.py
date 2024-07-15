@@ -40,6 +40,10 @@ def sort_tag_arrays(x: list) -> list:
     return [sorted(y) for y in x]
 
 
+def zero_null_strings(x: list) -> list:
+    return [y if not is_null_value(y) else "" for y in x]
+
+
 def is_null_value(value):
     if value is None:
         return True
@@ -49,6 +53,10 @@ def is_null_value(value):
         return True
     else:
         return False
+
+
+def preprocess_string_column(x: list) -> list:
+    return space_to_underscore(zero_null_strings(x))
 
 
 @attrs.define
@@ -209,18 +217,22 @@ def _make_tag_property(df, value_columns, bool_columns, tag_descriptions, name="
         unique_tags = df[col].unique()
         # df.unique works differently for categorical dtype columns and does not return an ndarray so we have to check
         if isinstance(unique_tags, np.ndarray):
-            unique_tags = sorted([x for x in unique_tags.tolist() if x is not None])
+            unique_tags = [x for x in unique_tags.tolist() if not is_null_value(x)]
+            unique_tags = sorted(unique_tags)
         else:
             unique_tags = unique_tags.sort_values().tolist()
+            unique_tags = [x for x in unique_tags if not is_null_value(x)]
+        print("is Null:", is_null_value(""))
+        print("unique_tags:", unique_tags)
         if np.any(np.isin(tags, unique_tags)):
             raise ValueError("Tags across columns are not unique")
         tags.extend(unique_tags)
     tags.extend(bool_columns)
-    tag_map = {tag: i for i, tag in enumerate(tags) if tag is not None}
+    tag_map = {tag: i for i, tag in enumerate(tags) if not is_null_value(tag)}
     tag_values = []
     for _, row in df.iterrows():
         tag_values.append(
-            [tag_map[tag] for tag in row[value_columns] if tag is not None]
+            [tag_map[tag] for tag in row[value_columns] if not is_null_value(tag)]
         )
     for tv in bool_columns:
         for loc in np.flatnonzero(df[tv]):
