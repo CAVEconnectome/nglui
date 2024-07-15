@@ -2,6 +2,18 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.3.0] - 2024-07-12
+
+### Added
+
+- **StateBuilder** : Added a `skeleton_source` and `skeleton_shader` parameter to SegmentationLayerConfig to put skeleton info into the state.
+- **EasyViewer** : Added `set_skeleton_source` and `set_skeleton_shader` methods to EasyViewer.
+
+## Fixed
+
+- **SegmentProperties** : Better handling of null values (nan, None, and empty strings) in tag columns, all of which are ignored.
+- Various requirements updates that were necessary.
+
 ## [3.2.1] - 2024-07-11
 
 ### Added
