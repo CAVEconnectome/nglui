@@ -9,7 +9,7 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 - **StateBuilder** : Added a `skeleton_source` and `skeleton_shader` parameter to SegmentationLayerConfig to put skeleton info into the state.
 - **EasyViewer** : Added `set_skeleton_source` and `set_skeleton_shader` methods to EasyViewer.
 
-## Fixed
+### Fixed
 
 - **SegmentProperties** : Better handling of null values (nan, None, and empty strings) in tag columns, all of which are ignored.
 - Various requirements updates that were necessary.
