@@ -346,7 +346,7 @@ class SegmentationLayerConfig(LayerConfigBase):
         return client.state.build_neuroglancer_url(
             pid,
             target_site="cave-explorer",
-            format_propeties=True,
+            format_properties=True,
         )
 
     def _render_segment_property_map(self, data, client, target_site=None):

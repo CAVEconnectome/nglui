@@ -21,6 +21,21 @@ def test_df():
 
 
 @pytest.fixture
+def test_null_df():
+    return pd.DataFrame(
+        {
+            "seg_id": np.arange(0, 100),
+            "cell_type": 30 * ["ct_a"] + 30 * [""] + 40 * [None],
+            "category": np.nan,
+            "number_int": np.arange(300, 400),
+            "number_float": np.arange(300, 400) + 0.1,
+            "tag_a": 90 * [False] + 10 * [True],
+            "tag_b": 50 * [True] + 50 * [False],
+        }
+    )
+
+
+@pytest.fixture
 def test_segprops():
     return {
         "@type": "neuroglancer_segment_properties",
@@ -113,6 +128,21 @@ def test_segment_props(test_df):
 
     rh_props = SegmentProperties.from_dict(p_dict)
     assert len(rh_props) == 100
+
+
+def test_segment_props_nulls(test_null_df):
+    props = SegmentProperties.from_dataframe(
+        test_null_df,
+        id_col="seg_id",
+        tag_value_cols="cell_type",
+        tag_bool_cols=["tag_a", "tag_b"],
+        tag_descriptions={"tag_a": "The first tag", "tag_b": "The second tag"},
+    )
+
+    assert tuple(props.tag_properties.tags) == ("ct_a", "tag_a", "tag_b")
+    p_dict = props.to_dict()
+    assert 2 in p_dict["inline"]["properties"][0]["values"][0]
+    assert len(p_dict["inline"]["properties"][0]["values"][50]) == 0
 
 
 def test_property_conversion(test_segprops):

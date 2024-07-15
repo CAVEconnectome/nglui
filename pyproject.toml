@@ -14,7 +14,7 @@ authors = [
     { name = "Forrest Collman" },
 ]
 dependencies = [
-    "caveclient>=5.14.0",
+    "caveclient>=5.22.0",
     "ipython",
     "neuroglancer",
     "numpy>=1.11.0",
@@ -23,6 +23,7 @@ dependencies = [
     "six",
     "tables",
     "webcolors",
+    "attrs>=23.2.0",
 ]
 classifiers = [
     "License :: OSI Approved :: MIT License",
