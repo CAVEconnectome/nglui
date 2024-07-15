@@ -37,6 +37,16 @@ def anno_layer_basic():
     return anno_layer
 
 
+@pytest.fixture
+def skel_source():
+    return "precomputed://https://skeleton-source/"
+
+
+@pytest.fixture
+def skel_shader_text():
+    return "void main() { emitRGB(vec3(1.0, 0.0, 0.0)); }"
+
+
 def test_basic(image_layer, seg_layer_basic, anno_layer_basic):
     sb = StateBuilder(
         [image_layer, seg_layer_basic, anno_layer_basic], target_site="seunglab"
@@ -354,4 +364,19 @@ def test_timestamp(seg_path_graphene, target_site):
         assert int(seg_layer["timestamp"]) == 12345
     else:
         # Not implemented yet in cave-explorer
+        assert True
+
+
+@pytest.mark.parametrize("target_site", [None, "seunglab", "cave-explorer"])
+def test_skeleton_source(seg_path_graphene, skel_source, target_site, skel_shader_text):
+    seg = SegmentationLayerConfig(
+        seg_path_graphene, skeleton_source=skel_source, skeleton_shader=skel_shader_text
+    )
+    sb = StateBuilder([seg], target_site=target_site)
+    state = sb.render_state(return_as="dict")
+    if target_site == "cave-explorer":
+        assert state["layers"][0]["source"][1]["url"] == skel_source
+        assert state["layers"][0]["skeletonRendering"]["shader"] == skel_shader_text
+    else:
+        # Not implemented in older versions
         assert True

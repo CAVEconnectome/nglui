@@ -58,6 +58,18 @@ class EasyViewerBase(ABC):
         with self.txn() as s:
             s.layers[layer_name] = self._SegmentationLayer(source=source, **kwargs)
 
+    @abstractmethod
+    def append_source_to_segmentation_layer(self, layer_name, source):
+        pass
+
+    @abstractmethod
+    def add_skeleton_source(self, layer_name, source, shader_text=None):
+        pass
+
+    @abstractmethod
+    def set_skeleton_shader(self, layer_name, shader_text=None):
+        pass
+
     def add_image_layer(self, layer_name, source, contrast_range=None, **kwargs):
         """Add segmentation layer to viewer instance.
 
