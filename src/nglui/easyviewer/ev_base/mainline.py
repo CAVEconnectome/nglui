@@ -18,6 +18,11 @@ from numpy import integer, issubdtype
 from . import utils
 from .base import SEGMENTATION_LAYER_TYPES, EasyViewerBase
 
+DEFAULT_SKELETON_SHADER = """void main() {
+  emitDefault();
+}
+"""
+
 
 def nanometer_dimension(resolution):
     return neuroglancer.CoordinateSpace(
@@ -195,7 +200,16 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
             for src in source:
                 s.layers[layer_name].source.append({"url": src})
 
-    def set_skeleton_shader(self, layer_name, shader_text):
+    def add_skeleton_source(self, layer_name, source, shader_text=None):
+        if shader_text is None:
+            shader_text = DEFAULT_SKELETON_SHADER
+        with self.txn() as s:
+            s.layers[layer_name].source.append({"url": source})
+            s.layers[layer_name].skeletonShader = shader_text
+
+    def set_skeleton_shader(self, layer_name, shader_text=None):
+        if shader_text is None:
+            shader_text = DEFAULT_SKELETON_SHADER
         with self.txn() as s:
             s.layers[layer_name].skeletonShader = shader_text
 

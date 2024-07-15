@@ -63,7 +63,11 @@ class EasyViewerBase(ABC):
         pass
 
     @abstractmethod
-    def set_skeleton_shader(self, layer_name, shader_text):
+    def add_skeleton_source(self, layer_name, source, shader_text=None):
+        pass
+
+    @abstractmethod
+    def set_skeleton_shader(self, layer_name, shader_text=None):
         pass
 
     def add_image_layer(self, layer_name, source, contrast_range=None, **kwargs):

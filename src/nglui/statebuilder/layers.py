@@ -217,6 +217,10 @@ class SegmentationLayerConfig(LayerConfigBase):
         Name of the mapping set, the key in the data dictionary for statebuilder. Optional, default is None.
     segment_properties: str, optional
         Location of a segment properties file. Optional, default is None.
+    skeleton_source: str, optional
+        Location of a skeleton source. Optional, default is None.
+    skeleton_shader: str, optional
+        Shader function for rendering skeletons, if set with `skeleton_source`. Optional, default is None.
     """
 
     def __init__(
@@ -237,6 +241,8 @@ class SegmentationLayerConfig(LayerConfigBase):
         data_resolution=None,
         mapping_set=None,
         segment_properties=None,
+        skeleton_source=None,
+        skeleton_shader=None,
     ):
         if name is None:
             name = DEFAULT_SEG_LAYER
@@ -246,6 +252,8 @@ class SegmentationLayerConfig(LayerConfigBase):
         )
         self._config["data_resolution"] = data_resolution
         self._config["segment_properties"] = segment_properties
+        self._config["skeleton_source"] = skeleton_source
+        self._config["skeleton_shader"] = skeleton_shader
 
         if selected_ids_column is not None or fixed_ids is not None:
             self._selection_map = SelectionMapper(
@@ -304,6 +312,14 @@ class SegmentationLayerConfig(LayerConfigBase):
             return out[0]
         else:
             return out
+
+    @property
+    def skeleton_source(self):
+        return self._config.get("skeleton_source", None)
+
+    @property
+    def skeleton_shader(self):
+        return self._config.get("skeleton_shader", None)
 
     def add_segment_propeties(
         self,
@@ -447,6 +463,10 @@ class SegmentationLayerConfig(LayerConfigBase):
 
     def _add_layer(self, viewer):
         viewer.add_segmentation_layer(self.name, self.source)
+        if self.skeleton_source is not None:
+            viewer.add_skeleton_source(
+                self.name, self.skeleton_source, self.skeleton_shader
+            )
 
     def _specific_rendering(
         self,
