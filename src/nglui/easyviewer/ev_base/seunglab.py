@@ -59,6 +59,12 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
             warn("Only using first source in list for seung-lab segmentation layer")
         super().add_segmentation_layer(layer_name, source, **kwargs)
 
+    def append_source_to_segmentation_layer(self, layer_name, source):
+        warn("Additional segment source is not supported in Seung-lab viewer")
+
+    def set_skeleton_shader(self, layer_name, shader_text):
+        warn("Skeleton shaders are not supported in Seung-lab viewer")
+
     def add_annotation_layer(
         self,
         layer_name=None,

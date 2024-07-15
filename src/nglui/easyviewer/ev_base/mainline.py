@@ -185,7 +185,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         layer_name : str
             Name of an existing layer
         source : str or list of str
-            Source or sources to add to the layer
+            Source or sources to add to the layer. Can be segment properties or skeleton sources, for example.
         """
         if isinstance(source, str):
             source = [source]
@@ -194,6 +194,10 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         with self.txn() as s:
             for src in source:
                 s.layers[layer_name].source.append({"url": src})
+
+    def set_skeleton_shader(self, layer_name, shader_text):
+        with self.txn() as s:
+            s.layers[layer_name].skeletonShader = shader_text
 
     def set_view_options(
         self,
