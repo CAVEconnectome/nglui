@@ -135,7 +135,7 @@ from caveclient import CAVEclient
 client = CAVEclient('MY_DATASTACK')
 ngl_url = "https://neuroglancer-demo.appspot.com"
 
-prop_id = state.upload_property_json(seg_prop.to_dict())
+prop_id = client.state.upload_property_json(seg_prop.to_dict())
 prop_url = client.state.build_neuroglancer_url(prop_id, ngl_url=ngl_url, format_properties=True)
 ```
 
