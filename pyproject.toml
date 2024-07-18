@@ -8,6 +8,7 @@ dynamic = ["version"]
 description = "Framework for data-driven generation of neuroglancer states."
 readme = "README.md"
 license = "MIT"
+requires-python = ">= 3.8"
 authors = [
     { name = "Derrick Brittain", email = "caseysm@gmail.com" },
     { name = "Casey Schneider-Mizell" },
@@ -24,7 +25,6 @@ dependencies = [
     "webcolors",
     "attrs>=23.2.0",
 ]
-requires-python = ">= 3.8"
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Development Status :: 4 - Beta",
