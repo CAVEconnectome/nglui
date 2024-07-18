@@ -176,6 +176,10 @@ class StateBuilder:
             class default.
         link_text : str, optional
             Text to use for the link when returning as html, by default 'Neuroglancer Link'
+        target_site : str, optional
+            Target Neuroglancer category: either "seunglab" or one of "mainline"/"cave-explorer"/"spelunker". Defaults to None.
+            Will be looked up automatically based on ngl_url, if used and a client is set.
+
         Returns
         -------
         string or neuroglancer.Viewer
@@ -187,9 +191,14 @@ class StateBuilder:
             target_site = self._target_site
         if url_prefix is None:
             url_prefix = self._url_prefix
+
         if target_site is None and url_prefix is not None:
             if self._client is not None:
                 target_site = check_target_site(url_prefix, self._client)
+            else:
+                warn(
+                    f"Cannot check Neuroglancer target site without a client set in the statebuilder. Defaulting to '{DEFAULT_TARGET_SITE}'"
+                )
         elif target_site is None and url_prefix is None:
             target_site = DEFAULT_TARGET_SITE
             url_prefix = DEFAULT_URL
