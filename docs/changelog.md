@@ -2,7 +2,7 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
-## Unreleased - 2024-07-12
+## Unreleased - 2024-07-18
 
 ## Changed
 
