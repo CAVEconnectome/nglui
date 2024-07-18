@@ -39,6 +39,7 @@ classifiers = [
 Homepage = "https://caveconnectome.github.io/nglui/"
 Repository = "https://github.com/CAVEconnectome/nglui.git"
 Changelog = "https://caveconnectome.github.io/nglui/changelog/"
+Issues = "https://github.com/CAVEconnectome/nglui/issues"
 
 [tool.hatch.version]
 path = "src/nglui/__init__.py"
