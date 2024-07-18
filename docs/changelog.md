@@ -2,6 +2,16 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## Unreleased - 2024-07-18
+
+## Changed
+
+- **StateBuilder**: When providing a URL but not a client, you will now get a warning that target-site cannot be inferred.
+
+## Fixed
+
+- Small changes to work in python 3.8, because the only issue was type hints.
+
 ## [3.3.1] - 2024-07-12
 
 ### Fixed

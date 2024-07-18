@@ -1,6 +1,6 @@
 from functools import partial
 from itertools import chain
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import attrs
 import numpy as np
@@ -61,8 +61,8 @@ def preprocess_string_column(x: list) -> list:
 
 @attrs.define
 class InlineProperties:
-    ids = attrs.field(type=list[int], converter=list_of_strings, kw_only=True)
-    properties = attrs.field(type=list[SegmentPropertyBase], default=[], kw_only=True)
+    ids = attrs.field(type=List[int], converter=list_of_strings, kw_only=True)
+    properties = attrs.field(type=List[SegmentPropertyBase], default=[], kw_only=True)
 
     def __len__(self):
         return len(self.ids)
@@ -132,18 +132,18 @@ class TagProperty(SegmentPropertyBase):
     id = attrs.field(type=str, kw_only=True, default="tags")
     type = attrs.field(init=False, type=str, default="tags")
     tags = attrs.field(
-        type=list[str],
+        type=List[str],
         converter=space_to_underscore,
         validator=attrs.validators.not_(attrs.validators.matches_re(r"^\#")),
         kw_only=True,
     )
     tag_descriptions = attrs.field(
-        type=list[str],
+        type=List[str],
         default=None,
         kw_only=True,
     )
     values = attrs.field(
-        type=list[list[int]],
+        type=List[List[int]],
         converter=sort_tag_arrays,
         kw_only=True,
     )
@@ -172,7 +172,7 @@ def _validate_properties(
 
 
 def build_segment_properties(
-    ids: list[int],
+    ids: List[int],
     properties: list,
 ):
     return {
@@ -246,12 +246,12 @@ def _make_tag_property(df, value_columns, bool_columns, tag_descriptions, name="
 class SegmentProperties:
     def __init__(
         self,
-        ids: list[int],
+        ids: List[int],
         label_property: Optional[LabelProperty] = None,
         description_property: Optional[DescriptionProperty] = None,
         tag_properties: Optional[TagProperty] = None,
-        string_properties: Optional[Union[StringProperty, list[StringProperty]]] = None,
-        number_properties: Optional[Union[NumberProperty, list[NumberProperty]]] = None,
+        string_properties: Optional[Union[StringProperty, List[StringProperty]]] = None,
+        number_properties: Optional[Union[NumberProperty, List[NumberProperty]]] = None,
     ):
         self.ids = ids
         self.label_property = label_property
@@ -332,10 +332,10 @@ class SegmentProperties:
         id_col: str = "pt_root_id",
         label_col: Optional[str] = None,
         description_col: Optional[str] = None,
-        string_cols: Optional[Union[str, list[str]]] = None,
-        number_cols: Optional[Union[str, list[str]]] = None,
-        tag_value_cols: Optional[Union[str, list[str]]] = None,
-        tag_bool_cols: Optional[list[str]] = None,
+        string_cols: Optional[Union[str, List[str]]] = None,
+        number_cols: Optional[Union[str, List[str]]] = None,
+        tag_value_cols: Optional[Union[str, List[str]]] = None,
+        tag_bool_cols: Optional[List[str]] = None,
         tag_descriptions: Optional[dict] = None,
     ):
         """Generate a segment property object from a pandas dataframe based on column
