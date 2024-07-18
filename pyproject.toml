@@ -10,8 +10,8 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">= 3.8"
 authors = [
-    { name = "Derrick Brittain", email = "caseysm@gmail.com" },
-    { name = "Casey Schneider-Mizell" },
+    { name = "Casey Schneider-Mizell", email = "caseysm@gmail.com" },
+    { name = "Derrick Brittain"},
     { name = "Forrest Collman" },
 ]
 dependencies = [
