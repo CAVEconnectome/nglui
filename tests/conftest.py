@@ -39,12 +39,12 @@ def anno_layer_name():
 
 @pytest.fixture(scope="function")
 def soma_df():
-    return pd.read_hdf("tests/testdata/test_data.h5", "soma").head(5)
+    return pd.read_feather("tests/testdata/soma_data.feather")
 
 
 @pytest.fixture(scope="function")
-def soma_df_Int64():
-    df = pd.read_hdf("tests/testdata/test_data.h5", "soma").head(5)
+def soma_df_Int64(soma_df):
+    df = soma_df.copy()
     df["pt_root_id"] = df["pt_root_id"].astype("Int64")
     df.loc[0, "pt_root_id"] = np.nan
     return df.head()
@@ -52,12 +52,12 @@ def soma_df_Int64():
 
 @pytest.fixture(scope="function")
 def pre_syn_df():
-    return pd.read_hdf("tests/testdata/test_data.h5", "presyn").head(5)
+    return pd.read_feather("tests/testdata/pre_syn_data.feather")
 
 
 @pytest.fixture(scope="function")
 def post_syn_df():
-    return pd.read_hdf("tests/testdata/test_data.h5", "postsyn").head(5)
+    return pd.read_feather("tests/testdata/post_syn_data.feather")
 
 
 @pytest.fixture(scope="session")

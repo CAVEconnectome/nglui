@@ -6,7 +6,8 @@ import numpy as np
 FALLBACK_SEUNGLAB_NGL_URL = "https://neuroglancer.neuvue.io"
 FALLBACK_MAINLINE_NGL_URL = "https://ngl.cave-explorer.org"
 
-SPLIT_SUFFIXES = ['x', 'y', 'z']
+SPLIT_SUFFIXES = ["x", "y", "z"]
+
 
 def bucket_of_values(col, data, item_is_array=False, array_width=3):
     """
@@ -44,19 +45,27 @@ def is_split_position(pt_col, df, suffixes=SPLIT_SUFFIXES):
         return True
     prefix_found = []
     for suf in suffixes:
-        prefix_found.append( np.any([re.search(f"^{pt_col}_{suf}", col) is not None for col in df.columns]) )
+        prefix_found.append(
+            np.any(
+                [re.search(f"^{pt_col}_{suf}", col) is not None for col in df.columns]
+            )
+        )
     if np.all(prefix_found):
         return True
     else:
-        raise ValueError(f'Point column "{pt_col}" not found directly or as split position')
+        raise ValueError(
+            f'Point column "{pt_col}" not found directly or as split position'
+        )
+
 
 def is_split_split_position(pt_col, df, suffixes=SPLIT_SUFFIXES):
     is_split_split = []
     for suf in suffixes:
-        split_name = pt_col.split('_')
-        expected_name = '_'.join(split_name[:-1]) + f'_{suf}_{split_name[-1]}'
+        split_name = pt_col.split("_")
+        expected_name = "_".join(split_name[:-1]) + f"_{suf}_{split_name[-1]}"
         is_split_split.append(expected_name in df.columns)
     return np.all(is_split_split)
+
 
 def assemble_split_points(pt_col, df, suffixes=SPLIT_SUFFIXES):
     cols = split_position_columns(pt_col, suffixes)
@@ -67,13 +76,12 @@ def split_position_columns(pt_col, suffixes=SPLIT_SUFFIXES):
     return [f"{pt_col}_{suf}" for suf in suffixes]
 
 
-
 def check_target_site(ngl_url, client):
     """
     Check neuroglancer info to determine which kind of site a neuroglancer URL is.
     """
     ngl_info = client.state.get_neuroglancer_info(ngl_url)
-    if len(ngl_info)==0:
-        return 'seunglab'
+    if len(ngl_info) == 0:
+        return "seunglab"
     else:
         return "cave-explorer"

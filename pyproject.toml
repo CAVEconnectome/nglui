@@ -21,16 +21,24 @@ dependencies = [
     "pandas>=1.0.0",
     "requests",
     "six",
-    "tables",
     "webcolors",
     "attrs>=23.2.0",
 ]
+requires-python = ">= 3.8"
 classifiers = [
     "License :: OSI Approved :: MIT License",
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 
 [project.urls]
-Homepage = "https://github.com/seung-lab/NeuroglancerAnnotationUI"
+Homepage = "https://caveconnectome.github.io/nglui/"
+Repository = "https://github.com/CAVEconnectome/nglui.git"
+Changelog = "https://caveconnectome.github.io/nglui/changelog/"
 
 [tool.hatch.version]
 path = "src/nglui/__init__.py"
@@ -41,7 +49,7 @@ include = [
 ]
 
 [[tool.hatch.envs.hatch-test.matrix]]
-python = ["3.9", "3.10", "3.11", "3.12"]
+python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
 [tool.hatch.envs.docs]
 dependencies = [
