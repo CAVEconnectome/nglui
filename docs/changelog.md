@@ -2,6 +2,23 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.3.3] - 2024-07-19
+
+### Added
+
+- **SegmentProperties**: Tag columns will now automatically disambuguate tags if they are duplicated in different columns of the dataframe.
+For example, if you had "my_column" with value "type_a" and "their_column" also with value "type_a", the tag would become "my_column:type_a" and "their_column:type_a". This can be turned off by setting the `disambiguate_tags` argument to False.
+- **SegmentProperties**: The `SegmentProperties.from_dataframe` method now has a `disambiguate_tags` argument to control whether the disambiguation above is performed.
+
+### Changed
+
+- **SegmentProperties**: Tag property generation performance for long dataframes is improved.
+
+
+### Fixed
+
+- **SegmentProperties**: Fixed a bug in handling tag columns with categorical dtype.
+
 ## [3.3.2] - 2024-07-18
 
 ### Changed
