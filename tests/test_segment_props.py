@@ -21,6 +21,25 @@ def test_df():
 
 
 @pytest.fixture
+def test_categorical_df():
+    df = pd.DataFrame(
+        {
+            "seg_id": np.arange(0, 100),
+            "cell_type": 30 * ["ct_a"] + 30 * ["ct_b"] + 40 * ["ct_c"],
+            "category": 50 * ["cat_1"] + 40 * ["cat_2"] + 10 * [None],
+            "number_int": np.arange(300, 400),
+            "number_float": np.arange(300, 400) + 0.1,
+            "tag_a": 90 * [False] + 10 * [True],
+            "tag_b": 95 * [True] + 5 * [False],
+        }
+    )
+    df["cell_type"] = df["cell_type"].astype(
+        pd.CategoricalDtype(categories=["ct_d", "ct_c", "ct_b", "ct_a"], ordered=True)
+    )
+    return df
+
+
+@pytest.fixture
 def test_null_df():
     return pd.DataFrame(
         {
@@ -31,6 +50,21 @@ def test_null_df():
             "number_float": np.arange(300, 400) + 0.1,
             "tag_a": 90 * [False] + 10 * [True],
             "tag_b": 50 * [True] + 50 * [False],
+        }
+    )
+
+
+@pytest.fixture
+def test_all_null_df():
+    return pd.DataFrame(
+        {
+            "seg_id": np.arange(0, 100),
+            "cell_type": 30 * [None] + 30 * [""] + 40 * [None],
+            "category": np.nan,
+            "number_int": np.arange(300, 400),
+            "number_float": np.arange(300, 400) + 0.1,
+            "tag_a": 90 * [False] + 10 * [False],
+            "tag_b": 50 * [False] + 50 * [False],
         }
     )
 
@@ -125,9 +159,27 @@ def test_segment_props(test_df):
     assert len(props.property_description()) == 4
     p_dict = props.to_dict()
     assert p_dict["inline"]["properties"][2]["data_type"] == "int32"
-
+    assert "ct_c" == p_dict["inline"]["properties"][1]["tags"][2]
     rh_props = SegmentProperties.from_dict(p_dict)
     assert len(rh_props) == 100
+
+
+def test_categorical_props(test_categorical_df):
+    props = SegmentProperties.from_dataframe(
+        test_categorical_df,
+        id_col="seg_id",
+        label_col="seg_id",
+        number_cols=["number_int", "number_float"],
+        tag_value_cols="cell_type",
+        tag_bool_cols=["tag_a", "tag_b"],
+        tag_descriptions={"tag_a": "The first tag", "tag_b": "The second tag"},
+    )
+
+    assert len(props) == 100
+    p_dict = props.to_dict()
+    assert 2 in p_dict["inline"]["properties"][1]["values"][0]
+    assert "ct_a" == p_dict["inline"]["properties"][1]["tags"][2]
+    assert p_dict["inline"]["properties"][2]["data_type"] == "int32"
 
 
 def test_segment_props_nulls(test_null_df):
@@ -143,6 +195,20 @@ def test_segment_props_nulls(test_null_df):
     p_dict = props.to_dict()
     assert 2 in p_dict["inline"]["properties"][0]["values"][0]
     assert len(p_dict["inline"]["properties"][0]["values"][50]) == 0
+
+
+def test_segment_props_all_null(test_all_null_df):
+    props = SegmentProperties.from_dataframe(
+        test_all_null_df,
+        id_col="seg_id",
+        tag_value_cols="cell_type",
+        tag_bool_cols=["tag_a", "tag_b"],
+        tag_descriptions={"tag_a": "The first tag", "tag_b": "The second tag"},
+    )
+
+    assert tuple(props.tag_properties.tags) == ("tag_a", "tag_b")
+    p_dict = props.to_dict()
+    assert len(p_dict["inline"]["properties"][0]["values"][0]) == 0
 
 
 def test_property_conversion(test_segprops):

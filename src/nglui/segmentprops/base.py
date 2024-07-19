@@ -151,6 +151,9 @@ class TagProperty(SegmentPropertyBase):
     def __len__(self):
         return len(self.values)
 
+    def __repr__(self):
+        return f"TagProperty(id='{self.id}', {len(self.tags)} tags, {len(self.values)} values)"
+
 
 def prop_filter(attr, value):
     "Filters out None for optional attributes for use in 'attrs.asdict' conversion"
@@ -207,34 +210,103 @@ def _tag_descriptions(tags, tag_descriptions):
         return [tag_descriptions.get(tag, tag) for tag in tags]
 
 
-def _make_tag_property(df, value_columns, bool_columns, tag_descriptions, name="tags"):
+def _make_tag_map(df, value_columns, bool_columns, allow_disambiguation):
+    unique_tags = {}
+    for col in value_columns:
+        col_tags = df[col].unique()
+        if isinstance(col_tags, np.ndarray):
+            unique_tags[col] = sorted(
+                [x for x in col_tags.tolist() if not is_null_value(x)]
+            )
+        else:
+            unique_tags[col] = [
+                x for x in col_tags.sort_values().tolist() if not is_null_value(x)
+            ]
+    for col in bool_columns:
+        unique_tags[col] = [col]
+    vals, counts = np.unique(
+        np.concatenate([v for v in unique_tags.values()]), return_counts=True
+    )
+    duplicates = vals[counts > 1]
+    swap_values = []
+    if len(duplicates) > 0:
+        if not allow_disambiguation:
+            raise ValueError(f"Duplicate tags found: {duplicates}")
+        for col in unique_tags:
+            for dup in duplicates:
+                if dup in unique_tags[col]:
+                    if col in value_columns:
+                        df.loc[:, col] = df[col].replace(dup, f"{col}:{dup}")
+                        swap_values.append(
+                            (col, unique_tags[col].index(dup), f"{col}:{dup}")
+                        )
+    for col, idx, swap in swap_values:
+        unique_tags[col][idx] = swap
+    tags = np.concatenate([v for v in unique_tags.values()]).tolist()
+    return tags, {tag: i for i, tag in enumerate(tags)}, df
+
+
+def _generate_tag_values(df, value_columns, bool_columns, tag_map):
+    index_col = "new_column_index_temp_"
+    tag_df = df.assign(**{index_col: np.arange(len(df))})
+    concat_dfs = []
+    if len(value_columns) > 0:
+        tag_df_long = (
+            tag_df.melt(
+                id_vars=index_col,
+                value_vars=value_columns,
+            )
+            .dropna(how="any")
+            .sort_values(by=index_col)
+        )
+        tag_df_long["tag_value"] = (
+            tag_df_long["value"].astype(object).apply(lambda x: tag_map[x]).values
+        )
+        concat_dfs.append(tag_df_long[[index_col, "tag_value"]])
+    if len(bool_columns) > 0:
+        for col in bool_columns:
+            concat_dfs.append(
+                pd.DataFrame(
+                    {
+                        index_col: np.flatnonzero(tag_df[col]),
+                        "tag_value": tag_map[col],
+                    }
+                )
+            )
+    tag_values = (
+        pd.concat(concat_dfs, ignore_index=True)
+        .groupby(index_col)["tag_value"]
+        .apply(lambda x: sorted(list(x)))
+    )
+    # IDs without a tag would be missing from the above
+    index_missing = np.setdiff1d(
+        np.arange(len(tag_df)),
+        tag_values.index,
+    )
+    for idx in index_missing:
+        tag_values[idx] = []
+    return tag_values.sort_index().tolist()
+
+
+def _make_tag_property(
+    df,
+    value_columns,
+    bool_columns,
+    tag_descriptions,
+    name="tags",
+    allow_disambiguation=True,
+):
     if value_columns is None:
         value_columns = []
     if bool_columns is None:
         bool_columns = []
-    tags = []
-    for col in value_columns:
-        unique_tags = df[col].unique()
-        # df.unique works differently for categorical dtype columns and does not return an ndarray so we have to check
-        if isinstance(unique_tags, np.ndarray):
-            unique_tags = [x for x in unique_tags.tolist() if not is_null_value(x)]
-            unique_tags = sorted(unique_tags)
-        else:
-            unique_tags = unique_tags.sort_values().tolist()
-            unique_tags = [x for x in unique_tags if not is_null_value(x)]
-        if np.any(np.isin(tags, unique_tags)):
-            raise ValueError("Tags across columns are not unique")
-        tags.extend(unique_tags)
-    tags.extend(bool_columns)
-    tag_map = {tag: i for i, tag in enumerate(tags) if not is_null_value(tag)}
-    tag_values = []
-    for _, row in df.iterrows():
-        tag_values.append(
-            [tag_map[tag] for tag in row[value_columns] if not is_null_value(tag)]
-        )
-    for tv in bool_columns:
-        for loc in np.flatnonzero(df[tv]):
-            tag_values[loc].append(tag_map[tv])
+    tags, tag_map, tag_df = _make_tag_map(
+        df[value_columns + bool_columns].replace({"": None}).copy(),
+        value_columns,
+        bool_columns,
+        allow_disambiguation,
+    )
+    tag_values = _generate_tag_values(tag_df, value_columns, bool_columns, tag_map)
     return TagProperty(
         id=name,
         tags=tags,
@@ -337,6 +409,7 @@ class SegmentProperties:
         tag_value_cols: Optional[Union[str, List[str]]] = None,
         tag_bool_cols: Optional[List[str]] = None,
         tag_descriptions: Optional[dict] = None,
+        allow_disambiguation: bool = True,
     ):
         """Generate a segment property object from a pandas dataframe based on column
 
@@ -352,7 +425,6 @@ class SegmentProperties:
             Name of column to use for producing descriptions, by default None
         string_cols : Optional[Union[str, list[str]]], optional
             Column (or list of columns) to use for string properties, by default None.
-            WARNING: Neuroglancer does not currently display these properties.
         number_cols : Optional[Union[str, list[str]]], optional
             Column (or list of columns) to use for numeric properties, by default None.
         tag_value_cols : Optional[list[str]], optional
@@ -364,6 +436,8 @@ class SegmentProperties:
         tag_descriptions : Optional[dict], optional
             Dictionary of tag values to long-form tag descriptions, by default None.
             Tags without a key/value are passed through directly.
+        allow_disambiguation : bool, optional
+            If True, will prepend the column name in the case of duplicate tags, by default True.
 
         Returns
         -------
@@ -405,6 +479,7 @@ class SegmentProperties:
                 tag_value_cols,
                 tag_bool_cols,
                 tag_descriptions,
+                allow_disambiguation,
             )
         return cls(ids, **properties)
 
