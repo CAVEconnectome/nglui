@@ -74,7 +74,7 @@ class InlineProperties:
 
 @attrs.define
 class LabelProperty(SegmentPropertyBase):
-    id = attrs.field(default="label", type=str, kw_only=True)
+    id = attrs.field(default="label", type=str, converter=str, kw_only=True)
     type = attrs.field(init=False, default="label", type=str)
     values = attrs.field(type=list, converter=list_of_strings, kw_only=True)
     description = attrs.field(type=Optional[str], default=None, kw_only=True)
@@ -85,7 +85,7 @@ class LabelProperty(SegmentPropertyBase):
 
 @attrs.define
 class DescriptionProperty(SegmentPropertyBase):
-    id = attrs.field(default="description", type=str, kw_only=True)
+    id = attrs.field(default="description", type=str, converter=str, kw_only=True)
     type = attrs.field(init=False, default="description", type=str)
     values = attrs.field(type=list, converter=list_of_strings, kw_only=True)
     description = attrs.field(type=Optional[str], default=None, kw_only=True)
@@ -96,7 +96,7 @@ class DescriptionProperty(SegmentPropertyBase):
 
 @attrs.define
 class StringProperty(SegmentPropertyBase):
-    id = attrs.field(type=str, kw_only=True)
+    id = attrs.field(type=str, converter=str, kw_only=True)
     type = attrs.field(init=False, default="string", type=str)
     values = attrs.field(type=list, converter=list_of_strings, kw_only=True)
     description = attrs.field(type=Optional[str], default=None, kw_only=True)
@@ -107,7 +107,7 @@ class StringProperty(SegmentPropertyBase):
 
 @attrs.define
 class NumberProperty(SegmentPropertyBase):
-    id = attrs.field(type=str, kw_only=True)
+    id = attrs.field(type=str, converter=str, kw_only=True)
     type = attrs.field(init=False, default="number", type=str)
     values = attrs.field(type=list, kw_only=True)
     description = attrs.field(type=Optional[str], default=None, kw_only=True)
@@ -402,7 +402,7 @@ class SegmentProperties:
         cls,
         df: pd.DataFrame,
         id_col: str = "pt_root_id",
-        label_col: Optional[str] = None,
+        label_col: Optional[Union[str, List[str]]] = None,
         description_col: Optional[str] = None,
         string_cols: Optional[Union[str, List[str]]] = None,
         number_cols: Optional[Union[str, List[str]]] = None,
@@ -410,6 +410,7 @@ class SegmentProperties:
         tag_bool_cols: Optional[List[str]] = None,
         tag_descriptions: Optional[dict] = None,
         allow_disambiguation: bool = True,
+        label_separator: str = "_",
     ):
         """Generate a segment property object from a pandas dataframe based on column
 
@@ -419,8 +420,10 @@ class SegmentProperties:
             Dataframe containing propeties
         id_col : str, optional
             Name of the column with object ids, by default "pt_root_id"
-        label_col : Optional[str], optional
-            Name of column to use for producing labels, by default None
+        label_col : Optional[str, list[str]], optional
+            Name of column or columns to use for producing labels, by default None.
+            If multiple columns are provided, they will be concatenated with the label_separator.
+            Null values are skipped.
         description_col : Optional[str], optional
             Name of column to use for producing descriptions, by default None
         string_cols : Optional[Union[str, list[str]]], optional
@@ -438,6 +441,8 @@ class SegmentProperties:
             Tags without a key/value are passed through directly.
         allow_disambiguation : bool, optional
             If True, will prepend the column name in the case of duplicate tags, by default True.
+        label_separator : str, optional
+            Separator to use when assembling multiple columns into a label, by default "_"
 
         Returns
         -------
@@ -447,7 +452,16 @@ class SegmentProperties:
         ids = df[id_col].tolist()
         properties = {}
         if label_col:
-            properties["label_property"] = LabelProperty(values=df[label_col].tolist())
+            if isinstance(label_col, str):
+                label_col = [label_col]
+            label_vals = [
+                label_separator.join(filter(None, r))
+                for r in df[label_col]
+                .where(pd.notnull(df[label_col]), None)
+                .astype(str)
+                .values
+            ]
+            properties["label_property"] = LabelProperty(values=label_vals)
         if description_col:
             properties["description_property"] = DescriptionProperty(
                 values=df[description_col].tolist()
