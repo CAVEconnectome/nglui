@@ -331,7 +331,7 @@ class SegmentationLayerConfig(LayerConfigBase):
     def add_segment_properties_map(
         self,
         id_col: str = "pt_root_id",
-        label_col: Optional[str] = None,
+        label_col: Optional[Union[str, list[str]]] = None,
         description_col: Optional[str] = None,
         string_cols: Optional[Union[str, list[str]]] = None,
         number_cols: Optional[Union[str, list[str]]] = None,
@@ -339,6 +339,8 @@ class SegmentationLayerConfig(LayerConfigBase):
         tag_bool_cols: Optional[list[str]] = None,
         tag_descriptions: Optional[dict] = None,
         mapping_set: Optional[str] = None,
+        allow_disambiguation: Optional[bool] = None,
+        label_separator: Optional[str] = None,
     ):
         segment_property_map = {
             "id_col": id_col,
@@ -349,6 +351,8 @@ class SegmentationLayerConfig(LayerConfigBase):
             "tag_value_cols": tag_value_cols,
             "tag_bool_cols": tag_bool_cols,
             "tag_descriptions": tag_descriptions,
+            "allow_disambiguation": allow_disambiguation,
+            "label_separator": label_separator,
         }
         if mapping_set:
             if not isinstance(self._segment_property_map, dict):

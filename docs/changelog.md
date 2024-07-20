@@ -6,7 +6,7 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 
 ### Added
 
-- **SegmentProperties** The `label_col` argument in `SegmentProperties.from_dataframe` can now take a list of column names. Labels are concatenated with a seperator set with `label_seperator` that defaults to an underscore (`_`).
+- **SegmentProperties** The `label_col` argument in `SegmentProperties.from_dataframe` can now take a list of column names. Labels are concatenated with a seperator set with `label_separator` that defaults to an underscore (`_`).
 
 ### Fixed
 
@@ -24,8 +24,8 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 ### Added
 
 - **SegmentProperties**: Tag columns will now automatically disambuguate tags if they are duplicated in different columns of the dataframe.
-For example, if you had "my_column" with value "type_a" and "their_column" also with value "type_a", the tag would become "my_column:type_a" and "their_column:type_a". This can be turned off by setting the `disambiguate_tags` argument to False.
-- **SegmentProperties**: The `SegmentProperties.from_dataframe` method now has a `disambiguate_tags` argument to control whether the disambiguation above is performed.
+For example, if you had "my_column" with value "type_a" and "their_column" also with value "type_a", the tag would become "my_column:type_a" and "their_column:type_a". This can be turned off by setting the `allow_disambiguation` argument to False.
+- **SegmentProperties**: The `SegmentProperties.from_dataframe` method now has a `allow_disambiguation` argument to control whether the disambiguation above is performed.
 
 ### Changed
 
