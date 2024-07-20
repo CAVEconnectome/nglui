@@ -7,8 +7,9 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 ### Added
 
 - **SegmentProperties** The `label_col` argument in `SegmentProperties.from_dataframe` can now take a list of column names. Labels are concatenated with a seperator set with `label_separator` that defaults to an underscore (`_`).
+- **StateBuilder** Recent segment property arguments included in the segment property maps for SegmentationLayerConfigs.
 
-### Fixed
+### Changed
 
 - **SegmentProperties** All property names (the `id` field) are coerced to strings, as required.
 
