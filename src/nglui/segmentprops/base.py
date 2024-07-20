@@ -479,7 +479,7 @@ class SegmentProperties:
                 tag_value_cols,
                 tag_bool_cols,
                 tag_descriptions,
-                allow_disambiguation,
+                allow_disambiguation=allow_disambiguation,
             )
         return cls(ids, **properties)
 
