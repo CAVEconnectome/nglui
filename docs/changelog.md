@@ -2,6 +2,13 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.3.4] - 2024-07-19
+
+### Fixed
+
+- **SegmentProperties**: Fixed a bug in building tags from dataframes.
+
+
 ## [3.3.3] - 2024-07-19
 
 ### Added
