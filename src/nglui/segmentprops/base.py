@@ -411,6 +411,7 @@ class SegmentProperties:
         tag_descriptions: Optional[dict] = None,
         allow_disambiguation: bool = True,
         label_separator: str = "_",
+        label_format_map: Optional[str] = None,
     ):
         """Generate a segment property object from a pandas dataframe based on column
 
@@ -443,6 +444,12 @@ class SegmentProperties:
             If True, will prepend the column name in the case of duplicate tags, by default True.
         label_separator : str, optional
             Separator to use when assembling multiple columns into a label, by default "_"
+        label_format_map : Optional[str], optional
+            Format string to use for label formatting, by default None.
+            If provided, will override the label separator and use the format string to format the label
+            via the "format" function, replacing the column names in `{..}` with the values.
+            For example, "{cell_class}: {cell_type}_{region}" would pluck values from the columns
+            "cell_class", "cell_type", and "region". Label columns will be ignored and the format string is not validated.
 
         Returns
         -------
@@ -451,16 +458,21 @@ class SegmentProperties:
         """
         ids = df[id_col].tolist()
         properties = {}
-        if label_col:
+        if label_col or label_format_map:
             if isinstance(label_col, str):
                 label_col = [label_col]
-            label_vals = [
-                label_separator.join(filter(None, r))
-                for r in df[label_col]
-                .where(pd.notnull(df[label_col]), "")
-                .astype(str)
-                .values
-            ]
+            if label_format_map:
+                label_vals = df.apply(
+                    lambda x: label_format_map.format(**x.to_dict()), axis=1
+                ).to_list()
+            else:
+                label_vals = [
+                    label_separator.join(filter(None, r))
+                    for r in df[label_col]
+                    .where(pd.notnull(df[label_col]), "")
+                    .astype(str)
+                    .values
+                ]
             properties["label_property"] = LabelProperty(values=label_vals)
         if description_col:
             properties["description_property"] = DescriptionProperty(
