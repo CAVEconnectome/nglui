@@ -227,3 +227,15 @@ def test_multicolumn_label(test_df):
     assert len(props) == 100
     p_dict = props.to_dict()
     assert p_dict["inline"]["properties"][0]["values"][1] == "1_ct_a_cat_1"
+
+    props_fmt_map = SegmentProperties.from_dataframe(
+        test_df,
+        id_col="seg_id",
+        label_format_map="{seg_id}_{cell_type}_{category}",
+    )
+
+    p_dict_fmt = props_fmt_map.to_dict()
+    assert (
+        p_dict_fmt["inline"]["properties"][0]["values"][1]
+        == p_dict["inline"]["properties"][0]["values"][1]
+    )

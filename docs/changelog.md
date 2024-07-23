@@ -2,6 +2,16 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.3.6] - 2024-07-23
+
+### Added
+
+- **SegmentProperties** New method "label_format_map" allows you to build arbitrary label formats from dataframe columns using 
+
+### Fixed
+
+- **SegmentProperties** Nulls in label columns are ignored as intended.
+
 ## [3.3.5] - 2024-07-19
 
 ### Added
