@@ -339,8 +339,9 @@ class SegmentationLayerConfig(LayerConfigBase):
         tag_bool_cols: Optional[list[str]] = None,
         tag_descriptions: Optional[dict] = None,
         mapping_set: Optional[str] = None,
-        allow_disambiguation: Optional[bool] = None,
-        label_separator: Optional[str] = None,
+        allow_disambiguation: Optional[bool] = True,
+        label_separator: Optional[str] = "_",
+        label_format_map: Optional[str] = None,
     ):
         segment_property_map = {
             "id_col": id_col,
@@ -353,6 +354,7 @@ class SegmentationLayerConfig(LayerConfigBase):
             "tag_descriptions": tag_descriptions,
             "allow_disambiguation": allow_disambiguation,
             "label_separator": label_separator,
+            "label_format_map": label_format_map,
         }
         if mapping_set:
             if not isinstance(self._segment_property_map, dict):
@@ -362,6 +364,8 @@ class SegmentationLayerConfig(LayerConfigBase):
             self._segment_property_map = segment_property_map
 
     def _render_single_segment_prop(self, data, seg_prop_map, client):
+        if data is None:
+            return ""
         props = SegmentProperties.from_dataframe(data, **seg_prop_map)
         pid = client.state.upload_property_json(props.to_dict())
         return client.state.build_neuroglancer_url(
