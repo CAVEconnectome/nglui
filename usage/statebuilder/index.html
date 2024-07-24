@@ -1,0 +1,1076 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://caveconnectome.github.io/nglui/usage/statebuilder/">
+      
+      
+        <link rel="prev" href="../segmentprops/">
+      
+      
+        <link rel="next" href="../parser/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.30">
+    
+    
+      
+        <title>StateBuilder - NGLui Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.3cba04c6.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Bitter:300,300i,400,400i,700,700i%7CInconsolata:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Bitter";--md-code-font:"Inconsolata"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#image-layers" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="NGLui Documentation" class="md-header__button md-logo" aria-label="NGLui Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            NGLui Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              StateBuilder
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/CAVEconnectome/nglui/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CAVEconnectome/NGLui
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+    
+  
+  About
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../segmentprops/" class="md-tabs__link">
+          
+  
+    
+  
+  How to Use
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../reference/segmentprops/" class="md-tabs__link">
+          
+  
+    
+  
+  Function Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="NGLui Documentation" class="md-nav__button md-logo" aria-label="NGLui Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    NGLui Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/CAVEconnectome/nglui/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CAVEconnectome/NGLui
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    About
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    How to Use
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            How to Use
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../segmentprops/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Segment Properties
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    StateBuilder
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    StateBuilder
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#image-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Image Layers
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#segmentation-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Segmentation Layers
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#annotation-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Annotation Layers
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#statebuilders-and-state-rendering" class="md-nav__link">
+    <span class="md-ellipsis">
+      StateBuilders and state rendering
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-responsive-state-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data-responsive state generation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data-responsive state generation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#selected-segmentations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Selected segmentations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assigning-colors-to-cells" class="md-nav__link">
+    <span class="md-ellipsis">
+      Assigning colors to cells
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-driven-annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data-driven annotations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data-driven annotations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#point-annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Point annotations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#line-annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Line annotations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sphere-annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sphere annotations
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enriching-annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Enriching annotations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Enriching annotations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#descriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Descriptions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linked-segmentations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Linked Segmentations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tags-seung-lab-neuroglancer-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tags (Seung-lab neuroglancer only)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setting-the-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setting the View
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setting the View">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#position-layout-and-zoom-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Position, layout, and zoom options
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-driven-centering" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data-driven centering
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#segmentation-transparency-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Segmentation transparency options
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#applying-multple-rules-with-multiple-dataframes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Applying multple rules with multiple dataframes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Applying multple rules with multiple dataframes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mapping-sets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Mapping Sets
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../parser/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    State Parser
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+    <a href="../../reference/segmentprops/" class="md-nav__link">
+      
+  
+  <span class="md-ellipsis">
+    Function Reference
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Changelog
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+  <h1>StateBuilder</h1>
+
+<p>The Statebuilder is a submodule that helps produce custom Neuroglancer states based on data in the form of Pandas dataframes. Neuroglancer organizes data sources into layers. Layers come in three types, image, segmentation, and annotation. Each has different properties and functions. The state builder lets the user define a set of rules for initializing layers and how to map data columns to selections and annotations. Let's see the simplest example in use now.</p>
+<pre><code class="language-python">from nglui.statebuilder import *
+</code></pre>
+<h3 id="image-layers">Image Layers</h3>
+<p>Image layers in Neuroglancer are pretty simple. An image has a name (by default 'img' here) and a source, which is typically a path to a cloud hosted 3d image volume. We define an image layer with an ImageLayerConfig that lets the user set these key parameters. We are going to use the public Layer 2/3 EM dataset at <a href="https://layer23.microns-explorer.org">Microns Explorer</a> as an example.</p>
+<pre><code class="language-python">img_source = 'precomputed://gs://neuroglancer/pinky100_v0/son_of_alignment_v15_rechunked'
+img_layer = ImageLayerConfig(name='layer23',
+                             source=img_source,
+                             )
+</code></pre>
+<h3 id="segmentation-layers">Segmentation Layers</h3>
+<p>Segmentation layers in Neuroglancer are more complex, since each object has a unique id and can be selected, loading the object and its mesh into the neuroglancer state. Like images, a segmentation layer has a name and a source. Neuroglancer supports two types of segmentation volume, 'precomputed' and 'graphene'. Precomputed is what we call a "flat" segmentation, in that the segmentation is frozen into an unchanging state. Flat segmentations are fast, but cannot be edited to fix mistakes. Graphene segmentations are dynamic, using an efficient graph data representation to allow edits to the segmentation state. For the most part, users should not need to care about the difference.</p>
+<p>Segmentation layers are configured by a SegmentationLayerConfig. At a minimum, a SegmentionLayerConfig has the same setup as an ImageLayerConfig.</p>
+<pre><code class="language-python">seg_source = 'precomputed://gs://microns_public_datasets/pinky100_v185/seg'
+seg_layer = SegmentationLayerConfig(name = 'seg',
+                                    source = seg_source)
+</code></pre>
+<h3 id="annotation-layers">Annotation Layers</h3>
+<p>Annotation layers let a user define various spatial data annotations. We can define annotation layers with AnnotationLayerConfig objects. While annotation layers have a name, they don't have a source. We'll discuss how to map data to annotations later, but for now we will add a blank annotation layer.</p>
+<pre><code class="language-python">anno_layer = AnnotationLayerConfig(name='annos')
+</code></pre>
+<h3 id="statebuilders-and-state-rendering">StateBuilders and state rendering</h3>
+<p>At it's most basic, the StateBuilder is initialized with layer configs for each layer the user wants. A state isn't actually generated until the user calls <code>render_state</code>. While the function can also take a dataframe, it works with no argument to generate a default state. The default output is a url string that specifies the neuroglancer state, however other options are available with the optional <code>return_as</code> parameter.</p>
+<pre><code class="language-python">sb = StateBuilder(layers=[img_layer, seg_layer, anno_layer])
+sb.render_state()
+</code></pre>
+<p>Using <code>return_as="html"</code> provides a link, useful for interactive notebooks.</p>
+<pre><code class="language-python">sb.render_state(return_as='html')
+</code></pre>
+<p>Using <code>sb.render_state(return_as='json')</code> returns the JSON state as a string.
+This can be pasted directly into the neuroglancer JSON state and <code>sb.render_state(return_as='dict')</code> returns the state as a dictionary, useful for inspection and debugging.
+Finally, using <code>sb.render_state(return_as='viewer')</code> returns an EasyViewer object, which can be further manipulated (see documentation). </p>
+<h2 id="data-responsive-state-generation">Data-responsive state generation</h2>
+<p>The key feature of the StateBuilder is to use data to add selected objects or annotations to a Neuroglancer state. Each layer has rules for how to map dataframe columns to its state. This is designed to be useful for consistent mapping of queries or analysis directly into data exploration.</p>
+<h3 id="selected-segmentations">Selected segmentations</h3>
+<p>Segmentation layers principally control what what objects are selected. Objects are specified by root id and <code>SegmentationLayerConfig</code> can hold rules for how to select data.</p>
+<p>The <code>soma_df</code> example dataframe describes all excitatory neurons in the layer23 dataset. Each row is a different cell and it is described by a number of columns, of which 'pt_root_id' has the root id for each excitatory neuron.</p>
+<pre><code class="language-python">import pandas as pd
+
+soma_df = pd.read_hdf('soma_data.h5', 'soma')
+soma_df.head()
+</code></pre>
+<p>One common task is to select all the ids in a column of the dataframe, perhaps as a result of a query or some bit of analysis. We can tell the <code>SegmentationLayerConfig</code> which layer (or list of layers) to use with the <code>selected_ids_column</code> argument.</p>
+<pre><code class="language-python">seg_layer = SegmentationLayerConfig(name = 'seg',
+                                    source = seg_source,
+                                    selected_ids_column='pt_root_id')
+
+sb = StateBuilder(layers=[img_layer, seg_layer])
+</code></pre>
+<p>Now our statebuilder object also needs data. The <code>render_state</code> method can always take a dataframe. To avoid selecting hundreds of neurons, let's just take the first five rows of the dataframe. </p>
+<pre><code class="language-python">sb.render_state(soma_df.head(), return_as='html')
+</code></pre>
+<p>For some purposes, it can also be useful to force certain objects to be selected no matter the data, for example if you want to show various points in space relative to a specific neuron.
+For that, we can use the <code>fixed_ids</code> argument. Here, we use it to load neuron <code>648518346349537042</code> no matter the data. Both data-driven and fixed ids can be used together.</p>
+<pre><code class="language-python">seg_layer = SegmentationLayerConfig(name = 'seg',
+                                    source = seg_source,
+                                    selected_ids_column='pt_root_id',
+                                    fixed_ids=[648518346349537042])
+
+sb = StateBuilder(layers=[img_layer, seg_layer, anno_layer])
+</code></pre>
+<h3 id="assigning-colors-to-cells">Assigning colors to cells</h3>
+<p>You can also provide a column that species the color for each root id with the <code>color_column</code> argument. Colors in Neuroglancer are specified as an RGB hex string, for example a pure red would be <code>#ff0000</code>.</p>
+<p>In the example below, we specify the color list directly. Data visualization packages typically have methods to convert numeric RGB vectors to hex, for instance <code>matplotlib.colors.to_hex</code> for <code>matplotlib</code>.</p>
+<pre><code class="language-python"># First we have to add a column with legitimate colors
+reds = ['#fdd4c2', '#fca082', '#fb694a', '#e32f27', '#b11218']
+soma_colored_df = soma_df.head(5).copy()
+soma_colored_df['color'] = reds
+
+# Next we specify the color column when defining the segmentation layer.
+seg_layer = SegmentationLayerConfig(name = 'seg', source=seg_source, selected_ids_column='pt_root_id', color_column='color')
+
+sb = StateBuilder(layers=[img_layer, seg_layer])
+sb.render_state(soma_colored_df, return_as='html', link_text='State with color')
+</code></pre>
+<h3 id="data-driven-annotations">Data-driven annotations</h3>
+<p>Neuroglancer offers Annotation layers, which can put different kinds of markers in the volume. There are three main marker types:</p>
+<ul>
+<li>Points</li>
+<li>Lines</li>
+<li>Spheres</li>
+</ul>
+<p>Each annotation layer can hold any collection of types, however colors and other organizational properties are shared among all annotations in one layer. To make a new annotation layer, we use an <code>AnnotationLayerConfig</code>. Unlike segmentation and image layers, there is no data source, but the data mapping options are more rich. Each annotation type has a mapper class (PointMapper, LineMapper, SphereMapper) to designate the rules. Each AnnotationLayerConfig works for a single annotation layer, but can take an arbitrary number of mappers.</p>
+<h4 id="point-annotations">Point annotations</h4>
+<p>Point annotations are a simple point in 3d space. Let's use the positions from the soma_df above. The only thing you need to set a point mapper is the column name, which should reference a column of 3-element locations in units of voxels.</p>
+<pre><code class="language-python">points = PointMapper(point_column='pt_position')
+anno_layer = AnnotationLayerConfig(name='annos',
+                                   mapping_rules=points )
+
+
+# Make a basic segmentation source
+seg_layer = SegmentationLayerConfig(seg_source)
+
+sb = StateBuilder([img_layer, seg_layer, anno_layer])
+sb.render_state(soma_df, return_as='html')
+</code></pre>
+<h4 id="line-annotations">Line annotations</h4>
+<p>Line differ from point annotations only by requiring two columns, not just one. The two columns set the beginning and end points of the line and are thus both columns should contain three element points. Let's use the example synapse dataframe as an example. We're going to use the <code>pre_pt_root_id</code> field to select the neuron ids to show and use the lines to indicate their outgoing synapses, which go from <code>ct_pt_position</code>, a point on the synaptic cleft itself, to <code>post_pt_position</code>, a point somewhat inside the target neuron.</p>
+<pre><code class="language-python">lines = LineMapper(point_column_a='ctr_pt_position', point_column_b='post_pt_position')
+anno_layer = AnnotationLayerConfig(name='synapses',
+                                   mapping_rules=lines)
+
+# Make a segmentation source with a selected ids column
+seg_layer = SegmentationLayerConfig(seg_source, selected_ids_column='pre_pt_root_id')
+
+sb = StateBuilder([img_layer, seg_layer, anno_layer])
+sb.render_state(pre_syn_df, return_as='html')
+</code></pre>
+<h4 id="sphere-annotations">Sphere annotations</h4>
+<p>Like line annotations, sphere annotations take two columns. The first is the center point (and thus a point in space) while the second is the radius in voxels (x/y only), and thus numeric. We're going to use the soma positions for the example, using the <code>pt_position</code> for the centers. Since we don't have radius data in the frame, we will add a column with a random radius.</p>
+<pre><code class="language-python">import numpy as np
+soma_df['radius'] = np.random.normal(1500, 250, len(soma_df)).astype(int)
+
+
+spheres = SphereMapper(center_column='pt_position', radius_column='radius')
+anno_layer = AnnotationLayerConfig(name='soma', mapping_rules=spheres)
+
+# Make a basic segmentation layer
+seg_layer = SegmentationLayerConfig(seg_source)
+
+sb = StateBuilder([img_layer, seg_layer, anno_layer])
+sb.render_state(soma_df, return_as='html')
+</code></pre>
+<h3 id="enriching-annotations">Enriching annotations</h3>
+<p>Annotations can be enriched with metadata. There are three main types:
+1. Descriptions — Each annotation has a free text field.
+2. Linked Segmentations — Each annotation can have one or more linked segmentation ids. These can be made to automatically load on annotation selection.
+3. Tags — Neuroglancer states can have discrete tags that are useful for quickly categorizing annotations. Each annotation layer has a list of tags, and each annotation can have any number of tags.</p>
+<h4 id="descriptions">Descriptions</h4>
+<p>Descriptions need a simple free text field (or None). Any annotation mapper can take a description column with strings that is then displayed with each annotation in Neuroglancer. After running the following code, right click on the annotation layer and you can see that each of the point annotions in the list has an 'e' or 'i' letter underneath it.</p>
+<pre><code class="language-python">points = PointMapper(point_column='pt_position', description_column='cell_type')
+
+anno_layer = AnnotationLayerConfig(name='annos', 
+                                   mapping_rules=points)
+
+# Basic segmentation layer
+seg_layer = SegmentationLayerConfig(seg_source)
+
+sb = StateBuilder([img_layer, seg_layer, anno_layer])
+sb.render_state(soma_df.head(), return_as='html')
+</code></pre>
+<h4 id="linked-segmentations">Linked Segmentations</h4>
+<p>An annotation can also be linked to an underlying segmentation, for example a synapse can be linked to its neurons. On the Neuroglancer side, the annotation layer has to know the name of the segmentation layer to use, while the annotation needs to know what root id or ids to look up. To make data-driven annotations with linked segmentations, we both
+1. Add a linked segmentation column name to the annotation Mapper class that will be one or more column names in the dataframe
+2. Pass a segmentation layer name to the AnnotationLayerConfig. This defaults to <code>None</code>. Note that while the default segmentation layer name is <code>seg</code>, no segmentation layer name is set by default. Thus, if you plan to use a segmentation layer that was not given an explicit name, use <code>seg</code> as the argument here.</p>
+<pre><code class="language-python">points = PointMapper('pt_position', linked_segmentation_column='pt_root_id')
+anno_layer = AnnotationLayerConfig(mapping_rules=points, linked_segmentation_layer='seg')
+
+# Basic segmentation layer
+seg_layer = SegmentationLayerConfig(seg_source)
+
+sb = StateBuilder([img_layer, seg_layer, anno_layer])
+sb.render_state(soma_df.head(), return_as='html')
+</code></pre>
+<h4 id="tags-seung-lab-neuroglancer-only">Tags (Seung-lab neuroglancer only)</h4>
+<p>Tags are categorical labels on annotations. Each annotation layer can have a defined set of up to ten tags (seen under the "shortcuts" tab). Each annotation can have any number of tags, toggled on and off with the key command from the shortcut tab. To pre-assign tags to annotations based on the data, you can assign a <code>tag_column</code>. For each row in the data, if the element in the tag column is in the annotation layer's tag list, it will assign it to the resulting annotation. Elements of the tag column can also be collections of values, if you want multiple tags assigned. Note that any values that are not in the layer's tag list are ignored.</p>
+<p>As before, there are two steps:
+1. If you want to pre-assign tags, add a <code>tag_column</code> argument to the annotation Mapper. This isn't needed if you just want to set tags for the layer.
+2. Pass a list of tags to the AnnotationLayerConfig. The order of the list matters for determining the exact shortcuts that are used for each tag; the first tag has the shortcut <code>shift-q</code>, the second tag <code>shift-w</code>, etc.</p>
+<pre><code class="language-python">points = PointMapper('pt_position', tag_column='cell_type')
+anno_layer = AnnotationLayerConfig(mapping_rules=points, tags=['e'])
+
+sb = StateBuilder([img_layer, seg_layer, anno_layer])
+sb.render_state(soma_df, return_as='html')
+</code></pre>
+<h2 id="setting-the-view">Setting the View</h2>
+<p>The StateBuilder offers some control over the initial position of the view and how data is visualized, while offering some fairly sensible defaults that look okay in most situations.</p>
+<h4 id="position-layout-and-zoom-options">Position, layout, and zoom options</h4>
+<p>View options that do not affect individual layers can be set with a dict passed to the <code>view_kws</code> argument in StateBuilder, which are passed to <code>viewer.set_view_options</code>.</p>
+<ul>
+<li><em>show_slices</em> : Boolean, sets if slices are shown in the 3d view. Defaults to False.</li>
+<li><em>layout</em> : <code>xy-3d</code>/<code>xz-3d</code>/<code>yz-3d</code> (sections plus 3d pane), <code>xy</code>/<code>yz</code>/<code>xz</code>/<code>3d</code> (only one pane), or <code>4panel</code> (all panes). Default is <code>xy-3d</code>.</li>
+<li><em>show_axis_lines</em> : Boolean, determines if the axis lines are shown in the middle of each view.</li>
+<li><em>show_scale_bar</em> : Boolean, toggles showing the scale bar.</li>
+<li><em>orthographic</em> : Boolean, toggles orthographic view in the 3d pane.</li>
+<li><em>position</em> : 3-element vector, determines the centered location.</li>
+<li><em>zoom_image</em> : Zoom level for the imagery in units of nm per voxel. Defaults to 8.</li>
+<li><em>zoom_3d</em> : Zoom level for the 3d pane. Defaults to 2000. Smaller numbers are more zoomed in.</li>
+<li><em>background_color</em> : Sets the background color of the 3d mode. Defaults to black.</li>
+</ul>
+<p>Here's an example of setting some of these rules. Note that only providing default values for some parameters does not override the default values of others.</p>
+<pre><code class="language-python">view_options = {'layout': '4panel',
+                'show_slices': True,
+                'zoom_3d': 500,
+                'position': [71832, 54120, 1089],
+                'background_color': 'white',
+                }
+
+seg_layer = SegmentationLayerConfig(seg_source)
+
+sb = StateBuilder([img_layer, seg_layer], view_kws=view_options)
+sb.render_state(return_as='html')
+</code></pre>
+<h4 id="data-driven-centering">Data-driven centering</h4>
+<p>It can also be convenient to center the user on an annotation by default.
+Because this is tied to a specific spatial point column, this option is associated with a particular AnnotationMapper.
+Data-driven view centering takes precidence over the global view set in <code>view_kws</code>.
+For any of the mappers, setting <code>set_position</code> to <code>True</code> will center the view on the first annotation in the list.
+If multiple Mapper objects have <code>set_position=True</code>, then the view will follow the end-most one in the end-most annotation layer.</p>
+<p>This option is now set to True by default, but can be turned off if desired with <code>set_position=False</code>.</p>
+<pre><code class="language-python">points = PointMapper('pt_position', set_position=True)
+anno_layer = AnnotationLayerConfig(mapping_rules=points)
+
+sb = StateBuilder([img_layer, seg_layer, anno_layer])
+sb.render_state(soma_df, return_as='html')
+</code></pre>
+<h4 id="segmentation-transparency-options">Segmentation transparency options</h4>
+<p>Each segmentation layer can control the transparency of selected, unselected, and 3d meshes. As with the global view, these can be passed as keyword arguments to <code>view_kws</code> in the SegmentationLayerConfig.</p>
+<ul>
+<li><em>alpha_selected</em> : Transparency (0–1) of selected segmentations in the imagery pane. Defaults to 0.3. </li>
+<li><em>alpha_3d</em> : Transparency (0–1) of selected meshes in the 3d view. Defaults to 1.</li>
+<li><em>alpha_unselected</em> : Transparency (0–1) of unselected segmentations in the imagery pane. Defaults to 0.</li>
+</ul>
+<h2 id="applying-multple-rules-with-multiple-dataframes">Applying multple rules with multiple dataframes</h2>
+<p>The default use of a Statebuilder only takes one dataframe, but there are many cases when multiple dataframes are useful to pass different kinds of points, for example pre and postsyanptic points of the same neuron, or synapses and soma.</p>
+<h3 id="mapping-sets">Mapping Sets</h3>
+<p>The simplest option is to handle this with <code>mapping_sets</code>, which let you name dataframesa and mapping rules.
+For each annotation or segmentation layer mapping, you can optionally set a <code>mapping_set</code> argument.
+This changes the way data is processed, and the statebuilder now expects to get the dataframe as a dictionary with keys that are the mapping sets and values that are the dataframes.
+Multiple mapping rules can use the same <code>mapping_set</code> value (and pull info from the same dataframe).
+Also, if you use mapping sets for any mapping rule, they must be used for all mapping rules and the data must be passed as a dictionary.</p>
+<p>Let's use mapping rules to make a statebuilder that displays presynaptic and postsynaptic points for the same neuron.</p>
+<pre><code class="language-python">seg_layer = SegmentationLayerConfig(seg_source, selected_ids_column='post_pt_root_id')
+
+postsyn_mapper = LineMapper(
+    point_column_a='pre_pt_position',
+    point_column_b='ctr_pt_position',
+    mapping_set='post',     # This tells the LineMapper to use the dataframe passed with the dictionary key `post`
+)
+postsyn_annos = AnnotationLayerConfig('post', color='#00CCCC', mapping_rules=postsyn_mapper)
+
+presyn_mapper = LineMapper(
+    point_column_a='ctr_pt_position',
+    point_column_b='post_pt_position',
+    mapping_set='pre',      # This tells the LineMapper to use the dataframe passed with the dictionary key `pre`
+)
+presyn_annos = AnnotationLayerConfig('pre', color='#CC1111', mapping_rules=presyn_mapper)
+
+sb = StateBuilder([seg_layer, postsyn_annos, presyn_annos], client=client)
+
+# Note that the data is passed as a dictionary with the same keys as the mapping rules above.
+sb.render_state(
+    {
+        'post': post_syn_df,
+        'pre': pre_syn_df,
+    },
+    return_as='html'
+)
+</code></pre>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.indexes", "navigation.instant", "navigation.prune", "navigation.tabs", "navigation.tabs.sticky", "toc.follow", "toc.integrate", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
+      
+    
+  </body>
+</html>
