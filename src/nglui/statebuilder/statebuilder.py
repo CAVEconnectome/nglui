@@ -153,6 +153,7 @@ class StateBuilder:
         url_prefix=None,
         link_text="Neuroglancer Link",
         target_site=None,
+        client=None,
     ):
         """Build a Neuroglancer state out of a DataFrame.
 
@@ -163,13 +164,14 @@ class StateBuilder:
             it will return only the base_state and any fixed values.
         base_state : dict, optional
             Initial state to build on, expressed as Neuroglancer JSON. By default None
-        return_as : ['url', 'viewer', 'html', 'json', 'dict', 'shared'], optional
+        return_as : ['url', 'viewer', 'html', 'json', 'dict', 'short'], optional
             Choice of output types. Note that if a viewer is returned, the state is not reset.
                 url : Returns the raw url describing the state
                 viewer : Returns an EasyViewer object holding the state information
                 html : Returns an HTML link to the url, useful for notebooks.
                 json : Returns a JSON string describing the state.
                 dict : Returns a dict version of the JSON state.
+                short : Posts the state to the state server and returns a short link. Requires a client.
             By default 'url'
         url_prefix : str, optional
             Neuroglancer URL prefix to use. By default None, for which it will open with the
@@ -179,12 +181,16 @@ class StateBuilder:
         target_site : str, optional
             Target Neuroglancer category: either "seunglab" or one of "mainline"/"cave-explorer"/"spelunker". Defaults to None.
             Will be looked up automatically based on ngl_url, if used and a client is set.
+        client : caveclient.CAVEclient, optional
+            A caveclient to get defaults from. Defaults to None, which falls back on the statebuilder.
 
         Returns
         -------
         string or neuroglancer.Viewer
             A link to or viewer for a Neuroglancer state with layers, annotations, and selected objects determined by the data.
         """
+        if client is None:
+            client = self._client
         if base_state is None:
             base_state = self._base_state
         if target_site is None:
@@ -193,8 +199,8 @@ class StateBuilder:
             url_prefix = self._url_prefix
 
         if target_site is None and url_prefix is not None:
-            if self._client is not None:
-                target_site = check_target_site(url_prefix, self._client)
+            if client is not None:
+                target_site = check_target_site(url_prefix, client)
             else:
                 warn(
                     f"Cannot check Neuroglancer target site without a client set in the statebuilder. Defaulting to '{DEFAULT_TARGET_SITE}'"
@@ -211,6 +217,7 @@ class StateBuilder:
 
         self._render_layers(
             data,
+            client=client,
         )
 
         if url_prefix is None:
@@ -233,13 +240,26 @@ class StateBuilder:
         elif return_as == "json":
             out = self._temp_viewer.state.to_json()
             return encode_json(out)
+        elif return_as == "short":
+            if client is None:
+                raise ValueError("Cannot generate short link without a client")
+            state_id = client.state.upload_state_json(self._temp_viewer.state.to_json())
+            short_link = client.state.build_neuroglancer_url(
+                state_id,
+                ngl_url=url_prefix,
+                target_site=target_site.replace("spelunker", "mainline"),
+            )
+            return short_link
         else:
             raise ValueError("No appropriate return type selected")
 
     def _render_layers(
         self,
         data,
+        client=None,
     ):
+        if client is None:
+            client = self._client
         # Inactivate all layers except last.
         found_active = False
         for l in self._layers[::-1]:
@@ -254,7 +274,7 @@ class StateBuilder:
                 data,
                 viewer_resolution=self._resolution,
                 return_annos=True,
-                client=self._client,
+                client=client,
             )
         self._temp_viewer.add_multilayer_annotations(anno_dict)
 
@@ -285,6 +305,7 @@ class ChainedStateBuilder:
         url_prefix=None,
         link_text="Neuroglancer Link",
         target_site=None,
+        client=None,
     ):
         """Generate a single neuroglancer state by addatively applying an ordered collection of
         dataframes to an collection of StateBuilder renders.
@@ -293,12 +314,39 @@ class ChainedStateBuilder:
                         contained in the class on creation.
             base_state : JSON neuroglancer state (optional, default is None).
                          Used as a base state for adding everything else to.
-            return_as: ['url', 'viewer', 'html', 'json']. optional, default='url'.
+            return_as: ['url', 'viewer', 'html', 'json', 'short']. optional, default='url'.
                        Sets how the state is returned. Note that if a viewer is returned,
                        the state is not reset to default.
             url_prefix: string, optional (default is https://neuromancer-seung-import.appspot.com).
                         Overrides the default neuroglancer url for url generation.
+            link_text: string, optional (default is 'Neuroglancer Link').
+                        Text to use for the link when returning as html.
+            target_site: string, optional (default is None).
+                         Target Neuroglancer category: either "seunglab" or "mainline"/"cave-explorer"/"spelunker".
+                         Will be looked up automatically based on url_prefix, if used.
+            client: caveclient.CAVEclient, optional (default is None).
+                    A caveclient to get defaults from. Defaults to None, which falls back on the last statebuilder.
         """
+        if client is None:
+            client = self._statebuilders[-1]._client
+        if target_site is None:
+            target_site = self._statebuilders[-1]._target_site
+        if url_prefix is None:
+            url_prefix = self._statebuilders[-1]._url_prefix
+
+        if target_site is None and url_prefix is not None:
+            if client is not None:
+                target_site = check_target_site(url_prefix, client)
+            else:
+                warn(
+                    f"Cannot check Neuroglancer target site without a client. Defaulting to '{DEFAULT_TARGET_SITE}'"
+                )
+        elif target_site is None and url_prefix is None:
+            target_site = DEFAULT_TARGET_SITE
+            url_prefix = DEFAULT_URL
+            warn(
+                'Deprecation warning: No target site or url prefix set, using default "seunglab" site. This will switch to "spelunker" in the future.'
+            )
 
         if data_list is None:
             data_list = len(self._statebuilders) * [None]
@@ -323,4 +371,5 @@ class ChainedStateBuilder:
             url_prefix=url_prefix,
             link_text=link_text,
             target_site=target_site,
+            client=client,
         )

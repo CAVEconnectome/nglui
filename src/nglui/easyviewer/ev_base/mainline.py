@@ -243,7 +243,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
             if zoom_3d is not None:
                 s.projectionScale = zoom_3d
             if background_color is not None:
-                s.perspectiveViewBackgroundColor = utils.parse_color(background_color)
+                s.projectionBackgroundColor = utils.parse_color(background_color)
 
     def set_segmentation_view_options(
         self,

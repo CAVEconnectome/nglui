@@ -2,6 +2,24 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.3.7] - 2024-07-24
+
+### Added
+
+- **StateBuilder** New option on `StateBuilder.render_as`: `return_as="short"` will upload the state and return a short URL to the state.
+- **StateBuilder** New helper `statebuilder.helpers.segment_property_link` will quickly generate a basic link from a segment property.
+
+### Changed
+
+- Default "spelunker" neuroglancer deployment was changed.
+
+### Fixed
+
+- **StateBuilder** Fixed a bug when setting the background color in Spelunker sites.
+- **StateBuilder** Fixed a bug in using segment property maps.
+
+
+
 ## [3.3.6] - 2024-07-23
 
 ### Added

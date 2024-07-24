@@ -1,10 +1,10 @@
 from __future__ import annotations
-from typing import Iterable
 
 import pandas as pd
 from caveclient import CAVEclient
 from caveclient.endpoints import fallback_ngl_endpoint
 from IPython.display import HTML
+from typing import Union, Literal, Optional, Iterable, TYPE_CHECKING
 
 from .layers import (
     AnnotationLayerConfig,
@@ -13,6 +13,10 @@ from .layers import (
 )
 from .mappers import LineMapper, PointMapper
 from .statebuilder import ChainedStateBuilder, StateBuilder
+from ..easyviewer.ev_base.utils import neuroglancer_url
+
+if TYPE_CHECKING:
+    from nglui.segmentprops import SegmentProperties
 
 DEFAULT_POSTSYN_COLOR = (0.25098039, 0.87843137, 0.81568627)  # CSS3 color turquise
 DEFAULT_PRESYN_COLOR = (1.0, 0.38823529, 0.27843137)  # CSS3 color tomato
@@ -821,3 +825,45 @@ def from_client(client, image_name=None, segmentation_name=None, contrast=None):
     else:
         seg_layer = None
     return img_layer, seg_layer
+
+
+def segment_property_link(
+    seg_props: Union[str, SegmentProperties],
+    client: CAVEclient,
+    ngl_url: Optional[str] = None,
+    return_as: Literal["html", "url", "viewer", "json", "dict", "short"] = "html",
+):
+    """Returns a basic link to a default neuroglancer state and segment properties.
+
+    Parameters
+    ----------
+    seg_props : segment_properties.SegmentProperties or str
+        A segment propeties object or a URL to a segment properties.
+    client : caveclient.CAVEclient
+        A caveclient object.
+    ngl_url : str, optional
+        URL for a neuroglancer deployment, by default None which uses a default Spelunker deployment.
+    return_as : str, optional
+        Select how the data comes back from statebuilder, by default "html".
+        See statebuilder.render_state for more information.
+
+    Returns
+    -------
+    string or neuroglancer.Viewer
+    """
+    img, seg = from_client(client)
+    if isinstance(seg_props, str):
+        seg_prop_url = seg_props
+    else:
+        prop_id = client.state.upload_property_json(seg_props.to_dict())
+        seg_prop_url = client.state.build_neuroglancer_url(
+            prop_id,
+            target_site="cave-explorer",
+            format_properties=True,
+        )
+    ngl_url = neuroglancer_url(ngl_url, target_site="spelunker")
+    seg.add_segment_propeties(seg_prop_url)
+    sb = StateBuilder(
+        [img, seg], client=client, url_prefix=ngl_url, target_site="cave-explorer"
+    )
+    return sb.render_state(return_as=return_as, url_prefix=ngl_url)

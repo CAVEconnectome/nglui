@@ -7,7 +7,7 @@ import pandas as pd
 import webcolors
 
 default_seunglab_neuroglancer_base = "https://neuromancer-seung-import.appspot.com/"
-default_mainline_neuroglancer_base = "https://ngl.cave-explorer.org/"
+default_mainline_neuroglancer_base = "https://spelunker.cave-explorer.org/"
 MAINLINE_NAMES = ["mainline", "cave-explorer", "spelunker"]
 
 
