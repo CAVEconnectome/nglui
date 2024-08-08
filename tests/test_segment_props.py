@@ -182,6 +182,22 @@ def test_categorical_props(test_categorical_df):
     assert p_dict["inline"]["properties"][2]["data_type"] == "int32"
 
 
+def test_prepend_col_name(test_categorical_df):
+    props = SegmentProperties.from_dataframe(
+        test_categorical_df,
+        id_col="seg_id",
+        label_col="seg_id",
+        number_cols=["number_int", "number_float"],
+        tag_value_cols="cell_type",
+        tag_bool_cols=["tag_a", "tag_b"],
+        prepend_col_name=True,
+    )
+
+    assert len(props) == 100
+    p_dict = props.to_dict()
+    assert "cell_type:ct_a" == p_dict["inline"]["properties"][1]["tags"][2]
+
+
 def test_segment_props_nulls(test_null_df):
     props = SegmentProperties.from_dataframe(
         test_null_df,
