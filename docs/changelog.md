@@ -2,6 +2,12 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.4.0] - 2024-08-08
+
+### Added
+
+- **SegmentProperties** New option `prepend_col_name` in `SegmentProperties.from_dataframe` will prepend the column name to the tag values.
+
 ## [3.3.7] - 2024-07-24
 
 ### Added
