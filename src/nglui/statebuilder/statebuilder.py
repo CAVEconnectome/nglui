@@ -9,6 +9,7 @@ from nglui.easyviewer.ev_base.nglite.json_utils import encode_json
 
 from ..easyviewer.ev_base.utils import (
     default_seunglab_neuroglancer_base,
+    is_mainline,
     neuroglancer_url,
 )
 from .utils import check_target_site
@@ -18,9 +19,9 @@ DEFAULT_URL = default_seunglab_neuroglancer_base
 
 DEFAULT_VIEW_KWS = {
     "layout": "xy-3d",
-    "zoom_image": 2,
+    "zoom_image": 1,
     "show_slices": False,
-    "zoom_3d": 2000,
+    "zoom_3d": 5000,
 }
 
 
@@ -107,6 +108,10 @@ class StateBuilder:
         base_kws = DEFAULT_VIEW_KWS.copy()
         base_kws.update(view_kws)
         self._view_kws = base_kws
+
+    @property
+    def viewer(self):
+        return self._temp_viewer
 
     def _reset_state(self, base_state=None, target_site=None):
         """
@@ -220,6 +225,8 @@ class StateBuilder:
             client=client,
         )
 
+        self._temp_viewer.set_view_options(**self._view_kws)
+
         if url_prefix is None:
             url_prefix = self._url_prefix
 
@@ -277,10 +284,6 @@ class StateBuilder:
                 client=client,
             )
         self._temp_viewer.add_multilayer_annotations(anno_dict)
-
-    @property
-    def viewer(self):
-        return self._temp_viewer
 
 
 class ChainedStateBuilder:

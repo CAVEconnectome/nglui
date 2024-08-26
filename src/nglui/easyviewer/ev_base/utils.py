@@ -11,6 +11,10 @@ default_mainline_neuroglancer_base = "https://spelunker.cave-explorer.org/"
 MAINLINE_NAMES = ["mainline", "cave-explorer", "spelunker"]
 
 
+def is_mainline(target_name):
+    return target_name in MAINLINE_NAMES
+
+
 def omit_nones(seg_list):
     if seg_list is None or np.all(pd.isna(seg_list)):
         return []

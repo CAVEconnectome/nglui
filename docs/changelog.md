@@ -2,6 +2,10 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [Unreleased]
+
+- **StateBuilder** : Added `use_skeleton_source` as an optional argument for `from_client` to use a skeleton service advertised in the info service.
+
 ## [3.3.7] - 2024-07-24
 
 ### Added

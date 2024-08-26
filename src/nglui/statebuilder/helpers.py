@@ -5,6 +5,7 @@ from caveclient import CAVEclient
 from caveclient.endpoints import fallback_ngl_endpoint
 from IPython.display import HTML
 from typing import Union, Literal, Optional, Iterable, TYPE_CHECKING
+from warnings import warn
 
 from .layers import (
     AnnotationLayerConfig,
@@ -783,7 +784,13 @@ def make_neuron_neuroglancer_link(
     # )
 
 
-def from_client(client, image_name=None, segmentation_name=None, contrast=None):
+def from_client(
+    client,
+    image_name=None,
+    segmentation_name=None,
+    contrast=None,
+    use_skeleton_service=False,
+):
     """Generate basic image and segmentation layers from a FrameworkClient
 
     Parameters
@@ -798,6 +805,8 @@ def from_client(client, image_name=None, segmentation_name=None, contrast=None):
         Two elements specifying the black level and white level as
         floats between 0 and 1, by default None. If None, no contrast
         is set.
+    use_skeleton_service : bool, optional
+        If True, uses a skeleton service, if advertised, with the segmentation. Defaults to False.
 
     Returns
     -------
@@ -819,8 +828,18 @@ def from_client(client, image_name=None, segmentation_name=None, contrast=None):
     else:
         img_layer = None
     if segmentation_name is not False:
+        if use_skeleton_service:
+            skeleton_source = client.info.get_datastack_info().get(
+                "skeleton_source", None
+            )
+            if skeleton_source is None:
+                warn(
+                    "Skeleton source requested but no skeleton source found in datastack info."
+                )
         seg_layer = SegmentationLayerConfig(
-            client.info.segmentation_source(), name=segmentation_name
+            client.info.segmentation_source(),
+            name=segmentation_name,
+            skeleton_source=skeleton_source,
         )
     else:
         seg_layer = None
