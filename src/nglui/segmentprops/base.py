@@ -210,7 +210,10 @@ def _tag_descriptions(tags, tag_descriptions):
         return [tag_descriptions.get(tag, tag) for tag in tags]
 
 
-def _make_tag_map(df, value_columns, bool_columns, allow_disambiguation):
+def _make_tag_map(df, value_columns, bool_columns, allow_disambiguation, prepend_col_name):
+    if prepend_col_name:
+        for col in value_columns:
+            df[col] = df[col].apply(lambda x: f"{col}:{x}")
     unique_tags = {}
     for col in value_columns:
         col_tags = df[col].unique()
@@ -295,6 +298,7 @@ def _make_tag_property(
     tag_descriptions,
     name="tags",
     allow_disambiguation=True,
+    prepend_col_name=False,
 ):
     if value_columns is None:
         value_columns = []
@@ -305,6 +309,7 @@ def _make_tag_property(
         value_columns,
         bool_columns,
         allow_disambiguation,
+        prepend_col_name,
     )
     tag_values = _generate_tag_values(tag_df, value_columns, bool_columns, tag_map)
     return TagProperty(
@@ -412,6 +417,7 @@ class SegmentProperties:
         allow_disambiguation: bool = True,
         label_separator: str = "_",
         label_format_map: Optional[str] = None,
+        prepend_col_name: bool = False,
     ):
         """Generate a segment property object from a pandas dataframe based on column
 
@@ -450,7 +456,9 @@ class SegmentProperties:
             via the "format" function, replacing the column names in `{..}` with the values.
             For example, "{cell_class}: {cell_type}_{region}" would pluck values from the columns
             "cell_class", "cell_type", and "region". Label columns will be ignored and the format string is not validated.
-
+        prepend_col_name : bool, optional
+            If True, will prepend the column name to tag values, by default False.
+            
         Returns
         -------
         SegmentProperties
@@ -506,6 +514,7 @@ class SegmentProperties:
                 tag_bool_cols,
                 tag_descriptions,
                 allow_disambiguation=allow_disambiguation,
+                prepend_col_name=prepend_col_name,
             )
         return cls(ids, **properties)
 

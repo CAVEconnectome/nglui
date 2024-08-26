@@ -4,7 +4,10 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 
 ## [Unreleased]
 
+### Added
+
 - **StateBuilder** : Added `use_skeleton_source` as an optional argument for `from_client` to use a skeleton service advertised in the info service.
+- **SegmentProperties** New option `prepend_col_name` in `SegmentProperties.from_dataframe` will prepend the column name to the tag values.
 
 ## [3.3.7] - 2024-07-24
 
