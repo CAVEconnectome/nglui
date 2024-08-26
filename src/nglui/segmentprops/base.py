@@ -210,7 +210,9 @@ def _tag_descriptions(tags, tag_descriptions):
         return [tag_descriptions.get(tag, tag) for tag in tags]
 
 
-def _make_tag_map(df, value_columns, bool_columns, allow_disambiguation, prepend_col_name):
+def _make_tag_map(
+    df, value_columns, bool_columns, allow_disambiguation, prepend_col_name
+):
     if prepend_col_name:
         for col in value_columns:
             df[col] = df[col].apply(lambda x: f"{col}:{x}")
@@ -458,7 +460,8 @@ class SegmentProperties:
             "cell_class", "cell_type", and "region". Label columns will be ignored and the format string is not validated.
         prepend_col_name : bool, optional
             If True, will prepend the column name to tag values, by default False.
-            
+            This will effectively disambiguate all tags as well.
+
         Returns
         -------
         SegmentProperties

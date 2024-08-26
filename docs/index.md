@@ -18,7 +18,7 @@ If you want to clone the repository and develop on NGLui, note that it uses [Hat
 
 !!! note
 
-    Using the CAVEclient with the MICrons dataset is required for the following examples.
+    Using the CAVEclient with the MICrONs dataset is required for the following examples.
 
 Here's a quick example of how to use NGLui to generate a Neuroglancer state from the [Microns cortical dataset](https://www.microns-explorer.org).
 
