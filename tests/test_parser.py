@@ -6,16 +6,29 @@ from nglui import parser
 
 def test_layer_names(test_state):
     layer_names = parser.layer_names(test_state)
+    assert len(layer_names) == 6
+    for name in ['imagery-old1', 'imagery', 'imagery-old2', '72c5', 'segments', 'synapses']:
+        assert name in layer_names
+    
+    layer_names = parser.layer_names(test_state, False)
     assert len(layer_names) == 3
-    assert "synapses" in layer_names
-
+    for name in ['imagery', 'segments', 'synapses']:
+        assert name in layer_names
 
 def test_layers(test_state):
     img_layer = parser.image_layers(test_state)
+    assert len(img_layer) == 3
+    assert img_layer == ["imagery-old1", "imagery", "imagery-old2"]
+
+    img_layer = parser.image_layers(test_state, False)
     assert len(img_layer) == 1
     assert img_layer[0] == "imagery"
 
     seg_layers = parser.segmentation_layers(test_state)
+    assert len(seg_layers) == 2
+    assert seg_layers == ["72c5", "segments"]
+
+    seg_layers = parser.segmentation_layers(test_state, False)
     assert len(seg_layers) == 1
     assert seg_layers[0] == "segments"
 
