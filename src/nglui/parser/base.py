@@ -10,68 +10,80 @@ def _is_spelunker_state(state):
     return "dimension" in state.keys()
 
 
-def layer_names(state):
+def layer_names(state, include_archived = True):
     """Get all layer names in the state
 
     Parameters
     ----------
     state : dict
         Neuroglancer state as a JSON dict
+    include_archived : bool
+        Whether to include archived layers
 
     Returns
     -------
     names : list
         List of layer names
     """
-    return [l["name"] for l in state["layers"]]
+    return [l["name"] for l in state["layers"] if \
+        (include_archived or l.get('archived', False) == False)]
 
 
-def image_layers(state):
+def image_layers(state, include_archived = True):
     """Get all image layer names in the state
 
     Parameters
     ----------
     state : dict
         Neuroglancer state as a JSON dict
+    include_archived : bool
+        Whether to include archived layers
 
     Returns
     -------
     names : list
         List of layer names
     """
-    return [l["name"] for l in state["layers"] if l["type"] == "image"]
+    return [l["name"] for l in state["layers"] if l["type"] == "image" \
+        and (include_archived or l.get('archived', False) == False)]
 
 
-def segmentation_layers(state):
+def segmentation_layers(state, include_archived = True):
     """Get all segmentation layer names in the state
 
     Parameters
     ----------
     state : dict
         Neuroglancer state as a JSON dict
+    include_archived : bool
+        Whether to include archived layers
 
     Returns
     -------
     names : list
         List of layer names
     """
-    return [l["name"] for l in state["layers"] if l["type"] in SEGMENTATION_LAYER_TYPES]
+    return [l["name"] for l in state["layers"] if l["type"] in SEGMENTATION_LAYER_TYPES \
+            and (include_archived or l.get('archived', False) == False)]
 
 
-def annotation_layers(state):
+def annotation_layers(state, include_archived = True):
     """Get all annotation layer names in the state
 
     Parameters
     ----------
     state : dict
         Neuroglancer state as a JSON dict
+    include_archived : bool
+        Whether to include archived layers
 
     Returns
     -------
     names : list
         List of layer names
     """
-    return [l["name"] for l in state["layers"] if l["type"] == "annotation"]
+    return [l["name"] for l in state["layers"] if l["type"] == "annotation" \
+            and (include_archived or l.get('archived', False) == False)]
 
 
 def tag_dictionary(state, layer_name):

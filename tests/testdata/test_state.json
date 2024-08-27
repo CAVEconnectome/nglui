@@ -1,11 +1,35 @@
 {
   "layers": [
     {
+      "source": "precomputed://gs://neuroglancer/pinky100_v0/son_of_alignment_v13_rechunked",
+      "type": "image",
+      "blend": "default",
+      "shaderControls": {},
+      "name": "imagery-old1",
+      "archived": true
+    },
+    {
       "source": "precomputed://gs://neuroglancer/pinky100_v0/son_of_alignment_v15_rechunked",
       "type": "image",
       "blend": "default",
       "shaderControls": {},
       "name": "imagery"
+    },
+    {
+      "source": "precomputed://gs://neuroglancer/pinky100_v0/son_of_alignment_v14_rechunked",
+      "type": "image",
+      "blend": "default",
+      "shaderControls": {},
+      "name": "imagery-old2",
+      "archived": true
+    },
+    {
+      "type": "segmentation",
+      "source": "precomputed://gs://microns_public_datasets/pinky100_v184/seg",
+      "tab": "source",
+      "segments": [],
+      "name": "72c5",
+      "archived": true
     },
     {
       "source": "precomputed://gs://microns_public_datasets/pinky100_v185/seg",
