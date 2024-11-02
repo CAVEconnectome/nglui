@@ -8,13 +8,14 @@ dynamic = ["version"]
 description = "Framework for data-driven generation of neuroglancer states."
 readme = "README.md"
 license = "MIT"
-requires-python = ">= 3.8"
+requires-python = ">= 3.9"
 authors = [
     { name = "Casey Schneider-Mizell", email = "caseysm@gmail.com" },
     { name = "Derrick Brittain"},
     { name = "Forrest Collman" },
 ]
 dependencies = [
+    "python-box",
     "caveclient>=5.22.0",
     "ipython",
     "neuroglancer",
@@ -28,7 +29,6 @@ dependencies = [
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Development Status :: 4 - Beta",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -50,7 +50,7 @@ include = [
 ]
 
 [[tool.hatch.envs.hatch-test.matrix]]
-python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+python = ["3.9", "3.10", "3.11", "3.12"]
 
 [tool.hatch.envs.docs]
 dependencies = [

@@ -306,6 +306,9 @@ def _make_tag_property(
         value_columns = []
     if bool_columns is None:
         bool_columns = []
+    df = df.copy()
+    for col in value_columns:
+        df[col] = df[col].astype(str)
     tags, tag_map, tag_df = _make_tag_map(
         df[value_columns + bool_columns].replace({"": None}).copy(),
         value_columns,

@@ -801,7 +801,7 @@ def from_client(
         Name for the image layer, by default None.
     segmentation_name : str, optional
         Name for the segmentation layer, by default None
-    contrast : list-like, optional
+    contrast : list-like or False, optional
         Two elements specifying the black level and white level as
         floats between 0 and 1, by default None. If None, no contrast
         is set.
@@ -819,8 +819,11 @@ def from_client(
         config = CONTRAST_CONFIG.get(
             client.datastack_name, {"contrast_controls": True, "black": 0, "white": 1}
         )
+    elif contrast is False:
+        config = {}
     else:
         config = {"contrast_controls": True, "black": contrast[0], "white": contrast[1]}
+
     if image_name is not False:
         img_layer = ImageLayerConfig(
             client.info.image_source(), name=image_name, **config
@@ -836,6 +839,8 @@ def from_client(
                 warn(
                     "Skeleton source requested but no skeleton source found in datastack info."
                 )
+        else:
+            skeleton_source = None
         seg_layer = SegmentationLayerConfig(
             client.info.segmentation_source(),
             name=segmentation_name,
