@@ -532,7 +532,6 @@ class PointMapper(AnnotationMapperBase):
         linked_segs = self._linked_segmentations(data[relinds])
         if isinstance(viewer, ev_base.mainline.EasyViewerMainline):
             props = self._assign_properties(data)
-            print("props", props)
             annos = [
                 viewer.point_annotation(
                     pt, description=d, linked_segmentation=ls, annotation_properties=p

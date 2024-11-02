@@ -1,3 +1,4 @@
+import re
 import neuroglancer
 import attrs
 from typing import Dict, List, Optional, Tuple, Union
@@ -33,11 +34,13 @@ class AnnotationTag:
     tag: str = None
 
 
-def _make_annotation_properties(annotations):
+def _make_annotation_properties(annotations, tag_base_number=0):
     "Take a list of annotations and build up the dictionary needed"
     properties = []
     for ii, an in enumerate(annotations):
-        properties.append(attrs.asdict(AnnotationTag(id=f"tag{ii}", tag=an)))
+        properties.append(
+            attrs.asdict(AnnotationTag(id=f"tag{ii+tag_base_number}", tag=an))
+        )
     return properties
 
 
@@ -143,13 +146,20 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
                 layer_name=layer_name, tags=tags, key_bindings=key_bindings
             )
 
+    def _get_number_of_tags(self, layer_name):
+        anno_props = self.state.layers[layer_name].annotationProperties
+        num_tags = 0
+        for prop in anno_props:
+            if re.match(r"^tag\d+$", prop.get("id", "")):
+                num_tags += 1
+        return num_tags
+
     def add_annotation_tags(self, layer_name, tags, key_bindings=None):
-        props = _make_annotation_properties(tags)
+        tag_base_number = self._get_number_of_tags(layer_name)
+        props = _make_annotation_properties(tags, tag_base_number)
         bindings = _make_bindings(props, key_bindings)
         with self.txn() as s:
-            s.layers[layer_name].annotationProperties = _make_annotation_properties(
-                tags
-            )
+            s.layers[layer_name].annotationProperties = props
             s.layers[layer_name].tool_bindings = bindings
 
     def as_url(
