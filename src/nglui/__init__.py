@@ -4,4 +4,4 @@ from . import statebuilder
 from . import parser
 from . import segmentprops
 
-__version__ = "3.4.0"
+__version__ = "3.3.7"
