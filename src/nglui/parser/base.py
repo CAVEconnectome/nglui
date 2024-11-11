@@ -118,19 +118,17 @@ def tag_dictionary(state: dict, layer_name: str) -> dict:
     l = get_layer(state, layer_name)
     if _is_spelunker_state(state):
         tag_props = l.get("annotationProperties", [])
-        tags = {
-            ii: tp.get("tag")
-            for ii, tp in enumerate(tag_props)
-            if tp.get("tag") is not None
-        }
+        tags = {}
+        for ii, tp in enumerate(tag_props):
+            if (tag_str := tp.get("tag")) is not None:
+                m = re.match(r"^tag(\d+)$", tag_str)
+                if m:
+                    tags[int(m.groups())] = tp["tag"]
     else:
         taginfo = l.get("annotationTags", [])
         tags = {}
         for t in taginfo:
-            tag_id = t["id"]
-            m = re.match(r"^tag(\d+)$", tag_id)
-            if m:
-                tags[int(m.groups())] = t["label"]
+            tags[t["id"]] = t["label"]
     return tags
 
 
