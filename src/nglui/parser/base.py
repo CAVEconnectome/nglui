@@ -93,10 +93,26 @@ def annotation_layers(state: dict) -> list:
     return [l["name"] for l in state["layers"] if l["type"] == "annotation"]
 
 
-def layer_source(state: dict, layer_name: str) -> str:
+def layer_source(state: dict, layer_name: str) -> Union[str, list]:
+    """Get url source or list of sources for a layer
+
+    Parameters
+    ----------
+    state : dict
+        Neuroglancer state as a JSON dict
+    layer_name : str
+        Name of layer
+
+    Returns
+    -------
+    str
+        URL source or list of URL sources
+    """
     l = get_layer(state, layer_name)
     source = l.get("source", None)
-    if isinstance(source, dict):
+    if isinstance(source, list):
+        source = [s.get("url", None) for s in source]
+    elif isinstance(source, dict):
         source = source.get("url", None)
     return source
 
@@ -816,7 +832,10 @@ def layer_dataframe(state: dict) -> pd.DataFrame:
     names = layer_names(state)
     types = [get_layer(state, l)["type"] for l in names]
     source = [layer_source(state, l) for l in names]
-    return pd.DataFrame({"layer": names, "type": types, "source": source})
+    archived = [get_layer(state, l).get("archived", False) for l in names]
+    return pd.DataFrame(
+        {"layer": names, "type": types, "source": source, "archived": archived}
+    )
 
 
 def annotation_dataframe(
