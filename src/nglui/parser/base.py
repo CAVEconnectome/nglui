@@ -311,7 +311,7 @@ def _generic_annotations(
         out.append([_extract_segments(anno) for anno in annos])
     if tags:
         if not _is_spelunker_state(state):
-            tag_list = [anno.get("tag", []) for anno in annos]
+            tag_list = [anno.get("tagIds", []) for anno in annos]
         else:
             tag_list = [
                 [ii for ii, val in enumerate(anno["props"]) if val == 1]
@@ -650,6 +650,7 @@ def _parse_layer_dataframe(
         tags=True,
         group=True,
     )
+    print(p_tag)
     p_pt = (np.array(p_pt).reshape(-1, 3) * scaling).tolist()
     n_p_pts = len(p_pt)
 

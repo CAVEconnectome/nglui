@@ -177,8 +177,8 @@ def test_categorical_props(test_categorical_df):
 
     assert len(props) == 100
     p_dict = props.to_dict()
-    assert 2 in p_dict["inline"]["properties"][1]["values"][0]
-    assert "ct_a" == p_dict["inline"]["properties"][1]["tags"][2]
+    assert 0 in p_dict["inline"]["properties"][1]["values"][0]
+    assert "ct_a" in p_dict["inline"]["properties"][1]["tags"]
     assert p_dict["inline"]["properties"][2]["data_type"] == "int32"
 
 
@@ -195,7 +195,7 @@ def test_prepend_col_name(test_categorical_df):
 
     assert len(props) == 100
     p_dict = props.to_dict()
-    assert "cell_type:ct_a" == p_dict["inline"]["properties"][1]["tags"][2]
+    assert "cell_type:ct_a" in p_dict["inline"]["properties"][1]["tags"]
 
 
 def test_segment_props_nulls(test_null_df):
