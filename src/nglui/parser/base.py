@@ -29,39 +29,54 @@ def _data_resolution(state, layer=None) -> Tuple[float, float, float]:
     return tuple(dims)
 
 
-def layer_names(state: dict) -> list:
+def layer_names(state: dict, include_archived: bool = True) -> list:
     """Get all layer names in the state
 
     Parameters
     ----------
     state : dict
         Neuroglancer state as a JSON dict
+    include_archived : bool, optional
+        If True, include archived layers. By default True
 
     Returns
     -------
     names : list
         List of layer names
     """
-    return [l["name"] for l in state["layers"]]
+    if include_archived:
+        return [l["name"] for l in state["layers"]]
+    else:
+        return [l["name"] for l in state["layers"] if not l.get("archived", False)]
 
 
-def image_layers(state: dict) -> list:
+def image_layers(state: dict, include_archived: bool = True) -> list:
     """Get all image layer names in the state
 
     Parameters
     ----------
     state : dict
         Neuroglancer state as a JSON dict
+    include_archived : bool, optional
+        If True, include archived layers. By default True
 
     Returns
     -------
     names : list
         List of layer names
     """
-    return [l["name"] for l in state["layers"] if l["type"] == "image"]
+    if include_archived:
+        return [l["name"] for l in state["layers"] if l["type"] == "image"]
+    else:
+        return [
+            l["name"]
+            for l in state["layers"]
+            if l["type"] == "image"
+            if not l.get("archived", False)
+        ]
 
 
-def segmentation_layers(state: dict) -> list:
+def segmentation_layers(state: dict, include_archived: bool = True) -> list:
     """Get all segmentation layer names in the state
 
     Parameters
@@ -74,23 +89,43 @@ def segmentation_layers(state: dict) -> list:
     names : list
         List of layer names
     """
-    return [l["name"] for l in state["layers"] if l["type"] in SEGMENTATION_LAYER_TYPES]
+    if include_archived:
+        return [
+            l["name"] for l in state["layers"] if l["type"] in SEGMENTATION_LAYER_TYPES
+        ]
+    else:
+        return [
+            l["name"]
+            for l in state["layers"]
+            if l["type"] in SEGMENTATION_LAYER_TYPES
+            if not l.get("archived", False)
+        ]
 
 
-def annotation_layers(state: dict) -> list:
+def annotation_layers(state: dict, include_archived: bool = True) -> list:
     """Get all annotation layer names in the state
 
     Parameters
     ----------
     state : dict
         Neuroglancer state as a JSON dict
+    include_archived : bool, optional
+        If True, include archived layers. By default True
 
     Returns
     -------
     names : list
         List of layer names
     """
-    return [l["name"] for l in state["layers"] if l["type"] == "annotation"]
+    if include_archived:
+        return [l["name"] for l in state["layers"] if l["type"] == "annotation"]
+    else:
+        return [
+            l["name"]
+            for l in state["layers"]
+            if l["type"] == "annotation"
+            if not l.get("archived", False)
+        ]
 
 
 def layer_source(state: dict, layer_name: str) -> Union[str, list]:
@@ -790,13 +825,15 @@ def _parse_layer_dataframe(
     return df
 
 
-def selection_dataframe(state: dict) -> pd.DataFrame:
+def selection_dataframe(state: dict, include_archived: bool = True) -> pd.DataFrame:
     """Return a dataframe with a row for each selected id across segmentation layers.
 
     Parameters
     ----------
     state : dict
         Neuroglancer state
+    include_archived: bool, optional
+        If True, include archived layers. By default True
 
     Returns
     -------
@@ -804,7 +841,7 @@ def selection_dataframe(state: dict) -> pd.DataFrame:
         Dataframe with columns: layer, id, visible
         Visible only applies in Spelunker states.
     """
-    layer_names = segmentation_layers(state)
+    layer_names = segmentation_layers(state, include_archived=include_archived)
     ls = []
     selected_ids = []
     is_visible = []
@@ -816,20 +853,22 @@ def selection_dataframe(state: dict) -> pd.DataFrame:
     return pd.DataFrame({"layer": ls, "id": selected_ids, "visible": is_visible})
 
 
-def layer_dataframe(state: dict) -> pd.DataFrame:
+def layer_dataframe(state: dict, include_archived: bool = True) -> pd.DataFrame:
     """Return a dataframe with a row for each layer in the state.
 
     Parameters
     ----------
     state : dict
         Neuroglancer state
+    include_archived : bool, optional
+        If True, include archived layers. By default True
 
     Returns
     -------
     pd.DataFrame
         Dataframe with columns layer, type, source
     """
-    names = layer_names(state)
+    names = layer_names(state, include_archived=include_archived)
     types = [get_layer(state, l)["type"] for l in names]
     source = [layer_source(state, l) for l in names]
     archived = [get_layer(state, l).get("archived", False) for l in names]
@@ -843,6 +882,7 @@ def annotation_dataframe(
     expand_tags: bool = False,
     point_resolution: Optional[Tuple[float, float, float]] = None,
     split_points: bool = False,
+    include_archived: bool = True,
 ) -> pd.DataFrame:
     """Return a dataframe with all annotations across all annotation layers in the state.
 
@@ -857,6 +897,8 @@ def annotation_dataframe(
         If provided, points will be rescaled to the provided x, y, z resolution (in nanometers). By default None.
     split_points : bool, optional
         If True, points will be split into separate x, y, z columns. By default False.
+    include_archived : bool, optional
+        If True, include archived layers. By default True
 
     Returns
     -------
@@ -872,7 +914,7 @@ def annotation_dataframe(
             point_resolution=point_resolution,
             split_points=split_points,
         )
-        for ln in annotation_layers(state)
+        for ln in annotation_layers(state, include_archived=include_archived)
     ]
     return pd.concat(dfs, ignore_index=True)
 
@@ -917,6 +959,7 @@ class StateParser:
         expand_tags: bool = False,
         point_resolution=None,
         split_points: bool = False,
+        include_archived: bool = True,
     ) -> pd.DataFrame:
         """Get a dataframe with all annotations across all annotation layers in the state.
 
@@ -929,6 +972,8 @@ class StateParser:
             If provided, points will be rescaled to the provided x, y, z resolution (in nanometers). By default None.
         split_points : bool, optional
             If True, points will be split into separate x, y, z columns. By default False.
+        include_archived : bool, optional
+            If True, include archived layers. By default True
 
         Returns
         -------
@@ -942,20 +987,30 @@ class StateParser:
             expand_tags=expand_tags,
             point_resolution=point_resolution,
             split_points=split_points,
+            include_archived=True,
         )
 
-    def layer_dataframe(self) -> pd.DataFrame:
+    def layer_dataframe(self, include_archived: bool = True) -> pd.DataFrame:
         """Get a dataframe with a row for each layer in the state.
+
+        Parameters
+        ----------
+        include_archived : bool, optional
+            If True, include archived layers. By default True
 
         Returns
         -------
         pd.DataFrame
             Dataframe with columns layer, type, source containing layer information.
         """
-        return layer_dataframe(self.state)
+        return layer_dataframe(self.state, include_archived=include_archived)
 
-    def selection_dataframe(self) -> pd.DataFrame:
+    def selection_dataframe(self, include_archived: bool = True) -> pd.DataFrame:
         """Get a dataframe with a row for each selected id across segmentation layers.
+        Parameters
+        ----------
+        include_archived: bool, optional
+            If True, include archived layers. By default True
 
         Returns
         -------
@@ -963,4 +1018,4 @@ class StateParser:
             Dataframe with columns: layer, id, visible
             Visible only applies in Spelunker states.
         """
-        return selection_dataframe(self.state)
+        return selection_dataframe(self.state, include_archived=include_archived)
