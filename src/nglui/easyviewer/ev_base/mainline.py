@@ -1,18 +1,9 @@
-try:
-    import neuroglancer
-except ImportError:
-    Warning(
-        """
-        Making states of this type requires the google neuroglancer python, but it is not installed.
-        Please install it with `pip install neuroglancer`
-        """
-    )
-    use_ngl = False
-else:
-    use_ngl = True
+import re
 from typing import Dict, List, Optional, Tuple, Union
 from warnings import warn
 
+import attrs
+import neuroglancer
 from numpy import integer, issubdtype
 
 from . import utils
@@ -22,6 +13,47 @@ DEFAULT_SKELETON_SHADER = """void main() {
   emitDefault();
 }
 """
+
+
+def TagToolFactory(number_tags: int):
+    for ii in range(number_tags):
+
+        @neuroglancer.viewer_state.export_tool
+        class TagTool(neuroglancer.viewer_state.Tool):
+            __slots__ = ()
+            TOOL_TYPE = f"tagTool_tag{ii}"
+
+
+TagToolFactory(24)
+
+
+@attrs.define
+class AnnotationTag:
+    id: str = None
+    type: str = attrs.field(default="uint8")
+    tag: str = None
+
+
+def _make_annotation_properties(annotations, tag_base_number=0):
+    "Take a list of annotations and build up the dictionary needed"
+    properties = []
+    for ii, an in enumerate(annotations):
+        properties.append(
+            attrs.asdict(AnnotationTag(id=f"tag{ii+tag_base_number}", tag=an))
+        )
+    return properties
+
+
+def _make_bindings(properties, bindings=None):
+    "Make a dictinary describing key bindings for tags"
+    if bindings is None:
+        bindings = ["Q", "W", "E", "R", "T", "A", "S", "D", "F", "G"]
+    if len(properties) > len(bindings):
+        raise ValueError("Too many properties for bindings")
+    tool_bindings = {}
+    for bind, prop in zip(bindings, properties):
+        tool_bindings[bind] = f"tagTool_{prop['id']}"
+    return tool_bindings
 
 
 def nanometer_dimension(resolution):
@@ -54,6 +86,8 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         self.set_state(state)
 
     def _ImageLayer(self, source, **kwargs):
+        if isinstance(source, str):
+            source = utils.parse_graphene_header(source, target="mainline")
         return neuroglancer.viewer_state.ImageLayer(source=source, **kwargs)
 
     def _SegmentationLayer(self, source, **kwargs):
@@ -82,6 +116,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         brackets_show_segmentation=True,
         selection_shows_segmentation=True,
         tags=None,
+        key_bindings=None,
     ) -> None:
         if layer_name is None:
             layer_name = "annos"
@@ -108,11 +143,26 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
             if color is not None:
                 s.layers[layer_name].annotationColor = utils.parse_color(color)
 
-        if tags is not None:
-            warn("Tags are not supported by this viewer type.")
+        if tags:
+            self.add_annotation_tags(
+                layer_name=layer_name, tags=tags, key_bindings=key_bindings
+            )
 
-    def add_annotation_tags(self, layer_name, tags):
-        warn("Annotation tags are not supported by this viewer type.")
+    def _get_number_of_tags(self, layer_name):
+        anno_props = self.state.layers[layer_name].annotationProperties
+        num_tags = 0
+        for prop in anno_props:
+            if re.match(r"^tag\d+$", prop.get("id", "")):
+                num_tags += 1
+        return num_tags
+
+    def add_annotation_tags(self, layer_name, tags, key_bindings=None):
+        tag_base_number = self._get_number_of_tags(layer_name)
+        props = _make_annotation_properties(tags, tag_base_number)
+        bindings = _make_bindings(props, key_bindings)
+        with self.txn() as s:
+            s.layers[layer_name].annotationProperties = props
+            s.layers[layer_name].tool_bindings = bindings
 
     def as_url(
         self,
@@ -159,12 +209,17 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         segmentation_layer: str,
         oids: List[int],
         colors: Optional[Union[List, Dict]] = None,
+        invisible_oids: Optional[List[int]] = None,
     ) -> None:
         if issubdtype(type(oids), integer):
             oids = [oids]
+        if invisible_oids is None:
+            invisible_oids = []
         with self.txn() as s:
             for oid in oids:
-                s.layers[segmentation_layer].segments.add(oid)
+                s.layers[segmentation_layer].segments.add(str(oid))
+            for oid in invisible_oids:
+                s.layers[segmentation_layer].segments.add(f"!{oid}")
         if colors is not None:
             if isinstance(colors, dict):
                 self.assign_colors(segmentation_layer, colors)
@@ -293,6 +348,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         id=None,
         description=None,
         linked_segmentation=None,
+        annotation_properties=None,
         **kwargs,
     ):
         segments = utils.omit_nones(linked_segmentation)
@@ -303,6 +359,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
             id=id,
             description=description,
             segments=[[int(x) for x in segments]],
+            props=annotation_properties,
         )
 
     @staticmethod
@@ -312,6 +369,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         id=None,
         description=None,
         linked_segmentation=None,
+        annotation_properties=None,
         **kwargs,
     ):
         segments = utils.omit_nones(linked_segmentation)
@@ -323,6 +381,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
             id=id,
             description=description,
             segments=[[int(x) for x in segments]],
+            props=annotation_properties,
         )
 
     @staticmethod
@@ -332,6 +391,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         id=None,
         description=None,
         linked_segmentation=None,
+        annotation_properties=None,
         **kwargs,
     ):
         segments = utils.omit_nones(linked_segmentation)
@@ -343,6 +403,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
             id=id,
             description=description,
             segments=[[int(x) for x in segments]],
+            props=annotation_properties,
         )
 
     @staticmethod
@@ -352,6 +413,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         id=None,
         description=None,
         linked_segmentation=None,
+        annotation_properties=None,
         **kwargs,
     ):
         segments = utils.omit_nones(linked_segmentation)
@@ -363,6 +425,7 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
             id=id,
             description=description,
             segments=[[int(x) for x in segments]],
+            props=annotation_properties,
         )
 
     @staticmethod

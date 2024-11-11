@@ -6,13 +6,13 @@ import numpy as np
 import pandas as pd
 import webcolors
 
-default_seunglab_neuroglancer_base = "https://neuromancer-seung-import.appspot.com/"
-default_mainline_neuroglancer_base = "https://spelunker.cave-explorer.org/"
-MAINLINE_NAMES = ["mainline", "cave-explorer", "spelunker"]
-
-
-def is_mainline(target_name):
-    return target_name in MAINLINE_NAMES
+from ...target_utils import (
+    is_mainline,
+    is_seunglab,
+    default_seunglab_neuroglancer_base,
+    default_mainline_neuroglancer_base,
+    MAINLINE_NAMES,
+)
 
 
 def omit_nones(seg_list):
@@ -46,10 +46,21 @@ def parse_color(clr):
 def parse_graphene_header(source, target):
     qry = urlparse(source)
     if qry.scheme == "graphene":
-        if target == "seunglab":
+        if is_seunglab(target):
             return _parse_to_seunglab(qry)
-        elif target == "mainline" or target == "cave-explorer":
+        elif is_mainline(target):
             return _parse_to_mainline(qry)
+    else:
+        return source
+
+
+def parse_graphene_image_url(source, target):
+    qry = urlparse(source)
+    if qry.scheme == "graphene":
+        if is_mainline(target):
+            return _parse_to_mainline_imagery(qry)
+        elif is_seunglab(target):
+            return _parse_to_seunglab(qry)
     else:
         return source
 
@@ -65,6 +76,16 @@ def _parse_to_mainline(qry):
         return f"{qry.scheme}://middleauth+http:{qry.path}"
 
 
+def _parse_to_mainline_imagery(qry):
+    if qry.scheme == "graphene":
+        if "https" in qry.netloc:
+            return f"precomputed://middleauth+https:{qry.path}"
+        else:
+            return f"precomputed://middleauth+http:{qry.path}"
+    else:
+        return qry.geturl()
+
+
 def neuroglancer_url(url, target_site):
     """
     Check neuroglancer info to determine which kind of site a neuroglancer URL is.
@@ -73,9 +94,9 @@ def neuroglancer_url(url, target_site):
         return url
     elif target_site is None:
         return None
-    elif target_site == "seunglab":
+    elif is_seunglab(target_site):
         return default_seunglab_neuroglancer_base
-    elif target_site in MAINLINE_NAMES:
+    elif is_mainline(target_site):
         return default_mainline_neuroglancer_base
     else:
         raise ValueError(

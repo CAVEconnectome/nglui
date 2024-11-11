@@ -1,6 +1,6 @@
 from functools import partial
 from itertools import chain
-from typing import Optional, Union, List
+from typing import List, Optional, Union
 
 import attrs
 import numpy as np
@@ -45,11 +45,7 @@ def zero_null_strings(x: list) -> list:
 
 
 def is_null_value(value):
-    if value is None:
-        return True
-    elif pd.isna(value):
-        return True
-    elif value == "":
+    if value is None or pd.isna(value) or value == "":
         return True
     else:
         return False
@@ -393,10 +389,7 @@ class SegmentProperties:
         df_dict = {"ids": self.ids}
         for prop in self._property_list():
             if (
-                isinstance(prop, LabelProperty)
-                or isinstance(prop, DescriptionProperty)
-                or isinstance(prop, StringProperty)
-                or isinstance(prop, NumberProperty)
+                isinstance(prop, (DescriptionProperty, LabelProperty, NumberProperty, StringProperty))
             ):
                 df_dict[prop.id] = prop.values
             elif isinstance(prop, TagProperty):

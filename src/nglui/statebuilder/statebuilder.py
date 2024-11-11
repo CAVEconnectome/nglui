@@ -9,7 +9,6 @@ from nglui.easyviewer.ev_base.nglite.json_utils import encode_json
 
 from ..easyviewer.ev_base.utils import (
     default_seunglab_neuroglancer_base,
-    is_mainline,
     neuroglancer_url,
 )
 from .utils import check_target_site

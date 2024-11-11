@@ -7,14 +7,14 @@ import pytest
 from nglui import EasyViewer
 
 
-@pytest.fixture(scope="session")
-def viewer():
+@pytest.fixture(scope="function")
+def viewer_seunglab():
     return EasyViewer(target_site="seunglab")
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def viewer_cave_explorer():
-    return EasyViewer(target_site="mainline")
+    return EasyViewer(target_site="spelunker")
 
 
 @pytest.fixture(scope="session")
