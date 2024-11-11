@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.26.1"]
 build-backend = "hatchling.build"
 
 [project]
@@ -14,6 +14,7 @@ authors = [
     { name = "Derrick Brittain"},
     { name = "Forrest Collman" },
 ]
+
 dependencies = [
     "python-box",
     "caveclient>=5.22.0",
@@ -29,6 +30,7 @@ dependencies = [
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

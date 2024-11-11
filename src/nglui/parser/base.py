@@ -173,9 +173,9 @@ def tag_dictionary(state: dict, layer_name: str) -> dict:
         tags = {}
         for ii, tp in enumerate(tag_props):
             if (tag_str := tp.get("tag")) is not None:
-                m = re.match(r"^tag(\d+)$", tag_str)
+                m = re.match(r"^tag(\d+)$", tp.get("id", ""))
                 if m:
-                    tags[int(m.groups())] = tp["tag"]
+                    tags[int(m.groups()[0])] = tag_str
     else:
         taginfo = l.get("annotationTags", [])
         tags = {}
@@ -702,7 +702,6 @@ def _parse_layer_dataframe(
         tags=True,
         group=True,
     )
-    print(p_tag)
     p_pt = (np.array(p_pt).reshape(-1, 3) * scaling).tolist()
     n_p_pts = len(p_pt)
 

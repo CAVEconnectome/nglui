@@ -2,6 +2,25 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.5.1] - 2024-11-10
+
+### Fixed
+
+- Removed inadvertent debug statement in the last release.
+- Fixed a bug in the `expand_tags` option in the `annotation_dataframe` function.
+
+## [3.5.0] - 2024-11-10
+
+### Added
+
+- **StateBuilder**: Added tags to Spelunker neuroglancer states! Note that this might not be available in all mainline-style deployments yet.
+- **Parser**: Added a number of new features to parse classic and Spelunker-style states, including layer and segment information, filtering archived layers, and a new class-level interface to make life easier.
+
+### Fixed
+
+- Reformatted use of `target_site` to be more consistent when using "spelunker" as a name.
+
+
 ## [3.4.0] - 2024-08-26
 
 ### Added
@@ -24,7 +43,6 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 
 - **StateBuilder** Fixed a bug when setting the background color in Spelunker sites.
 - **StateBuilder** Fixed a bug in using segment property maps.
-
 
 
 ## [3.3.6] - 2024-07-23
