@@ -18,7 +18,7 @@ dependencies = [
     "python-box",
     "caveclient>=5.22.0",
     "ipython",
-    "neuroglancer",
+    "neuroglancer >= 2.40.1",
     "numpy>=1.11.0",
     "pandas>=1.0.0",
     "requests",

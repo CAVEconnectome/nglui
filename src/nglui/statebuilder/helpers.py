@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Literal, Optional, Union
+from warnings import warn
+
 import pandas as pd
 from caveclient import CAVEclient
 from caveclient.endpoints import fallback_ngl_endpoint
 from IPython.display import HTML
-from typing import Union, Literal, Optional, Iterable, TYPE_CHECKING
-from warnings import warn
 
+from ..easyviewer.ev_base.utils import neuroglancer_url
 from .layers import (
     AnnotationLayerConfig,
     ImageLayerConfig,
@@ -14,7 +17,6 @@ from .layers import (
 )
 from .mappers import LineMapper, PointMapper
 from .statebuilder import ChainedStateBuilder, StateBuilder
-from ..easyviewer.ev_base.utils import neuroglancer_url
 
 if TYPE_CHECKING:
     from nglui.segmentprops import SegmentProperties

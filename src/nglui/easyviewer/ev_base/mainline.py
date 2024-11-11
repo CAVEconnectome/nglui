@@ -1,9 +1,9 @@
 import re
-import neuroglancer
-import attrs
 from typing import Dict, List, Optional, Tuple, Union
 from warnings import warn
 
+import attrs
+import neuroglancer
 from numpy import integer, issubdtype
 
 from . import utils
@@ -86,6 +86,8 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         self.set_state(state)
 
     def _ImageLayer(self, source, **kwargs):
+        if isinstance(source, str):
+            source = utils.parse_graphene_header(source, target="mainline")
         return neuroglancer.viewer_state.ImageLayer(source=source, **kwargs)
 
     def _SegmentationLayer(self, source, **kwargs):

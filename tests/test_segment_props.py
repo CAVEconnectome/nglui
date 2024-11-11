@@ -159,7 +159,7 @@ def test_segment_props(test_df):
     assert len(props.property_description()) == 4
     p_dict = props.to_dict()
     assert p_dict["inline"]["properties"][2]["data_type"] == "int32"
-    assert "ct_c" == p_dict["inline"]["properties"][1]["tags"][2]
+    assert p_dict["inline"]["properties"][1]["tags"][2] == "ct_c"
     rh_props = SegmentProperties.from_dict(p_dict)
     assert len(rh_props) == 100
 

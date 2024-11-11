@@ -1,8 +1,9 @@
+import re
+from typing import Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
 from box import Box
-import re
-from typing import Optional, Tuple, Union
 
 from ..easyviewer.ev_base.base import SEGMENTATION_LAYER_TYPES
 
@@ -169,8 +170,8 @@ def view_settings(state: dict) -> dict:
     view = {}
     view["position"] = state["navigation"]["pose"]["position"]["voxelCoordinates"]
     view["zoomFactor"] = state["navigation"].get("zoomFactor", None)
-    view["perspectiveOrientation"] = state.get("perspectiveOrientation", None)
-    view["perspectiveZoom"] = state.get("perspectiveZoom", None)
+    view["perspectiveOrientation"] = state.get("perspectiveOrientation")
+    view["perspectiveZoom"] = state.get("perspectiveZoom")
     view["voxelSize"] = state["navigation"]["pose"]["position"]["voxelSize"]
     return view
 

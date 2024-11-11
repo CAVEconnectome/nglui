@@ -1,13 +1,14 @@
+from numpy import concatenate, unique
+
+from ..utils import omit_nones
+from . import random_token
 from .viewer_state import (
-    LineAnnotation,
-    PointAnnotation,
-    EllipsoidAnnotation,
     AxisAlignedBoundingBoxAnnotation,
     CollectionAnnotation,
+    EllipsoidAnnotation,
+    LineAnnotation,
+    PointAnnotation,
 )
-from . import random_token
-from ..utils import omit_nones
-from numpy import unique, concatenate
 
 
 def line_annotation(

@@ -1,13 +1,13 @@
 from __future__ import annotations
+
 from collections.abc import Collection
 from itertools import chain
-
 
 import numpy as np
 import pandas as pd
 
-from .utils import is_split_position, split_position_columns
 from ..easyviewer import ev_base
+from .utils import is_split_position, split_position_columns
 
 
 def _multipoint_transform(row, pt_columns, squeeze_cols):
@@ -323,9 +323,8 @@ class AnnotationMapperBase:
                     for r in row:
                         if r in self.tag_prop_map:
                             anno_properties[ii][self.tag_prop_map[r]] = 1
-                else:
-                    if row in self.tag_prop_map:
-                        anno_properties[ii][self.tag_prop_map[row]] = 1
+                elif row in self.tag_prop_map:
+                    anno_properties[ii][self.tag_prop_map[row]] = 1
         else:
             anno_properties = [None for x in range(len(data))]
         return anno_properties
