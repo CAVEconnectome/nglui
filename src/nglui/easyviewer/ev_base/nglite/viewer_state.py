@@ -13,7 +13,6 @@
 # limitations under the License.
 """Wrappers for representing the Neuroglancer viewer state."""
 
-
 import collections
 import copy
 import math

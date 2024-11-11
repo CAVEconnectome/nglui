@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
-from .viewer import Viewer, UnsynchronizedViewer
-from .viewer_state import *
-from .viewer_config_state import MapEntry, PrefetchState, ScaleBarOptions
-from .equivalence_map import EquivalenceMap
-from .url_state import to_url, parse_url
 from . import skeleton
 from .annotation import *
+from .equivalence_map import EquivalenceMap
+from .url_state import parse_url, to_url
+from .viewer import UnsynchronizedViewer, Viewer
+from .viewer_config_state import MapEntry, PrefetchState, ScaleBarOptions
+from .viewer_state import *

@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import numbers
 from datetime import datetime
 from typing import Optional, Union
@@ -648,7 +649,7 @@ class AnnotationLayerConfig(LayerConfigBase):
     ):
         annos = []
         for rule in self._annotation_map_rules:
-            rule.tag_map = self._tags
+            rule.tags = self._tags
             if data is not None:
                 if self.filter_query is not None:
                     data = data.query(self.filter_query)

@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Literal, Optional, Union
+from warnings import warn
+
 import pandas as pd
 from caveclient import CAVEclient
 from caveclient.endpoints import fallback_ngl_endpoint
 from IPython.display import HTML
-from typing import Union, Literal, Optional, Iterable, TYPE_CHECKING
-from warnings import warn
 
+from ..easyviewer.ev_base.utils import neuroglancer_url
 from .layers import (
     AnnotationLayerConfig,
     ImageLayerConfig,
@@ -14,7 +17,6 @@ from .layers import (
 )
 from .mappers import LineMapper, PointMapper
 from .statebuilder import ChainedStateBuilder, StateBuilder
-from ..easyviewer.ev_base.utils import neuroglancer_url
 
 if TYPE_CHECKING:
     from nglui.segmentprops import SegmentProperties
@@ -801,7 +803,7 @@ def from_client(
         Name for the image layer, by default None.
     segmentation_name : str, optional
         Name for the segmentation layer, by default None
-    contrast : list-like, optional
+    contrast : list-like or False, optional
         Two elements specifying the black level and white level as
         floats between 0 and 1, by default None. If None, no contrast
         is set.
@@ -819,8 +821,11 @@ def from_client(
         config = CONTRAST_CONFIG.get(
             client.datastack_name, {"contrast_controls": True, "black": 0, "white": 1}
         )
+    elif contrast is False:
+        config = {}
     else:
         config = {"contrast_controls": True, "black": contrast[0], "white": contrast[1]}
+
     if image_name is not False:
         img_layer = ImageLayerConfig(
             client.info.image_source(), name=image_name, **config

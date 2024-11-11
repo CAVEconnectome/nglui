@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 from collections.abc import Collection
 from itertools import chain
 
 import numpy as np
 import pandas as pd
 
+from ..easyviewer import ev_base
 from .utils import is_split_position, split_position_columns
 
 
@@ -267,11 +269,20 @@ class AnnotationMapperBase:
             return self._tag_map
 
     @tag_map.setter
-    def tag_map(self, tag_list):
+    def tags(self, tag_list):
         if tag_list is None:
             self._tag_map = {}
+            self._tag_prop_map = {}
         else:
             self._tag_map = {tag: ii + 1 for ii, tag in enumerate(tag_list)}
+            self._tag_prop_map = {tag: ii for ii, tag in enumerate(tag_list)}
+
+    @property
+    def tag_prop_map(self):
+        if self._tag_prop_map is None:
+            return {}
+        else:
+            return self._tag_prop_map
 
     @property
     def array_data(self):
@@ -301,6 +312,22 @@ class AnnotationMapperBase:
         else:
             anno_tags = [[None] for x in range(len(data))]
         return anno_tags
+
+    def _assign_properties(self, data):
+        if self.tag_column is not None:
+            anno_properties = [
+                [0 for x in range(len(self.tag_prop_map))] for x in range(len(data))
+            ]
+            for ii, row in enumerate(data[self.tag_column]):
+                if isinstance(row, Collection) and not isinstance(row, str):
+                    for r in row:
+                        if r in self.tag_prop_map:
+                            anno_properties[ii][self.tag_prop_map[r]] = 1
+                elif row in self.tag_prop_map:
+                    anno_properties[ii][self.tag_prop_map[row]] = 1
+        else:
+            anno_properties = [None for x in range(len(data))]
+        return anno_properties
 
     def _parse_data(self, data, first=False):
         if self.mapping_set is not None:
@@ -502,13 +529,24 @@ class PointMapper(AnnotationMapperBase):
         descriptions = self._descriptions(data[relinds])
 
         linked_segs = self._linked_segmentations(data[relinds])
-        tags = self._assign_tags(data)
-        annos = [
-            viewer.point_annotation(
-                pt, description=d, linked_segmentation=ls, tag_ids=t
-            )
-            for pt, d, ls, t in zip(pts, descriptions, linked_segs, tags)
-        ]
+        if isinstance(viewer, ev_base.mainline.EasyViewerMainline):
+            props = self._assign_properties(data)
+            annos = [
+                viewer.point_annotation(
+                    pt, description=d, linked_segmentation=ls, annotation_properties=p
+                )
+                for pt, d, ls, p in zip(pts, descriptions, linked_segs, props)
+            ]
+
+        else:
+            tags = self._assign_tags(data)
+            annos = [
+                viewer.point_annotation(
+                    pt, description=d, linked_segmentation=ls, tag_ids=t
+                )
+                for pt, d, ls, t in zip(pts, descriptions, linked_segs, tags)
+            ]
+
         if self.group_column is not None:
             annos = self._add_groups(data, annos, viewer)
 
@@ -602,13 +640,32 @@ class LineMapper(AnnotationMapperBase):
         ptBs = np.vstack(data[colB][relinds]) * scaler
         descriptions = self._descriptions(data[relinds])
         linked_segs = self._linked_segmentations(data[relinds])
-        tags = self._assign_tags(data)
-        annos = [
-            viewer.line_annotation(
-                ptA, ptB, description=d, linked_segmentation=ls, tag_ids=t
-            )
-            for ptA, ptB, d, ls, t in zip(ptAs, ptBs, descriptions, linked_segs, tags)
-        ]
+
+        if isinstance(viewer, ev_base.mainline.EasyViewerMainline):
+            props = self._assign_properties(data)
+            annos = [
+                viewer.line_annotation(
+                    ptA,
+                    ptB,
+                    description=d,
+                    linked_segmentation=ls,
+                    annotation_properties=p,
+                )
+                for ptA, ptB, d, ls, p in zip(
+                    ptAs, ptBs, descriptions, linked_segs, props
+                )
+            ]
+
+        else:
+            tags = self._assign_tags(data)
+            annos = [
+                viewer.line_annotation(
+                    ptA, ptB, description=d, linked_segmentation=ls, tag_ids=t
+                )
+                for ptA, ptB, d, ls, t in zip(
+                    ptAs, ptBs, descriptions, linked_segs, tags
+                )
+            ]
 
         if self.group_column is not None:
             annos = self._add_groups(data, annos, viewer)

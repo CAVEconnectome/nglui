@@ -1,16 +1,13 @@
 from .ev_base import EasyViewerMainline, EasyViewerSeunglab
+from ..target_utils import is_mainline
 
 
 def EasyViewer(
     target_site="seunglab",
 ):
-    if target_site == "seunglab" or target_site is None:
+    if not is_mainline(target_site) or target_site is None:
         return EasyViewerSeunglab()
-    elif (
-        target_site == "mainline"
-        or target_site == "cave-explorer"
-        or target_site == "spelunker"
-    ):
+    elif is_mainline(target_site):
         return EasyViewerMainline()
     else:
         raise ValueError(
