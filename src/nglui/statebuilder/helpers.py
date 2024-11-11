@@ -836,6 +836,8 @@ def from_client(
                 warn(
                     "Skeleton source requested but no skeleton source found in datastack info."
                 )
+        else:
+            skeleton_source = None
         seg_layer = SegmentationLayerConfig(
             client.info.segmentation_source(),
             name=segmentation_name,
