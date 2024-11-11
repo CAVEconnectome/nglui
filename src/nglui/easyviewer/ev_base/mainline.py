@@ -211,6 +211,8 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
     ) -> None:
         if issubdtype(type(oids), integer):
             oids = [oids]
+        if invisible_oids is None:
+            invisible_oids = []
         with self.txn() as s:
             for oid in oids:
                 s.layers[segmentation_layer].segments.add(str(oid))
@@ -336,12 +338,6 @@ class EasyViewerMainline(UnservedViewer, EasyViewerBase):
         supervoxels_blue=None,
         focus=True,
     ):
-        if self.state.layers[layer_name].type not in SEGMENTATION_LAYER_TYPES:
-            raise ValueError("Layer is not a segmentation layer")
-        with self.txn() as s:
-            l = s.layers[layer_name]
-            l["state"]
-
         Warning("Setting multicut is not yet enabled for this viewer type")
 
     @staticmethod

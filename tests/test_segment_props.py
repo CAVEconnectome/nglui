@@ -177,7 +177,8 @@ def test_categorical_props(test_categorical_df):
 
     assert len(props) == 100
     p_dict = props.to_dict()
-    assert 0 in p_dict["inline"]["properties"][1]["values"][0]
+    ct_a_idx = p_dict["inline"]["properties"][1]["tags"].index("ct_a")
+    assert ct_a_idx in p_dict["inline"]["properties"][1]["values"][0]
     assert "ct_a" in p_dict["inline"]["properties"][1]["tags"]
     assert p_dict["inline"]["properties"][2]["data_type"] == "int32"
 

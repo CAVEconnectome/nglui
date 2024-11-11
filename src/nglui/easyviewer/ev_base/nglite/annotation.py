@@ -1,11 +1,11 @@
-from . import (
+from .viewer_state import (
     LineAnnotation,
     PointAnnotation,
     EllipsoidAnnotation,
     AxisAlignedBoundingBoxAnnotation,
     CollectionAnnotation,
-    random_token,
 )
+from . import random_token
 from ..utils import omit_nones
 from numpy import unique, concatenate
 
@@ -17,7 +17,6 @@ def line_annotation(
     description=None,
     linked_segmentation=None,
     tag_ids=None,
-    props=None,
 ):
     """Returns line annotation object.
 
@@ -34,10 +33,8 @@ def line_annotation(
         id=id,
         description=description,
         segments=omit_nones(linked_segmentation),
-        props=props,
+        tag_ids=omit_nones(tag_ids),
     )
-    if tag_ids is not None:
-        line._json_data["tagIds"] = omit_nones(tag_ids)
     return line
 
 
@@ -47,7 +44,6 @@ def point_annotation(
     description=None,
     linked_segmentation=None,
     tag_ids=None,
-    props=None,
 ):
     """Returns point annotation object
 
@@ -62,7 +58,7 @@ def point_annotation(
         id=id,
         description=description,
         segments=omit_nones(linked_segmentation),
-        props=props,
+        tag_ids=omit_nones(tag_ids),
     )
     return point
 
@@ -75,7 +71,6 @@ def sphere_annotation(
     description=None,
     linked_segmentation=None,
     tag_ids=None,
-    props=None,
 ):
     """
     Assumes the z-axis is anistropic
@@ -89,7 +84,6 @@ def sphere_annotation(
         description=description,
         linked_segmentation=linked_segmentation,
         tag_ids=tag_ids,
-        props=props,
     )
 
 
@@ -100,7 +94,6 @@ def ellipsoid_annotation(
     description=None,
     linked_segmentation=None,
     tag_ids=None,
-    props=None,
 ):
     """returns ellipsoid annotation object.
 
@@ -117,10 +110,8 @@ def ellipsoid_annotation(
         id=id,
         description=description,
         segments=omit_nones(linked_segmentation),
-        props=props,
+        tag_ids=omit_nones(tag_ids),
     )
-    if tag_ids is not None:
-        ellipsoid._json_data["tag_ids"] = omit_nones(tag_ids)
     return ellipsoid
 
 
@@ -131,7 +122,6 @@ def bounding_box_annotation(
     description=None,
     linked_segmentation=None,
     tag_ids=None,
-    props=None,
 ):
     """returns axis aligned bounding box annotation object.
 
@@ -148,10 +138,8 @@ def bounding_box_annotation(
         id=id,
         description=description,
         segments=omit_nones(linked_segmentation),
-        props=props,
+        tag_ids=omit_nones(tag_ids),
     )
-    if tag_ids is not None:
-        bounding_box._json_data["tag_ids"] = omit_nones(tag_ids)
     return bounding_box
 
 
