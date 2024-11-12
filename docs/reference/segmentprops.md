@@ -1,5 +1,5 @@
 ---
-title: Segment Properties
+title: segmentprops
 ---
 
 !!! note

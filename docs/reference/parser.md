@@ -1,5 +1,5 @@
 ---
-title: State Parser
+title: parser
 ---
 
 ::: src.nglui.parser

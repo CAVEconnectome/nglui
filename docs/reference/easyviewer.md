@@ -1,5 +1,5 @@
 ---
-title: EasyViewer
+title: easyviewer
 ---
 
 ::: src.nglui.easyviewer.ev_base.base

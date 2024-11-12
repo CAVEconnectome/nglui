@@ -442,8 +442,6 @@ def package_state(
     """Automate creating a state from a statebuilder and
     a dataframe, return it in the desired format, shortening if desired.
 
-    # Convert below to numpydoc
-
     Parameters
     ----------
     df : pandas.DataFrame
