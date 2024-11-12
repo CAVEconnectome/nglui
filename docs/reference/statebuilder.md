@@ -1,5 +1,5 @@
 ---
-title: Statebuilder
+title: statebuilder
 ---
 
 ::: src.nglui.statebuilder.statebuilder
@@ -17,7 +17,9 @@ title: Statebuilder
         show_source: false
         heading_level: 2
 
+## `.helpers`
+
 ::: src.nglui.statebuilder.helpers
     options:
         show_source: false
-        heading_level: 2
+        heading_level: 3
