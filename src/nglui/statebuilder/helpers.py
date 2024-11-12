@@ -9,7 +9,7 @@ from caveclient import CAVEclient
 from caveclient.endpoints import fallback_ngl_endpoint
 from IPython.display import HTML
 
-from ..easyviewer.ev_base.utils import neuroglancer_url
+from ..site_utils import neuroglancer_url
 from .layers import (
     AnnotationLayerConfig,
     ImageLayerConfig,

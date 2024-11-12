@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Literal, Optional
 from warnings import warn
 
 from IPython.display import HTML
@@ -7,11 +8,7 @@ from IPython.display import HTML
 from nglui.easyviewer import EasyViewer
 from nglui.easyviewer.ev_base.nglite.json_utils import encode_json
 
-from ..easyviewer.ev_base.utils import (
-    default_seunglab_neuroglancer_base,
-    neuroglancer_url,
-)
-from ..site_utils import check_target_site, get_config
+from ..site_utils import neuroglancer_url, get_config
 
 DEFAULT_VIEW_KWS = {
     "layout": "xy-3d",
@@ -73,33 +70,37 @@ class StateBuilder:
 
     def __init__(
         self,
-        layers=[],
-        base_state=None,
-        url_prefix=None,
-        state_server=None,
-        resolution=None,
-        view_kws={},
-        client=None,
-        target_site=None,
+        layers: list = [],
+        base_state: Optional[dict] = None,
+        url_prefix: Optional[str] = None,
+        state_server: Optional[str] = None,
+        resolution: Optional[list] = None,
+        view_kws: dict = {},
+        client: Optional["caveclient.CAVEclient"] = None,
+        target_site: Optional[
+            Literal["seunglab", "mainline", "cave-explorer", "spelunker"]
+        ] = None,
+        config_key: Optional[str] = None,
     ):
+        _config = get_config(config_key)
+        if client is None:
+            client = _config["caveclient"]
+        if target_site is None:
+            target_site = _config["target_site"]
         if client is not None:
             if state_server is None:
                 state_server = client.state.state_service_endpoint
-            if url_prefix is None:
-                url_prefix = client.info.viewer_site()
             if resolution is None:
                 resolution = client.info.viewer_resolution().tolist()
-            if target_site is None:
-                target_site = check_target_site(url_prefix, client)
         self._client = client
-        url_prefix = neuroglancer_url(url_prefix, target_site)
-
+        self._state_server = state_server
         self._base_state = base_state
         self._layers = layers
         self._resolution = resolution
-        self._url_prefix = url_prefix
-        self._state_server = state_server
         self._target_site = target_site
+        self._url_prefix = neuroglancer_url(
+            url_prefix, target_site, config_key=config_key
+        )
 
         base_kws = DEFAULT_VIEW_KWS.copy()
         base_kws.update(view_kws)
@@ -115,7 +116,9 @@ class StateBuilder:
         """
         if base_state is None:
             base_state = self._base_state
-        self._temp_viewer = EasyViewer(target_site=target_site)
+        if target_site is None:
+            target_site = self._target_site
+        self._temp_viewer = EasyViewer(target_site=self._target_site)
         self._temp_viewer.set_state(base_state)
 
     def initialize_state(self, base_state=None, target_site=None):
@@ -148,13 +151,14 @@ class StateBuilder:
 
     def render_state(
         self,
-        data=None,
-        base_state=None,
-        return_as="url",
-        url_prefix=None,
-        link_text="Neuroglancer Link",
-        target_site=None,
-        client=None,
+        data: Optional["pandas.DataFrame"] = None,
+        base_state: Optional[dict] = None,
+        return_as: Literal["url", "viewer", "html", "json", "dict", "short"] = "url",
+        url_prefix: Optional[str] = None,
+        link_text: str = "Neuroglancer Link",
+        target_site: Optional[str] = None,
+        client: Optional["caveclient.CAVEclient"] = None,
+        config_key: Optional[str] = None,
     ):
         """Build a Neuroglancer state out of a DataFrame.
 
@@ -184,6 +188,8 @@ class StateBuilder:
             Will be looked up automatically based on ngl_url, if used and a client is set.
         client : caveclient.CAVEclient, optional
             A caveclient to get defaults from. Defaults to None, which falls back on the statebuilder.
+        config_key : str, optional
+            Name of the configuration to use, by default "default"
 
         Returns
         -------
@@ -199,20 +205,7 @@ class StateBuilder:
         if url_prefix is None:
             url_prefix = self._url_prefix
 
-        if target_site is None and url_prefix is not None:
-            if client is not None:
-                target_site = check_target_site(url_prefix, client)
-            else:
-                warn(
-                    f"Cannot check Neuroglancer target site without a client set in the statebuilder. Defaulting to '{DEFAULT_TARGET_SITE}'"
-                )
-        elif target_site is None and url_prefix is None:
-            target_site = DEFAULT_TARGET_SITE
-            url_prefix = DEFAULT_URL
-            warn(
-                'Deprecation warning: No target site or url prefix set, using default "seunglab" site. This will switch to "spelunker" in the future.'
-            )
-
+        url_prefix = neuroglancer_url(url_prefix, target_site, config_key=config_key)
         self.initialize_state(base_state=base_state, target_site=target_site)
         self.handle_positions(data)
 
@@ -222,9 +215,6 @@ class StateBuilder:
         )
 
         self._temp_viewer.set_view_options(**self._view_kws)
-
-        if url_prefix is None:
-            url_prefix = self._url_prefix
 
         if return_as == "viewer":
             return self.viewer
@@ -305,26 +295,31 @@ class ChainedStateBuilder:
         link_text="Neuroglancer Link",
         target_site=None,
         client=None,
+        config_key: Optional[str] = None,
     ):
         """Generate a single neuroglancer state by addatively applying an ordered collection of
         dataframes to an collection of StateBuilder renders.
         Parameters
-            data_list : Collection of DataFrame. The order must match the order of StateBuilders
-                        contained in the class on creation.
-            base_state : JSON neuroglancer state (optional, default is None).
-                         Used as a base state for adding everything else to.
-            return_as: ['url', 'viewer', 'html', 'json', 'short']. optional, default='url'.
-                       Sets how the state is returned. Note that if a viewer is returned,
-                       the state is not reset to default.
-            url_prefix: string, optional (default is https://neuromancer-seung-import.appspot.com).
-                        Overrides the default neuroglancer url for url generation.
-            link_text: string, optional (default is 'Neuroglancer Link').
-                        Text to use for the link when returning as html.
-            target_site: string, optional (default is None).
-                         Target Neuroglancer category: either "seunglab" or "mainline"/"cave-explorer"/"spelunker".
-                         Will be looked up automatically based on url_prefix, if used.
-            client: caveclient.CAVEclient, optional (default is None).
+        ----------
+
+        data_list : Collection of DataFrame. The order must match the order of StateBuilders
+                    contained in the class on creation.
+        base_state : JSON neuroglancer state (optional, default is None).
+                        Used as a base state for adding everything else to.
+        return_as: ['url', 'viewer', 'html', 'json', 'short']. optional, default='url'.
+                    Sets how the state is returned. Note that if a viewer is returned,
+                    the state is not reset to default.
+        url_prefix: string, optional (default is https://neuromancer-seung-import.appspot.com).
+                    Overrides the default neuroglancer url for url generation.
+        link_text: string, optional (default is 'Neuroglancer Link').
+                    Text to use for the link when returning as html.
+        target_site: string, optional (default is None).
+                        Target Neuroglancer category: either "seunglab" or "mainline"/"cave-explorer"/"spelunker".
+                        Will be looked up automatically based on url_prefix, if used.
+        client: caveclient.CAVEclient, optional (default is None).
                     A caveclient to get defaults from. Defaults to None, which falls back on the last statebuilder.
+        config_key: string, optional (default is None).
+                    Name of the configuration to use.
         """
         if client is None:
             client = self._statebuilders[-1]._client
@@ -333,19 +328,7 @@ class ChainedStateBuilder:
         if url_prefix is None:
             url_prefix = self._statebuilders[-1]._url_prefix
 
-        if target_site is None and url_prefix is not None:
-            if client is not None:
-                target_site = check_target_site(url_prefix, client)
-            else:
-                warn(
-                    f"Cannot check Neuroglancer target site without a client. Defaulting to '{DEFAULT_TARGET_SITE}'"
-                )
-        elif target_site is None and url_prefix is None:
-            target_site = DEFAULT_TARGET_SITE
-            url_prefix = DEFAULT_URL
-            warn(
-                'Deprecation warning: No target site or url prefix set, using default "seunglab" site. This will switch to "spelunker" in the future.'
-            )
+        url_prefix = neuroglancer_url(url_prefix, target_site, config_key=config_key)
 
         if data_list is None:
             data_list = len(self._statebuilders) * [None]

@@ -9,7 +9,10 @@ from numpy import integer, issubdtype, uint64, vstack
 
 from . import nglite as neuroglancer
 from . import utils
+from ...site_utils import neuroglancer_url, SEUNGLAB_NAMES
 from .base import SEGMENTATION_LAYER_TYPES, EasyViewerBase
+
+SEUNGLAB_NAME = SEUNGLAB_NAMES[0]
 
 
 class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
@@ -32,7 +35,7 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
 
     def _SegmentationLayer(self, source, **kwargs):
         if re.search(r"^graphene://", source) is not None:
-            source = utils.parse_graphene_header(source, "seunglab")
+            source = utils.parse_graphene_header(source, SEUNGLAB_NAME)
             return neuroglancer.ChunkedgraphSegmentationLayer(source=source, **kwargs)
         elif re.search(r"^precomputed://", source) is not None:
             return neuroglancer.SegmentationLayer(source=source, **kwargs)
@@ -119,8 +122,8 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         as_html: Optional[bool] = False,
         link_text: Optional[str] = "Neuroglancer Link",
     ) -> str:
-        prefix = utils.neuroglancer_url(
-            prefix, "seunglab"
+        prefix = neuroglancer_url(
+            prefix, SEUNGLAB_NAME
         )  # 'seunglab' hard-coded because of file.
         ngl_url = neuroglancer.to_url(self.state, prefix=prefix)
         if as_html:
