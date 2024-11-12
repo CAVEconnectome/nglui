@@ -771,7 +771,6 @@ def make_neuron_neuroglancer_link(
         dataframe_resolution_post=data_resolution_post,
         split_positions=True,
     )
-    # return sb, dataframes
     return package_state(
         dataframes,
         sb,
