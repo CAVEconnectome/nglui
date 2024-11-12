@@ -1,5 +1,5 @@
 from .ev_base import EasyViewerMainline, EasyViewerSeunglab
-from ..target_utils import is_mainline
+from ..site_utils import is_mainline
 
 
 def EasyViewer(
