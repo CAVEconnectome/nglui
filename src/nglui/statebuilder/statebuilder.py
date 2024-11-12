@@ -11,10 +11,7 @@ from ..easyviewer.ev_base.utils import (
     default_seunglab_neuroglancer_base,
     neuroglancer_url,
 )
-from .utils import check_target_site
-
-DEFAULT_TARGET_SITE = "seunglab"
-DEFAULT_URL = default_seunglab_neuroglancer_base
+from ..site_utils import check_target_site, get_config
 
 DEFAULT_VIEW_KWS = {
     "layout": "xy-3d",

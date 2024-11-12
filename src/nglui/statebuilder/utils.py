@@ -2,9 +2,13 @@ import re
 from collections.abc import Iterable
 
 import numpy as np
+from ..site_utils import (
+    default_seunglab_neuroglancer_base,
+    default_mainline_neuroglancer_base,
+)
 
-FALLBACK_SEUNGLAB_NGL_URL = "https://neuroglancer.neuvue.io"
-FALLBACK_MAINLINE_NGL_URL = "https://ngl.cave-explorer.org"
+FALLBACK_SEUNGLAB_NGL_URL = default_seunglab_neuroglancer_base
+FALLBACK_MAINLINE_NGL_URL = default_mainline_neuroglancer_base
 
 SPLIT_SUFFIXES = ["x", "y", "z"]
 
@@ -74,14 +78,3 @@ def assemble_split_points(pt_col, df, suffixes=SPLIT_SUFFIXES):
 
 def split_position_columns(pt_col, suffixes=SPLIT_SUFFIXES):
     return [f"{pt_col}_{suf}" for suf in suffixes]
-
-
-def check_target_site(ngl_url, client):
-    """
-    Check neuroglancer info to determine which kind of site a neuroglancer URL is.
-    """
-    ngl_info = client.state.get_neuroglancer_info(ngl_url)
-    if len(ngl_info) == 0:
-        return "seunglab"
-    else:
-        return "cave-explorer"
