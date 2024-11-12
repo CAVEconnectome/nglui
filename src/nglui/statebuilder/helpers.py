@@ -773,17 +773,17 @@ def make_neuron_neuroglancer_link(
         dataframe_resolution_post=data_resolution_post,
         split_positions=True,
     )
-    return sb, dataframes
-    # return package_state(
-    #     dataframes,
-    #     sb,
-    #     client,
-    #     shorten,
-    #     return_as,
-    #     ngl_url,
-    #     link_text,
-    #     target_site=target_site,
-    # )
+    # return sb, dataframes
+    return package_state(
+        dataframes,
+        sb,
+        client,
+        shorten,
+        return_as,
+        ngl_url,
+        link_text,
+        target_site=target_site,
+    )
 
 
 def from_client(
