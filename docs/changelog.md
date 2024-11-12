@@ -2,6 +2,12 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.5.2] - 2024-11-11
+
+### Fixed
+
+- Fixed behavior of `statebuilder.helpers.make_neuron_neuroglancer_link` to actually render the state as it used to.
+
 ## [3.5.1] - 2024-11-10
 
 ### Fixed
