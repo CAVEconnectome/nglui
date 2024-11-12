@@ -8,7 +8,7 @@ from IPython.display import HTML
 from nglui.easyviewer import EasyViewer
 from nglui.easyviewer.ev_base.nglite.json_utils import encode_json
 
-from ..site_utils import neuroglancer_url, get_config
+from ..site_utils import neuroglancer_url, get_default_config
 
 DEFAULT_VIEW_KWS = {
     "layout": "xy-3d",
@@ -82,7 +82,7 @@ class StateBuilder:
         ] = None,
         config_key: Optional[str] = None,
     ):
-        _config = get_config(config_key)
+        _config = get_default_config(config_key)
         if client is None:
             client = _config["caveclient"]
         if target_site is None:
@@ -98,9 +98,7 @@ class StateBuilder:
         self._layers = layers
         self._resolution = resolution
         self._target_site = target_site
-        self._url_prefix = neuroglancer_url(
-            url_prefix, target_site, config_key=config_key
-        )
+        self._url_prefix = url_prefix
 
         base_kws = DEFAULT_VIEW_KWS.copy()
         base_kws.update(view_kws)
@@ -196,12 +194,19 @@ class StateBuilder:
         string or neuroglancer.Viewer
             A link to or viewer for a Neuroglancer state with layers, annotations, and selected objects determined by the data.
         """
-        if client is None:
-            client = self._client
+        if config_key is not None:
+            _config = get_default_config(config_key)
+            if client is None:
+                client = _config["caveclient"]
+            if target_site is None:
+                target_site = _config["target_site"]
+        else:
+            if client is None:
+                client = self._client
+            if target_site is None:
+                target_site = self._target_site
         if base_state is None:
             base_state = self._base_state
-        if target_site is None:
-            target_site = self._target_site
         if url_prefix is None:
             url_prefix = self._url_prefix
 

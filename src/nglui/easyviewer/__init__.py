@@ -1,6 +1,6 @@
 from typing import Optional
 from .ev_base import EasyViewerMainline, EasyViewerSeunglab
-from ..site_utils import is_mainline, get_config
+from ..site_utils import is_mainline, get_default_config
 
 
 def EasyViewer(
@@ -23,7 +23,7 @@ def EasyViewer(
         EasyViewer object based on the target site to aid in building states.
     """
     if target_site is None:
-        target_site = get_config(config_key)["target_site"]
+        target_site = get_default_config(config_key)["target_site"]
     if not is_mainline(target_site):
         return EasyViewerSeunglab()
     elif is_mainline(target_site):

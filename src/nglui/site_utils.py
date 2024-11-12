@@ -19,7 +19,7 @@ __all__ = [
     "is_seunglab",
     "check_target_site",
     "set_config",
-    "get_config",
+    "get_default_config",
     MAINLINE_NAMES,
     SEUNGLAB_NAMES,
 ]
@@ -102,10 +102,11 @@ default_config = NGLUIConfig(
     target_site=DEFAULT_TARGET_SITE,
     target_url=DEFAULT_URL,
 )
-NGL_CONFIG = dict(default=default_config)
+default_key = "default"
+NGL_CONFIG = {default_key: default_config}  # type: dict[str, NGLUIConfig]
 
 
-def get_config(config_key: str = "defaults"):
+def get_default_config(config_key: str = None):
     """Get the current configuration for nglui viewers and statebuilders.
 
     Parameters
@@ -114,11 +115,11 @@ def get_config(config_key: str = "defaults"):
         Key for the configuration setting, by default "default"
     """
     if config_key is None:
-        config_key = "default"
-    return attrs.asdict(NGL_CONFIG.get(config_key, default_config))
+        config_key = default_key
+    return attrs.asdict(NGL_CONFIG[config_key])
 
 
-def set_config(
+def set_default_config(
     target_site: Optional[
         Literal["seunglab", "mainline", "cave-explorer", "spelunker"]
     ] = None,
@@ -147,7 +148,10 @@ def set_config(
     caveclient : caveclient.CAVEclient, optional
         CAVEclient object, by default None.
     """
-    curr_config = get_config(config_key)
+    if config_key in NGL_CONFIG:
+        curr_config = get_default_config(config_key)
+    else:
+        curr_config = attrs.asdict(default_config)
     if target_site is not None or target_url is not None:
         curr_config["target_site"] = target_site
         curr_config["target_url"] = target_url
@@ -203,10 +207,10 @@ def neuroglancer_url(
     if url is not None:
         return url
     if target_site is None:
-        url = get_config(config_key)["target_url"]
+        url = get_default_config(config_key)["target_url"]
     else:
         if is_seunglab(target_site):
-            url = get_config(config_key)["seunglab_fallback_url"]
+            url = get_default_config(config_key)["seunglab_fallback_url"]
         else:
-            url = get_config(config_key)["mainline_fallback_url"]
+            url = get_default_config(config_key)["mainline_fallback_url"]
     return url
