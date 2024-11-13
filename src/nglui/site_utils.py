@@ -18,8 +18,9 @@ __all__ = [
     "is_mainline",
     "is_seunglab",
     "check_target_site",
-    "set_config",
+    "set_default_config",
     "get_default_config",
+    "reset_default_config",
     MAINLINE_NAMES,
     SEUNGLAB_NAMES,
 ]
@@ -214,3 +215,8 @@ def neuroglancer_url(
         else:
             url = get_default_config(config_key)["mainline_fallback_url"]
     return url
+
+
+def reset_default_config():
+    NGL_CONFIG[default_key] = default_config
+    pass

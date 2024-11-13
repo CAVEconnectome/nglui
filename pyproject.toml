@@ -17,7 +17,7 @@ authors = [
 
 dependencies = [
     "python-box",
-    "caveclient>=5.22.0",
+    "caveclient>=6.4.1",
     "ipython",
     "neuroglancer >= 2.40.1",
     "numpy>=1.11.0",
@@ -51,8 +51,18 @@ include = [
     "/src",
 ]
 
+[tool.hatch.envs.hatch-test]
+extra-dependencies = [
+    "pytest",
+    "pytest-mock",
+    "pytest-cov",
+    "responses",
+]
+
+
 [[tool.hatch.envs.hatch-test.matrix]]
 python = ["3.9", "3.10", "3.11", "3.12"]
+
 
 [tool.hatch.envs.docs]
 dependencies = [
