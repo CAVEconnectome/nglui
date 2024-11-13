@@ -13,6 +13,7 @@ default_mainline_neuroglancer_base = "https://spelunker.cave-explorer.org/"
 
 DEFAULT_TARGET_SITE = os.environ.get("NGLUI_DEFAULT_TARGET_SITE", "seunglab")
 DEFAULT_URL = os.environ.get("NGLUI_DEFAULT_TARGET_URL", None)
+DEFAULT_DATASTACK_NAME = os.environ.get("NGLUI_DEFAULT_DATASTACK_NAME", None)
 
 __all__ = [
     "is_mainline",
@@ -56,7 +57,7 @@ class NGLUIConfig:
         default=default_mainline_neuroglancer_base, type=str
     )
     caveclient = attrs.field(default=None)
-    datastack_name = attrs.field(default=None, type=str)
+    datastack_name = attrs.field(default=DEFAULT_DATASTACK_NAME, type=str)
 
     def __attrs_post_init__(self):
         # validate target site
