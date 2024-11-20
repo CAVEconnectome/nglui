@@ -6,12 +6,9 @@ import numpy as np
 import pandas as pd
 import webcolors
 
-from ...target_utils import (
+from ...site_utils import (
     is_mainline,
     is_seunglab,
-    default_seunglab_neuroglancer_base,
-    default_mainline_neuroglancer_base,
-    MAINLINE_NAMES,
 )
 
 
@@ -84,21 +81,3 @@ def _parse_to_mainline_imagery(qry):
             return f"precomputed://middleauth+http:{qry.path}"
     else:
         return qry.geturl()
-
-
-def neuroglancer_url(url, target_site):
-    """
-    Check neuroglancer info to determine which kind of site a neuroglancer URL is.
-    """
-    if url is not None:
-        return url
-    elif target_site is None:
-        return None
-    elif is_seunglab(target_site):
-        return default_seunglab_neuroglancer_base
-    elif is_mainline(target_site):
-        return default_mainline_neuroglancer_base
-    else:
-        raise ValueError(
-            f"Must specify either a URL or a target site (either 'seunglab' or one of {MAINLINE_NAMES})"
-        )

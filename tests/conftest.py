@@ -3,8 +3,14 @@ import json
 import numpy as np
 import pandas as pd
 import pytest
+from caveclient.tools.testing import CAVEclientMock
 
 from nglui import EasyViewer
+
+
+@pytest.fixture(scope="session")
+def client_simple():
+    return CAVEclientMock(json_service=True)
 
 
 @pytest.fixture(scope="function")
