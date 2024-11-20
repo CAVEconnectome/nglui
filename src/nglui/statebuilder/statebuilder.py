@@ -75,7 +75,7 @@ class StateBuilder:
         state_server: Optional[str] = None,
         resolution: Optional[list] = None,
         view_kws: dict = {},
-        client: Optional[caveclient.CAVEclient] = None,
+        client: Optional["caveclient.CAVEclient"] = None,  # noqa: F821
         target_site: Optional[
             Literal["seunglab", "mainline", "cave-explorer", "spelunker"]
         ] = None,
@@ -148,13 +148,13 @@ class StateBuilder:
 
     def render_state(
         self,
-        data: Optional[pandas.DataFrame] = None,
+        data: Optional["pandas.DataFrame"] = None,  # noqa: F821
         base_state: Optional[dict] = None,
         return_as: Literal["url", "viewer", "html", "json", "dict", "short"] = "url",
         url_prefix: Optional[str] = None,
         link_text: str = "Neuroglancer Link",
         target_site: Optional[str] = None,
-        client: Optional[caveclient.CAVEclient] = None,
+        client: Optional["caveclient.CAVEclient"] = None,  # noqa: F821
         config_key: Optional[str] = None,
     ):
         """Build a Neuroglancer state out of a DataFrame.
