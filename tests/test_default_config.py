@@ -1,15 +1,15 @@
-import pytest
-from nglui.statebuilder import (
-    StateBuilder,
-    ImageLayerConfig,
-    SegmentationLayerConfig,
-)
 from urllib.parse import urlparse
+
 from nglui.site_utils import (
     get_default_config,
-    set_default_config,
     neuroglancer_url,
     reset_default_config,
+    set_default_config,
+)
+from nglui.statebuilder import (
+    ImageLayerConfig,
+    SegmentationLayerConfig,
+    StateBuilder,
 )
 
 

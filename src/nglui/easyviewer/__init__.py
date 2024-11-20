@@ -1,6 +1,7 @@
 from typing import Optional
+
+from ..site_utils import get_default_config, is_mainline
 from .ev_base import EasyViewerMainline, EasyViewerSeunglab
-from ..site_utils import is_mainline, get_default_config
 
 
 def EasyViewer(

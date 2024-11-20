@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from caveclient.tools.testing import CAVEclientMock
+
 from nglui import EasyViewer
 
 

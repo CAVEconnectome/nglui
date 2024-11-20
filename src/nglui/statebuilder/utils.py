@@ -2,9 +2,10 @@ import re
 from collections.abc import Iterable
 
 import numpy as np
+
 from ..site_utils import (
-    default_seunglab_neuroglancer_base,
     default_mainline_neuroglancer_base,
+    default_seunglab_neuroglancer_base,
 )
 
 FALLBACK_SEUNGLAB_NGL_URL = default_seunglab_neuroglancer_base

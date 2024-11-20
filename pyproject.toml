@@ -51,6 +51,17 @@ include = [
     "/src",
 ]
 
+[tool.hatch.envs.default]
+python = "3.12"
+installer = "uv"
+
+[tool.hatch.envs.nglui-nb]
+python = "3.12"
+installer = "uv"
+extra-dependencies = [
+    "ipykernel",
+]
+
 [tool.hatch.envs.hatch-test]
 extra-dependencies = [
     "pytest",

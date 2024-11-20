@@ -7,9 +7,9 @@ from warnings import warn
 
 from numpy import integer, issubdtype, uint64, vstack
 
+from ...site_utils import SEUNGLAB_NAMES, neuroglancer_url
 from . import nglite as neuroglancer
 from . import utils
-from ...site_utils import neuroglancer_url, SEUNGLAB_NAMES
 from .base import SEGMENTATION_LAYER_TYPES, EasyViewerBase
 
 SEUNGLAB_NAME = SEUNGLAB_NAMES[0]

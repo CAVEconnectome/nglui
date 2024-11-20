@@ -1,8 +1,9 @@
+import logging
 import os
 from typing import Literal, Optional
+
 import attrs
 import caveclient
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -210,14 +211,12 @@ def neuroglancer_url(
         return url
     if target_site is None:
         url = get_default_config(config_key)["target_url"]
+    elif is_seunglab(target_site):
+        url = get_default_config(config_key)["seunglab_fallback_url"]
     else:
-        if is_seunglab(target_site):
-            url = get_default_config(config_key)["seunglab_fallback_url"]
-        else:
-            url = get_default_config(config_key)["mainline_fallback_url"]
+        url = get_default_config(config_key)["mainline_fallback_url"]
     return url
 
 
 def reset_default_config():
     NGL_CONFIG[default_key] = default_config
-    pass

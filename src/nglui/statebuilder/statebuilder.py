@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from typing import Literal, Optional
-from warnings import warn
 
 from IPython.display import HTML
 
 from nglui.easyviewer import EasyViewer
 from nglui.easyviewer.ev_base.nglite.json_utils import encode_json
 
-from ..site_utils import neuroglancer_url, get_default_config
+from ..site_utils import get_default_config, neuroglancer_url
 
 DEFAULT_VIEW_KWS = {
     "layout": "xy-3d",
@@ -76,7 +75,7 @@ class StateBuilder:
         state_server: Optional[str] = None,
         resolution: Optional[list] = None,
         view_kws: dict = {},
-        client: Optional["caveclient.CAVEclient"] = None,
+        client: Optional[caveclient.CAVEclient] = None,
         target_site: Optional[
             Literal["seunglab", "mainline", "cave-explorer", "spelunker"]
         ] = None,
@@ -149,13 +148,13 @@ class StateBuilder:
 
     def render_state(
         self,
-        data: Optional["pandas.DataFrame"] = None,
+        data: Optional[pandas.DataFrame] = None,
         base_state: Optional[dict] = None,
         return_as: Literal["url", "viewer", "html", "json", "dict", "short"] = "url",
         url_prefix: Optional[str] = None,
         link_text: str = "Neuroglancer Link",
         target_site: Optional[str] = None,
-        client: Optional["caveclient.CAVEclient"] = None,
+        client: Optional[caveclient.CAVEclient] = None,
         config_key: Optional[str] = None,
     ):
         """Build a Neuroglancer state out of a DataFrame.
