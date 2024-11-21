@@ -37,7 +37,6 @@ class Skeleton:
         result.write(edges.tobytes())
         if len(source.vertex_attributes) > 0:
             for name, info in six.iteritems(source.vertex_attributes):
-
                 attribute = np.array(
                     vertex_attributes[name], np.dtype(info.data_type).newbyteorder("<")
                 )

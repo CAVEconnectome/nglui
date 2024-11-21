@@ -13,7 +13,6 @@
 # limitations under the License.
 """Facilities for converting JSON <-> Python objects"""
 
-
 import collections
 import copy
 import inspect

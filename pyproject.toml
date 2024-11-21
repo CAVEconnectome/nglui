@@ -4,28 +4,25 @@ build-backend = "hatchling.build"
 
 [project]
 name = "nglui"
-dynamic = ["version"]
+version = "3.6.1"
 description = "Framework for data-driven generation of neuroglancer states."
 readme = "README.md"
-license = "MIT"
-requires-python = ">= 3.9"
+requires-python = ">=3.9"
+dependencies = [
+    "attrs>=24.2.0",
+    "caveclient>=7.0.0",
+    "ipython>=8.18.1",
+    "neuroglancer>=2.40.1",
+    "numpy>=1.26.4",
+    "pandas>=2.2.3",
+    "python-box>=7.2.0",
+    "requests>=2.32.3",
+    "six>=1.16.0",
+    "webcolors>=24.11.1",
+]
 authors = [
     { name = "Casey Schneider-Mizell", email = "caseysm@gmail.com" },
-    { name = "Derrick Brittain"},
     { name = "Forrest Collman" },
-]
-
-dependencies = [
-    "python-box",
-    "caveclient>=6.4.1",
-    "ipython",
-    "neuroglancer >= 2.40.1",
-    "numpy>=1.11.0",
-    "pandas>=1.0.0",
-    "requests",
-    "six",
-    "webcolors",
-    "attrs>=23.2.0",
 ]
 classifiers = [
     "License :: OSI Approved :: MIT License",
@@ -43,44 +40,53 @@ Repository = "https://github.com/CAVEconnectome/nglui.git"
 Changelog = "https://caveconnectome.github.io/nglui/changelog/"
 Issues = "https://github.com/CAVEconnectome/nglui/issues"
 
-[tool.hatch.version]
-path = "src/nglui/__init__.py"
-
-[tool.hatch.build.targets.sdist]
-include = [
-    "/src",
-]
-
-[tool.hatch.envs.default]
-python = "3.12"
-installer = "uv"
-
-[tool.hatch.envs.nglui-nb]
-python = "3.12"
-installer = "uv"
-extra-dependencies = [
-    "ipykernel",
-]
-
-[tool.hatch.envs.hatch-test]
-extra-dependencies = [
+[dependency-groups]
+dev = [
     "pytest",
-    "pytest-mock",
     "pytest-cov",
+    "pytest-mock",
     "responses",
+    "ipykernel",
+    "bump-my-version",
 ]
-
-
-[[tool.hatch.envs.hatch-test.matrix]]
-python = ["3.9", "3.10", "3.11", "3.12"]
-
-
-[tool.hatch.envs.docs]
-dependencies = [
-  "mkdocs",
-  "mkdocs-material",
-  "mkdocstrings[python]",
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocstrings[python]",
 ]
-[tool.hatch.envs.docs.scripts]
-build = "mkdocs build --clean --strict"
-serve = "mkdocs serve --dev-addr localhost:8000"
+lint = [
+    "ruff"
+]
+[tool.uv]
+default-groups = ["dev", "docs", "lint"]
+
+[tool.bumpversion]
+current_version = "3.6.1"
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
+serialize = ["{major}.{minor}.{patch}"]
+search = "{current_version}"
+replace = "{new_version}"
+regex = false
+ignore_missing_version = false
+tag = true
+sign_tags = false
+tag_name = "v{new_version}"
+tag_message = "Bump version: {current_version} → {new_version}"
+allow_dirty = false
+commit = false
+message = "v{new_version}"
+commit_args = ""
+
+[[tool.bumpversion.files]]
+filename = "src/nglui/__init__.py"
+
+[tool.ruff.lint]
+select=["E9","F63","F7","F82"]
+
+[tool.poe.tasks.drybump]
+cmd = "uv run bump-my-version bump --dry-run --verbose"
+help = "Dry run of version bump for the project. Use with 'patch', 'minor', or 'major' to specify the version change."
+
+[tool.poe.tasks.bump]
+cmd = "uv run bump-my-version bump"
+help = "Bump the version number in the project. Use with 'patch', 'minor', or 'major' to specify the version change."
