@@ -8,5 +8,7 @@ repos:
     # Run the linter.
     - id: ruff 
       types_or: [ python, pyi]
+    - id: ruff
+      args: ["--fix", "--select", "I"]
     - id: ruff-format
       types_or: [ python, pyi]
