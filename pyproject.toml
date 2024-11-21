@@ -74,7 +74,7 @@ tag_name = "v{new_version}"
 tag_message = "Bump version: {current_version} → {new_version}"
 allow_dirty = false
 commit = false
-message = "Bump version: {current_version} → {new_version}"
+message = "v{new_version}"
 commit_args = ""
 
 [[tool.bumpversion.files]]
@@ -83,9 +83,9 @@ filename = "src/nglui/__init__.py"
 [tool.ruff.lint]
 select=["E9","F63","F7","F82"]
 
-[tool.poe.tasks]
-patch_ = "uv run bump-my-version bump patch --dry-run -vv"
-minor_ = "uv run bump-my-version bump minor --dry-run -vv"
-major_ = "uv run bump-my-version bump patch --dry-run -vv"
-
+[tool.poe.tasks.drybump]
+cmd = "uv run bump-my-version bump --dry-run --verbose"
+# bump_patch = "uv run bump-my-version bump patch"
+# bump_minor = "uv run bump-my-version bump minor"
+# bump_major = "uv run bump-my-version bump patch"
 
