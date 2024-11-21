@@ -388,8 +388,9 @@ class SegmentProperties:
         "Converts the segment properties to a pandas dataframe"
         df_dict = {"ids": self.ids}
         for prop in self._property_list():
-            if (
-                isinstance(prop, (DescriptionProperty, LabelProperty, NumberProperty, StringProperty))
+            if isinstance(
+                prop,
+                (DescriptionProperty, LabelProperty, NumberProperty, StringProperty),
             ):
                 df_dict[prop.id] = prop.values
             elif isinstance(prop, TagProperty):
