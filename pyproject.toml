@@ -90,3 +90,7 @@ help = "Dry run of version bump for the project. Use with 'patch', 'minor', or '
 [tool.poe.tasks.bump]
 cmd = "uv run bump-my-version bump"
 help = "Bump the version number in the project. Use with 'patch', 'minor', or 'major' to specify the version change."
+
+[tool.poe.tasks.test]
+cmd = "uv run pytest --cov=nglui tests"
+help = "Run pytest with code coverage."
