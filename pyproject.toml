@@ -82,3 +82,10 @@ filename = "src/nglui/__init__.py"
 
 [tool.ruff.lint]
 select=["E9","F63","F7","F82"]
+
+[tool.poe.tasks]
+patch_ = "uv run bump-my-version bump patch --dry-run -vv"
+minor_ = "uv run bump-my-version bump minor --dry-run -vv"
+major_ = "uv run bump-my-version bump patch --dry-run -vv"
+
+
