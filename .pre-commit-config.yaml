@@ -9,6 +9,6 @@ repos:
     - id: ruff 
       types_or: [ python, pyi]
     - id: ruff
-      args: ["--fix", "--select", "I"]
+      args: ["--select", "I", "--fix"]
     - id: ruff-format
       types_or: [ python, pyi]
