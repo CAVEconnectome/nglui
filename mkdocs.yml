@@ -14,6 +14,7 @@ nav:
     - reference/statebuilder.md
     - reference/easyviewer.md
     - reference/parser.md
+    - reference/site_utils.md
 - Changelog: changelog.md
 
   

@@ -2,6 +2,18 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.6.2] - 2024-11-22
+
+### Fixed
+
+- Fixed a bug where default configurations were overriding user configurations for target sites.
+
+## [3.6.1] - 2024-11-20
+
+### Added
+
+- **StateBuilder**: Added default configurations to make it much easier to configure links where you want them to go.
+
 ## [3.5.2] - 2024-11-11
 
 ### Fixed
