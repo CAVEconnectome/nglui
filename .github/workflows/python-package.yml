@@ -23,10 +23,8 @@ jobs:
         uses: astral-sh/setup-uv@v2
         with:
           version: "0.5.2"
-      - name: Set up Python ${{ matrix.python-version }}
-        run : uv python install ${{ matrix.python-version }}
       - name: Install project and dependencies
-        run: uv sync
+        run: uv sync --python ${{ matrix.python-version }}
       - name: Run tests
         run: uv run pytest tests
       - name: Lint with ruff
