@@ -109,7 +109,7 @@ default_key = "default"
 NGL_CONFIG = {default_key: default_config}  # type: dict[str, NGLUIConfig]
 
 
-def get_default_config(config_key: str = None):
+def get_default_config(config_key: str = None) -> dict:
     """Get the current configuration for nglui viewers and statebuilders.
 
     Parameters
@@ -133,7 +133,7 @@ def set_default_config(
     caveclient: "caveclient.CAVEclient" = None,
     url_from_client: bool = False,
     config_key: str = "default",
-):
+) -> None:
     """Set default configuration for nglui viewers and statebuilders.
 
     Parameters
@@ -173,7 +173,7 @@ def set_default_config(
 
 def reset_config(
     config_key: str = "default",
-):
+) -> None:
     """Reset the configuration for nglui viewers and statebuilders to the default.
 
     Parameters
@@ -188,7 +188,7 @@ def neuroglancer_url(
     url: Optional[str] = None,
     target_site: Optional[str] = None,
     config_key: str = "default",
-):
+) -> str:
     """
     Check neuroglancer info to determine which kind of site a neuroglancer URL is.
     If either url or target_site are provided, it will use these values, looking up target site
@@ -218,5 +218,55 @@ def neuroglancer_url(
     return url
 
 
+def get_target_site(
+    url: Optional[str] = None,
+    target_site: Optional[str] = None,
+    config_key: Optional[str] = None,
+    client: Optional["caveclient.CAVEclient"] = None,
+) -> str:
+    """Check target site based on parameters provided.
+
+    Parameters
+    ----------
+    url : Optional[str], optional
+        URL to a neuroglancer deployment, by default None
+    target_site : Optional[str], optional
+        Categorical neuroglancer target site, by default None
+    config_key : Optional[str], optional
+        Dictionary key for config, by default None
+    client : Optional[caveclient.CAVEclient], optional
+        Initialized CAVEclient, by default None
+
+    Returns
+    -------
+
+        _description_
+    """
+    if target_site is not None:
+        return target_site
+    if url is not None:
+        if client is not None:
+            return check_target_site(url, client)
+        else:
+            msg = f"No client provided to check target site from URL. Assuming default value of \"{get_default_config(config_key)['target_site']}\""
+            logging.warning(msg)
+    return get_default_config(config_key)["target_site"]
+
+
 def reset_default_config():
     NGL_CONFIG[default_key] = default_config
+
+
+def assign_site_parameters(
+    url: Optional[str] = None,
+    target_site: Optional[str] = None,
+    client: Optional["caveclient.CAVEclient"] = None,
+    config_key: Optional[str] = None,
+) -> tuple[str, str, caveclient.CAVEclient]:
+    if config_key is None:
+        config_key = default_key
+    if client is None:
+        client = get_default_config(config_key)["caveclient"]
+    url = neuroglancer_url(url, target_site, config_key)
+    target_site = get_target_site(url, target_site, config_key, client)
+    return url, target_site, client

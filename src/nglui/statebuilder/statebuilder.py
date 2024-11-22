@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from typing import Literal, Optional
 
 from IPython.display import HTML
@@ -7,7 +8,7 @@ from IPython.display import HTML
 from nglui.easyviewer import EasyViewer
 from nglui.easyviewer.ev_base.nglite.json_utils import encode_json
 
-from ..site_utils import get_default_config, neuroglancer_url
+from ..site_utils import assign_site_parameters, get_default_config
 
 DEFAULT_VIEW_KWS = {
     "layout": "xy-3d",
@@ -84,13 +85,6 @@ class StateBuilder:
         _config = get_default_config(config_key)
         if client is None:
             client = _config["caveclient"]
-        if target_site is None:
-            target_site = _config["target_site"]
-        if client is not None:
-            if state_server is None:
-                state_server = client.state.state_service_endpoint
-            if resolution is None:
-                resolution = client.info.viewer_resolution().tolist()
         self._client = client
         self._state_server = state_server
         self._base_state = base_state
@@ -193,23 +187,28 @@ class StateBuilder:
         string or neuroglancer.Viewer
             A link to or viewer for a Neuroglancer state with layers, annotations, and selected objects determined by the data.
         """
-        if config_key is not None:
-            _config = get_default_config(config_key)
-            if client is None:
-                client = _config["caveclient"]
-            if target_site is None:
-                target_site = _config["target_site"]
-        else:
-            if client is None:
-                client = self._client
-            if target_site is None:
-                target_site = self._target_site
-        if base_state is None:
-            base_state = self._base_state
         if url_prefix is None:
             url_prefix = self._url_prefix
+        if target_site is None:
+            target_site = self._target_site
+        if client is None:
+            client = self._client
+        url_prefix, target_site, client = assign_site_parameters(
+            url_prefix, target_site, client, config_key=config_key
+        )
+        if client is not None:
+            if self._state_server is None:
+                self._state_server = client.state.state_service_endpoint
+            if self._resolution is None:
+                self._resolution = client.info.viewer_resolution().tolist()
 
-        url_prefix = neuroglancer_url(url_prefix, target_site, config_key=config_key)
+        if base_state is None:
+            base_state = self._base_state
+
+        # Do not change the target site for the temporary viewer, but convert it for rendering.
+        curr_target_site = copy.copy(self._target_site)
+        self._target_site = target_site
+
         self.initialize_state(base_state=base_state, target_site=target_site)
         self.handle_positions(data)
 
@@ -217,6 +216,7 @@ class StateBuilder:
             data,
             client=client,
         )
+        self._target_site = curr_target_site
 
         self._temp_viewer.set_view_options(**self._view_kws)
 
@@ -332,7 +332,9 @@ class ChainedStateBuilder:
         if url_prefix is None:
             url_prefix = self._statebuilders[-1]._url_prefix
 
-        url_prefix = neuroglancer_url(url_prefix, target_site, config_key=config_key)
+        url_prefix, target_site, client = assign_site_parameters(
+            url_prefix, target_site, client, config_key=config_key
+        )
 
         if data_list is None:
             data_list = len(self._statebuilders) * [None]
