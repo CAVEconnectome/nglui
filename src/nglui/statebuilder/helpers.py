@@ -887,6 +887,6 @@ def segment_property_link(
     ngl_url = neuroglancer_url(ngl_url, target_site="spelunker")
     seg.add_segment_propeties(seg_prop_url)
     sb = StateBuilder(
-        [img, seg], client=client, url_prefix=ngl_url, target_site="cave-explorer"
+        [img, seg], client=client, url_prefix=ngl_url, target_site="spelunker"
     )
-    return sb.render_state(return_as=return_as, url_prefix=ngl_url)
+    return sb.render_state(return_as=return_as)
