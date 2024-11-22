@@ -80,6 +80,9 @@ commit_args = ""
 [[tool.bumpversion.files]]
 filename = "src/nglui/__init__.py"
 
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+
 [tool.ruff]
 extend-exclude = ["*.ipynb"]
 
