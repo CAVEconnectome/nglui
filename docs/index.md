@@ -12,7 +12,7 @@ NGLui is available on PyPI and can be installed with pip:
 pip install nglui
 ```
 
-If you want to clone the repository and develop on NGLui, note that it uses [Hatch](https://hatch.pypa.io/latest/) for development and packaging.
+If you want to clone the repository and develop on NGLui, note that it uses [uv](https://astral.sh/blog/uv) for development and packaging.
 
 ## Quick Usage
 
