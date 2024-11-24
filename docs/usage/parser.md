@@ -1,5 +1,5 @@
 ---
-title: State Parser
+title: Parser
 ---
 
 The `parser` module offers a number of tools to get information about neuroglancer states out of the JSON format that neuroglancer uses.

@@ -101,3 +101,7 @@ help = "Bump the version number in the project. Use with 'patch', 'minor', or 'm
 [tool.poe.tasks.test]
 cmd = "uv run pytest --cov=nglui tests"
 help = "Run pytest with code coverage."
+
+[tool.poe.tasks.doc-preview]
+cmd = "uv run mkdocs serve"
+help = "Preview documentation build locally"

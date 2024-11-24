@@ -23,6 +23,7 @@ __all__ = [
     "set_default_config",
     "get_default_config",
     "reset_default_config",
+    "assign_site_parameters",
     MAINLINE_NAMES,
     SEUNGLAB_NAMES,
 ]
@@ -142,9 +143,9 @@ def set_default_config(
         Target site for the neuroglancer viewer, by default None
     target_url : str, optional
         Target URL for the neuroglancer viewer, by default None
-    seunglab_url : str, optional
+    seunglab_fallback_url : str, optional
         URL for the seunglab neuroglancer viewer, by default None
-    mainline_url : str, optional
+    mainline_fallback_url : str, optional
         URL for the mainline neuroglancer viewer, by default None
     datastack_name : str, optional
         Name of the datastack, by default None

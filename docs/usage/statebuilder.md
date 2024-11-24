@@ -56,7 +56,11 @@ sb.render_state(return_as='html')
 
 Using `sb.render_state(return_as='json')` returns the JSON state as a string.
 This can be pasted directly into the neuroglancer JSON state and `sb.render_state(return_as='dict')` returns the state as a dictionary, useful for inspection and debugging.
-Finally, using `sb.render_state(return_as='viewer')` returns an EasyViewer object, which can be further manipulated (see documentation). 
+Finally, using `sb.render_state(return_as='viewer')` returns an EasyViewer object, which can be further manipulated (see documentation).
+
+!!!warning
+
+    The URL at which you want to view your state matters! While there are reasonable defaults, please look at the [configuration documentation](config.md) to make sure you are using the right settings for what you want.
 
 ## Data-responsive state generation
 
