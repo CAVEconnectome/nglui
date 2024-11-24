@@ -74,6 +74,11 @@ site_utils.set_default_config(datastack=CAVEclient('minnie65_public'))
 
 This is particularly useful when working with `spelunker` datasets in particular, as they require a resolution to be specified to work properly and the CAVEclient object can provide this value.
 
+While `nglui` will attempt to look up which version is associated with a given url, that that you will need to include a caveclient to do so.
+You may see a warning if you do not include a caveclient object, but the code will still run.
+If the resulting state does not work, you may need to specify the version of Neuroglancer you are using or add a caveclient.
+
+
 ## Why these different types of Neuroglancer?
 
 Neuroglancer is a webapp for viewing large scale 3d image datasets that has been developed over many years.
