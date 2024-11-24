@@ -1,0 +1,1977 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://caveconnectome.github.io/nglui/reference/easyviewer/">
+      
+      
+        <link rel="prev" href="../statebuilder/">
+      
+      
+        <link rel="next" href="../parser/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.45">
+    
+    
+      
+        <title>easyviewer - NGLui Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.0253249f.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Bitter:300,300i,400,400i,700,700i%7CInconsolata:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Bitter";--md-code-font:"Inconsolata"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#src.nglui.easyviewer.ev_base.base.EasyViewerBase" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="NGLui Documentation" class="md-header__button md-logo" aria-label="NGLui Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            NGLui Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              easyviewer
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/CAVEconnectome/nglui/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CAVEconnectome/NGLui
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+    
+  
+  About
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../usage/statebuilder/" class="md-tabs__link">
+          
+  
+    
+  
+  How to Use
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../segmentprops/" class="md-tabs__link">
+          
+  
+    
+  
+  Function Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="NGLui Documentation" class="md-nav__button md-logo" aria-label="NGLui Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    NGLui Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/CAVEconnectome/nglui/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CAVEconnectome/NGLui
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    About
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+    <a href="../../usage/statebuilder/" class="md-nav__link">
+      
+  
+  <span class="md-ellipsis">
+    How to Use
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Function Reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Function Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../segmentprops/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    segmentprops
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../statebuilder/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    statebuilder
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    easyviewer
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    easyviewer
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.base.EasyViewerBase" class="md-nav__link">
+    <span class="md-ellipsis">
+      EasyViewerBase
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="EasyViewerBase">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.base.EasyViewerBase.add_image_layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      add_image_layer
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.base.EasyViewerBase.add_multilayer_annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      add_multilayer_annotations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.base.EasyViewerBase.add_segmentation_layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      add_segmentation_layer
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.base.EasyViewerBase.assign_colors" class="md-nav__link">
+    <span class="md-ellipsis">
+      assign_colors
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.base.EasyViewerBase.set_annotation_layer_color" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_annotation_layer_color
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline" class="md-nav__link">
+    <span class="md-ellipsis">
+      EasyViewerMainline
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="EasyViewerMainline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.add_image_layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      add_image_layer
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.add_multilayer_annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      add_multilayer_annotations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.add_segmentation_layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      add_segmentation_layer
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.append_source_to_segmentation_layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      append_source_to_segmentation_layer
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.load_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      load_url
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.set_annotation_layer_color" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_annotation_layer_color
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab" class="md-nav__link">
+    <span class="md-ellipsis">
+      EasyViewerSeunglab
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="EasyViewerSeunglab">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.add_image_layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      add_image_layer
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.add_multilayer_annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      add_multilayer_annotations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.add_segmentation_layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      add_segmentation_layer
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.assign_colors" class="md-nav__link">
+    <span class="md-ellipsis">
+      assign_colors
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.load_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      load_url
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.screenshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      screenshot
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.set_annotation_layer_color" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_annotation_layer_color
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.set_multicut_points" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_multicut_points
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.set_timestamp" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_timestamp
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.set_view_options" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_view_options
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../parser/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    parser
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../site_utils/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    site_utils
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Changelog
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+  <h1>easyviewer</h1>
+
+<div class="doc doc-object doc-module">
+
+
+
+
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Classes:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.base.EasyViewerBase" href="#src.nglui.easyviewer.ev_base.base.EasyViewerBase">EasyViewerBase</a></code></b>
+          –
+          <div class="doc-md-description">
+            
+          </div>
+        </li>
+    </ul>
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="src.nglui.easyviewer.ev_base.base.EasyViewerBase" class="doc doc-heading">
+              <code class="highlight language-python"><span class="n">EasyViewerBase</span><span class="p">()</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-external" title="abc.ABC" href="https://docs.python.org/3/library/abc.html#abc.ABC">ABC</a></code></p>
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.base.EasyViewerBase.add_image_layer" href="#src.nglui.easyviewer.ev_base.base.EasyViewerBase.add_image_layer">add_image_layer</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add segmentation layer to viewer instance.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.base.EasyViewerBase.add_multilayer_annotations" href="#src.nglui.easyviewer.ev_base.base.EasyViewerBase.add_multilayer_annotations">add_multilayer_annotations</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>layer_anno_dict is a layer_name to annotation list dict.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.base.EasyViewerBase.add_segmentation_layer" href="#src.nglui.easyviewer.ev_base.base.EasyViewerBase.add_segmentation_layer">add_segmentation_layer</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add segmentation layer to viewer instance.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.base.EasyViewerBase.assign_colors" href="#src.nglui.easyviewer.ev_base.base.EasyViewerBase.assign_colors">assign_colors</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Assign colors to root ids in a segmentation layer</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.base.EasyViewerBase.set_annotation_layer_color" href="#src.nglui.easyviewer.ev_base.base.EasyViewerBase.set_annotation_layer_color">set_annotation_layer_color</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Set the color for the annotation layer</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.base.EasyViewerBase.add_image_layer" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_image_layer</span><span class="p">(</span><span class="n">layer_name</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">contrast_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add segmentation layer to viewer instance.</p>
+<p>Attributes:
+    layer_name (str): name of layer to be displayed in neuroglancer ui.
+    source (str): source of neuroglancer image layer
+    contrast_range = (float, float): contrast range for image layer either in 0-1 (floats) or 0-255 (ints).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.base.EasyViewerBase.add_multilayer_annotations" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_multilayer_annotations</span><span class="p">(</span><span class="n">layer_anno_dict</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>layer_anno_dict is a layer_name to annotation list dict.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.base.EasyViewerBase.add_segmentation_layer" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_segmentation_layer</span><span class="p">(</span><span class="n">layer_name</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add segmentation layer to viewer instance.</p>
+<p>Attributes:
+    layer_name (str): name of layer to be displayed in neuroglancer ui.
+    source (str): source of neuroglancer segment layer</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.base.EasyViewerBase.assign_colors" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">assign_colors</span><span class="p">(</span><span class="n">layer_name</span><span class="p">,</span> <span class="n">seg_colors</span><span class="p">)</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Assign colors to root ids in a segmentation layer</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>layer_name</code></b>
+              (<code>(<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>)</code>)
+          –
+          <div class="doc-md-description">
+            <p>Segmentation layer name</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>seg_colors</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>dict with root ids as keys and colors as values.</p>
+          </div>
+        </li>
+    </ul>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.base.EasyViewerBase.set_annotation_layer_color" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">set_annotation_layer_color</span><span class="p">(</span><span class="n">layer_name</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Set the color for the annotation layer</p>
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-module">
+
+
+
+
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Classes:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline" href="#src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline">EasyViewerMainline</a></code></b>
+          –
+          <div class="doc-md-description">
+            
+          </div>
+        </li>
+    </ul>
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline" class="doc doc-heading">
+              <code class="highlight language-python"><span class="n">EasyViewerMainline</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="src.nglui.easyviewer.ev_base.mainline.UnservedViewer">UnservedViewer</span></code>, <code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.base.EasyViewerBase" href="#src.nglui.easyviewer.ev_base.base.EasyViewerBase">EasyViewerBase</a></code></p>
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.add_image_layer" href="#src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.add_image_layer">add_image_layer</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add segmentation layer to viewer instance.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.add_multilayer_annotations" href="#src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.add_multilayer_annotations">add_multilayer_annotations</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>layer_anno_dict is a layer_name to annotation list dict.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.add_segmentation_layer" href="#src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.add_segmentation_layer">add_segmentation_layer</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add segmentation layer to viewer instance.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.append_source_to_segmentation_layer" href="#src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.append_source_to_segmentation_layer">append_source_to_segmentation_layer</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Append source or sources to an existing segmentation layer.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.load_url" href="#src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.load_url">load_url</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Parse a neuroglancer state based on URL and load it into the state</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.set_annotation_layer_color" href="#src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.set_annotation_layer_color">set_annotation_layer_color</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Set the color for the annotation layer</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.add_image_layer" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_image_layer</span><span class="p">(</span><span class="n">layer_name</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">contrast_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add segmentation layer to viewer instance.</p>
+<p>Attributes:
+    layer_name (str): name of layer to be displayed in neuroglancer ui.
+    source (str): source of neuroglancer image layer
+    contrast_range = (float, float): contrast range for image layer either in 0-1 (floats) or 0-255 (ints).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.add_multilayer_annotations" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_multilayer_annotations</span><span class="p">(</span><span class="n">layer_anno_dict</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>layer_anno_dict is a layer_name to annotation list dict.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.add_segmentation_layer" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_segmentation_layer</span><span class="p">(</span><span class="n">layer_name</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add segmentation layer to viewer instance.</p>
+<p>Attributes:
+    layer_name (str): name of layer to be displayed in neuroglancer ui.
+    source (str): source of neuroglancer segment layer</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.append_source_to_segmentation_layer" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">append_source_to_segmentation_layer</span><span class="p">(</span><span class="n">layer_name</span><span class="p">,</span> <span class="n">source</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Append source or sources to an existing segmentation layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>layer_name</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Name of an existing layer</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>source</code></b>
+              (<code>str or list of str</code>)
+          –
+          <div class="doc-md-description">
+            <p>Source or sources to add to the layer. Can be segment properties or skeleton sources, for example.</p>
+          </div>
+        </li>
+    </ul>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.load_url" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">load_url</span><span class="p">(</span><span class="n">url</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Parse a neuroglancer state based on URL and load it into the state</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.mainline.EasyViewerMainline.set_annotation_layer_color" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">set_annotation_layer_color</span><span class="p">(</span><span class="n">layer_name</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Set the color for the annotation layer</p>
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-module">
+
+
+
+
+    <div class="doc doc-contents first">
+
+
+
+
+
+<p><span class="doc-section-title">Modules:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code><span title="src.nglui.easyviewer.ev_base.seunglab.neuroglancer">neuroglancer</span></code></b>
+          –
+          <div class="doc-md-description">
+            
+          </div>
+        </li>
+    </ul>
+
+
+
+
+<p><span class="doc-section-title">Classes:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab" href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab">EasyViewerSeunglab</a></code></b>
+          –
+          <div class="doc-md-description">
+            
+          </div>
+        </li>
+    </ul>
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab" class="doc doc-heading">
+              <code class="highlight language-python"><span class="n">EasyViewerSeunglab</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="src.nglui.easyviewer.ev_base.nglite.UnsynchronizedViewer">UnsynchronizedViewer</span></code>, <code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.base.EasyViewerBase" href="#src.nglui.easyviewer.ev_base.base.EasyViewerBase">EasyViewerBase</a></code></p>
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.add_image_layer" href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.add_image_layer">add_image_layer</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add segmentation layer to viewer instance.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.add_multilayer_annotations" href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.add_multilayer_annotations">add_multilayer_annotations</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>layer_anno_dict is a layer_name to annotation list dict.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.add_segmentation_layer" href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.add_segmentation_layer">add_segmentation_layer</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add segmentation layer to viewer instance.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.assign_colors" href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.assign_colors">assign_colors</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Assign colors to root ids in a segmentation layer</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.load_url" href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.load_url">load_url</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Parse a neuroglancer state based on URL and load it into the state</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.screenshot" href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.screenshot">screenshot</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Capture a screenshot synchronously.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.set_annotation_layer_color" href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.set_annotation_layer_color">set_annotation_layer_color</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Set the color for the annotation layer</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.set_multicut_points" href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.set_multicut_points">set_multicut_points</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Configures multicut points in the neuroglancer state. Note that points need to be in mesh units (e.g. nanometers), not voxels!</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.set_timestamp" href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.set_timestamp">set_timestamp</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Set timestamp of a segmentation layer</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.set_view_options" href="#src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.set_view_options">set_view_options</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Set options relating to the neuroglancer view state. Only changes the values of the parameters provided.</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.add_image_layer" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_image_layer</span><span class="p">(</span><span class="n">layer_name</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">contrast_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add segmentation layer to viewer instance.</p>
+<p>Attributes:
+    layer_name (str): name of layer to be displayed in neuroglancer ui.
+    source (str): source of neuroglancer image layer
+    contrast_range = (float, float): contrast range for image layer either in 0-1 (floats) or 0-255 (ints).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.add_multilayer_annotations" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_multilayer_annotations</span><span class="p">(</span><span class="n">layer_anno_dict</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>layer_anno_dict is a layer_name to annotation list dict.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.add_segmentation_layer" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_segmentation_layer</span><span class="p">(</span><span class="n">layer_name</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add segmentation layer to viewer instance.</p>
+<p>Attributes:
+    layer_name (str): name of layer to be displayed in neuroglancer ui.
+    source (str): source of neuroglancer segment layer</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.assign_colors" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">assign_colors</span><span class="p">(</span><span class="n">layer_name</span><span class="p">,</span> <span class="n">seg_colors</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Assign colors to root ids in a segmentation layer</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>layer_name</code></b>
+              (<code>(<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>)</code>)
+          –
+          <div class="doc-md-description">
+            <p>Segmentation layer name</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>seg_colors</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>dict with root ids as keys and colors as values.</p>
+          </div>
+        </li>
+    </ul>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.load_url" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">load_url</span><span class="p">(</span><span class="n">url</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Parse a neuroglancer state based on URL and load it into the state</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.screenshot" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">screenshot</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Capture a screenshot synchronously.</p>
+<p>:param size: Optional.  List of [width, height] specifying the dimension
+             in pixels of the canvas to use.  If specified, UI controls
+             are hidden and the canvas is resized to the specified
+             dimensions while the screenshot is captured.</p>
+<p>:returns: The screenshot.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.set_annotation_layer_color" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">set_annotation_layer_color</span><span class="p">(</span><span class="n">layer_name</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Set the color for the annotation layer</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.set_multicut_points" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">set_multicut_points</span><span class="p">(</span><span class="n">layer_name</span><span class="p">,</span> <span class="n">seg_id</span><span class="p">,</span> <span class="n">points_red</span><span class="p">,</span> <span class="n">points_blue</span><span class="p">,</span> <span class="n">supervoxels_red</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">supervoxels_blue</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">focus</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Configures multicut points in the neuroglancer state. Note that points need to be in mesh units (e.g. nanometers), not voxels!</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>layer_name</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Segmentation layer name</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>seg_id</code></b>
+              (<code><span title="np.uint64">uint64</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Segmentation id of the object in question</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>points_red</code></b>
+              (<code><span title="np.array">array</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Nx3 array of locations in voxel space for side 1 of the cut.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>points_blue</code></b>
+              (<code><span title="np.array">array</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Mx3 array of locations in voxel space for side 2 of the cut.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>supervoxels_red</code></b>
+              (<code><span title="np.array">array</span> or None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>N-length array of supervoxel ids associated with locations in points_red or None.
+If None, supervoxels lookup occurs based on the mesh. By default None</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>supervoxels_blue</code></b>
+              (<code><span title="np.array">array</span> or None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>M-length array of supervoxel ids associated with locations in points_blue or None.
+If None, supervoxels lookup occurs based on the mesh. By default None</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>focus</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+                  <code>True</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>If True, makes the layer and graph tool focused. By default True</p>
+          </div>
+        </li>
+    </ul>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.set_timestamp" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">set_timestamp</span><span class="p">(</span><span class="n">layer_name</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Set timestamp of a segmentation layer</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>layer_name</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Name of a segmentation layer</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>timestamp</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Timestamp in unix epoch time (e.g. <code>time.time.now()</code> in python), by default None</p>
+          </div>
+        </li>
+    </ul>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.easyviewer.ev_base.seunglab.EasyViewerSeunglab.set_view_options" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">set_view_options</span><span class="p">(</span><span class="n">show_slices</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_axis_lines</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_scale_bar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">orthographic</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">zoom_image</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">zoom_3d</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">background_color</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Set options relating to the neuroglancer view state. Only changes the values of the parameters provided.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>show_slices</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Show slice cutout in the 3d view, by default None</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>layout</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Change the layout type ('xy', 'yz', 'zx', '3d', 'xy-3d', 'yz-3d', 'zx-3d', or '4panel'), by default None</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>show_axis_lines</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Show the red/blue/green lines indicating the axis directions, by default None</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>show_scale_bar</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Controls showing of scale bar, by default None</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>orthographic</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Controls whether the 3d perspective view is orthographic or not, by default None</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>position</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Sets the location of center point of the view in Neuroglancer coordinates, by default None</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>zoom_image</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Sets the zoom factor for the imagery, by default None</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>zoom_3d</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Sets the zoom factor for the 3d view, by default None</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>background_color</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a> or <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>hex, rgb, or named color for the background of the 3d viewer, by default None</p>
+          </div>
+        </li>
+    </ul>
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.indexes", "navigation.instant", "navigation.prune", "navigation.tabs", "navigation.tabs.sticky", "toc.follow", "toc.integrate", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.83f73b43.min.js"></script>
+      
+    
+  </body>
+</html>
