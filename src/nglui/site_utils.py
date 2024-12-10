@@ -1,6 +1,7 @@
 import logging
 import os
 from typing import Literal, Optional
+from warnings import warn
 
 import attrs
 import caveclient
@@ -107,6 +108,7 @@ default_config = NGLUIConfig(
     target_url=DEFAULT_URL,
 )
 default_key = "default"
+
 NGL_CONFIG = {default_key: default_config}  # type: dict[str, NGLUIConfig]
 
 
@@ -251,6 +253,14 @@ def get_target_site(
         else:
             msg = f"No client provided to check target site from URL. Assuming default value of \"{get_default_config(config_key)['target_site']}\""
             logging.warning(msg)
+    if (
+        config_key == "default"
+        and get_default_config(config_key).get("target_site") == "seunglab"
+    ):
+        msg = """
+        You are using default settings for target_site. The default target_site will become "spelunker" in the next major version release.
+        """
+        warn(msg, DeprecationWarning)
     return get_default_config(config_key)["target_site"]
 
 

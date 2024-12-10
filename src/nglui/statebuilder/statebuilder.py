@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import warnings
 from typing import Literal, Optional
 
 from IPython.display import HTML
@@ -289,6 +290,13 @@ class ChainedStateBuilder:
         self._statebuilders = statebuilders
         if len(self._statebuilders) == 0:
             raise ValueError("Must have at least one statebuilder")
+        warnings.warn(
+            """
+            ChainedStateBuilder is being deprecated in favor of using `mapping_sets` in StateBuilder.
+            It will be removed from the next major version update.
+            """,
+            DeprecationWarning,
+        )
 
     def render_state(
         self,

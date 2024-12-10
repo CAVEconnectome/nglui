@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Literal, Optional, Union
 from warnings import warn
 
+import numpy as np
 import pandas as pd
 from caveclient import CAVEclient
 from caveclient.endpoints import fallback_ngl_endpoint
@@ -37,12 +38,11 @@ CONTRAST_CONFIG = {
     },
 }
 MAX_URL_LENGTH = 1_750_000
-DEFAULT_NGL = fallback_ngl_endpoint
 
 
 def sort_dataframe_by_root_id(
     df, root_id_column, ascending=False, num_column="n_times", drop=False
-):
+) -> pd.DataFrame:
     """Sort a dataframe so that rows belonging to the same root id are together, ordered by how many times the root id appears.
 
     Parameters
@@ -77,6 +77,34 @@ def sort_dataframe_by_root_id(
         ).drop(columns=[num_column])
     else:
         return df.sort_values(by=[num_column, root_id_column], ascending=ascending)
+
+
+def add_random_column(
+    df: pd.DataFrame,
+    col_prefix: str = "sample_",
+    n_cols: int = 1,
+) -> pd.DataFrame:
+    """Add a column of uniformly distributed random numbers to a dataframe.
+    This can be useful to use to subsample ids in a segment property efficiently.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame that will be passed into a column
+    n_cols : str, optional
+        Name of the numerical column to use, by default 'sample_'
+    num_column : int, optional
+        Number of distinct random columns, by default 1
+
+    Returns
+    -------
+    pd.DataFrame
+        Copy of the input dataframe with the random columns added
+    """
+    df = df.copy()
+    for ii in range(n_cols):
+        df[f"{col_prefix}{ii}"] = np.random.rand(len(df))
+    return df
 
 
 def make_line_statebuilder(
@@ -286,26 +314,26 @@ def make_pre_post_statebuilder(
 
     Returns
     -------
-    ChainedStateBuilder:
-        An instance of a ChainedStateBuilder configured to accept
-        a list  starting with None followed by optionally synapse input dataframe
-        followed by optionally synapse output dataframe.
+    StateBuilder:
+        An instance of a StateBuilder configured to accept a dictionary of (up to) three dataframes.
+            * "selected" : Should be a dataframe listing root ids to select in the segmentation layer under the column "root_id".
+            * "inputs" : A dataframe of synaptic inputs.
+            * "outputs" : A dataframe of synaptic outputs.
     """
 
     img_layer, seg_layer = from_client(client, contrast=contrast)
-    seg_layer.add_selection_map(selected_ids_column="root_id")
+    seg_layer.add_selection_map(selected_ids_column="root_id", mapping_set="selected")
 
     if view_kws is None:
         view_kws = {}
 
-    sb1 = StateBuilder(layers=[img_layer, seg_layer], client=client, view_kws=view_kws)
-    state_builders = [sb1]
+    layers = [img_layer, seg_layer]
     if show_inputs:
-        # First state builder
         input_point_mapper = PointMapper(
             point_column=point_column,
             linked_segmentation_column=pre_pt_root_id_col,
             split_positions=split_positions,
+            mapping_set="inputs",
         )
         inputs_lay = AnnotationLayerConfig(
             input_layer_name,
@@ -314,13 +342,13 @@ def make_pre_post_statebuilder(
             data_resolution=dataframe_resolution_post,
             color=input_layer_color,
         )
-        sb_in = StateBuilder([inputs_lay], client=client)
-        state_builders.append(sb_in)
+        layers.append(inputs_lay)
     if show_outputs:
         output_point_mapper = PointMapper(
             point_column=point_column,
             linked_segmentation_column=post_pt_root_id_col,
             split_positions=split_positions,
+            mapping_set="outputs",
         )
         outputs_lay = AnnotationLayerConfig(
             output_layer_name,
@@ -329,12 +357,13 @@ def make_pre_post_statebuilder(
             data_resolution=dataframe_resolution_pre,
             color=output_layer_color,
         )
-        sb_out = StateBuilder([outputs_lay], client=client)
-        state_builders.append(sb_out)
-    return ChainedStateBuilder(state_builders)
+        layers.append(outputs_lay)
+    return StateBuilder(layers, client=client, view_kws=view_kws)
 
 
-def make_state_url(df, sb, client, ngl_url=None, target_site=None):
+def make_state_url(
+    df, sb, client, ngl_url=None, target_site=None, config_key="default"
+):
     """Generate a url from a neuroglancer state via a state server.
 
     Parameters
@@ -357,12 +386,12 @@ def make_state_url(df, sb, client, ngl_url=None, target_site=None):
     str
         Url to the uploaded neuroglancer state.
     """
-    state = sb.render_state(df, return_as="dict", target_site=target_site)
+    state = sb.render_state(
+        df, return_as="dict", target_site=target_site, config_key=config_key
+    )
     state_id = client.state.upload_state_json(state)
     if ngl_url is None:
-        ngl_url = client.info.viewer_site()
-        if ngl_url is None:
-            ngl_url = DEFAULT_NGL
+        ngl_url = neuroglancer_url(ngl_url, target_site, config_key)
     url = client.state.build_neuroglancer_url(
         state_id, ngl_url=ngl_url, target_site=target_site
     )
@@ -377,6 +406,7 @@ def make_url_robust(
     ngl_url: str = None,
     max_url_length=MAX_URL_LENGTH,
     target_site=None,
+    config_key="default",
 ):
     """Generate a url from a neuroglancer state. If too long, return through state server,
     othewise return a url containing the data directly.
@@ -412,7 +442,11 @@ def make_url_robust(
 
     if shorten == "if_long":
         url = sb.render_state(
-            df, return_as="url", url_prefix=ngl_url, target_site=target_site
+            df,
+            return_as="url",
+            url_prefix=ngl_url,
+            target_site=target_site,
+            config_key=config_key,
         )
         if len(url) > max_url_length:
             url = make_state_url(
@@ -438,6 +472,7 @@ def package_state(
     ngl_url: str = None,
     link_text: str = "Neuroglancer Link",
     target_site: str = None,
+    config_key: str = "default",
 ):
     """Automate creating a state from a statebuilder and
     a dataframe, return it in the desired format, shortening if desired.
@@ -469,28 +504,38 @@ def package_state(
         Type of neuroglancer deployment to build link for, by default None.
         This value overrides automatic checking based on the provided url.
         Use `seunglab` for a Seung-lab branch and either `mainline` or `cave-explorer` for the Cave Explorer or main Google branch.
+    config_key : str, optional
+        Key for the configuration setting, by default "default
 
     Returns
     -------
     HTML, str or dict
         state in format specified by return_as
     """
-    if ngl_url is None:
-        ngl_url = client.info.viewer_site()
-        if ngl_url is None:
-            ngl_url = DEFAULT_NGL
-
-    if (return_as == "html") or (return_as == "url"):
+    if (return_as == "html") or (return_as == "url") or (return_as == "short"):
+        if return_as == "short":
+            return_as = "url"
+            shorten = "always"
         url = make_url_robust(
-            df, sb, client, shorten=shorten, ngl_url=ngl_url, target_site=target_site
+            df,
+            sb,
+            client,
+            shorten=shorten,
+            ngl_url=ngl_url,
+            target_site=target_site,
+            config_key=config_key,
         )
         if return_as == "html":
             return HTML(f'<a href="{url}">{link_text}</a>')
         else:
             return url
-    elif return_as == "json":
+    elif return_as == "json" or return_as == "dict":
         return sb.render_state(
-            df, return_as=return_as, ngl_url=ngl_url, target_site=target_site
+            df,
+            return_as="dict",
+            url_prefix=ngl_url,
+            target_site=target_site,
+            config_key=config_key,
         )
     else:
         raise (
@@ -501,22 +546,23 @@ def package_state(
 
 
 def make_synapse_neuroglancer_link(
-    synapse_df,
-    client,
-    return_as="html",
-    shorten="always",
-    contrast=None,
-    point_column="ctr_pt_position",
-    dataframe_resolution=None,
-    group_connections=True,
-    link_pre_and_post=True,
-    ngl_url=None,
-    view_kws=None,
-    pre_post_columns=None,
-    neuroglancer_link_text="Neuroglancer Link",
-    color=None,
-    split_positions=False,
-    target_site=None,
+    synapse_df: pd.DataFrame,
+    client: CAVEclient,
+    return_as: Literal["url", "viewer", "html", "json", "dict", "short"] = "html",
+    shorten: str = "always",
+    contrast: Optional[list] = None,
+    point_column: str = "ctr_pt_position",
+    dataframe_resolution: Optional[list] = None,
+    group_connections: bool = True,
+    link_pre_and_post: bool = True,
+    ngl_url: str = None,
+    view_kws: Optional[dict] = None,
+    pre_post_columns: list = None,
+    neuroglancer_link_text: str = "Neuroglancer Link",
+    color: Optional[list] = None,
+    split_positions: bool = False,
+    target_site: Optional[str] = None,
+    config_key: str = "default",
 ):
     """Generate a neuroglancer link from a synapse dataframe as returned from CAVEclient.materialize.synapse_query.
 
@@ -625,6 +671,7 @@ def make_synapse_neuroglancer_link(
         ngl_url,
         neuroglancer_link_text,
         target_site=target_site,
+        config_key=config_key,
     )
 
 
@@ -651,6 +698,7 @@ def make_neuron_neuroglancer_link(
     ngl_url=None,
     link_text="Neuroglancer Link",
     target_site=None,
+    config_key="default",
 ):
     """function to create a neuroglancer link view of a neuron, optionally including inputs and outputs
 
@@ -724,10 +772,13 @@ def make_neuron_neuroglancer_link(
     """
     if not isinstance(root_ids, Iterable):
         root_ids = [root_ids]
+
     df1 = pd.DataFrame({"root_id": root_ids})
-    dataframes = [df1]
+    dataframes = {"selected": df1}
+
     data_resolution_pre = None
     data_resolution_post = None
+
     if show_inputs:
         syn_in_df = client.materialize.synapse_query(
             post_ids=root_ids,
@@ -740,7 +791,7 @@ def make_neuron_neuroglancer_link(
             syn_in_df = sort_dataframe_by_root_id(
                 syn_in_df, pre_pt_root_id_col, ascending=sort_ascending, drop=True
             )
-        dataframes.append(syn_in_df)
+        dataframes["inputs"] = syn_in_df
     if show_outputs:
         syn_out_df = client.materialize.synapse_query(
             pre_ids=root_ids,
@@ -753,7 +804,7 @@ def make_neuron_neuroglancer_link(
             syn_out_df = sort_dataframe_by_root_id(
                 syn_out_df, post_pt_root_id_col, ascending=sort_ascending, drop=True
             )
-        dataframes.append(syn_out_df)
+        dataframes["outputs"] = syn_out_df
     sb = make_pre_post_statebuilder(
         client,
         show_inputs=show_inputs,
@@ -780,6 +831,7 @@ def make_neuron_neuroglancer_link(
         ngl_url,
         link_text,
         target_site=target_site,
+        config_key=config_key,
     )
 
 
@@ -855,6 +907,7 @@ def segment_property_link(
     client: CAVEclient,
     ngl_url: Optional[str] = None,
     return_as: Literal["html", "url", "viewer", "json", "dict", "short"] = "html",
+    config_key: str = "default",
 ):
     """Returns a basic link to a default neuroglancer state and segment properties.
 
@@ -887,6 +940,10 @@ def segment_property_link(
     ngl_url = neuroglancer_url(ngl_url, target_site="spelunker")
     seg.add_segment_propeties(seg_prop_url)
     sb = StateBuilder(
-        [img, seg], client=client, url_prefix=ngl_url, target_site="spelunker"
+        [img, seg],
+        client=client,
+        url_prefix=ngl_url,
+        target_site="spelunker",
+        config_key=config_key,
     )
     return sb.render_state(return_as=return_as)
