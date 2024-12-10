@@ -343,6 +343,8 @@ class SegmentationLayerConfig(LayerConfigBase):
         allow_disambiguation: Optional[bool] = True,
         label_separator: Optional[str] = "_",
         label_format_map: Optional[str] = None,
+        random_columns: Optional[int] = None,
+        random_column_prefix: str = "random_sample",
     ):
         segment_property_map = {
             "id_col": id_col,
@@ -356,6 +358,8 @@ class SegmentationLayerConfig(LayerConfigBase):
             "allow_disambiguation": allow_disambiguation,
             "label_separator": label_separator,
             "label_format_map": label_format_map,
+            "random_columns": random_columns,
+            "randoM_column_prefix": random_column_prefix,
         }
         if mapping_set:
             if not isinstance(self._segment_property_map, dict):
