@@ -387,7 +387,11 @@ def make_state_url(
         Url to the uploaded neuroglancer state.
     """
     state = sb.render_state(
-        df, return_as="dict", target_site=target_site, config_key=config_key
+        df,
+        return_as="dict",
+        url_prefix=ngl_url,
+        target_site=target_site,
+        config_key=config_key,
     )
     state_id = client.state.upload_state_json(state)
     if ngl_url is None:
@@ -402,7 +406,7 @@ def make_url_robust(
     df: pd.DataFrame,
     sb: StateBuilder,
     client: CAVEclient,
-    shorten: str = "if_long",
+    shorten: Literal["if_long", "always", "never"] = "if_long",
     ngl_url: str = None,
     max_url_length=MAX_URL_LENGTH,
     target_site=None,
@@ -433,6 +437,8 @@ def make_url_robust(
         Type of neuroglancer deployment to build link for, by default None.
         This value overrides automatic checking based on the provided url.
         Use `seunglab` for a Seung-lab branch and either `mainline` or `cave-explorer` for the Cave Explorer or main Google branch.
+    config_key : str
+        Which site config you want to use.
 
     Returns
     -------
@@ -512,7 +518,7 @@ def package_state(
     HTML, str or dict
         state in format specified by return_as
     """
-    if (return_as == "html") or (return_as == "url") or (return_as == "short"):
+    if return_as in ["html", "url", "short"]:
         if return_as == "short":
             return_as = "url"
             shorten = "always"
