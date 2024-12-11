@@ -390,6 +390,7 @@ def make_state_url(
         df,
         return_as="dict",
         url_prefix=ngl_url,
+        client=client,
         target_site=target_site,
         config_key=config_key,
     )
