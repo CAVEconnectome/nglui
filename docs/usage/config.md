@@ -18,7 +18,7 @@ You can see this via
 ```python
 from nglui import statebuilder
 
-statebuilder.site_config.get_default_config()
+statebuilder.site_utils.get_default_config()
 ```
 
 This will return a dictionary with a number of variables:
