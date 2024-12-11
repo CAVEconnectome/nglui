@@ -2,6 +2,17 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.7.0] - 2024-12-10
+
+### Added
+
+- **StateBuilder** and **SegmentProps**: A new parameter for segment properties will create columns with a random number for you in a segment property, useful for sampling large lists of ids in neuroglancer.
+- **StateBuilder**: Made it so that `site_utils` configuration can be accessed from `statebuilder.site_utils` instead of needing a separate import.
+
+### Fixed
+
+- **StateBuilder**: Updated helpers to be compatible with new site_utils functionality.
+
 ## [3.6.2] - 2024-11-22
 
 ### Fixed
