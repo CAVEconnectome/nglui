@@ -473,6 +473,8 @@ class SegmentProperties:
             else:
                 random_column_names = [random_column_prefix]
             for col in random_column_names:
+                if col in df.columns:
+                    raise ValueError(f"Column {col} already exists in dataframe")
                 df[col] = np.random.rand(len(df))
             if number_cols is None:
                 number_cols = []

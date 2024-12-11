@@ -4,21 +4,21 @@ title: Site Configuration
 
 !!!abstract
 
-    TLDR: Use `site_config` to set default configurations for your `StateBuilder` objects.
-    After your imports, the recommended default code is: `site_config.set_default_config(target_site='spelunker')`
+    TLDR: Use `site_utils` to set default configurations for your `StateBuilder` objects.
+    After your imports, the recommended default code is: `site_utils.set_default_config(target_site='spelunker')`
 
-## Using `site_config` to configure your StateBuilder
+## Using `site_utils` to configure your StateBuilder
 
-The `site_config` module is intended to access and change the baseline configuration of StateBuilder sites.
+The `site_utils` submodule of `statebuilder` is intended to access and change the baseline configuration of StateBuilder sites.
 This will let you configure a target site, url, and caveclient to use as defaults throughout your analysis without further specification.
 
 The first thing to note is the options within the default configuration.
 You can see this via
 
 ```python
-from nglui import site_config, statebuilder
+from nglui import statebuilder
 
-site_config.get_default_config()
+statebuilder.site_config.get_default_config()
 ```
 
 This will return a dictionary with a number of variables:
@@ -58,7 +58,7 @@ the result will be a `url` that is based on the value in `target_url` and is con
 You can change any of these values through the `set_default_config` method. For example, to change the target site to `spelunker`, you can use
 
 ```python
-site_config.set_default_config(target_site='spelunker')
+statebuilder.site_utils.set_default_config(target_site='spelunker')
 ```
 
 If you run this and then check the default config again, you will see that the `target_site` has changed to `spelunker` and the `target_url` has changed to `https://spelunker.cave-explorer.org/` the value that was shown in `mainline_fallback_url`.
@@ -69,7 +69,7 @@ You can also set a `caveclient` object here directly or via a `datastack_name`.
 For example, to set the default datastack to `minnie65_public` (the public MICrONs dataset), you can use
 
 ```python
-site_utils.set_default_config(datastack=CAVEclient('minnie65_public'))
+statebuilder.site_utils.set_default_config(datastack_name='minnie65_public')
 ```
 
 This is particularly useful when working with `spelunker` datasets in particular, as they require a resolution to be specified to work properly and the CAVEclient object can provide this value.
@@ -79,7 +79,7 @@ You may see a warning if you do not include a caveclient object, but the code wi
 If the resulting state does not work, you may need to specify the version of Neuroglancer you are using or add a caveclient.
 
 
-## Why these different types of Neuroglancer?
+## Why are there different types of Neuroglancer?
 
 Neuroglancer is a webapp for viewing large scale 3d image datasets that has been developed over many years.
 At one point, there was a major fork by the lab of Sebastian Seung to allow proofreading of connectomics data, which led to the development of the `seunglab` version of Neuroglancer.
@@ -101,5 +101,5 @@ If you are not sure, you should use the `spelunker` version. This will give you 
 The simplest way to do this is to set the default configuration to `spelunker` as shown above:
 
 ```python
-site_config.set_default_config(target_site='spelunker')
+statebuilder.site_utils.set_default_config(target_site='spelunker')
 ```
