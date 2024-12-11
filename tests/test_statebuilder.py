@@ -13,6 +13,7 @@ from nglui.statebuilder import (
     SphereMapper,
     SplitPointMapper,
     StateBuilder,
+    site_utils,
 )
 
 
@@ -227,6 +228,7 @@ def test_annotation_tags(soma_df, target_site):
 
 @pytest.mark.parametrize("target_site", [None, "seunglab", "cave-explorer"])
 def test_annotation_groups(pre_syn_df, target_site):
+    site_utils.reset_config()
     df = pre_syn_df.copy()
     df["group"] = [1, 1, np.nan, 2.0, 2.0]
     points = PointMapper("ctr_pt_position", group_column="group")

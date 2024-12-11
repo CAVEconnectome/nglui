@@ -13,6 +13,19 @@ def client_simple():
     return CAVEclientMock(json_service=True)
 
 
+@pytest.fixture(scope="session")
+def client_full():
+    client = CAVEclientMock(
+        chunkedgraph=True,
+        materialization=True,
+        json_service=True,
+        available_materialization_versions=[1],
+        set_version=1,
+    )
+    print(client.materialize.version)
+    return client
+
+
 @pytest.fixture(scope="function")
 def viewer_seunglab():
     return EasyViewer(target_site="seunglab")

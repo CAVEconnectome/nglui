@@ -94,6 +94,28 @@ Any tag without a description will be passed through directly.
 If you look at the JSON output above, you see that the `soma_depth` property has a field "data_type" that specifies the type of the numerical property, in this case `int32`.
 Data type values are inferred from the column dtype and safe conversions are validated.
 
+### Random number columns
+
+Often, segment properties are used for very large lists of root ids.
+If you want to sample just a few percent of these in Neuroglancer, it can be hard to get a small number of random ids without a lot of clicking.
+Adding a numerical property that is just a random number between 0 and 1 will give you a way to load small subsets of the data using the filter tools.
+You can add random columns when building a SegmentProperty object from a dataframe by setting the `random_columns` argument with the number of extra columns you want to add.
+For example, to add a single random column:
+
+```python
+seg_prop = SegmentProperties.from_dataframe(
+    df,
+    id_col='segment_id',
+    number_cols='soma_depth',
+    random_columns=1,
+)
+```
+
+Will add one random column as a numerical property with the default name `random_sample`.
+Using numbers higher than 1 will add multiple random columns with names `random_sample_0`, `random_sample_1`, etc.
+The name of the random column can be changed with the `random_column_prefix` argument.
+Note that a value error will be raised if you try to add a random column with a name that already exists in the dataframe.
+
 ### Building segment properties manually
 
 It is also possible to build segment properties manually with the `SegmentProperties` class.

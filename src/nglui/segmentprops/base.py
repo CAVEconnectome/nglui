@@ -414,6 +414,8 @@ class SegmentProperties:
         label_separator: str = "_",
         label_format_map: Optional[str] = None,
         prepend_col_name: bool = False,
+        random_columns: Optional[int] = None,
+        random_column_prefix: str = "random_sample",
     ):
         """Generate a segment property object from a pandas dataframe based on column
 
@@ -461,6 +463,25 @@ class SegmentProperties:
         SegmentProperties
             Segment properties object
         """
+        if random_columns:
+            df = df.copy()
+            random_column_names = []
+            if random_columns > 1:
+                random_column_names = [
+                    f"{random_column_prefix}_{i}" for i in range(random_columns)
+                ]
+            else:
+                random_column_names = [random_column_prefix]
+            for col in random_column_names:
+                if col in df.columns:
+                    raise ValueError(f"Column {col} already exists in dataframe")
+                df[col] = np.random.rand(len(df))
+            if number_cols is None:
+                number_cols = []
+            elif isinstance(number_cols, str):
+                number_cols = [number_cols]
+            number_cols = number_cols + random_column_names
+
         ids = df[id_col].tolist()
         properties = {}
         if label_col or label_format_map:

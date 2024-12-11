@@ -256,3 +256,23 @@ def test_multicolumn_label(test_df):
         p_dict_fmt["inline"]["properties"][0]["values"][1]
         == p_dict["inline"]["properties"][0]["values"][1]
     )
+
+
+def test_random_sampler(test_df):
+    props = SegmentProperties.from_dataframe(
+        test_df,
+        id_col="seg_id",
+        label_col=["seg_id", "cell_type", "category"],
+        random_columns=1,
+        random_column_prefix="random_sample_test",
+    )
+    assert "random_sample_test" in props.to_dataframe().columns
+
+    props = SegmentProperties.from_dataframe(
+        test_df,
+        id_col="seg_id",
+        label_col=["seg_id", "cell_type", "category"],
+        random_columns=3,
+        random_column_prefix="random_sample_test",
+    )
+    assert "random_sample_test_2" in props.to_dataframe().columns
