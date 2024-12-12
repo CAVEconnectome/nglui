@@ -2,6 +2,12 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.7.1] - 2024-12-11
+
+### Fixed
+
+- **StateBuilder**:  Fixed a bug where the use of "helpers.make_state_url" (which includes most of the helpers) was not using information about urls to infer target sites.
+
 ## [3.7.0] - 2024-12-10
 
 ### Added
