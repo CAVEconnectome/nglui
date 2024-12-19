@@ -366,7 +366,7 @@ def _generic_annotations(
             tag_list = [anno.get("tagIds", []) for anno in annos]
         else:
             tag_list = [
-                [ii for ii, val in enumerate(anno["props"]) if val == 1]
+                [ii for ii, val in enumerate(anno.get("props", [])) if val == 1]
                 for anno in annos
             ]
         out.append(tag_list)
