@@ -2,6 +2,12 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.7.2] - 2024-12-18
+
+### Fixed
+
+- **Parser**: Fixed a bug in annotation parsing if some layers have tags and some do not.
+
 ## [3.7.1] - 2024-12-11
 
 ### Fixed
