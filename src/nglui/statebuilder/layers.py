@@ -199,7 +199,6 @@ class SegmentationLayerConfig(LayerConfigBase):
     fixed_id_colors : list-like, optional.
         List of colors for fixed ids. Should be the same length as fixed_ids, although null entries can be padded with None values.
     color_column : str, optional.
-        # at the begining.
         Column to use for color values for selected objects. Values should be RGB hex strings with a
     active : bool, optional.
         If True, makes the layer selected. Default is False.
