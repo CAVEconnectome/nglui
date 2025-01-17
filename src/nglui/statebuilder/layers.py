@@ -358,7 +358,7 @@ class SegmentationLayerConfig(LayerConfigBase):
             "label_separator": label_separator,
             "label_format_map": label_format_map,
             "random_columns": random_columns,
-            "randoM_column_prefix": random_column_prefix,
+            "random_column_prefix": random_column_prefix,
         }
         if mapping_set:
             if not isinstance(self._segment_property_map, dict):
