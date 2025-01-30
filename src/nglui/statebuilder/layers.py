@@ -244,6 +244,7 @@ class SegmentationLayerConfig(LayerConfigBase):
         segment_properties=None,
         skeleton_source=None,
         skeleton_shader=None,
+        selectable=True,
     ):
         if name is None:
             name = DEFAULT_SEG_LAYER
@@ -255,6 +256,7 @@ class SegmentationLayerConfig(LayerConfigBase):
         self._config["segment_properties"] = segment_properties
         self._config["skeleton_source"] = skeleton_source
         self._config["skeleton_shader"] = skeleton_shader
+        self._config["selectable"] = selectable
 
         if selected_ids_column is not None or fixed_ids is not None:
             self._selection_map = SelectionMapper(
@@ -475,7 +477,11 @@ class SegmentationLayerConfig(LayerConfigBase):
         )
 
     def _add_layer(self, viewer):
-        viewer.add_segmentation_layer(self.name, self.source)
+        viewer.add_segmentation_layer(
+            self.name,
+            self.source,
+            pick=self._config.get("selectable", True),
+        )
         if self.skeleton_source is not None:
             viewer.add_skeleton_source(
                 self.name, self.skeleton_source, self.skeleton_shader
