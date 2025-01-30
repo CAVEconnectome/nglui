@@ -756,7 +756,7 @@ class SphereMapper(AnnotationMapperBase):
 
         scaler = _data_scaler(data_resolution, viewer_resolution)
         pts = np.vstack(data[col_ctr][relinds]) * scaler
-        rs = data[col_rad][relinds].values / viewer_resolution[0]
+        rs = data[col_rad][relinds].values * scaler[0][0]
 
         if viewer_resolution:
             z_multiplier = viewer_resolution[1] / viewer_resolution[2]
