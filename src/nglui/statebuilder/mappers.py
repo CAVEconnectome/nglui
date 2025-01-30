@@ -148,11 +148,12 @@ class SelectionMapper:
             for ii, oid in enumerate(self.fixed_ids):
                 colors[oid] = self.fixed_id_colors[ii]
 
-        if self.color_column is not None:
-            clist = data[self.color_column].to_list()
-            for col in self.data_columns:
-                for ii, oid in enumerate(data[col]):
-                    colors[oid] = clist[ii]
+        if data is not None:
+            if self.color_column is not None:
+                clist = data[self.color_column].to_list()
+                for col in self.data_columns:
+                    for ii, oid in enumerate(data[col]):
+                        colors[oid] = clist[ii]
 
         return colors
 
