@@ -2,6 +2,17 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.8.0] - 2025-01-29
+
+### Added
+
+- **StateBuilder** Segmentation layers can be set to be non-interactive by default using the `selectable` parameter in `SegmentationLayerConfig`. Only works for `spelunker` branch.
+
+### Fixed
+
+- **StateBuilder** Adjusted sphere radius scaling to be correct.
+
+
 ## [3.7.2] - 2024-12-18
 
 ### Fixed
