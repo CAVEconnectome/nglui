@@ -34,6 +34,8 @@ class EasyViewerSeunglab(neuroglancer.UnsynchronizedViewer, EasyViewerBase):
         )
 
     def _SegmentationLayer(self, source, **kwargs):
+        if "pick" in kwargs:
+            kwargs.pop("pick")
         if re.search(r"^graphene://", source) is not None:
             source = utils.parse_graphene_header(source, SEUNGLAB_NAME)
             return neuroglancer.ChunkedgraphSegmentationLayer(source=source, **kwargs)
