@@ -2,4 +2,4 @@ from nglui.easyviewer import EasyViewer
 
 from . import parser, segmentprops, site_utils, statebuilder
 
-__version__ = "3.7.2"
+__version__ = "3.8.0"
