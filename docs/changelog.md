@@ -2,6 +2,12 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.8.1] - 2025-01-30
+
+### Fixed
+
+- **StateBuilder** SegmentationLayerConfig with a color column will ignore `None` values for data.
+
 ## [3.8.0] - 2025-01-29
 
 ### Added

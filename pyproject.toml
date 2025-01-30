@@ -77,7 +77,7 @@ commit = true
 message = "v{new_version}"
 commit_args = ""
 pre_commit_hooks = ['uv sync', 'git add uv.lock']
-post_commit_hooks = [".bmv-post-commit.sh"]
+post_commit_hooks = ["./.bmv-post-commit.sh"]
 
 [[tool.bumpversion.files]]
 filename = "src/nglui/__init__.py"
