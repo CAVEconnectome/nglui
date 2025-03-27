@@ -2,6 +2,12 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [3.8.2] - 2025-03-27
+
+### Fixed
+
+- **Parser** Fix issues with dimensions in the parser.
+
 ## [3.8.1] - 2025-01-30
 
 ### Fixed
