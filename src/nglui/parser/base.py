@@ -689,7 +689,7 @@ def _parse_layer_dataframe(
     tags = []
     group_ids = []
     descs = []
-    if point_resolution:
+    if point_resolution is not None:
         data_resolution = np.array(_data_resolution(state, layer=ln))
         scaling = data_resolution / np.array(point_resolution)
     else:
