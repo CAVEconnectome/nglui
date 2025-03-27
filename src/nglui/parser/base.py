@@ -986,7 +986,7 @@ class StateParser:
             expand_tags=expand_tags,
             point_resolution=point_resolution,
             split_points=split_points,
-            include_archived=True,
+            include_archived=include_archived,
         )
 
     def layer_dataframe(self, include_archived: bool = True) -> pd.DataFrame:
