@@ -691,7 +691,7 @@ def _parse_layer_dataframe(
     descs = []
     if point_resolution:
         data_resolution = np.array(_data_resolution(state, layer=ln))
-        scaling = np.array(point_resolution) / data_resolution
+        scaling = data_resolution / np.array(point_resolution)
     else:
         scaling = np.array([1, 1, 1])
     p_pt, p_desc, p_seg, p_tag, p_grp = point_annotations(
