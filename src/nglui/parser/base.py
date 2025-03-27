@@ -4,6 +4,7 @@ from typing import Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 from box import Box
+from neuroglancer.coordinate_space import parse_unit
 
 from ..easyviewer.ev_base.base import SEGMENTATION_LAYER_TYPES
 
@@ -20,9 +21,10 @@ def _data_resolution(state, layer=None) -> Tuple[float, float, float]:
             raise ValueError("Layer must be specified for spelunker state")
         l = get_layer(state, layer)
         dims = l["source"]["transform"]["outputDimensions"]
-        dim_x = dims["x"][0] * 10**9
-        dim_y = dims["y"][0] * 10**9
-        dim_z = dims["z"][0] * 10**9
+        # parse_unit returns in meters always
+        dim_x = parse_unit(*dims["x"])[0] * 10**9
+        dim_y = parse_unit(*dims["y"])[0] * 10**9
+        dim_z = parse_unit(*dims["z"])[0] * 10**9
         return (dim_x, dim_y, dim_z)
     else:
         dims = state["navigation"]["pose"]["position"]["voxelSize"]
