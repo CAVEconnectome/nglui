@@ -4,6 +4,7 @@ from typing import Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 from box import Box
+from neuroglancer.coordinate_space import parse_unit
 
 from ..easyviewer.ev_base.base import SEGMENTATION_LAYER_TYPES
 
@@ -20,9 +21,10 @@ def _data_resolution(state, layer=None) -> Tuple[float, float, float]:
             raise ValueError("Layer must be specified for spelunker state")
         l = get_layer(state, layer)
         dims = l["source"]["transform"]["outputDimensions"]
-        dim_x = dims["x"][0] * 10**9
-        dim_y = dims["y"][0] * 10**9
-        dim_z = dims["z"][0] * 10**9
+        # parse_unit returns in meters always
+        dim_x = parse_unit(*dims["x"])[0] * 10**9
+        dim_y = parse_unit(*dims["y"])[0] * 10**9
+        dim_z = parse_unit(*dims["z"])[0] * 10**9
         return (dim_x, dim_y, dim_z)
     else:
         dims = state["navigation"]["pose"]["position"]["voxelSize"]
@@ -689,9 +691,9 @@ def _parse_layer_dataframe(
     tags = []
     group_ids = []
     descs = []
-    if point_resolution:
+    if point_resolution is not None:
         data_resolution = np.array(_data_resolution(state, layer=ln))
-        scaling = np.array(point_resolution) / data_resolution
+        scaling = data_resolution / np.array(point_resolution)
     else:
         scaling = np.array([1, 1, 1])
     p_pt, p_desc, p_seg, p_tag, p_grp = point_annotations(
@@ -986,7 +988,7 @@ class StateParser:
             expand_tags=expand_tags,
             point_resolution=point_resolution,
             split_points=split_points,
-            include_archived=True,
+            include_archived=include_archived,
         )
 
     def layer_dataframe(self, include_archived: bool = True) -> pd.DataFrame:
