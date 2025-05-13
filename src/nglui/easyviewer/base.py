@@ -1,5 +1,5 @@
 import json
-from typing import Self
+from typing import Literal, Optional, Self, Union
 
 import neuroglancer
 import numpy as np
@@ -32,7 +32,7 @@ class ViewerState:
         selected_layer: Optional[str] = None,
         selected_layer_visible: bool = False,
         layout: Literal[
-            "xy", "yz", "xz", "xy-3d", "xz-3d", "yz-3d", "4panel", "3d", "4panel-alt"  # noqa: F722
+            "xy", "yz", "xz", "xy-3d", "xz-3d", "yz-3d", "4panel", "3d", "4panel-alt"
         ] = "xy-3d",
         base_state: Optional[dict] = None,
         interactive: bool = False,
