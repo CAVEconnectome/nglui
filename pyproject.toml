@@ -12,13 +12,13 @@ dependencies = [
     "attrs>=24.2.0",
     "caveclient>=7.0.0",
     "ipython>=8.18.1",
-    "neuroglancer>=2.40.1",
-    "numpy>=1.26.4",
+     "numpy>=1.26.4",
     "pandas>=2.2.3",
     "python-box>=7.2.0",
     "requests>=2.32.3",
     "six>=1.16.0",
     "webcolors>=24.11.1",
+    "neuroglancer==2.40.1",
 ]
 authors = [
     { name = "Casey Schneider-Mizell", email = "caseysm@gmail.com" },
