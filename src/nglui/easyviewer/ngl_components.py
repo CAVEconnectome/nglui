@@ -12,148 +12,9 @@ from neuroglancer.coordinate_space import CoordinateArray, CoordinateSpace, pars
 from neuroglancer.random_token import make_random_token
 
 from ..segmentprops import SegmentProperties
-from .utils import parse_color
-
-
-@define
-class AnnotationProperty:
-    id: str = None
-    type: str = field(default="uint8")
-    tag: str = None
-
-    def to_neuroglancer(self) -> dict:
-        return asdict(self)
-
-
-@define
-class AnnotationTag:
-    id: int
-    tag: str
-
-    def to_neuroglancer(self, tag_base_number) -> dict:
-        return AnnotationProperty(
-            id=f"tag{self.id + tag_base_number}",
-            tag=self.tag,
-        ).to_neuroglancer()
-
-
-@define
-class TagTool:
-    tag_num = field(type=int)
-
-    def initialize_neuroglancer(self) -> None:
-        @viewer_state.export_tool
-        class TagTool(viewer_state.Tool):
-            __slots__ = ()
-            TOOL_TYPE = f"tagTool_tag{self.tag_num}"
-
-
-def TagToolFactory(number_tags: int):
-    for ii in range(number_tags):
-        TagTool(ii).initialize_neuroglancer()
-
-
-@define
-class SegmentationViewOptions:
-    alpha_selected = field(
-        default=0.1,
-        type=float,
-    )
-    alpha_unselected = field(
-        default=0,
-        type=float,
-    )
-    alpha_3d = field(default=0.9, type=float)
-    silhouette = field(default=0, type=float)
-
-    def apply_to_layer(
-        self,
-        layer: viewer_state.Layer,
-    ):
-        layer.alpha_selected = self.alpha_selected
-        layer.alpha_unselected = self.alpha_unselected
-        layer.alpha_3d = self.alpha_3d
-        layer.silhouette = self.silhouette
-
-
-@define
-class _AnnotationBase:
-    id = field(default=None, type=str, kw_only=True)
-    description = field(default=None, type=str, kw_only=True)
-    linked_segmentation = field(default=None, type=list[int], kw_only=True)
-    annotation_properties = field(default=None, type=list, kw_only=True)
-
-    def __attrs_post_init__(self):
-        if self.id is not None:
-            self.id = make_random_token()
-        self.linked_segmentation = [int(seg) for seg in self.linked_segmentation]
-
-
-@define
-class PointAnnotation(_AnnotationBase):
-    point = field(type=list)
-
-    def __attrs_post_init__(self):
-        self.point = list(self.point)
-
-    def to_neuroglancer(self) -> dict:
-        return viewer_state.PointAnnotation(**asdict(self))
-
-
-@define
-class LineAnnotation(_AnnotationBase):
-    pointA = field(type=list)
-    pointB = field(type=list)
-
-    def __attrs_post_init__(self):
-        self.pointA = list(self.pointA)
-        self.pointB = list(self.pointB)
-        super().__attrs_post_init__()
-
-    def to_neuroglancer(self) -> dict:
-        return viewer_state.LineAnnotation(**asdict(self))
-
-
-@define
-class EllipsoidAnnotation:
-    center = field(type=list)
-    radii = field(type=list)
-
-    def __attrs_post_init__(self):
-        self.center = list(self.center)
-        self.radii = list(self.radii)
-        super().__attrs_post_init__()
-
-    def to_neuroglancer(self) -> dict:
-        return viewer_state.EllipsoidAnnotation(**asdict(self))
-
-
-@define
-class SphereAnnotation(_AnnotationBase):
-    center = field(type=list)
-    radius = field(default=None, type=float)
-
-    def __attrs_post_init__(self):
-        self.center = list(self.center)
-        self.radii = [self.radius] * len(self.center)
-        super().__attrs_post_init__()
-
-    def to_neuroglancer(self) -> dict:
-        return viewer_state.EllipsoidAnnotation(**asdict(self))
-
-
-@define
-class BoundingBoxAnnotation(_AnnotationBase):
-    pointA = field(type=list)
-    pointB = field(type=list)
-
-    def __attrs_post_init__(self):
-        self.min = list(self.min)
-        self.max = list(self.max)
-        super().__attrs_post_init__()
-
-    def to_neuroglancer(self) -> dict:
-        return viewer_state.AxisAlignedBoundingBoxAnnotation(**asdict(self))
+from .ngl_annotations import *
+from .shaders import DEFAULT_SHADER_MAP
+from .utils import is_dict_like, is_list_like, parse_color
 
 
 @define
@@ -229,7 +90,7 @@ class _Layer:
 
     def add_source(
         self,
-        source: Union[str, Source],
+        source: Union[str, list, Source],
         resolution: Optional[list] = None,
     ) -> Self:
         """Add a source to the layer.
@@ -242,12 +103,22 @@ class _Layer:
             The resolution of the source. Default is None.
 
         """
+        if self.source is None:
+            self.source = []
         if isinstance(self.source, Source) or isinstance(self.source, str):
             self.source = [self.source]
         if isinstance(source, str):
             self.source.append(Source(url=source, resolution=resolution))
         elif isinstance(source, Source):
             self.source.append(source)
+        elif is_list_like(source):
+            for src in source:
+                if isinstance(src, str):
+                    self.source.append(Source(url=src, resolution=resolution))
+                elif isinstance(src, Source):
+                    self.source.append(src)
+                else:
+                    raise ValueError("Invalid source type. Must be str or Source.")
         else:
             raise ValueError("Invalid source type. Must be str or Source.")
         return self
@@ -263,7 +134,7 @@ class _Layer:
         ----------
         with_name : bool, optional
             Whether to include the name, visibility, and archived states of the layer in the dictionary, by default True.
-            These are not typically included until the layer is part of a state.
+            These are not typically included until the layer is part of a state, but adding them in allows the resulting data to be passed to a viewer state string.
 
         Returns
         -------
@@ -301,13 +172,13 @@ class _Layer:
 
 
 def _handle_source(source, resolution=None):
-    "Convert a multi-url source to a Source object."
+    "Convert one or more sources to a Source object."
 
     if isinstance(source, str):
         return Source(url=source, resolution=resolution)
     elif isinstance(source, Source):
         return source
-    elif isinstance(source, list):
+    elif is_list_like(source):
         return [_handle_source(src, resolution) for src in source]
     else:
         raise ValueError("Invalid source type. Must be str or Source.")
@@ -319,7 +190,7 @@ def _handle_annotations(annos):
         return []
     elif len(annos) == 0:
         return []
-    elif issubclass(annos[0], _AnnotationBase):
+    elif issubclass(annos[0], AnnotationBase):
         return [anno.to_neuroglancer() for anno in annos]
     else:
         return annos
@@ -337,7 +208,12 @@ def source_to_neuroglancer(source, resolution=None):
 
 def segments_to_neuroglancer(segments):
     "Convert a flat or mixed-visibility segment list to Neuroglancer."
-    if isinstance(segments, list) or isinstance(segments, dict):
+    if segments is None:
+        return viewer_state.StarredSegments()
+    if is_list_like(segments) or is_dict_like(segments):
+        # Annoying processing to avoid np.True_/np.False_ types
+        if is_dict_like(segments):
+            segments = {k: bool(v) for k, v in segments.items()}
         return viewer_state.StarredSegments(segments)
     else:
         return segments
@@ -370,6 +246,7 @@ class ImageLayer(_Layer):
     def to_neuroglancer(self, viewer: Viewer) -> viewer_state.ImageLayer:
         "Can be a viewer or a viewer.txn()-context state"
         self._to_neuroglancer(viewer)
+        return self
 
     def from_client(
         self,
@@ -440,6 +317,7 @@ class SegmentationLayer(_Layer):
     def to_neuroglancer(self, viewer) -> viewer_state.SegmentationLayer:
         "Can be a viewer or a viewer.txn()-context state"
         self._to_neuroglancer(viewer)
+        return self
 
     def from_client(
         self,
@@ -477,7 +355,7 @@ class SegmentationLayer(_Layer):
         segments: Union[list, dict, viewer_state.VisibleSegments],
         visible: Optional[list] = None,
     ) -> Self:
-        """Add segments to the layer.
+        """Add segment ids to the layer.
 
         Parameters
         ----------
@@ -490,11 +368,13 @@ class SegmentationLayer(_Layer):
         Returns
         -------
         SegmentationLayer
-            The SegmentationLayer object with the added segments.
+            The SegmentationLayer object.
         """
         old_segments = dict(segments_to_neuroglancer(self.segments))
         if visible is not None:
             segments = {s: v for s, v in zip(segments, visible)}
+        elif not is_dict_like(segments):
+            segments = {s: True for s in segments}
         new_segments = dict(segments_to_neuroglancer(segments))
         self.segments = old_segments | new_segments
         return self
@@ -517,7 +397,8 @@ class SegmentationLayer(_Layer):
         """
         if self.segment_colors is None:
             self.segment_colors = {}
-        self.segment_colors.update(segment_colors)
+        parsed_colors = {k: parse_color(v) for k, v in segment_colors.items()}
+        self.segment_colors.update(parsed_colors)
         return self
 
     def segments_from_dataframe(
@@ -549,15 +430,14 @@ class SegmentationLayer(_Layer):
         if visible_column is not None:
             segments = {s: v for s, v in zip(segments, df[visible_column].values)}
         if color_column is not None:
-            segment_color_map = {
-                s: parse_color(c) for s, c in zip(segments, df[color_column].values)
-            }
+            self.add_segment_colors(
+                {s: parse_color(c) for s, c in zip(segments, df[color_column].values)}
+            )
+
         self.add_segments(segments)
-        if color_column is not None:
-            self.add_segment_colors(segment_color_map)
         return self
 
-    def add_segment_properties(
+    def segment_properties(
         self,
         df: pd.DataFrame,
         client: "caveclient.CAVEclient",
@@ -642,6 +522,58 @@ class SegmentationLayer(_Layer):
         self.add_source(prop_url)
         return self
 
+    def set_view_options(
+        self,
+        selected_alpha: Optional[float] = None,
+        not_selected_alpha: Optional[float] = None,
+        alpha_3d: Optional[float] = None,
+        mesh_silhouette: Optional[float] = None,
+    ) -> Self:
+        """Set the view options for the layer.
+
+        Parameters
+        ----------
+        selected_alpha : float, optional
+            The alpha value for selected segments. Default is 0.2.
+        not_selected_alpha : float, optional
+            The alpha value for not selected segments. Default is 0.0.
+        alpha_3d : float, optional
+            The alpha value for 3D segments. Default is 0.9.
+        mesh_silhouette : float, optional
+            The silhouette value for the mesh. Default is 0.0.
+
+        Returns
+        -------
+        SegmentationLayer
+            A SegmentationLayer object with updated view options.
+
+        """
+        if selected_alpha:
+            self.selected_alpha = selected_alpha
+        if not_selected_alpha:
+            self.not_selected_alpha = not_selected_alpha
+        if alpha_3d:
+            self.alpha_3d = alpha_3d
+        if mesh_silhouette:
+            self.mesh_silhouette = mesh_silhouette
+        return self
+
+    def add_shader(self, shader: str) -> Self:
+        """Add a shader to the layer.
+
+        Parameters
+        ----------
+        shader : str
+            The shader to add.
+
+        """
+        self.shader = shader
+        return self
+
+    def add_default_skeleton_shader(self) -> Self:
+        """Add a default skeleton shader with desaturated axons to the layer."""
+        return self.add_shader(DEFAULT_SHADER_MAP["skeleton_compartments"])
+
 
 @define
 class AnnotationLayer(_Layer):
@@ -663,6 +595,9 @@ class AnnotationLayer(_Layer):
         self.color = parse_color(self.color)
 
     def to_neuroglancer_layer(self) -> viewer_state.AnnotationLayer:
+        props = make_annotation_properties(self.tags, tag_base_number=0)
+        bindings = make_bindings(props)
+
         if self.local:
             return viewer_state.LocalAnnotationLayer(
                 dimensions=self.dimensions.to_neuroglancer(),
@@ -670,6 +605,8 @@ class AnnotationLayer(_Layer):
                 annotations=_handle_annotations(self.annotations),
                 linked_segmentation_layer=self.linked_segmentation_layer,
                 shader=self.shader,
+                annotation_properties=props,
+                tool_bindings=bindings,
             )
         return viewer_state.AnnotationLayer(
             source=source_to_neuroglancer(self.source),
@@ -682,40 +619,25 @@ class AnnotationLayer(_Layer):
         "Can be a viewer or a viewer.txn()-context state"
         self._to_neuroglancer(viewer)
 
-    def add_annotations(
+    @property
+    def tag_map(self) -> dict:
+        return {tag: f"tagTool_{ii}" for ii, tag in enumerate(self.tags)}
+
+    def add_tags(
         self,
-        annotations: list,
-    ):
-        """Add annotations to the layer.
+        tags: list,
+    ) -> Self:
+        """Add tags to the layer.
 
         Parameters
         ----------
-        annotations : list
-            The annotations to add, entries should be of type PointAnnotation, LineAnnotation, EllipsoidAnnotation, SphereAnnotation, or BoundingBoxAnnotation.
+        tags : list
+            The tags to add.
 
         """
-        if self.annotations is None:
-            self.annotations = []
-        if isinstance(annotations, Iterable):
-            self.annotations.extend(annotations)
-        else:
-            raise ValueError("Annotations must be a list.")
+        if self.tags is None:
+            self.tags = []
+        for tag in tags:
+            if tag not in self.tags:
+                self.tags.append(tags)
         return self
-
-    # def points_from_dataframe(
-    #     self,
-    #     df: pd.DataFrame,
-    #     point_column: str,
-    #     segment_column: str = None,
-    #     description_column: str = None,
-    #     tag_column: str = None,
-    #     id_column: str = None,
-    # ):
-    #     annotations = df.apply(
-    #         lambda row: PointAnnotation(
-    #             point=row[point_column],
-    #             id=row.get(id_column),
-    #             description=row.get(description_column),
-    #             linked_segmentation=row.get(segment_column),
-
-    #     )

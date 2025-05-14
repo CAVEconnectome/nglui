@@ -8,68 +8,35 @@ import caveclient
 
 logger = logging.getLogger(__name__)
 
-MAINLINE_NAMES = ["spelunker", "mainline", "cave-explorer"]
-SEUNGLAB_NAMES = ["seunglab"]
-default_seunglab_neuroglancer_base = "https://neuromancer-seung-import.appspot.com/"
-default_mainline_neuroglancer_base = "https://spelunker.cave-explorer.org/"
+NEUROGLANCER_SITES = {
+    "spelunker": "https://spelunker.cave-explorer.org/",
+    "google": "https://neuroglancer-demo.appspot.com/",
+}
 
-DEFAULT_TARGET_SITE = os.environ.get("NGLUI_DEFAULT_TARGET_SITE", "seunglab")
-DEFAULT_URL = os.environ.get("NGLUI_DEFAULT_TARGET_URL", None)
-DEFAULT_DATASTACK_NAME = os.environ.get("NGLUI_DEFAULT_DATASTACK_NAME", None)
-
-__all__ = [
-    "is_mainline",
-    "is_seunglab",
-    "check_target_site",
-    "set_default_config",
-    "get_default_config",
-    "reset_default_config",
-    "assign_site_parameters",
-    MAINLINE_NAMES,
-    SEUNGLAB_NAMES,
-]
+DEFAULT_TARGET_SITE = "spelunker"
 
 
-def is_mainline(target_name):
-    return target_name in MAINLINE_NAMES
-
-
-def is_seunglab(target_name):
-    return target_name in SEUNGLAB_NAMES
-
-
-def check_target_site(ngl_url, client):
+def is_mainline(ngl_url, client):
     """
     Check neuroglancer info to determine which kind of site a neuroglancer URL is.
+    Returns False if the URL is not a modern neuroglancer URL.
     """
     ngl_info = client.state.get_neuroglancer_info(ngl_url)
-    if len(ngl_info) == 0:
-        return SEUNGLAB_NAMES[0]
-    else:
-        return MAINLINE_NAMES[0]
+    return len(ngl_info) > 0
 
 
 @attrs.define
 class NGLUIConfig:
     target_site = attrs.field(type=str)
     target_url = attrs.field(type=str)
-    seunglab_fallback_url = attrs.field(
-        default=default_seunglab_neuroglancer_base, type=str
-    )
-    mainline_fallback_url = attrs.field(
-        default=default_mainline_neuroglancer_base, type=str
-    )
     caveclient = attrs.field(default=None)
-    datastack_name = attrs.field(default=DEFAULT_DATASTACK_NAME, type=str)
+    datastack_name = attrs.field(default=None, type=str)
 
     def __attrs_post_init__(self):
         # validate target site
-        if (
-            self.target_site not in MAINLINE_NAMES + SEUNGLAB_NAMES
-            and self.target_site is not None
-        ):
+        if self.target_site not in NEUROGLANCER_SITES and self.target_site is not None:
             raise ValueError(
-                f"target_site must be one of {MAINLINE_NAMES + SEUNGLAB_NAMES}"
+                f"target_site must be one of {list(NEUROGLANCER_SITES.keys())}"
             )
         # Set and validate caveclient if info is provided
         if self.caveclient is None and self.datastack_name is not None:
@@ -87,32 +54,20 @@ class NGLUIConfig:
                 )
 
         # Set and validate target_url if target_site is provided
-        if self.target_url is not None and self.target_site is None:
-            self.target_site = check_target_site(self.target_url, self.caveclient)
         if self.target_site is not None and self.target_url is None:
-            if is_seunglab(self.target_site):
-                self.target_url = self.seunglab_fallback_url
-            else:
-                self.target_url = self.mainline_fallback_url
-        if self.target_site is not None and self.target_url is not None:
-            if self.caveclient is not None:
-                url_based_site = check_target_site(self.target_url, self.caveclient)
-                if is_mainline(url_based_site) != is_mainline(self.target_site):
-                    logging.warning(
-                        f"target_site {self.target_site} does not match target_url {self.target_url}. Assuming manual setting is correct."
-                    )
+            self.target_url = NEUROGLANCER_SITES.get(self.target_site)
 
 
 default_config = NGLUIConfig(
     target_site=DEFAULT_TARGET_SITE,
-    target_url=DEFAULT_URL,
+    target_url=NEUROGLANCER_SITES[DEFAULT_TARGET_SITE],
 )
 default_key = "default"
 
 NGL_CONFIG = {default_key: default_config}  # type: dict[str, NGLUIConfig]
 
 
-def get_default_config(config_key: str = None) -> dict:
+def get_ngl_config(config_key: str = None) -> dict:
     """Get the current configuration for nglui viewers and statebuilders.
 
     Parameters
@@ -125,13 +80,9 @@ def get_default_config(config_key: str = None) -> dict:
     return attrs.asdict(NGL_CONFIG[config_key])
 
 
-def set_default_config(
-    target_site: Optional[
-        Literal["seunglab", "mainline", "cave-explorer", "spelunker"]
-    ] = None,
+def set_ngl_config(
+    target_site: str = None,
     target_url: str = None,
-    seunglab_fallback_url: str = None,
-    mainline_fallback_url: str = None,
     datastack_name: str = None,
     caveclient: "caveclient.CAVEclient" = None,
     url_from_client: bool = False,
@@ -145,26 +96,18 @@ def set_default_config(
         Target site for the neuroglancer viewer, by default None
     target_url : str, optional
         Target URL for the neuroglancer viewer, by default None
-    seunglab_fallback_url : str, optional
-        URL for the seunglab neuroglancer viewer, by default None
-    mainline_fallback_url : str, optional
-        URL for the mainline neuroglancer viewer, by default None
     datastack_name : str, optional
         Name of the datastack, by default None
     caveclient : caveclient.CAVEclient, optional
         CAVEclient object, by default None.
     """
     if config_key in NGL_CONFIG:
-        curr_config = get_default_config(config_key)
+        curr_config = get_ngl_config(config_key)
     else:
         curr_config = attrs.asdict(default_config)
     if target_site is not None or target_url is not None:
         curr_config["target_site"] = target_site
         curr_config["target_url"] = target_url
-    if seunglab_fallback_url is not None:
-        curr_config["seunglab_fallback_url"] = seunglab_fallback_url
-    if mainline_fallback_url is not None:
-        curr_config["mainline_fallback_url"] = mainline_fallback_url
     if caveclient is not None or datastack_name is not None:
         curr_config["caveclient"] = caveclient
         curr_config["datastack_name"] = datastack_name
@@ -213,55 +156,10 @@ def neuroglancer_url(
     if url is not None:
         return url
     if target_site is None:
-        url = get_default_config(config_key)["target_url"]
-    elif is_seunglab(target_site):
-        url = get_default_config(config_key)["seunglab_fallback_url"]
+        url = get_ngl_config(config_key)["target_url"]
     else:
-        url = get_default_config(config_key)["mainline_fallback_url"]
+        url = NEUROGLANCER_SITES[target_site]
     return url
-
-
-def get_target_site(
-    url: Optional[str] = None,
-    target_site: Optional[str] = None,
-    config_key: Optional[str] = None,
-    client: Optional["caveclient.CAVEclient"] = None,
-) -> str:
-    """Check target site based on parameters provided.
-
-    Parameters
-    ----------
-    url : Optional[str], optional
-        URL to a neuroglancer deployment, by default None
-    target_site : Optional[str], optional
-        Categorical neuroglancer target site, by default None
-    config_key : Optional[str], optional
-        Dictionary key for config, by default None
-    client : Optional[caveclient.CAVEclient], optional
-        Initialized CAVEclient, by default None
-
-    Returns
-    -------
-
-        _description_
-    """
-    if target_site is not None:
-        return target_site
-    if url is not None:
-        if client is not None:
-            return check_target_site(url, client)
-        else:
-            msg = f"No client provided to check target site from URL. Assuming default value of \"{get_default_config(config_key)['target_site']}\""
-            logging.warning(msg)
-    if (
-        config_key == "default"
-        and get_default_config(config_key).get("target_site") == "seunglab"
-    ):
-        msg = """
-        You are using default settings for target_site. The default target_site will become "spelunker" in the next major version release.
-        """
-        warn(msg, DeprecationWarning)
-    return get_default_config(config_key)["target_site"]
 
 
 def reset_default_config():
@@ -277,7 +175,6 @@ def assign_site_parameters(
     if config_key is None:
         config_key = default_key
     if client is None:
-        client = get_default_config(config_key)["caveclient"]
+        client = get_ngl_config(config_key)["caveclient"]
     url = neuroglancer_url(url, target_site, config_key)
-    target_site = get_target_site(url, target_site, config_key, client)
-    return url, target_site, client
+    return url, client

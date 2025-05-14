@@ -64,12 +64,30 @@ class ViewerState:
         return self._layers
 
     @property
-    def add_layer(self, layers):
+    def layer_names(self):
+        return [layer.name for layer in self.layers]
+
+    def add_layer(self, layers, selected: bool = False) -> Self:
+        """Add a layer to the viewer.
+        Parameters
+        ----------
+        layers : Layer or list of Layer
+            The layer(s) to add to the viewer.
+        """
+
         if isinstance(layers, list):
             self._layers.extend(layers)
         else:
             self._layers.append(layers)
+        if selected is not None:
+            if isinstance(layers, bool):
+                self.set_selected_layer(layers.name)
+            else:
+                for layer, vis in zip(layers, selected):
+                    if vis:
+                        self.set_selected_layer(layer.name)
         self._viewer = None
+        return self
 
     @property
     def dimensions(self):
@@ -128,18 +146,16 @@ class ViewerState:
             "visible": self._selected_layer_visible,
         }
 
-    @selected_layer.setter
-    def selected_layer(self, value):
-        self._selected_layer = value
+    def set_selected_layer(self, selected_layer: str):
+        self._selected_layer = selected_layer
         self._viewer = None
 
     @property
     def selected_layer_visible(self):
         return self._selected_layer_visible
 
-    @selected_layer_visible.setter
-    def selected_layer_visible(self, value):
-        self._selected_layer_visible = value
+    def set_selected_layer_visible(self, visible: bool):
+        self._selected_layer_visible = visible
         self._viewer = None
 
     @property
@@ -234,6 +250,26 @@ class ViewerState:
             **kwargs,
         )
         self.add_layer(seg_layer)
+        return self
+
+    def local_annotation_layer(
+        self,
+        name: str,
+        df: Optional[pd.DataFrame] = None,
+        point_column: str = None,
+        linked_segmentation_column: str = None,
+        description_column: str = None,
+        tag_column: str = None,
+        tags: list = None,
+    ) -> Self:
+        return self
+
+    def annotation_layer(
+        self,
+        name: str,
+        source: str,
+        linked_segmentation_layer: str = None,
+    ):
         return self
 
     def to_neuroglancer_state(self):

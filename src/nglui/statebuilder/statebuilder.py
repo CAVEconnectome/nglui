@@ -5,9 +5,9 @@ import warnings
 from typing import Literal, Optional
 
 from IPython.display import HTML
+from neuroglancer.json_utils import encode_json
 
 from nglui.easyviewer import EasyViewer
-from nglui.easyviewer.ev_base.nglite.json_utils import encode_json
 
 from ..site_utils import assign_site_parameters, get_default_config
 

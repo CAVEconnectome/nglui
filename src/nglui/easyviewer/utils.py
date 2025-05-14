@@ -1,5 +1,6 @@
 import numbers
 import re
+from collections.abc import Iterable, Mapping
 from urllib.parse import urlparse
 
 import numpy as np
@@ -10,6 +11,44 @@ import webcolors
 from ..site_utils import (
     is_mainline,
 )
+
+
+def is_list_like(obj):
+    """
+    Check if an object is list-like (iterable but not a mapping or string).
+
+    Parameters
+    ----------
+    obj : any
+        Object to check
+
+    Returns
+    -------
+    bool
+        True if the object is list-like, False otherwise
+    """
+    return (
+        isinstance(obj, Iterable)
+        and not isinstance(obj, Mapping)
+        and not isinstance(obj, str)
+    )
+
+
+def is_dict_like(obj):
+    """
+    Check if an object is dictionary-like (mapping).
+
+    Parameters
+    ----------
+    obj : any
+        Object to check
+
+    Returns
+    -------
+    bool
+        True if the object is dictionary-like, False otherwise
+    """
+    return isinstance(obj, Mapping) and not isinstance(obj, str)
 
 
 def omit_nones(seg_list):
