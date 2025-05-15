@@ -13,7 +13,9 @@ from neuroglancer.coordinate_space import CoordinateArray, CoordinateSpace, pars
 from neuroglancer.random_token import make_random_token
 
 from ..segmentprops import SegmentProperties
-from .utils import parse_color
+from .utils import list_of_lists, parse_color, strip_numpy_types
+
+LOCAL_ANNOTATION_SOURCE = "local://annotations"
 
 
 @define
@@ -82,23 +84,21 @@ def make_bindings(properties, bindings=None):
 
 @define
 class AnnotationBase:
-    id = field(default=None, type=str, kw_only=True)
+    id = field(default=None, type=str, kw_only=True, converter=strip_numpy_types)
     description = field(default=None, type=str, kw_only=True)
-    linked_segmentation = field(default=None, type=list[int], kw_only=True)
-    annotation_properties = field(default=None, type=list, kw_only=True)
+    segments = field(
+        default=None, type=list[int], kw_only=True, converter=list_of_lists
+    )
+    props = field(default=None, type=list, kw_only=True)
 
     def __attrs_post_init__(self):
-        if self.id is not None:
+        if self.id is None:
             self.id = make_random_token()
-        self.linked_segmentation = [int(seg) for seg in self.linked_segmentation]
 
 
 @define
 class PointAnnotation(AnnotationBase):
-    point = field(type=list)
-
-    def __attrs_post_init__(self):
-        self.point = list(self.point)
+    point = field(type=list, converter=strip_numpy_types)
 
     def to_neuroglancer(self) -> dict:
         return viewer_state.PointAnnotation(**asdict(self))
@@ -106,13 +106,8 @@ class PointAnnotation(AnnotationBase):
 
 @define
 class LineAnnotation(AnnotationBase):
-    pointA = field(type=list)
-    pointB = field(type=list)
-
-    def __attrs_post_init__(self):
-        self.pointA = list(self.pointA)
-        self.pointB = list(self.pointB)
-        super().__attrs_post_init__()
+    pointA = field(type=list, converter=strip_numpy_types)
+    pointB = field(type=list, converter=strip_numpy_types)
 
     def to_neuroglancer(self) -> dict:
         return viewer_state.LineAnnotation(**asdict(self))
@@ -120,13 +115,8 @@ class LineAnnotation(AnnotationBase):
 
 @define
 class EllipsoidAnnotation:
-    center = field(type=list)
-    radii = field(type=list)
-
-    def __attrs_post_init__(self):
-        self.center = list(self.center)
-        self.radii = list(self.radii)
-        super().__attrs_post_init__()
+    center = field(type=list, converter=strip_numpy_types)
+    radii = field(type=list, converter=strip_numpy_types)
 
     def to_neuroglancer(self) -> dict:
         return viewer_state.EllipsoidAnnotation(**asdict(self))
@@ -137,24 +127,14 @@ class SphereAnnotation(AnnotationBase):
     center = field(type=list)
     radius = field(default=None, type=float)
 
-    def __attrs_post_init__(self):
-        self.center = list(self.center)
-        self.radii = [self.radius] * len(self.center)
-        super().__attrs_post_init__()
-
     def to_neuroglancer(self) -> dict:
         return viewer_state.EllipsoidAnnotation(**asdict(self))
 
 
 @define
 class BoundingBoxAnnotation(AnnotationBase):
-    pointA = field(type=list)
-    pointB = field(type=list)
-
-    def __attrs_post_init__(self):
-        self.min = list(self.min)
-        self.max = list(self.max)
-        super().__attrs_post_init__()
+    pointA = field(type=list, converter=strip_numpy_types)
+    pointB = field(type=list, converter=strip_numpy_types)
 
     def to_neuroglancer(self) -> dict:
         return viewer_state.AxisAlignedBoundingBoxAnnotation(**asdict(self))

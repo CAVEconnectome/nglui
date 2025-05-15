@@ -1,6 +1,7 @@
 import numbers
 import re
 from collections.abc import Iterable, Mapping
+from typing import Union
 from urllib.parse import urlparse
 
 import numpy as np
@@ -11,6 +12,65 @@ import webcolors
 from ..site_utils import (
     is_mainline,
 )
+
+
+def split_point_columns(col_name: str, columns: list[str]) -> Union[str, list[str]]:
+    if col_name in columns:
+        return col_name
+    suffixes = ["x", "y", "z"]
+    resolved_columns = [f"{col_name}_{suffix}" for suffix in suffixes]
+
+    if all(col in columns for col in resolved_columns):
+        return resolved_columns
+    raise ValueError(
+        f"Column '{col_name}' not found, and '{col_name}_x', '{col_name}_y', '{col_name}_z' are not all present in the columns."
+    )
+
+
+def strip_numpy_types(obj):
+    """
+    Recursively convert numpy types in scalars, list-like, or dictionary values
+    into pure Python types.
+
+    Parameters
+    ----------
+    obj : any
+        The object to process (scalar, list-like, or dictionary).
+
+    Returns
+    -------
+    any
+        The object with all numpy types converted to pure Python types.
+    """
+    if isinstance(obj, (np.generic, np.ndarray)):
+        # Convert numpy scalars or arrays to Python types or lists
+        if np.isscalar(obj):
+            return obj.item()
+        else:
+            return [strip_numpy_types(x) for x in obj]
+    elif isinstance(obj, pd.Series):
+        # Convert pandas Series to a list of Python types
+        return [strip_numpy_types(x) for x in obj.values]
+    elif isinstance(obj, Mapping):
+        # Recursively process dictionary values
+        return {strip_numpy_types(k): strip_numpy_types(v) for k, v in obj.items()}
+    elif isinstance(obj, Iterable) and not isinstance(obj, (str, bytes)):
+        # Recursively process list-like objects
+        return [strip_numpy_types(x) for x in obj]
+    else:
+        # Return the object as-is if it's already a pure Python type
+        return obj
+
+
+def list_of_lists(obj):
+    "Strip numpy types and return as a list of lists. Should not be used for dicts."
+    if pd.isnull(obj):
+        return None
+    obj = strip_numpy_types(obj)
+    if isinstance(obj, list):
+        return [obj]
+    else:
+        return [[obj]]
 
 
 def is_list_like(obj):
