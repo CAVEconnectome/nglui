@@ -1,20 +1,27 @@
 from __future__ import annotations
 
 import json
-from typing import Iterable, Literal, Optional, Self, Union
+from typing import Optional, Self, Union
 
 import caveclient
 import numpy as np
 import pandas as pd
 from attrs import asdict, define, field
 from neuroglancer import Viewer, viewer_state
-from neuroglancer.coordinate_space import CoordinateArray, CoordinateSpace, parse_unit
+from neuroglancer.coordinate_space import CoordinateSpace, parse_unit
 from neuroglancer.random_token import make_random_token
 
 from ..segmentprops import SegmentProperties
 from .ngl_annotations import *
 from .shaders import DEFAULT_SHADER_MAP
-from .utils import is_dict_like, is_list_like, parse_color, split_point_columns
+from .utils import (
+    is_dict_like,
+    is_list_like,
+    parse_color,
+    parse_graphene_header,
+    parse_graphene_image_url,
+    split_point_columns,
+)
 
 
 @define
@@ -48,7 +55,7 @@ class CoordSpaceTransform:
     def __attrs_post_init__(self):
         if self.output_dimensions is None:
             self.output_dimensions = None
-        else:
+        elif not isinstance(self.output_dimensions, CoordSpace):
             self.output_dimensions = CoordSpace(resolution=self.output_dimensions)
 
     def to_neuroglancer(self):
@@ -173,15 +180,21 @@ class _Layer:
             self._to_neuroglancer_state(viewer)
 
 
-def _handle_source(source, resolution=None):
+def _handle_source(source, resolution=None, image_layer=False):
     "Convert one or more sources to a Source object."
-
+    if image_layer:
+        auth_parse_func = parse_graphene_image_url
+    else:
+        auth_parse_func = parse_graphene_header
     if isinstance(source, str):
-        return Source(url=source, resolution=resolution)
+        return Source(url=auth_parse_func(source), resolution=resolution)
     elif isinstance(source, Source):
+        source.url = auth_parse_func(source.url)
         return source
     elif is_list_like(source):
-        return [_handle_source(src, resolution) for src in source]
+        return [
+            _handle_source(src, resolution, image_layer=image_layer) for src in source
+        ]
     else:
         raise ValueError("Invalid source type. Must be str or Source.")
 
@@ -198,10 +211,10 @@ def _handle_annotations(annos):
     ]
 
 
-def source_to_neuroglancer(source, resolution=None):
+def source_to_neuroglancer(source, resolution=None, image_layer=False):
     "Convert a possibly multi-url source to a Neuroglancer-compatible format."
 
-    source = _handle_source(source, resolution=resolution)
+    source = _handle_source(source, resolution=resolution, image_layer=image_layer)
     if isinstance(source, list):
         return [src.to_neuroglancer() for src in source]
     else:
@@ -217,6 +230,19 @@ def segments_to_neuroglancer(segments):
         return viewer_state.StarredSegments(strip_numpy_types(segments))
     else:
         return segments
+
+
+def _handle_linked_segmentation(segmentation_layer):
+    if segmentation_layer is None:
+        return None
+    elif isinstance(segmentation_layer, SegmentationLayer):
+        return {"segments": segmentation_layer.name}
+    elif isinstance(segmentation_layer, str):
+        return ({"segments": segmentation_layer},)
+    else:
+        raise ValueError(
+            "Invalid linked segmentation layer type. Must be str or SegmentationLayer."
+        )
 
 
 @define
@@ -238,7 +264,9 @@ class ImageLayer(_Layer):
 
     def to_neuroglancer_layer(self) -> viewer_state.ImageLayer:
         return viewer_state.ImageLayer(
-            source=source_to_neuroglancer(self.source, resolution=self.resolution),
+            source=source_to_neuroglancer(
+                self.source, resolution=self.resolution, image_layer=True
+            ),
             shader=self.shader,
             annotation_color=self.color,
         )
@@ -287,6 +315,7 @@ class ImageLayer(_Layer):
 class SegmentationLayer(_Layer):
     name = field(default="seg", type=str)
     source = field(default=None, type=Source)
+    resolution = field(default=None, type=list, kw_only=True)
     segments = field(
         factory=list, type=Union[list, dict, viewer_state.VisibleSegments], kw_only=True
     )
@@ -304,7 +333,7 @@ class SegmentationLayer(_Layer):
 
     def to_neuroglancer_layer(self) -> viewer_state.SegmentationLayer:
         return viewer_state.SegmentationLayer(
-            source=source_to_neuroglancer(self.source),
+            source=source_to_neuroglancer(self.source, resolution=self.resolution),
             visible_segments=segments_to_neuroglancer(self.segments),
             annotation_color=self.color,
             selected_alpha=self.selected_alpha,
@@ -633,19 +662,24 @@ class LocalAnnotationLayer(_Layer):
         bindings = make_bindings(props)
         if not isinstance(self.resolution, CoordSpace):
             self.resolution = CoordSpace(resolution=self.resolution)
-        if self.linked_segmentation_layer is not None:
-            return viewer_state.LocalAnnotationLayer(
-                dimensions=self.resolution.to_neuroglancer(),
-                annotation_color=self.color,
-                annotations=_handle_annotations(self.annotations),
-                linked_segmentation_layer={"segments": self.linked_segmentation_layer},
-                shader=self.shader,
-                annotation_properties=props,
-                tool_bindings=bindings,
-            )
+        return viewer_state.LocalAnnotationLayer(
+            dimensions=self.resolution.to_neuroglancer(),
+            annotation_color=self.color,
+            annotations=_handle_annotations(self.annotations),
+            linked_segmentation_layer=_handle_linked_segmentation(
+                self.linked_segmentation_layer
+            ),
+            shader=self.shader,
+            annotation_properties=props,
+            tool_bindings=bindings,
+        )
 
     def to_neuroglancer(self, viewer) -> viewer_state.AnnotationLayer:
         "Can be a viewer or a viewer.txn()-context state"
+        if self.resolution is None:
+            raise ValueError(
+                f"Resolution for annotation layer '{self.name}' must be set before converting to Neuroglancer"
+            )
         self._to_neuroglancer(viewer)
 
     def set_linked_segmentation_layer(
@@ -714,8 +748,11 @@ class LocalAnnotationLayer(_Layer):
             The column name for the segment IDs. Default is None.
         description_column : str, optional
             The column name for the segment descriptions. Default is None.
+        tag_column : str, optional
+            The column name for segment descripion. Default is None.
         data_resolution : list, optional
-            The resolution of the data. Default is None.
+            The resolution of the data. If None, follows from layer resolution.
+            Default is None.
 
         Returns
         -------

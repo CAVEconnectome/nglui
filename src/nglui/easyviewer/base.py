@@ -1,10 +1,14 @@
 import json
+import warnings
 from typing import Literal, Optional, Self, Union
 
 import neuroglancer
 import numpy as np
+from IPython.display import HTML
 from neuroglancer import viewer, viewer_base
 
+from ..site_utils import neuroglancer_url
+from . import source_info
 from .ngl_components import *
 
 
@@ -36,10 +40,44 @@ class ViewerState:
         ] = "xy-3d",
         base_state: Optional[dict] = None,
         interactive: bool = False,
+        infer_coordinates: bool = True,
     ):
+        """
+        Parameters
+        ----------
+        target_site : str
+            The target site for the viewer. If None, the default site will be used.
+        target_url : str
+            The target URL for the viewer. If None, the default URL will be used.
+        layers : list of Layer
+            The layers to add to the viewer.
+        dimensions : list or CoordSpace
+            The dimensions of the viewer. If None, the default dimensions will be used.
+        position : list or np.ndarray
+            The position of the viewer in 3D space. If None, the default position will be used.
+        scale_imagery : float
+            The scale factor for imagery layers. Default is 1.0.
+        scale_3d : float
+            The scale factor for 3D projections. Default is 50000.0.
+        show_slices : bool
+            Whether to show cross-sectional slices in the viewer. Default is False.
+        selected_layer : str
+            The name of the selected layer. If None, no layer is selected.
+        selected_layer_visible : bool
+            Whether the selected layer is visible. Default is False.
+        layout : str
+            The panel layout of the viewer. Default is "xy-3d".
+        base_state : dict
+            The base state of the viewer. If None, the default state will be used.
+        interactive : bool
+            Whether the viewer is interactive. Default is False.
+        infer_coordinates : bool
+            Whether to infer resolution and position from the source information using CloudVolume. Default is True.
+        """
+
         self._target_site = target_site
-        self._target_url = target_url
-        self._layers = layers if layers else list
+        self._target_url = neuroglancer_url(target_url, target_site)
+        self._layers = layers if layers else list()
         self._dimensions = dimensions
         self._position = position
         self._scale_imagery = scale_imagery
@@ -52,12 +90,94 @@ class ViewerState:
         self._interactive = interactive
         self._saved_state_url = None
         self._viewer = None
+        self._source_info = None
+        self._infer_coordinates = infer_coordinates
+
+    def add_from_client(
+        self,
+        client: "caveclient.CAVEclient",
+        imagery: Union[bool, str] = True,
+        segmentation: Union[bool, str] = True,
+        skeleton_source: bool = True,
+        resolution: bool = True,
+        target_url: bool = False,
+    ) -> Self:
+        """Configure the viewer with information from a CaveClient.
+        Can set the target URL, viewer resolution, and add image and segmentation layers.
+
+        Parameters
+        ----------
+        client : caveclient.CAVEclient
+            The client to use for configuration.
+        imagery : Union[bool, str], optional
+            Whether to add an image layer, by default True.
+            If a string is provided, it will be used as the name of the layer.
+        segmentation : Union[bool, str], optional
+            Whether to add a segmentation layer, by default True
+            If a string is provided, it will be used as the name of the layer.
+        skeleton_source : bool, optional
+            Whether to try to add a skeleton source for the segmentation layer, if provided, by default True
+        resolution : bool, optional
+            Whether to infer viewer resolution from the client info, by default True
+        target_url : bool, optional
+            Whether to set the neuroglancer URL from the client, by default False
+
+        Returns
+        -------
+        Self
+            The updated viewer state object.
+        """
+        if target_url:
+            self._target_url = client.info.viewer_site()
+        if resolution:
+            self.dimensions = client.info.viewer_resolution()
+        if imagery:
+            if isinstance(imagery, str):
+                self.add_image_layer(
+                    source=client.info.image_source(),
+                    name=imagery,
+                )
+            else:
+                self.add_image_layer(
+                    source=client.info.image_source(),
+                )
+        if segmentation:
+            seg_source = [client.info.segmentation_source()]
+            skel_source_path = (
+                client.info.get_datastack_info().get("skeleton_source"),
+            )
+            if skeleton_source and skel_source_path:
+                seg_source.append(skel_source_path)
+
+            if isinstance(segmentation, str):
+                self.add_segmentation_layer(
+                    source=seg_source,
+                    name=segmentation,
+                )
+            else:
+                self.add_segmentation_layer(
+                    source=seg_source[0],
+                )
+        return self
 
     @property
     def viewer(self):
         if self._viewer is None:
             self._viewer = self.to_neuroglancer_state()
         return self._viewer
+
+    def _reset_viewer(self):
+        self._viewer = None
+
+    @property
+    def infer_coordinates(self):
+        return self._infer_coordinates
+
+    @infer_coordinates.setter
+    def infer_coordinates(self, value: bool):
+        if value != self._infer_coordinates:
+            self._reset_viewer()
+        self._infer_coordinates = value
 
     @property
     def layers(self):
@@ -77,22 +197,73 @@ class ViewerState:
 
         if isinstance(layers, list):
             self._layers.extend(layers)
-        else:
-            self._layers.append(layers)
-        if selected is not None:
-            if isinstance(layers, bool):
-                self.set_selected_layer(layers.name)
-            else:
+            if selected is not False:
                 for layer, vis in zip(layers, selected):
                     if vis:
                         self.set_selected_layer(layer.name)
-        self._viewer = None
+        else:
+            self._layers.append(layers)
+            if selected:
+                self.set_selected_layer(layers.name)
+        self._reset_viewer()
         return self
 
     @property
+    def source_info(self):
+        if self._source_info is None:
+            self._source_info = source_info.populate_info(self.layers)
+        return self._source_info
+
+    def _suggest_position_from_source(self, resolution=None) -> np.ndarray:
+        """Suggest a position based on the source information.
+        This uses the headers on each layer source to suggest a position based on the
+        center of the first segmentation layer or, if no segmentation layer, the first image layer.
+        If no position can be inferred, the position will be to None.
+
+        NOTE: Requires cloudvolume to be installed and an internet connection.
+
+        Parameters
+        ----------
+        resolution : list or np.ndarray, optional
+            The resolution of the viewer. If not provided, the viewer's current resolution will be used.
+
+        Returns
+        -------
+        Position : np.ndarray
+
+        """
+        try:
+            position = source_info.suggest_position(self.source_info, resolution)
+        except source_info.NoCloudvolumeError:
+            warnings.warn(
+                "Cloudvolume is not installed (Install with `pip install cloud-volume`). Cannot suggest position."
+            )
+            position = None
+        return position
+
+    def _suggest_resolution_from_source(self) -> np.ndarray:
+        """Suggest a resolution based on the source information.
+        This uses the headers on each layer source to suggest a resolution based on the
+        first image layer. If no resolution can be inferred, the resolution will be None.
+
+        NOTE: Requires cloudvolume to be installed and an internet connection.
+
+        Returns
+        -------
+        Resolution : np.ndarray
+
+        """
+        try:
+            resolution = source_info.suggest_resolution(self.source_info)
+        except source_info.NoCloudvolumeError:
+            warnings.warn(
+                "Cloudvolume is not installed (Install with `pip install cloud-volume`). Cannot suggest resolution."
+            )
+            resolution = None
+        return resolution
+
+    @property
     def dimensions(self):
-        if self._dimensions is None:
-            return CoordSpace()
         return self._dimensions
 
     @dimensions.setter
@@ -101,7 +272,7 @@ class ViewerState:
             self._dimensions = value
         else:
             self._dimensions = CoordSpace(value)
-        self._viewer = None
+        self._reset_viewer()
 
     @property
     def position(self):
@@ -110,7 +281,7 @@ class ViewerState:
     @position.setter
     def position(self, value):
         self._position = value
-        self._viewer = None
+        self._reset_viewer()
 
     @property
     def scale_imagery(self):
@@ -119,7 +290,7 @@ class ViewerState:
     @scale_imagery.setter
     def scale_imagery(self, value):
         self._scale_imagery = value
-        self._viewer = None
+        self._reset_viewer()
 
     @property
     def scale_3d(self):
@@ -146,17 +317,19 @@ class ViewerState:
             "visible": self._selected_layer_visible,
         }
 
-    def set_selected_layer(self, selected_layer: str):
-        self._selected_layer = selected_layer
-        self._viewer = None
+    def set_selected_layer(
+        self, selected_layer: Union[str, ImageLayer, SegmentationLayer, AnnotationLayer]
+    ) -> Self:
+        if isinstance(selected_layer, str):
+            self._selected_layer = selected_layer
+        else:
+            self._selected_layer = selected_layer.name
+        self._reset_viewer()
+        return self
 
     @property
     def selected_layer_visible(self):
         return self._selected_layer_visible
-
-    def set_selected_layer_visible(self, visible: bool):
-        self._selected_layer_visible = visible
-        self._viewer = None
 
     @property
     def layout(self):
@@ -179,7 +352,7 @@ class ViewerState:
                 f"Invalid layout: {value}. Must be one of 'xy', 'yz', 'xz', 'xy-3d', 'xz-3d', 'yz-3d', '4panel', '3d', or '4panel-alt'."
             )
         self._layout = value
-        self._viewer = None
+        self._reset_viewer()
 
     @property
     def base_state(self):
@@ -188,7 +361,7 @@ class ViewerState:
     @base_state.setter
     def base_state(self, value):
         self._base_state = value
-        self._viewer = None
+        self._reset_viewer()
 
     @property
     def interactive(self):
@@ -200,83 +373,175 @@ class ViewerState:
             self._viewer = None
         self._interactive = value
 
-    def image_layer(
+    def set_viewer_properties(
         self,
-        name: str,
-        source: Optional[str] = None,
+        position: Optional[Union[list, np.ndarray]] = None,
+        dimensions: Optional[Union[list, np.ndarray]] = None,
+        scale_imagery: Optional[float] = None,
+        scale_3d: Optional[float] = None,
+        show_slices: Optional[bool] = None,
+        selected_layer: Optional[Union[str, ImageLayer]] = None,
+        selected_layer_visible: Optional[bool] = None,
+        layout: Optional[
+            Literal[
+                "xy",
+                "yz",
+                "xz",
+                "xy-3d",
+                "xz-3d",
+                "yz-3d",
+                "4panel",
+                "3d",
+                "4panel-alt",
+            ]
+        ] = None,
+        base_state: Optional[dict] = None,
+        interactive: Optional[bool] = None,
+        infer_coordinates: bool = False,
+    ) -> Self:
+        """
+        Set various properties of the viewer state.
+
+        This function allows you to configure the viewer's position, dimensions,
+        scale, layout, and other properties. Any property not explicitly set will
+        remain unchanged.
+
+        Parameters
+        ----------
+        position : list or np.ndarray, optional
+            The position of the viewer in 3D space.
+        dimensions : list or np.ndarray, optional
+            The dimensions of the viewer's coordinate space.
+            Can be either a list of 3 values treated as nanometer resolution or
+            a CoordSpace object with more detailed options.
+        scale_imagery : float, optional
+            The scale factor for imagery layers.
+        scale_3d : float, optional
+            The scale factor for 3D projections.
+        show_slices : bool, optional
+            Whether to show cross-sectional slices in the viewer.
+        selected_layer : str or ImageLayer, optional
+            The name of the selected layer or the layer object itself.
+        selected_layer_visible : bool, optional
+            Whether the selected layer is visible.
+        layout : {"xy", "yz", "xz", "xy-3d", "xz-3d", "yz-3d", "4panel", "3d", "4panel-alt"}, optional
+            The panel layout of the viewer.
+        base_state : dict, optional
+            The base state of the viewer.
+        interactive : bool, optional
+            Whether the viewer is interactive.
+        infer_coordinates : bool, optional
+            Whether to infer resolution and position from the source information.
+            If True, the viewer will attempt to extract this information from the
+            info provided by the source if not provided explicitly.
+
+
+        Returns
+        -------
+        self
+            The updated viewer state object.
+        """
+
+        if position is not None:
+            self.position = position
+        if dimensions is not None:
+            self.dimensions = dimensions
+        if scale_imagery is not None:
+            self.scale_imagery = scale_imagery
+        if scale_3d is not None:
+            self.scale_3d = scale_3d
+        if show_slices is not None:
+            self.show_slices = show_slices
+        if selected_layer is not None:
+            if isinstance(selected_layer, str):
+                self.selected_layer = selected_layer
+            else:
+                self.selected_layer = selected_layer.name
+        if selected_layer_visible is not None:
+            self.selected_layer_visible = selected_layer_visible
+        if layout is not None:
+            self.layout = layout
+        if base_state is not None:
+            self.base_state = base_state
+        if interactive is not None:
+            self.interactive = interactive
+        if infer_coordinates is not None:
+            self.infer_coordinates = infer_coordinates
+        return self
+
+    def add_image_layer(
+        self,
+        source: str,
+        name: str = "imagery",
         resolution: Optional[Union[list, np.ndarray]] = None,
-        client: Optional["caveclient.CAVEclient"] = None,
-        shader: str = None,
         **kwargs,
     ) -> Self:
         if resolution is None:
             resolution = self.dimensions
-        if client is not None:
-            if not source:
-                source = client.info.image_source()
-            if not resolution:
-                resolution = client.info.viewer_resolution()
         img_layer = ImageLayer(
             name=name,
             source=source,
             resolution=resolution,
-            shader=shader,
             **kwargs,
         )
         self.add_layer(img_layer)
         return self
 
-    def segmentation_layer(
+    def add_segmentation_layer(
         self,
-        name: str,
-        source: Optional[str] = None,
+        source: str,
+        name: str = "segmentation",
         resolution: Optional[Union[list, np.ndarray]] = None,
-        client: Optional["caveclient.CAVEclient"] = None,
-        shader: str = None,
         **kwargs,
     ) -> Self:
         if resolution is None:
             resolution = self.dimensions
-        if client is not None:
-            if not source:
-                source = client.info.segmentation_source()
-            if not resolution:
-                resolution = client.info.viewer_resolution()
         seg_layer = SegmentationLayer(
             name=name,
             source=source,
             resolution=resolution,
-            shader=shader,
             **kwargs,
         )
         self.add_layer(seg_layer)
         return self
 
-    def local_annotation_layer(
+    def add_annotation_layer(
         self,
-        name: str,
-        df: Optional[pd.DataFrame] = None,
-        point_column: str = None,
-        linked_segmentation_column: str = None,
-        description_column: str = None,
-        tag_column: str = None,
-        tags: list = None,
+        name: str = "annotation",
+        source: Optional[str] = None,
+        resolution: Optional[Union[list, np.ndarray]] = None,
+        **kwargs,
     ) -> Self:
-        return self
-
-    def annotation_layer(
-        self,
-        name: str,
-        source: str,
-        linked_segmentation_layer: str = None,
-    ):
+        if source:
+            anno_layer = AnnotationLayer(
+                name=name,
+                source=source,
+                **kwargs,
+            )
+        else:
+            if resolution is None:
+                resolution = self.dimensions
+            anno_layer = LocalAnnotationLayer(
+                name=name,
+                resolution=resolution,
+                **kwargs,
+            )
+        self.add_layer(anno_layer)
         return self
 
     def to_neuroglancer_state(self):
         if self.dimensions is None:
-            self._dimensions = CoordSpace()
-        elif not isinstance(self.dimensions, CoordSpace):
+            if self.infer_coordinates:
+                self._dimensions = self._suggest_resolution_from_source()
+            else:
+                self._dimensions = CoordSpace()
+        if not isinstance(self.dimensions, CoordSpace):
             self._dimensions = CoordSpace(self.dimensions)
+
+        for layer in self.layers:
+            if isinstance(layer, LocalAnnotationLayer):
+                if layer.resolution is None:
+                    layer.resolution = self.dimensions.resolution
 
         if self.interactive:
             self._viewer = viewer.Viewer()
@@ -288,7 +553,11 @@ class ViewerState:
         with self._viewer.txn() as s:
             if self.position:
                 s.position = self.position
-            if self.layeout:
+            elif self.infer_coordinates:
+                s.position = self._suggest_position_from_source(
+                    resolution=self.dimensions.resolution
+                )
+            if self.layout:
                 s.layout = self.layout
             s.dimensions = self.dimensions.to_neuroglancer()
             s.cross_section_scale = self.scale_imagery
@@ -329,8 +598,6 @@ class ViewerState:
     def to_url(
         self,
         target_url: str = None,
-        html: bool = False,
-        link_text: str = "Neuroglancer Link",
     ):
         """Return a URL representation of the viewer state.
 
@@ -350,13 +617,36 @@ class ViewerState:
             A URL representation of the viewer state.
         """
         if target_url is None:
-            target_url = self._target_url
+            if self.interactive:
+                return self.viewer.get_viewer_url()
+            else:
+                target_url = self._target_url
 
         url = neuroglancer.to_url(
             self.viewer.state,
             target_url,
         )
-        if html:
-            return f'<a href="{url}" target="_blank">{link_text}</a>'
-        else:
-            return url
+        return url
+
+    def to_link(
+        self,
+        target_url: str = None,
+        link_text: str = "Neuroglancer Link",
+    ):
+        """Return an HTML link representation of the viewer state.
+
+        Parameters
+        ----------
+        target_url : str
+            The base URL to use for the Neuroglancer state. If not provided,
+            the default server URL will be used.
+        link_text : str
+            The text to display for the HTML link.
+
+        Returns
+        -------
+        str
+            An HTML link representation of the viewer state.
+        """
+        url = self.to_url(target_url)
+        return HTML(f'<a href="{url}" target="_blank">{link_text}</a>')

@@ -19,6 +19,7 @@ dependencies = [
     "six>=1.16.0",
     "webcolors>=24.11.1",
     "neuroglancer==2.40.1",
+    "cachetools>=5.5.2",
 ]
 authors = [
     { name = "Casey Schneider-Mizell", email = "caseysm@gmail.com" },
@@ -39,6 +40,11 @@ Homepage = "https://caveconnectome.github.io/nglui/"
 Repository = "https://github.com/CAVEconnectome/nglui.git"
 Changelog = "https://caveconnectome.github.io/nglui/changelog/"
 Issues = "https://github.com/CAVEconnectome/nglui/issues"
+
+[project.optional-dependencies]
+cv = [
+    "cloud-volume>=12.2.0",
+]
 
 [dependency-groups]
 dev = [

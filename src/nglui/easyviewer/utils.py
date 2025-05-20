@@ -6,12 +6,7 @@ from urllib.parse import urlparse
 
 import numpy as np
 import pandas as pd
-import requests
 import webcolors
-
-from ..site_utils import (
-    is_mainline,
-)
 
 
 def split_point_columns(col_name: str, columns: list[str]) -> Union[str, list[str]]:
@@ -139,7 +134,7 @@ def parse_color(clr):
         return webcolors.rgb_to_hex([int(255 * x) for x in clr])
 
 
-def parse_graphene_header(source, target):
+def parse_graphene_header(source):
     qry = urlparse(source)
     if qry.scheme == "graphene":
         return _parse_to_mainline(qry)
@@ -147,17 +142,12 @@ def parse_graphene_header(source, target):
         return source
 
 
-def parse_graphene_image_url(source, target):
+def parse_graphene_image_url(source):
     qry = urlparse(source)
     if qry.scheme == "graphene":
-        if is_mainline(target):
-            return _parse_to_mainline_imagery(qry)
+        return _parse_to_mainline_imagery(qry)
     else:
         return source
-
-
-def _parse_to_seunglab(qry):
-    return f"{qry.scheme}://https:{qry.path}"
 
 
 def _parse_to_mainline(qry):

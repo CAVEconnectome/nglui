@@ -1,3 +1,3 @@
-from ..site_utils import get_ngl_config, is_mainline
+from ..site_utils import neuroglancer_url
 from .base import *
 from .ngl_components import *

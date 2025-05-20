@@ -1,19 +1,11 @@
 from __future__ import annotations
 
-import json
-from typing import Iterable, Literal, Optional, Self, Union
-
 import attrs
-import caveclient
-import numpy as np
-import pandas as pd
 from attrs import asdict, define, field
-from neuroglancer import Viewer, viewer_state
-from neuroglancer.coordinate_space import CoordinateArray, CoordinateSpace, parse_unit
+from neuroglancer import viewer_state
 from neuroglancer.random_token import make_random_token
 
-from ..segmentprops import SegmentProperties
-from .utils import list_of_lists, parse_color, strip_numpy_types
+from .utils import list_of_lists, strip_numpy_types
 
 LOCAL_ANNOTATION_SOURCE = "local://annotations"
 
@@ -35,7 +27,7 @@ def TagToolFactory(number_tags: int):
 
 
 # Initialize tags tool
-TagToolFactory(24)
+TagToolFactory(10)
 
 
 @define
