@@ -769,7 +769,7 @@ class LocalAnnotationLayer(_Layer):
     name = field(default="anno", type=str)
     resolution = field(default=None, type=list, kw_only=True)
     color = field(default=None, type=list, kw_only=True)
-    annotations = field(default=None, type=list, kw_only=True)
+    annotations = field(factory=list, type=list, kw_only=True)
     link_to = field(default=None, type=Union[str, dict], kw_only=True)
     shader = field(default=None, type=str, kw_only=True)
     tags = field(factory=list, type=list, kw_only=True)
@@ -836,7 +836,6 @@ class LocalAnnotationLayer(_Layer):
                         [self.annotations[0]], {}, self.resolution.resolution
                     )[0].center
                 viewer.position = new_position
-                print(f"i think i set this to the value {new_position}")
         self._apply_to_neuroglancer(viewer)
 
     def set_linked_segmentation(

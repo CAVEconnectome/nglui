@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from typing import Union
 
 import attrs
@@ -126,11 +127,12 @@ class AnnotationBase:
     def _to_neuroglancer(
         self, NglAnnotation, tag_map=dict(), layer_resolution=None
     ) -> dict:
+        anno = copy.deepcopy(self)
         if tag_map:
-            self.set_tags(tag_map)
+            anno.set_tags(tag_map)
         if layer_resolution is not None and self.resolution is not None:
-            self.scale_points(layer_resolution)
-        return NglAnnotation(**asdict(self, filter=_annotation_filter))
+            anno.scale_points(layer_resolution)
+        return NglAnnotation(**asdict(anno, filter=_annotation_filter))
 
 
 @define
