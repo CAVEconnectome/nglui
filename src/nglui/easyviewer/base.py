@@ -600,6 +600,37 @@ class ViewerState:
         for layer in self.layers:
             layer._apply_datamaps(datamap)
 
+    def add_annotation_source(
+        self,
+        source: str,
+        name: str = "annotation",
+        linked_segmentation: Union[str, bool] = True,
+        shader: Optional[str] = None,
+    ) -> Self:
+        """Add a precomputed annotation source to the viewer.
+
+        Parameters
+        ----------
+        source : str
+            The source path for the annotation layer.
+        name : str, optional
+            The name of the annotation layer, by default "annotation".
+        shader : Optional[str], optional
+            The shader to use for the annotation layer, by default None.
+
+        Returns
+        -------
+        Self
+            The viewer state object with the added annotation layer.
+        """
+        self.add_annotation_layer(
+            source=source,
+            name=name,
+            linked_segmentation=linked_segmentation,
+            shader=shader,
+        )
+        return self
+
     def add_points(
         self,
         data: Union[list, np.ndarray, pd.DataFrame],
@@ -676,6 +707,238 @@ class ViewerState:
                 data_resolution=data_resolution,
             )
             self.add_layer(layer)
+        return self
+
+    def add_lines(
+        self,
+        data: pd.DataFrame,
+        name: str = "annotation",
+        point_a_column: str = None,
+        point_b_column: str = None,
+        segment_column: Optional[str] = None,
+        description_column: Optional[str] = None,
+        tag_column: Optional[str] = None,
+        tag_bools: Optional[list] = None,
+        data_resolution: Optional[list] = None,
+        tags: Optional[list] = None,
+        linked_segmentation: Union[str, bool] = True,
+        shader: Optional[str] = None,
+    ) -> Self:
+        """Add lines to an existing annotation layer or create a new one.
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            The DataFrame containing the line annotations.
+        name : str, optional
+            The name of the annotation layer, by default "annotation".
+        point_a_column : str
+            The column name for the start point coordinates.
+        point_b_column : str
+            The column name for the end point coordinates.
+        segment_column : Optional[str], optional
+            The name of the column containing linked segment IDs, by default None.
+        description_column : Optional[str], optional
+            The name of the column containing descriptions, by default None.
+        tag_column : Optional[str], optional
+            The name of a column containing tags, by default None.
+        tag_bools : Optional[list], optional
+            A list of column names indicating tags as booleans, by default None.
+        data_resolution : Optional[list], optional
+            The resolution of the data, by default None.
+        tags : Optional[list], optional
+            A list of tags to add to the annotation layer, by default None.
+        linked_segmentation : str or bool, optional
+            The name of the segmentation layer to link to, by default None.
+            If True, will link to the first segmentation layer found in the viewer.
+            If False, will not link to any segmentation layer.
+        shader : Optional[str], optional
+            The shader to use for the annotation layer, by default None.
+
+        Returns
+        -------
+        Self
+            The viewer state object with the added lines.
+        """
+        if name in self.layer_names:
+            layer = self.get_layer(name)
+            if not isinstance(layer, LocalAnnotationLayer):
+                raise ValueError(
+                    f"Layer {name} already exists but is not a LocalAnnotationLayer."
+                )
+        else:
+            layer = LocalAnnotationLayer(
+                name=name,
+                resolution=data_resolution,
+                tags=tags,
+                linked_segmentation=linked_segmentation,
+                shader=shader,
+            ).add_lines(
+                data,
+                point_a_column=point_a_column,
+                point_b_column=point_b_column,
+                segment_column=segment_column,
+                description_column=description_column,
+                tag_column=tag_column,
+                tag_bools=tag_bools,
+                data_resolution=data_resolution,
+            )
+            self.add_layer(layer)
+        return self
+
+    def add_ellipsoids(
+        self,
+        data: pd.DataFrame,
+        name: str = "annotation",
+        center_column: str = None,
+        radii_column: str = None,
+        segment_column: Optional[str] = None,
+        description_column: Optional[str] = None,
+        tag_column: Optional[str] = None,
+        tag_bools: Optional[list] = None,
+        data_resolution: Optional[list] = None,
+        tags: Optional[list] = None,
+        linked_segmentation: Union[str, bool] = True,
+        shader: Optional[str] = None,
+    ) -> Self:
+        """Add ellipsoid annotations to an existing annotation layer or create a new one.
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            The DataFrame containing the ellipsoid annotations.
+        name : str, optional
+            The name of the annotation layer, by default "annotation".
+        center_column : str
+            The column name for the ellipsoid center coordinates.
+        radii_column : str
+            The column name for the ellipsoid radii.
+        segment_column : Optional[str], optional
+            The name of the column containing linked segment IDs, by default None.
+        description_column : Optional[str], optional
+            The name of the column containing descriptions, by default None.
+        tag_column : Optional[str], optional
+            The name of a column containing tags, by default None.
+        tag_bools : Optional[list], optional
+            A list of column names indicating tags as booleans, by default None.
+        data_resolution : Optional[list], optional
+            The resolution of the data, by default None.
+        tags : Optional[list], optional
+            A list of tags to add to the annotation layer, by default None.
+        linked_segmentation : str or bool, optional
+            The name of the segmentation layer to link to, by default None.
+            If True, will link to the first segmentation layer found in the viewer.
+            If False, will not link to any segmentation layer.
+        shader : Optional[str], optional
+            The shader to use for the annotation layer, by default None.
+
+        Returns
+        -------
+        Self
+            The viewer state object with the added ellipsoids.
+        """
+        if name in self.layer_names:
+            layer = self.get_layer(name)
+            if not isinstance(layer, LocalAnnotationLayer):
+                raise ValueError(
+                    f"Layer {name} already exists but is not a LocalAnnotationLayer."
+                )
+        else:
+            layer = LocalAnnotationLayer(
+                name=name,
+                resolution=data_resolution,
+                tags=tags,
+                linked_segmentation=linked_segmentation,
+                shader=shader,
+            ).add_ellipsoids(
+                data,
+                center_column=center_column,
+                radii_column=radii_column,
+                segment_column=segment_column,
+                description_column=description_column,
+                tag_column=tag_column,
+                tag_bools=tag_bools,
+                data_resolution=data_resolution,
+            )
+            self.add_layer(layer)
+        return self
+
+    def add_boxes(
+        self,
+        data: pd.DataFrame,
+        name: str = "annotation",
+        point_a_column: str = None,
+        point_b_column: str = None,
+        segment_column: Optional[str] = None,
+        description_column: Optional[str] = None,
+        tag_column: Optional[str] = None,
+        tag_bools: Optional[list] = None,
+        data_resolution: Optional[list] = None,
+        tags: Optional[list] = None,
+        linked_segmentation: Union[str, bool] = True,
+        shader: Optional[str] = None,
+    ) -> Self:
+        """Add bounding box annotations to an existing annotation layer or create a new one.
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            The DataFrame containing the bounding box annotations.
+        name : str, optional
+            The name of the annotation layer, by default "annotation".
+        point_a_column : str
+            The column name for the start point coordinates of the box.
+        point_b_column : str
+            The column name for the end point coordinates of the box.
+        segment_column : Optional[str], optional
+            The name of the column containing linked segment IDs, by default None.
+        description_column : Optional[str], optional
+            The name of the column containing descriptions, by default None.
+        tag_column : Optional[str], optional
+            The name of a column containing tags, by default None.
+        tag_bools : Optional[list], optional
+            A list of column names indicating tags as booleans, by default None.
+        data_resolution : Optional[list], optional
+            The resolution of the data, by default None.
+        tags : Optional[list], optional
+            A list of tags to add to the annotation layer, by default None.
+        linked_segmentation : str or bool, optional
+            The name of the segmentation layer to link to, by default None.
+            If True, will link to the first segmentation layer found in the viewer.
+            If False, will not link to any segmentation layer.
+        shader : Optional[str], optional
+            The shader to use for the annotation layer, by default None.
+
+        Returns
+        -------
+        Self
+            The viewer state object with the added bounding boxes.
+        """
+        if name in self.layer_names:
+            layer = self.get_layer(name)
+            if not isinstance(layer, LocalAnnotationLayer):
+                raise ValueError(
+                    f"Layer {name} already exists but is not a LocalAnnotationLayer."
+                )
+        else:
+            layer = LocalAnnotationLayer(
+                name=name,
+                resolution=data_resolution,
+                tags=tags,
+                linked_segmentation=linked_segmentation,
+                shader=shader,
+            ).add_boxes(
+                data,
+                point_a_column=point_a_column,
+                point_b_column=point_b_column,
+                segment_column=segment_column,
+                description_column=description_column,
+                tag_column=tag_column,
+                tag_bools=tag_bools,
+                data_resolution=data_resolution,
+            )
+            self.add_layer(layer)
+        return self
 
     def to_neuroglancer_state(self):
         if self.dimensions is None:
@@ -712,7 +975,7 @@ class ViewerState:
             s.projection_scale = self.scale_3d
             s.show_slices = self.show_slices
             for layer in self.layers:
-                layer.to_neuroglancer(s)
+                layer.apply_to_neuroglancer(s)
 
         return self._viewer
 

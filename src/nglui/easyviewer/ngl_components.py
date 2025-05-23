@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import copy
 import json
+from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from functools import partial
-from typing import Callable, Optional, Self, Union
+from typing import Optional, Self, Union
 
 import caveclient
 import numpy as np
@@ -106,7 +107,7 @@ class Source:
 
 
 @define
-class _Layer:
+class _Layer(ABC):
     name = field(type=str)
     visible = field(default=True, type=bool, kw_only=True)
     archived = field(default=False, type=bool, kw_only=True)
@@ -198,6 +199,8 @@ class _Layer:
         ----------
         datamap : dict
             The datamap to map the layer to.
+        inplace: bool, optional
+            Whether to modify the layer in place or return a new layer. Default is False.
         """
         if inplace:
             self._apply_datamaps(datamap)
@@ -206,9 +209,9 @@ class _Layer:
             with self.with_datamap(datamap) as layer:
                 return layer
 
+    @abstractmethod
     def to_neuroglancer_layer(self):
         self._check_fully_mapped()
-        return Self
 
     def to_dict(self, with_name: bool = True) -> dict:
         """Convert the layer to a dictionary.
@@ -236,7 +239,7 @@ class _Layer:
     def to_json(self, with_name: bool = True, indent: int = 2):
         return json.dumps(self.to_dict(with_name=with_name), indent=indent)
 
-    def _to_neuroglancer_state(self, s):
+    def _apply_to_neuroglancer_state(self, s):
         if self.name in s.layers:
             raise ValueError(
                 f"Layer {self.name} already exists in the viewer. Please use a different name."
@@ -246,14 +249,14 @@ class _Layer:
         ll.visible = self.visible
         ll.archived = self.archived
 
-    def _to_neuroglancer(self, viewer):
+    def _apply_to_neuroglancer(self, viewer):
         # Opens context or not depending on if the object is a viewer or a (presumed within-context) state
         self._check_fully_mapped()
         if isinstance(viewer, Viewer):
             with viewer.txn() as s:
-                self._to_neuroglancer_state(s)
+                self._apply_to_neuroglancer_state(s)
         elif isinstance(viewer, viewer_state.ViewerState):
-            self._to_neuroglancer_state(viewer)
+            self._apply_to_neuroglancer_state(viewer)
 
 
 def _handle_source(source, resolution=None, image_layer=False):
@@ -350,12 +353,11 @@ class ImageLayer(_Layer):
             annotation_color=self.color,
         )
 
-    def to_neuroglancer(self, viewer: Viewer) -> viewer_state.ImageLayer:
+    def apply_to_neuroglancer(self, viewer: Viewer) -> viewer_state.ImageLayer:
         "Can be a viewer or a viewer.txn()-context state"
-        self._to_neuroglancer(viewer)
-        return self
+        self._apply_to_neuroglancer(viewer)
 
-    def from_client(
+    def add_from_client(
         self,
         client: caveclient.CAVEclient,
     ) -> Self:
@@ -424,12 +426,11 @@ class SegmentationLayer(_Layer):
             skeleton_shader=self.shader,
         )
 
-    def to_neuroglancer(self, viewer) -> viewer_state.SegmentationLayer:
+    def apply_to_neuroglancer(self, viewer) -> viewer_state.SegmentationLayer:
         "Can be a viewer or a viewer.txn()-context state"
-        self._to_neuroglancer(viewer)
-        return self
+        return self._apply_to_neuroglancer(viewer)
 
-    def from_client(
+    def add_from_client(
         self,
         client: caveclient.CAVEclient,
         add_skeleton_source: bool = True,
@@ -518,7 +519,7 @@ class SegmentationLayer(_Layer):
         self.segment_colors.update(parsed_colors)
         return self
 
-    def segments_from_dataframe(
+    def add_segments_from_data(
         self,
         data: Union[pd.DataFrame, DataMap],
         segment_column: str,
@@ -563,7 +564,7 @@ class SegmentationLayer(_Layer):
         self.add_segments(segments)
         return self
 
-    def segment_properties(
+    def add_segment_properties(
         self,
         data: Union[pd.DataFrame, DataMap],
         client: "caveclient.CAVEclient",
@@ -773,6 +774,7 @@ class LocalAnnotationLayer(_Layer):
     shader = field(default=None, type=str, kw_only=True)
     tags = field(factory=list, type=list, kw_only=True)
     linked_segmentation = field(default=None, type=Union[str, dict], kw_only=True)
+    set_position = field(default=True, type=bool, kw_only=True)
 
     def __attrs_post_init__(self):
         self.color = parse_color(self.color)
@@ -804,7 +806,7 @@ class LocalAnnotationLayer(_Layer):
             tool_bindings=bindings,
         )
 
-    def to_neuroglancer(
+    def apply_to_neuroglancer(
         self,
         viewer,
     ) -> viewer_state.AnnotationLayer:
@@ -813,7 +815,29 @@ class LocalAnnotationLayer(_Layer):
             raise ValueError(
                 f"Resolution for annotation layer '{self.name}' must be set before converting to Neuroglancer"
             )
-        self._to_neuroglancer(viewer)
+        if self.set_position:
+            # if viewer.position is None:
+            if len(self.annotations) > 0:
+                if not isinstance(self.resolution, CoordSpace):
+                    self.resolution = CoordSpace(resolution=self.resolution)
+                first_anno = self.annotations[0]
+                if isinstance(first_anno, PointAnnotation):
+                    new_position = _handle_annotations(
+                        [first_anno], {}, self.resolution.resolution
+                    )[0].point
+                elif isinstance(first_anno, LineAnnotation) or isinstance(
+                    first_anno, BoundingBoxAnnotation
+                ):
+                    new_position = _handle_annotations(
+                        [self.annotations[0]], {}, self.resolution.resolution
+                    )[0].point_a
+                elif isinstance(self.annotations[0], EllipsoidAnnotation):
+                    new_position = _handle_annotations(
+                        [self.annotations[0]], {}, self.resolution.resolution
+                    )[0].center
+                viewer.position = new_position
+                print(f"i think i set this to the value {new_position}")
+        self._apply_to_neuroglancer(viewer)
 
     def set_linked_segmentation(
         self,
