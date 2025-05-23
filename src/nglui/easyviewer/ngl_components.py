@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import copy
 import json
-from typing import Optional, Self, Union
+from contextlib import contextmanager
+from functools import partial
+from typing import Callable, Optional, Self, Union
 
 import caveclient
 import numpy as np
@@ -22,6 +25,13 @@ from .utils import (
     parse_graphene_image_url,
     split_point_columns,
 )
+
+
+@define
+class DataMap:
+    """Deferred mapping of dataframes to ViewerState."""
+
+    key = field(default=None, type=str)
 
 
 @define
@@ -96,6 +106,30 @@ class _Layer:
     name = field(type=str)
     visible = field(default=True, type=bool, kw_only=True)
     archived = field(default=False, type=bool, kw_only=True)
+    _datamaps = field(factory=dict, type=dict, init=False)
+
+    @contextmanager
+    def with_datamap(self, datamap: dict):
+        if datamap is None:
+            yield self
+        else:
+            if not isinstance(datamap, dict):
+                datamap = {None: datamap}
+            layer_copy = copy.deepcopy(self)
+            for k, v in datamap.items():
+                if k in layer_copy._datamaps:
+                    func = layer_copy._datamaps.pop(k)
+                    func(v)
+            if not layer_copy.is_static:
+                raise ValueError(
+                    f'"Layer has datamaps registered but no datamap provided: {list(layer_copy._datamaps.keys())}'
+                )
+            yield layer_copy
+
+    @property
+    def is_static(self) -> bool:
+        """Check if the layer is static."""
+        return len(self._datamaps) == 0
 
     def add_source(
         self,
@@ -132,52 +166,80 @@ class _Layer:
             raise ValueError("Invalid source type. Must be str or Source.")
         return self
 
-    def to_neuroglancer_layer(self):
+    def _register_datamap(self, key, func, **kwargs):
+        """Register a function to be called when the datamap is set.
+
+        Parameters
+        ----------
+        func : Callable
+            The function to register.
+        kwargs:
+            Additional keyword arguments to pass to the function.
+        """
+        self._datamaps[key] = partial(func, **kwargs)
+
+    def _apply_datamaps(self, datamap: dict):
+        """Map"""
+        for k, v in datamap.items():
+            if k in self._datamaps:
+                self._datamaps.pop(k)(v)  # Apply the function with the remaining values
+        if not self.is_static:
+            raise ValueError(
+                f"Layer '{self.name}' has datamaps registered but no datamap provided: {list(self._datamaps.keys())}"
+            )
+
+    def to_neuroglancer_layer(self, datamap=None):
         raise NotImplementedError(
             "to_neuroglancer_layer() must be implemented in subclasses"
         )
 
-    def to_dict(self, with_name: bool = True) -> dict:
+    def to_dict(self, with_name: bool = True, datamap: Optional[dict] = None) -> dict:
         """Convert the layer to a dictionary.
         Parameters
         ----------
         with_name : bool, optional
             Whether to include the name, visibility, and archived states of the layer in the dictionary, by default True.
             These are not typically included until the layer is part of a state, but adding them in allows the resulting data to be passed to a viewer state string.
+        datamap: dict, optional
+            A dictionary with keys being names of DataMap parameters and values being the data to be passed.
+            Must be provided if the layer has any datamaps registered.
 
         Returns
         -------
         dict
             The layer as a dictionary.
         """
-
-        layer_dict = self.to_neuroglancer_layer().to_json()
+        layer_dict = self.to_neuroglancer_layer(datamap=datamap).to_json()
         if with_name:
             layer_dict["name"] = self.name
             layer_dict["visible"] = self.visible
             layer_dict["archived"] = self.archived
         return layer_dict
 
-    def to_json(self, with_name: bool = True, indent=2):
-        return json.dumps(self.to_dict(with_name=with_name), indent=indent)
+    def to_json(
+        self, with_name: bool = True, datamap: Optional[dict] = None, indent: int = 2
+    ):
+        return json.dumps(
+            self.to_dict(with_name=with_name, datamap=datamap), indent=indent
+        )
 
-    def _to_neuroglancer_state(self, s):
+    def _to_neuroglancer_state(self, s, datamap=None):
         if self.name in s.layers:
             raise ValueError(
                 f"Layer {self.name} already exists in the viewer. Please use a different name."
             )
-        s.layers[self.name] = self.to_neuroglancer_layer()
+        s.layers[self.name] = self.to_neuroglancer_layer(datamap=datamap)
         ll = s.layers[self.name]
         ll.visible = self.visible
         ll.archived = self.archived
 
-    def _to_neuroglancer(self, viewer):
+    def _to_neuroglancer(self, viewer, datamap=None):
         # Opens context or not depending on if the object is a viewer or a (presumed within-context) state
         if isinstance(viewer, Viewer):
             with viewer.txn() as s:
-                self._to_neuroglancer_state(s)
+                self._to_neuroglancer_state(s, datamap=datamap)
         elif isinstance(viewer, viewer_state.ViewerState):
-            self._to_neuroglancer_state(viewer)
+            self._to_neuroglancer_state(viewer, datamap=datamap)
 
 
 def _handle_source(source, resolution=None, image_layer=False):
@@ -199,14 +261,16 @@ def _handle_source(source, resolution=None, image_layer=False):
         raise ValueError("Invalid source type. Must be str or Source.")
 
 
-def _handle_annotations(annos):
+def _handle_annotations(annos, tag_map=None, resolution=None):
     "Convert a multi-url source to a Source object."
     if annos is None:
         return []
     elif len(annos) == 0:
         return []
     return [
-        anno.to_neuroglancer() if issubclass(type(anno), AnnotationBase) else anno
+        anno.to_neuroglancer(tag_map=tag_map, layer_resolution=resolution)
+        if issubclass(type(anno), AnnotationBase)
+        else anno
         for anno in annos
     ]
 
@@ -232,13 +296,13 @@ def segments_to_neuroglancer(segments):
         return segments
 
 
-def _handle_linked_segmentation(segmentation_layer):
+def _handle_linked_segmentation(segmentation_layer) -> dict:
     if segmentation_layer is None:
         return None
     elif isinstance(segmentation_layer, SegmentationLayer):
         return {"segments": segmentation_layer.name}
     elif isinstance(segmentation_layer, str):
-        return ({"segments": segmentation_layer},)
+        return {"segments": segmentation_layer}
     else:
         raise ValueError(
             "Invalid linked segmentation layer type. Must be str or SegmentationLayer."
@@ -262,18 +326,19 @@ class ImageLayer(_Layer):
     def __attrs_post_init__(self):
         self.color = parse_color(self.color)
 
-    def to_neuroglancer_layer(self) -> viewer_state.ImageLayer:
-        return viewer_state.ImageLayer(
-            source=source_to_neuroglancer(
-                self.source, resolution=self.resolution, image_layer=True
-            ),
-            shader=self.shader,
-            annotation_color=self.color,
-        )
+    def to_neuroglancer_layer(self, datamap=None) -> viewer_state.ImageLayer:
+        with self.with_datamap(datamap) as layer:
+            return viewer_state.ImageLayer(
+                source=source_to_neuroglancer(
+                    layer.source, resolution=layer.resolution, image_layer=True
+                ),
+                shader=layer.shader,
+                annotation_color=layer.color,
+            )
 
-    def to_neuroglancer(self, viewer: Viewer) -> viewer_state.ImageLayer:
+    def to_neuroglancer(self, viewer: Viewer, datamap=None) -> viewer_state.ImageLayer:
         "Can be a viewer or a viewer.txn()-context state"
-        self._to_neuroglancer(viewer)
+        self._to_neuroglancer(viewer, datamap=datamap)
         return self
 
     def from_client(
@@ -331,21 +396,27 @@ class SegmentationLayer(_Layer):
     def __attrs_post_init__(self):
         self.color = parse_color(self.color)
 
-    def to_neuroglancer_layer(self) -> viewer_state.SegmentationLayer:
-        return viewer_state.SegmentationLayer(
-            source=source_to_neuroglancer(self.source, resolution=self.resolution),
-            visible_segments=segments_to_neuroglancer(self.segments),
-            annotation_color=self.color,
-            selected_alpha=self.selected_alpha,
-            not_selected_alpha=self.not_selected_alpha,
-            object_alpha=self.alpha_3d,
-            segment_colors=self.segment_colors,
-            skeleton_shader=self.shader,
-        )
+    def to_neuroglancer_layer(
+        self, datamap: Optional[dict] = None
+    ) -> viewer_state.SegmentationLayer:
+        with self.with_datamap(datamap) as layer:
+            return viewer_state.SegmentationLayer(
+                source=source_to_neuroglancer(
+                    layer.source, resolution=layer.resolution
+                ),
+                visible_segments=segments_to_neuroglancer(layer.segments),
+                annotation_color=layer.color,
+                selected_alpha=layer.selected_alpha,
+                not_selected_alpha=layer.not_selected_alpha,
+                object_alpha=layer.alpha_3d,
+                segment_colors=layer.segment_colors,
+                mesh_silhouette_rendering=layer.mesh_silhouette,
+                skeleton_shader=layer.shader,
+            )
 
-    def to_neuroglancer(self, viewer) -> viewer_state.SegmentationLayer:
+    def to_neuroglancer(self, viewer, datamap=dict) -> viewer_state.SegmentationLayer:
         "Can be a viewer or a viewer.txn()-context state"
-        self._to_neuroglancer(viewer)
+        self._to_neuroglancer(viewer, datamap=datamap)
         return self
 
     def from_client(
@@ -432,7 +503,7 @@ class SegmentationLayer(_Layer):
 
     def segments_from_dataframe(
         self,
-        df: pd.DataFrame,
+        data: Union[pd.DataFrame, DataMap],
         segment_column: str,
         visible_column: str = None,
         color_column: str = None,
@@ -441,7 +512,7 @@ class SegmentationLayer(_Layer):
 
         Parameters
         ----------
-        df : pd.DataFrame
+        data : pd.DataFrame
             The DataFrame containing the segmentation data.
         name : str, optional
             The name of the layer. Default is "seg".
@@ -455,12 +526,21 @@ class SegmentationLayer(_Layer):
         SegmentationLayer
             A SegmentationLayer object.
         """
-        segments = df[segment_column].values
+        if isinstance(data, DataMap):
+            self._register_datamap(
+                key=data.key,
+                func=self.segments_from_dataframe,
+                segment_column=segment_column,
+                visible_column=visible_column,
+                color_column=color_column,
+            )
+            return self
+        segments = data[segment_column].values
         if visible_column is not None:
-            segments = {s: v for s, v in zip(segments, df[visible_column].values)}
+            segments = {s: v for s, v in zip(segments, data[visible_column].values)}
         if color_column is not None:
             self.add_segment_colors(
-                {s: parse_color(c) for s, c in zip(segments, df[color_column].values)}
+                {s: parse_color(c) for s, c in zip(segments, data[color_column].values)}
             )
 
         self.add_segments(segments)
@@ -468,7 +548,7 @@ class SegmentationLayer(_Layer):
 
     def segment_properties(
         self,
-        df: pd.DataFrame,
+        data: Union[pd.DataFrame, DataMap],
         client: "caveclient.CAVEclient",
         id_column: str = "pt_root_id",
         label_column: Optional[Union[str, list]] = None,
@@ -491,7 +571,7 @@ class SegmentationLayer(_Layer):
 
         Parameters
         ----------
-        df : pd.DataFrame
+        data : pd.DataFrame
             The DataFrame containing the segment properties.
         client : CAVEclient
             The CAVEclient object needed to upload .
@@ -532,8 +612,28 @@ class SegmentationLayer(_Layer):
             A SegmentationLayer object with added segment properties.
 
         """
+        if isinstance(data, DataMap):
+            self._register_datamap(
+                key=data.key,
+                func=self.segment_properties,
+                client=client,
+                id_column=id_column,
+                label_column=label_column,
+                description_column=description_column,
+                string_columns=string_columns,
+                number_columns=number_columns,
+                tag_value_columns=tag_value_columns,
+                tag_bool_columns=tag_bool_columns,
+                tag_descriptions=tag_descriptions,
+                allow_disambiguation=allow_disambiguation,
+                label_separator=label_separator,
+                label_format_map=label_format_map,
+                prepend_col_name=prepend_col_name,
+                random_columns=random_columns,
+                random_column_prefix=random_column_prefix,
+            )
         segprops = SegmentProperties.from_dataframe(
-            df=df,
+            data=data,
             id_col=id_column,
             label_col=label_column,
             description_col=description_column,
@@ -617,19 +717,21 @@ class AnnotationLayer(_Layer):
     name = field(default="anno", type=str)
     source = field(default=None, type=Source)
     color = field(default=None, type=list, kw_only=True)
-    linked_segmentation_layer = field(default=None, type=Union[str, dict], kw_only=True)
+    linked_segmentation = field(default=None, type=Union[str, dict], kw_only=True)
     shader = field(default=None, type=str, kw_only=True)
 
-    def __attrs_post_init__(self):
-        self.color = parse_color(self.color)
-
-    def to_neuroglancer_layer(self) -> viewer_state.AnnotationLayer:
-        return viewer_state.AnnotationLayer(
-            source=source_to_neuroglancer(self.source),
-            annotation_color=self.color,
-            linked_segmentation_layer=self.linked_segmentation_layer,
-            shader=self.shader,
-        )
+    def to_neuroglancer_layer(
+        self, datamap: Optional[dict] = None
+    ) -> viewer_state.AnnotationLayer:
+        with self.with_datamap(datamap) as layer:
+            return viewer_state.AnnotationLayer(
+                source=source_to_neuroglancer(layer.source),
+                annotation_color=layer.color,
+                linked_segmentation_layer=_handle_linked_segmentation(
+                    layer.linked_segmentation
+                ),
+                shader=layer.shader,
+            )
 
     def add_shader(self, shader: str) -> Self:
         """Add a shader to the layer.
@@ -650,39 +752,53 @@ class LocalAnnotationLayer(_Layer):
     resolution = field(default=None, type=list, kw_only=True)
     color = field(default=None, type=list, kw_only=True)
     annotations = field(default=None, type=list, kw_only=True)
-    linked_segmentation_layer = field(default=None, type=Union[str, dict], kw_only=True)
+    link_to = field(default=None, type=Union[str, dict], kw_only=True)
     shader = field(default=None, type=str, kw_only=True)
     tags = field(factory=list, type=list, kw_only=True)
+    linked_segmentation = field(default=None, type=Union[str, dict], kw_only=True)
 
     def __attrs_post_init__(self):
         self.color = parse_color(self.color)
 
-    def to_neuroglancer_layer(self) -> viewer_state.LocalAnnotationLayer:
-        props = make_annotation_properties(self.tags, tag_base_number=0)
-        bindings = make_bindings(props)
-        if not isinstance(self.resolution, CoordSpace):
-            self.resolution = CoordSpace(resolution=self.resolution)
-        return viewer_state.LocalAnnotationLayer(
-            dimensions=self.resolution.to_neuroglancer(),
-            annotation_color=self.color,
-            annotations=_handle_annotations(self.annotations),
-            linked_segmentation_layer=_handle_linked_segmentation(
-                self.linked_segmentation_layer
-            ),
-            shader=self.shader,
-            annotation_properties=props,
-            tool_bindings=bindings,
-        )
+    def to_neuroglancer_layer(
+        self, datamap: Optional[dict] = None
+    ) -> viewer_state.LocalAnnotationLayer:
+        if len(self.tags) > MAX_TAG_COUNT:
+            raise ValueError(
+                f"Too many tags. Only {MAX_TAG_COUNT} distinct tags are allowed and {len(self.tags)} have been provided."
+            )
 
-    def to_neuroglancer(self, viewer) -> viewer_state.AnnotationLayer:
+        with self.with_datamap(datamap) as layer:
+            tag_map = {t: i for i, t in enumerate(layer.tags)}
+            props = make_annotation_properties(layer.tags, tag_base_number=0)
+            bindings = make_bindings(props)
+            if not isinstance(layer.resolution, CoordSpace):
+                layer.resolution = CoordSpace(resolution=layer.resolution)
+            return viewer_state.LocalAnnotationLayer(
+                dimensions=layer.resolution.to_neuroglancer(),
+                annotation_color=layer.color,
+                annotations=_handle_annotations(
+                    layer.annotations, tag_map, layer.resolution.resolution
+                ),
+                linked_segmentation_layer=_handle_linked_segmentation(
+                    layer.linked_segmentation
+                ),
+                shader=layer.shader,
+                annotation_properties=props,
+                tool_bindings=bindings,
+            )
+
+    def to_neuroglancer(
+        self, viewer, datamap: Optional[dict] = None
+    ) -> viewer_state.AnnotationLayer:
         "Can be a viewer or a viewer.txn()-context state"
         if self.resolution is None:
             raise ValueError(
                 f"Resolution for annotation layer '{self.name}' must be set before converting to Neuroglancer"
             )
-        self._to_neuroglancer(viewer)
+        self._to_neuroglancer(viewer, datamap=datamap)
 
-    def set_linked_segmentation_layer(
+    def set_linked_segmentation(
         self,
         layer: Union[str, SegmentationLayer],
     ) -> Self:
@@ -696,7 +812,7 @@ class LocalAnnotationLayer(_Layer):
         """
         if isinstance(layer, SegmentationLayer):
             layer = layer.name
-        self.linked_segmentation_layer = layer
+        self.linked_segmentation = layer
         return self
 
     def add_annotations(
@@ -726,21 +842,61 @@ class LocalAnnotationLayer(_Layer):
                 )
         return self
 
-    def add_point_annotations(
+    def _handle_annotation_details(
         self,
-        df: pd.DataFrame,
-        point_column: str,
+        df,
+        segment_column,
+        description_column,
+        tag_column,
+        tag_bools,
+    ):
+        if segment_column is not None:
+            segments = df[segment_column].values
+        else:
+            segments = [None] * len(df)
+        if description_column is not None:
+            descriptions = df[description_column].values
+        else:
+            descriptions = [None] * len(df)
+
+        # Handle tags
+        tag_list = [[] for _ in range(len(df))]
+        if tag_column is not None:
+            for ii, t in enumerate(df[tag_column].values):
+                tag_list[ii].extend([t])
+        if tag_bools is not None:
+            for tag_ in tag_bools:
+                row_to_add = np.arange(len(df))[df[tag_]]
+                for i in row_to_add:
+                    tag_list[i].extend([tag_])
+
+        # Update annotation tags with unique values
+        all_tags = []
+        if tag_column:
+            all_tags.extend(df[tag_column].unique().tolist())
+        if tag_bools:
+            all_tags.extend(tag_bools)
+        self.tags.extend(sorted(set(all_tags)))
+
+        return segments, descriptions, tag_list
+
+    def add_points(
+        self,
+        data: Union[pd.DataFrame, np.ndarray],
+        point_column: Optional[str] = None,
         segment_column: Optional[str] = None,
         description_column: Optional[str] = None,
-        data_resolution: Optional[list] = None,
         tag_column: Optional[str] = None,
+        tag_bools: Optional[list] = None,
+        data_resolution: Optional[list] = None,
     ) -> Self:
         """Add point annotations to the layer.
 
         Parameters
         ----------
-        df : pd.DataFrame
-            The DataFrame containing the point annotations.
+        data : pd.DataFrame or np.ndarray
+            The DataFrame containing the point annotations or an Nx3 array.
+            If using an array, there is no way to set segment IDs, descriptions, or tags.
         point_column : str
             The column name for the point coordinates.
             Can be a prefix for a split column name with _x, _y, _z as suffixes.
@@ -750,6 +906,12 @@ class LocalAnnotationLayer(_Layer):
             The column name for the segment descriptions. Default is None.
         tag_column : str, optional
             The column name for segment descripion. Default is None.
+        tag_column: str, optional
+            The column name for the tags. Default is None.
+            Row values should be strings. Nones and NAs will be skipped.
+        tag_bools: list, optional
+            List of column names to treat as a tag, with values being booleans
+            indicating whether the tag is present or not. Default is None.
         data_resolution : list, optional
             The resolution of the data. If None, follows from layer resolution.
             Default is None.
@@ -759,18 +921,34 @@ class LocalAnnotationLayer(_Layer):
         SegmentationLayer
             The SegmentationLayer object with added point annotations.
         """
-        point_column = split_point_columns(point_column, df.columns)
-        points = df[point_column].values
-        if data_resolution is not None:
-            points = np.array(points) / np.array(data_resolution)
-        if segment_column is not None:
-            segments = df[segment_column].values
+        if isinstance(data, DataMap):
+            self._register_datamap(
+                key=data.key,
+                func=self.add_points,
+                point_column=point_column,
+                segment_column=segment_column,
+                description_column=description_column,
+                tag_column=tag_column,
+                tag_bools=tag_bools,
+                data_resolution=data_resolution,
+            )
+            return self
+        if isinstance(data, pd.DataFrame):
+            point_column = split_point_columns(point_column, data.columns)
+            points = data[point_column].values
+
+            segments, descriptions, tag_list = self._handle_annotation_details(
+                data,
+                segment_column,
+                description_column,
+                tag_column,
+                tag_bools,
+            )
         else:
+            points = np.array(data).reshape(-1, 3)
             segments = [None] * len(points)
-        if description_column is not None:
-            descriptions = df[description_column].values
-        else:
             descriptions = [None] * len(points)
+            tag_list = [None] * len(points)
 
         self.add_annotations(
             [
@@ -778,27 +956,30 @@ class LocalAnnotationLayer(_Layer):
                     point=p,
                     segments=seg,
                     description=d,
+                    tags=t,
+                    resolution=data_resolution,
                 )
-                for p, seg, d in zip(points, segments, descriptions)
+                for p, seg, d, t in zip(points, segments, descriptions, tag_list)
             ]
         )
         return self
 
-    def add_line_annotations(
+    def add_lines(
         self,
-        df: pd.DataFrame,
+        data: pd.DataFrame,
         point_a_column: str,
         point_b_column: str,
         segment_column: Optional[str] = None,
         description_column: Optional[str] = None,
-        data_resolution: Optional[list] = None,
         tag_column: Optional[str] = None,
+        tag_bools: Optional[list] = None,
+        data_resolution: Optional[list] = None,
     ) -> Self:
         """Add point annotations to the layer.
 
         Parameters
         ----------
-        df : pd.DataFrame
+        data : pd.DataFrame
             The DataFrame containing the point annotations.
         point_a_column : str
             The column name for the start point coordinates.
@@ -812,26 +993,34 @@ class LocalAnnotationLayer(_Layer):
             The column name for the segment descriptions. Default is None.
         data_resolution : list, optional
             The resolution of the data. Default is None.
+        tag_column: str, optional
+            The column name for the tags. Default is None.
+            Row values should be strings. Nones and NAs will be skipped.
+        tag_bools: list, optional
+            List of column names to treat as a tag, with values being booleans
+            indicating whether the tag is present or not. Default is None.
+        data_resolution : list, optional
+            The resolution of the data. If None, follows from layer resolution.
+            Default is None.
 
         Returns
         -------
         SegmentationLayer
             The SegmentationLayer object with added point annotations.
         """
-        point_a_column = split_point_columns(point_a_column, df.columns)
-        point_b_column = split_point_columns(point_b_column, df.columns)
+        point_a_column = split_point_columns(point_a_column, data.columns)
+        point_b_column = split_point_columns(point_b_column, data.columns)
 
-        points_a = df[point_a_column].values
-        points_b = df[point_b_column].values
+        points_a = data[point_a_column].values
+        points_b = data[point_b_column].values
 
-        if segment_column is not None:
-            segments = df[segment_column].values
-        else:
-            segments = [None] * len(points_a)
-        if description_column is not None:
-            descriptions = df[description_column].values
-        else:
-            descriptions = [None] * len(points_a)
+        segments, descriptions, tag_list = self._handle_annotation_details(
+            data,
+            segment_column,
+            description_column,
+            tag_column,
+            tag_bools,
+        )
 
         self.add_annotations(
             [
@@ -840,27 +1029,32 @@ class LocalAnnotationLayer(_Layer):
                     point_b=p_b,
                     segments=seg,
                     description=d,
+                    tags=t,
+                    resolution=data_resolution,
                 )
-                for p_a, p_b, seg, d in zip(points_a, points_b, segments, descriptions)
+                for p_a, p_b, seg, d, t in zip(
+                    points_a, points_b, segments, descriptions, tag_list
+                )
             ]
         )
         return self
 
-    def add_ellipsoid_annotations(
+    def add_ellipsoids(
         self,
-        df: pd.DataFrame,
+        data: pd.DataFrame,
         center_column: str,
         radii_column: str,
         segment_column: Optional[str] = None,
         description_column: Optional[str] = None,
-        data_resolution: Optional[list] = None,
         tag_column: Optional[str] = None,
+        tag_bools: Optional[list] = None,
+        data_resolution: Optional[list] = None,
     ) -> Self:
         """Add point annotations to the layer.
 
         Parameters
         ----------
-        df : pd.DataFrame
+        data : pd.DataFrame
             The DataFrame containing the point annotations.
         center_column : str
             The column name for the center point coordinates.
@@ -874,121 +1068,68 @@ class LocalAnnotationLayer(_Layer):
             The column name for the segment descriptions. Default is None.
         data_resolution : list, optional
             The resolution of the data. Default is None.
+        tag_column: str, optional
+            The column name for the tags. Default is None.
+            Row values should be strings. Nones and NAs will be skipped.
+        tag_bools: list, optional
+            List of column names to treat as a tag, with values being booleans
+            indicating whether the tag is present or not. Default is None.
+        data_resolution : list, optional
+            The resolution of the data. If None, follows from layer resolution.
+            Default is None.
 
         Returns
         -------
         SegmentationLayer
             The SegmentationLayer object with added point annotations.
         """
-        center_column = split_point_columns(center_column, df.columns)
-        radii_column = split_point_columns(radii_column, df.columns)
+        center_column = split_point_columns(center_column, data.columns)
+        radii_column = split_point_columns(radii_column, data.columns)
 
-        centers = df[center_column].values
-        radii_vals = df[radii_column].values
+        centers = data[center_column].values
+        radii_vals = data[radii_column].values
 
-        if segment_column is not None:
-            segments = df[segment_column].values
-        else:
-            segments = [None] * len(center_column)
-        if description_column is not None:
-            descriptions = df[description_column].values
-        else:
-            descriptions = [None] * len(center_column)
+        segments, descriptions, tag_list = self._handle_annotation_details(
+            data,
+            segment_column,
+            description_column,
+            tag_column,
+            tag_bools,
+        )
 
         self.add_annotations(
             [
                 EllipsoidAnnotation(
-                    center=p_a,
-                    radii=p_b,
+                    center=c,
+                    radii=r,
                     segments=seg,
                     description=d,
+                    tags=t,
+                    resolution=data_resolution,
                 )
-                for p_a, p_b, seg, d in zip(
-                    center_column, radii_column, segments, descriptions
+                for c, r, seg, d, t in zip(
+                    centers, radii_vals, segments, descriptions, tag_list
                 )
             ]
         )
         return self
 
-    def add_sphere_annotations(
+    def add_boxes(
         self,
-        df: pd.DataFrame,
-        center_column: str,
-        radius_column: str,
-        segment_column: Optional[str] = None,
-        description_column: Optional[str] = None,
-        data_resolution: Optional[list] = None,
-        tag_column: Optional[str] = None,
-    ) -> Self:
-        """Add point annotations to the layer.
-
-        Parameters
-        ----------
-        df : pd.DataFrame
-            The DataFrame containing the point annotations.
-        center_column : str
-            The column name for the center point coordinates.
-            Can be a prefix for a split column name with _x, _y, _z as suffixes.
-        radii_column : str
-            The column name for the radius values.
-            Can be a prefix for a split column name with _x, _y, _z as suffixes.
-        segment_column : str, optional
-            The column name for the segment IDs. Default is None.
-        description_column : str, optional
-            The column name for the segment descriptions. Default is None.
-        data_resolution : list, optional
-            The resolution of the data. Default is None.
-
-        Returns
-        -------
-        SegmentationLayer
-            The SegmentationLayer object with added point annotations.
-        """
-        center_column = split_point_columns(center_column, df.columns)
-        radius_column = radius_column
-
-        centers = df[center_column].values
-        radius_vals = df[radius_column].values
-
-        if segment_column is not None:
-            segments = df[segment_column].values
-        else:
-            segments = [None] * len(center_column)
-        if description_column is not None:
-            descriptions = df[description_column].values
-        else:
-            descriptions = [None] * len(center_column)
-
-        self.add_annotations(
-            [
-                SphereAnnotation(
-                    center=p_a,
-                    radius=rad,
-                    segments=seg,
-                    description=d,
-                )
-                for p_a, rad, seg, d in zip(
-                    center_column, radius_vals, segments, descriptions
-                )
-            ]
-        )
-        return self
-
-    def add_line_annotations(
-        self,
-        df: pd.DataFrame,
+        data: pd.DataFrame,
         point_a_column: str,
         point_b_column: str,
         segment_column: Optional[str] = None,
         description_column: Optional[str] = None,
-        data_resolution: Optional[list] = None,
         tag_column: Optional[str] = None,
+        tag_bools: Optional[list] = None,
+        data_resolution: Optional[list] = None,
     ) -> Self:
         """Add point annotations to the layer.
 
         Parameters
         ----------
-        df : pd.DataFrame
+        data : pd.DataFrame
             The DataFrame containing the point annotations.
         point_a_column : str
             The column name for the start point coordinates of the box.
@@ -1002,27 +1143,34 @@ class LocalAnnotationLayer(_Layer):
             The column name for the segment descriptions. Default is None.
         data_resolution : list, optional
             The resolution of the data. Default is None.
+        tag_column: str, optional
+            The column name for the tags. Default is None.
+            Row values should be strings. Nones and NAs will be skipped.
+        tag_bools: list, optional
+            List of column names to treat as a tag, with values being booleans
+            indicating whether the tag is present or not. Default is None.
+        data_resolution : list, optional
+            The resolution of the data. If None, follows from layer resolution.
+            Default is None.
 
         Returns
         -------
         SegmentationLayer
             The SegmentationLayer object with added point annotations.
         """
-        point_a_column = split_point_columns(point_a_column, df.columns)
-        point_b_column = split_point_columns(point_b_column, df.columns)
+        point_a_column = split_point_columns(point_a_column, data.columns)
+        point_b_column = split_point_columns(point_b_column, data.columns)
 
-        points_a = df[point_a_column].values
-        points_b = df[point_b_column].values
+        points_a = data[point_a_column].values
+        points_b = data[point_b_column].values
 
-        if segment_column is not None:
-            segments = df[segment_column].values
-        else:
-            segments = [None] * len(points_a)
-        if description_column is not None:
-            descriptions = df[description_column].values
-        else:
-            descriptions = [None] * len(points_a)
-
+        segments, descriptions, tag_list = self._handle_annotation_details(
+            data,
+            segment_column,
+            description_column,
+            tag_column,
+            tag_bools,
+        )
         self.add_annotations(
             [
                 BoundingBoxAnnotation(
@@ -1030,8 +1178,12 @@ class LocalAnnotationLayer(_Layer):
                     point_b=p_b,
                     segments=seg,
                     description=d,
+                    tags=t,
+                    resolution=data_resolution,
                 )
-                for p_a, p_b, seg, d in zip(points_a, points_b, segments, descriptions)
+                for p_a, p_b, seg, d, t in zip(
+                    points_a, points_b, segments, descriptions, tag_list
+                )
             ]
         )
         return self
@@ -1039,22 +1191,3 @@ class LocalAnnotationLayer(_Layer):
     @property
     def tag_map(self) -> dict:
         return {tag: f"tagTool_{ii}" for ii, tag in enumerate(self.tags)}
-
-    # def add_tags(
-    #     self,
-    #     tags: list,
-    # ) -> Self:
-    #     """Add tags to the layer.
-
-    #     Parameters
-    #     ----------
-    #     tags : list
-    #         The tags to add.
-
-    #     """
-    #     if self.tags is None:
-    #         self.tags = []
-    #     for tag in tags:
-    #         if tag not in self.tags:
-    #             self.tags.append(tags)
-    #     return self

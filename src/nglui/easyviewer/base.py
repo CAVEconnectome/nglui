@@ -510,12 +510,49 @@ class ViewerState:
         name: str = "annotation",
         source: Optional[str] = None,
         resolution: Optional[Union[list, np.ndarray]] = None,
+        tags: Optional[list] = None,
+        linked_segmentation: Union[str, bool] = True,
+        shader: str = None,
         **kwargs,
     ) -> Self:
+        """Add an annotation layer, either local or with precomputed annotation source
+
+        Parameters
+        ----------
+        name : str, optional
+            Layer name, by default "annotation"
+        source : Optional[str], optional
+            Cloud annotation source path, if using. By default None
+        resolution : Optional[Union[list, np.ndarray]], optional
+            Layer resolution, only used by local annotation layers.
+            By default None, where it is inferred from the viewer.
+        tags : Optional[list], optional
+            Ordered list of tags, by default None.
+        linked_segmentation : Union[str, bool], optional
+            If True, will link to the first segmentation layer found in the viewer.
+            If False, will not link to any segmentation layer.
+            If a string is provided, it will be used as the name of the segmentation layer to link to.
+
+
+        Returns
+        -------
+        Self
+            The viewer state object with the added annotation layer.
+        """
+        if linked_segmentation:
+            if linked_segmentation is True:
+                for layer in self.layers:
+                    if isinstance(layer, SegmentationLayer):
+                        linked_segmentation = layer.name
+                        break
+                else:
+                    linked_segmentation = None
         if source:
             anno_layer = AnnotationLayer(
                 name=name,
                 source=source,
+                linked_segmentation=linked_segmentation,
+                shader=shader,
                 **kwargs,
             )
         else:
@@ -524,10 +561,121 @@ class ViewerState:
             anno_layer = LocalAnnotationLayer(
                 name=name,
                 resolution=resolution,
+                tags=tags,
+                linked_segmentation=linked_segmentation,
+                shader=shader,
                 **kwargs,
             )
         self.add_layer(anno_layer)
         return self
+
+    def get_layer(self, name: str):
+        """Get a layer by name.
+
+        Parameters
+        ----------
+        name : str
+            The name of the layer to get.
+
+        Returns
+        -------
+        Layer
+            The layer with the specified name.
+        """
+        for layer in self.layers:
+            if layer.name == name:
+                return layer
+        raise ValueError(f"Layer {name} not found in viewer.")
+
+    @contextmanager
+    def with_datamap(self, datamap: dict):
+        """Context manager to apply datamaps."""
+        if not isinstance(datamap, dict):
+            datamap = {None: datamap}
+        viewer_copy = copy.deepcopy(self)
+        viewer_copy._apply_datamaps(datamap)
+        yield viewer_copy
+
+    def _apply_datamaps(self, datamap: dict):
+        for layer in self.layers:
+            layer._apply_datamaps(datamap)
+
+    def add_points(
+        self,
+        data: Union[list, np.ndarray, pd.DataFrame],
+        name: str = "annotation",
+        point_column: Optional[str] = None,
+        segment_column: Optional[str] = None,
+        description_column: Optional[str] = None,
+        tag_column: Optional[str] = None,
+        tag_bools: Optional[list] = None,
+        data_resolution: Optional[list] = None,
+        tags: Optional[list] = None,
+        linked_segmentation: Union[str, bool] = True,
+        shader: Optional[str] = None,
+    ) -> Self:
+        """Add points to an existing annotation layer or create a new one.
+        Parameters
+        ----------
+        data : Union[list, np.ndarray, pd.DataFrame]
+            The data to add to the annotation layer.
+        name : str, optional
+            The name of the annotation layer, by default "annotation".
+        point_column : Optional[str], optional
+            The name of the column containing point coordinates, by default None.
+            None is needed if the data is an array, but is required if the data is a DataFrame.
+        segment_column : Optional[str], optional
+            The name of the column containing linked segment IDs, by default None.
+        description_column : Optional[str], optional
+            The name of the column containing descriptions, by default None.
+            If None, no descriptions will be added.
+        tag_column : Optional[str], optional
+            The name of a column containing tags, by default None.
+        tag_bools : Optional[list], optional
+            A list of column names indicating tags as booleans, by default None.
+        data_resolution : Optional[list], optional
+            The resolution of the data, by default None.
+            If None, the viewer's current resolution will be used.
+        tags : Optional[list], optional
+            A list of tags to add to the annotation layer, by default None.
+            If None, tags will be inferred from the data, if any tag columns are provided.
+        linked_segmentation : str or bool, optional
+            The name of the segmentation layer to link to, by default None.
+            If True, will link to the first segmentation layer found in the viewer.
+            If False, will not link to any segmentation layer.
+        shader : Optional[str], optional
+            The shader to use for the annotation layer, by default None.
+            If None, the default shader will be used.
+
+        Returns
+        -------
+        Self
+            The viewer state object with the added points.
+        """
+
+        if name in self.layer_names:
+            layer = self.get_layer(name)
+            if not isinstance(layer, LocalAnnotationLayer):
+                raise ValueError(
+                    f"Layer {name} already exists but is not a LocalAnnotationLayer."
+                )
+        else:
+            layer = LocalAnnotationLayer(
+                name=name,
+                resolution=data_resolution,
+                tags=tags,
+                linked_segmentation=linked_segmentation,
+                shader=shader,
+            ).add_points(
+                data,
+                point_column=point_column,
+                segment_column=segment_column,
+                description_column=description_column,
+                tag_column=tag_column,
+                tag_bools=tag_bools,
+                data_resolution=data_resolution,
+            )
+            self.add_layer(layer)
 
     def to_neuroglancer_state(self):
         if self.dimensions is None:
@@ -568,6 +716,22 @@ class ViewerState:
 
         return self._viewer
 
+    def map(self, datamap: dict):
+        """Apply a datamap to the viewer state to freeze the state of the viewer.
+
+        Parameters
+        ----------
+        datamap : dict
+            A dictionary mapping layer names to their corresponding datamaps.
+
+        Returns
+        -------
+        Self
+            A new ViewerState object with the datamap applied.
+        """
+        with self.with_datamap(datamap) as viewer_copy:
+            return viewer_copy
+
     def to_dict(self) -> dict:
         """Return a dictionary representation of the viewer state.
 
@@ -598,6 +762,7 @@ class ViewerState:
     def to_url(
         self,
         target_url: str = None,
+        datamap: Optional[dict] = None,
     ):
         """Return a URL representation of the viewer state.
 
@@ -630,6 +795,7 @@ class ViewerState:
 
     def to_link(
         self,
+        datamap: Optional[dict] = None,
         target_url: str = None,
         link_text: str = "Neuroglancer Link",
     ):

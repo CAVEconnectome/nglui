@@ -68,6 +68,22 @@ def list_of_lists(obj):
         return [[obj]]
 
 
+def list_of_strings(obj):
+    if isinstance(obj, str):
+        return [obj]
+    elif isinstance(obj, Iterable):
+        return [str(x) for x in obj if not pd.isna(x)]
+    else:
+        return []
+
+
+def none_or_array(obj):
+    if obj:
+        return np.array(obj)
+    else:
+        return None
+
+
 def is_list_like(obj):
     """
     Check if an object is list-like (iterable but not a mapping or string).
