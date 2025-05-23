@@ -27,6 +27,10 @@ from .utils import (
 )
 
 
+class UnmappedDataError(Exception):
+    """Exception raised when a layer is not fully mapped to a datamap."""
+
+
 @define
 class DataMap:
     """Deferred mapping of dataframes to ViewerState."""
@@ -120,16 +124,19 @@ class _Layer:
                 if k in layer_copy._datamaps:
                     func = layer_copy._datamaps.pop(k)
                     func(v)
-            if not layer_copy.is_static:
-                raise ValueError(
-                    f'"Layer has datamaps registered but no datamap provided: {list(layer_copy._datamaps.keys())}'
-                )
             yield layer_copy
 
     @property
     def is_static(self) -> bool:
         """Check if the layer is static."""
         return len(self._datamaps) == 0
+
+    def _check_fully_mapped(self):
+        """Check if the layer is fully mapped."""
+        if not self.is_static:
+            raise UnmappedDataError(
+                f"Layer '{self.name}' has datamaps registered but no datamap provided: {list(self._datamaps.keys())}"
+            )
 
     def add_source(
         self,
@@ -183,17 +190,27 @@ class _Layer:
         for k, v in datamap.items():
             if k in self._datamaps:
                 self._datamaps.pop(k)(v)  # Apply the function with the remaining values
-        if not self.is_static:
-            raise ValueError(
-                f"Layer '{self.name}' has datamaps registered but no datamap provided: {list(self._datamaps.keys())}"
-            )
 
-    def to_neuroglancer_layer(self, datamap=None):
-        raise NotImplementedError(
-            "to_neuroglancer_layer() must be implemented in subclasses"
-        )
+    def map(self, datamap: dict, inplace: bool = False) -> Self:
+        """Map the layer to a datamap.
 
-    def to_dict(self, with_name: bool = True, datamap: Optional[dict] = None) -> dict:
+        Parameters
+        ----------
+        datamap : dict
+            The datamap to map the layer to.
+        """
+        if inplace:
+            self._apply_datamaps(datamap)
+            return self
+        else:
+            with self.with_datamap(datamap) as layer:
+                return layer
+
+    def to_neuroglancer_layer(self):
+        self._check_fully_mapped()
+        return Self
+
+    def to_dict(self, with_name: bool = True) -> dict:
         """Convert the layer to a dictionary.
         Parameters
         ----------
@@ -209,37 +226,34 @@ class _Layer:
         dict
             The layer as a dictionary.
         """
-        layer_dict = self.to_neuroglancer_layer(datamap=datamap).to_json()
+        layer_dict = self.to_neuroglancer_layer().to_json()
         if with_name:
             layer_dict["name"] = self.name
             layer_dict["visible"] = self.visible
             layer_dict["archived"] = self.archived
         return layer_dict
 
-    def to_json(
-        self, with_name: bool = True, datamap: Optional[dict] = None, indent: int = 2
-    ):
-        return json.dumps(
-            self.to_dict(with_name=with_name, datamap=datamap), indent=indent
-        )
+    def to_json(self, with_name: bool = True, indent: int = 2):
+        return json.dumps(self.to_dict(with_name=with_name), indent=indent)
 
-    def _to_neuroglancer_state(self, s, datamap=None):
+    def _to_neuroglancer_state(self, s):
         if self.name in s.layers:
             raise ValueError(
                 f"Layer {self.name} already exists in the viewer. Please use a different name."
             )
-        s.layers[self.name] = self.to_neuroglancer_layer(datamap=datamap)
+        s.layers[self.name] = self.to_neuroglancer_layer()
         ll = s.layers[self.name]
         ll.visible = self.visible
         ll.archived = self.archived
 
-    def _to_neuroglancer(self, viewer, datamap=None):
+    def _to_neuroglancer(self, viewer):
         # Opens context or not depending on if the object is a viewer or a (presumed within-context) state
+        self._check_fully_mapped()
         if isinstance(viewer, Viewer):
             with viewer.txn() as s:
-                self._to_neuroglancer_state(s, datamap=datamap)
+                self._to_neuroglancer_state(s)
         elif isinstance(viewer, viewer_state.ViewerState):
-            self._to_neuroglancer_state(viewer, datamap=datamap)
+            self._to_neuroglancer_state(viewer)
 
 
 def _handle_source(source, resolution=None, image_layer=False):
@@ -326,19 +340,19 @@ class ImageLayer(_Layer):
     def __attrs_post_init__(self):
         self.color = parse_color(self.color)
 
-    def to_neuroglancer_layer(self, datamap=None) -> viewer_state.ImageLayer:
-        with self.with_datamap(datamap) as layer:
-            return viewer_state.ImageLayer(
-                source=source_to_neuroglancer(
-                    layer.source, resolution=layer.resolution, image_layer=True
-                ),
-                shader=layer.shader,
-                annotation_color=layer.color,
-            )
+    def to_neuroglancer_layer(self) -> viewer_state.ImageLayer:
+        super().to_neuroglancer_layer()
+        return viewer_state.ImageLayer(
+            source=source_to_neuroglancer(
+                self.source, resolution=self.resolution, image_layer=True
+            ),
+            shader=self.shader,
+            annotation_color=self.color,
+        )
 
-    def to_neuroglancer(self, viewer: Viewer, datamap=None) -> viewer_state.ImageLayer:
+    def to_neuroglancer(self, viewer: Viewer) -> viewer_state.ImageLayer:
         "Can be a viewer or a viewer.txn()-context state"
-        self._to_neuroglancer(viewer, datamap=datamap)
+        self._to_neuroglancer(viewer)
         return self
 
     def from_client(
@@ -396,27 +410,23 @@ class SegmentationLayer(_Layer):
     def __attrs_post_init__(self):
         self.color = parse_color(self.color)
 
-    def to_neuroglancer_layer(
-        self, datamap: Optional[dict] = None
-    ) -> viewer_state.SegmentationLayer:
-        with self.with_datamap(datamap) as layer:
-            return viewer_state.SegmentationLayer(
-                source=source_to_neuroglancer(
-                    layer.source, resolution=layer.resolution
-                ),
-                visible_segments=segments_to_neuroglancer(layer.segments),
-                annotation_color=layer.color,
-                selected_alpha=layer.selected_alpha,
-                not_selected_alpha=layer.not_selected_alpha,
-                object_alpha=layer.alpha_3d,
-                segment_colors=layer.segment_colors,
-                mesh_silhouette_rendering=layer.mesh_silhouette,
-                skeleton_shader=layer.shader,
-            )
+    def to_neuroglancer_layer(self) -> viewer_state.SegmentationLayer:
+        super().to_neuroglancer_layer()
+        return viewer_state.SegmentationLayer(
+            source=source_to_neuroglancer(self.source, resolution=self.resolution),
+            visible_segments=segments_to_neuroglancer(self.segments),
+            annotation_color=self.color,
+            selected_alpha=self.selected_alpha,
+            not_selected_alpha=self.not_selected_alpha,
+            object_alpha=self.alpha_3d,
+            segment_colors=self.segment_colors,
+            mesh_silhouette_rendering=self.mesh_silhouette,
+            skeleton_shader=self.shader,
+        )
 
-    def to_neuroglancer(self, viewer, datamap=dict) -> viewer_state.SegmentationLayer:
+    def to_neuroglancer(self, viewer) -> viewer_state.SegmentationLayer:
         "Can be a viewer or a viewer.txn()-context state"
-        self._to_neuroglancer(viewer, datamap=datamap)
+        self._to_neuroglancer(viewer)
         return self
 
     def from_client(
@@ -470,6 +480,13 @@ class SegmentationLayer(_Layer):
         SegmentationLayer
             The SegmentationLayer object.
         """
+        if isinstance(segments, DataMap):
+            self._register_datamap(
+                key=segments.key,
+                func=self.add_segments,
+                visible=visible,
+            )
+            return self
         old_segments = dict(segments_to_neuroglancer(self.segments))
         if visible is not None:
             segments = {s: v for s, v in zip(segments, visible)}
@@ -721,17 +738,17 @@ class AnnotationLayer(_Layer):
     shader = field(default=None, type=str, kw_only=True)
 
     def to_neuroglancer_layer(
-        self, datamap: Optional[dict] = None
+        self,
     ) -> viewer_state.AnnotationLayer:
-        with self.with_datamap(datamap) as layer:
-            return viewer_state.AnnotationLayer(
-                source=source_to_neuroglancer(layer.source),
-                annotation_color=layer.color,
-                linked_segmentation_layer=_handle_linked_segmentation(
-                    layer.linked_segmentation
-                ),
-                shader=layer.shader,
-            )
+        super().to_neuroglancer_layer()
+        return viewer_state.AnnotationLayer(
+            source=source_to_neuroglancer(self.source),
+            annotation_color=self.color,
+            linked_segmentation_layer=_handle_linked_segmentation(
+                self.linked_segmentation
+            ),
+            shader=self.shader,
+        )
 
     def add_shader(self, shader: str) -> Self:
         """Add a shader to the layer.
@@ -760,43 +777,43 @@ class LocalAnnotationLayer(_Layer):
     def __attrs_post_init__(self):
         self.color = parse_color(self.color)
 
-    def to_neuroglancer_layer(
-        self, datamap: Optional[dict] = None
-    ) -> viewer_state.LocalAnnotationLayer:
+    def to_neuroglancer_layer(self) -> viewer_state.LocalAnnotationLayer:
+        super().to_neuroglancer_layer()
+
         if len(self.tags) > MAX_TAG_COUNT:
             raise ValueError(
                 f"Too many tags. Only {MAX_TAG_COUNT} distinct tags are allowed and {len(self.tags)} have been provided."
             )
 
-        with self.with_datamap(datamap) as layer:
-            tag_map = {t: i for i, t in enumerate(layer.tags)}
-            props = make_annotation_properties(layer.tags, tag_base_number=0)
-            bindings = make_bindings(props)
-            if not isinstance(layer.resolution, CoordSpace):
-                layer.resolution = CoordSpace(resolution=layer.resolution)
-            return viewer_state.LocalAnnotationLayer(
-                dimensions=layer.resolution.to_neuroglancer(),
-                annotation_color=layer.color,
-                annotations=_handle_annotations(
-                    layer.annotations, tag_map, layer.resolution.resolution
-                ),
-                linked_segmentation_layer=_handle_linked_segmentation(
-                    layer.linked_segmentation
-                ),
-                shader=layer.shader,
-                annotation_properties=props,
-                tool_bindings=bindings,
-            )
+        tag_map = {t: i for i, t in enumerate(self.tags)}
+        props = make_annotation_properties(self.tags, tag_base_number=0)
+        bindings = make_bindings(props)
+        if not isinstance(self.resolution, CoordSpace):
+            self.resolution = CoordSpace(resolution=self.resolution)
+        return viewer_state.LocalAnnotationLayer(
+            dimensions=self.resolution.to_neuroglancer(),
+            annotation_color=self.color,
+            annotations=_handle_annotations(
+                self.annotations, tag_map, self.resolution.resolution
+            ),
+            linked_segmentation_layer=_handle_linked_segmentation(
+                self.linked_segmentation
+            ),
+            shader=self.shader,
+            annotation_properties=props,
+            tool_bindings=bindings,
+        )
 
     def to_neuroglancer(
-        self, viewer, datamap: Optional[dict] = None
+        self,
+        viewer,
     ) -> viewer_state.AnnotationLayer:
         "Can be a viewer or a viewer.txn()-context state"
         if self.resolution is None:
             raise ValueError(
                 f"Resolution for annotation layer '{self.name}' must be set before converting to Neuroglancer"
             )
-        self._to_neuroglancer(viewer, datamap=datamap)
+        self._to_neuroglancer(viewer)
 
     def set_linked_segmentation(
         self,
@@ -882,7 +899,7 @@ class LocalAnnotationLayer(_Layer):
 
     def add_points(
         self,
-        data: Union[pd.DataFrame, np.ndarray],
+        data: Union[pd.DataFrame, np.ndarray, DataMap],
         point_column: Optional[str] = None,
         segment_column: Optional[str] = None,
         description_column: Optional[str] = None,

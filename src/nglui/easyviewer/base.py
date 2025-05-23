@@ -593,7 +593,7 @@ class ViewerState:
         if not isinstance(datamap, dict):
             datamap = {None: datamap}
         viewer_copy = copy.deepcopy(self)
-        viewer_copy._apply_datamaps(datamap)
+        viewer_copy.map(datamap, inplace=True)
         yield viewer_copy
 
     def _apply_datamaps(self, datamap: dict):
@@ -716,19 +716,27 @@ class ViewerState:
 
         return self._viewer
 
-    def map(self, datamap: dict):
+    def map(self, datamap: dict, inplace: bool = False) -> Self:
         """Apply a datamap to the viewer state to freeze the state of the viewer.
+        Must be used if any layers use a datamap.
+        By default, this will return a new viewer state with the datamap applied without changing the current object.
 
         Parameters
         ----------
         datamap : dict
             A dictionary mapping layer names to their corresponding datamaps.
+        inplace : bool, optional
+            If True, apply the datamap in place and return the modified viewer state.
+            If False, return a new viewer state with the datamap applied.
 
         Returns
         -------
         Self
             A new ViewerState object with the datamap applied.
         """
+        if inplace:
+            self._apply_datamaps(datamap)
+            return self
         with self.with_datamap(datamap) as viewer_copy:
             return viewer_copy
 
@@ -762,7 +770,6 @@ class ViewerState:
     def to_url(
         self,
         target_url: str = None,
-        datamap: Optional[dict] = None,
     ):
         """Return a URL representation of the viewer state.
 
@@ -795,7 +802,6 @@ class ViewerState:
 
     def to_link(
         self,
-        datamap: Optional[dict] = None,
         target_url: str = None,
         link_text: str = "Neuroglancer Link",
     ):
