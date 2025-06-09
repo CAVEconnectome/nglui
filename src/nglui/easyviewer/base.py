@@ -93,7 +93,7 @@ class ViewerState:
         self._source_info = None
         self._infer_coordinates = infer_coordinates
 
-    def add_from_client(
+    def add_layers_from_client(
         self,
         client: "caveclient.CAVEclient",
         imagery: Union[bool, str] = True,
