@@ -136,15 +136,18 @@ class PointShader:
     ):
         """
         Create a point shader with customizable colors and properties.
+        See https://jiffyclub.github.io/palettable/ for available colormaps.
 
         Parameters
         ----------
         colors : list, optional
             List of colors (strings, hex, or RGB tuples/lists)
         colormap : str, optional
-            Name of a palettable colormap (e.g., 'Set1_9')
+            Name of a palettable colormap (ignoring category) (e.g., 'Set1')
+            Not used if colors is specified.
         n_colors : int, optional
-            Number of colors to extract from colormap
+            Number of colors to extract from colormap. Cannot be more than the available numbers in the colormap.
+            Only used if a colormap is specified.
         many_label_color : str, optional
             Color for points with multiple labels, by default 'white'
         no_label_color : str, optional
@@ -384,4 +387,5 @@ class PointShader:
 
 DEFAULT_SHADER_MAP = {
     "skeleton_compartments": simple_compartment_skeleton_shader,
+    "basic_point_shader": PointShader(colormap="Set1", n_colors=9).code,
 }
