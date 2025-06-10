@@ -1065,25 +1065,50 @@ class LocalAnnotationLayer(_Layer):
         SegmentationLayer
             The SegmentationLayer object with added point annotations.
         """
-        point_a_column = split_point_columns(point_a_column, data.columns)
-        point_b_column = split_point_columns(point_b_column, data.columns)
+        if isinstance(data, DataMap):
+            self._register_datamap(
+                key=data.key,
+                func=self.add_lines,
+                point_a_column=point_a_column,
+                point_b_column=point_b_column,
+                segment_column=segment_column,
+                description_column=description_column,
+                tag_column=tag_column,
+                tag_bools=tag_bools,
+                data_resolution=data_resolution,
+            )
+            return self
+        if isinstance(data, pd.DataFrame):
+            point_a_column = split_point_columns(point_a_column, data.columns)
+            point_b_column = split_point_columns(point_b_column, data.columns)
 
-        points_a = data[point_a_column].values
-        points_b = data[point_b_column].values
+            points_a = data[point_a_column].values
+            points_b = data[point_b_column].values
 
-        segments, descriptions, tag_list = self._handle_annotation_details(
-            data,
-            segment_column,
-            description_column,
-            tag_column,
-            tag_bools,
-        )
+            segments, descriptions, tag_list = self._handle_annotation_details(
+                data,
+                segment_column,
+                description_column,
+                tag_column,
+                tag_bools,
+            )
+        else:
+            data_a, data_b = data
+            p_a = np.array(data_a).reshape(-1, 3)
+            p_b = np.array(data_b).reshape(-1, 3)
+            if len(p_a) != len(p_b):
+                raise ValueError(
+                    "Point A and Point B arrays must have the same length."
+                )
+            segments = [None] * len(p_a)
+            descriptions = [None] * len(p_a)
+            tag_list = [None] * len(p_a)
 
         self.add_annotations(
             [
                 LineAnnotation(
-                    point_a=p_a,
-                    point_b=p_b,
+                    pointA=p_a,
+                    pointB=p_b,
                     segments=seg,
                     description=d,
                     tags=t,

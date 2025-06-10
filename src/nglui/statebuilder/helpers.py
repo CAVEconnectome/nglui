@@ -92,7 +92,7 @@ def make_point_state(
     tag_column: Optional[str] = None,
     data_resolution: Optional[list] = None,
     tags: Optional[list] = None,
-    point_layer_name: str = "Points",
+    layer_name: str = "Points",
     shader: Optional[Union[bool, str]] = True,
 ) -> ViewerState:
     """Generate a state builder that puts points on a single column with a linked segmentaton id
@@ -133,7 +133,7 @@ def make_point_state(
         )
         .add_points(
             data=DataMap(),
-            name=point_layer_name,
+            name=layer_name,
             point_column=point_column,
             segment_column=segment_column,
             description_column=description_column,
@@ -145,64 +145,33 @@ def make_point_state(
     )
 
 
-# def make_line_statebuilder(
-#     client: CAVEclient,
-#     point_column_a="pre_pt_position",
-#     point_column_b="post_pt_position",
-#     linked_seg_column="pt_root_id",
-#     description_column=None,
-#     tag_column=None,
-#     data_resolution=None,
-#     tags: Optional[list] = None,
-#     point_layer_name="lines",
-#     shader: Optional[str] = None,
-# ):
-#     """Generate a state builder that puts points on a single column with a linked segmentaton id
-
-#     Parameters
-#     ----------
-#     client : CAVEclient
-#         CAVEclient configured for the datastack desired
-#     point_column_a : str, optional
-#         column in dataframe to pull points from. Defaults to "pre_pt_position".
-#     point_column_b : str, optional
-#         column in dataframe to pull points from. Defaults to "post_pt_position".
-#     linked_seg_column : str, optional
-#         column to link to segmentation, None for no column. Defaults to "pt_root_id".
-#     group_column : str, or list, optional
-#         column(s) to group annotations by, None for no grouping (default=None)
-#     tag_column : str, optional
-#         column to use for tags, None for no tags (default=None)
-#     description_column : str, optional
-#         column to use for descriptions, None for no descriptions (default=None)
-#     contrast : list, optional
-#         Two elements specifying the black level and white level as
-#         floats between 0 and 1, by default None. If None, no contrast
-#         is set.
-#     view_kws : dict, optional
-#         dictionary of view keywords to configure neuroglancer view
-#     split_positions : bool, optional
-#         whether the position column into x,y,z columns. Defaults to False.
-#     Returns
-#     -------
-#     StateBuilder:
-#         A statebuilder to make points with linked segmentations
-#     """
-#     ngl = (
-#         ViewerState()
-#         .add_layers_from_client(
-#             client,
-#         )
-#         .add_lines(
-#             data=DataMap(),
-#             name=point_layer_name,
-#             point_column_a=point_column_a,
-#             point_column_b=point_column_b,
-#             linked_seg_column=linked_seg_column,
-#             description_column=description_column,
-#             tag_column=tag_column,
-#             data_resolution=data_resolution,
-#             tags=tags,
-#             shader=shader,
-#         )
-#     )
+def make_line_state(
+    client: CAVEclient,
+    point_a_column="pre_pt_position",
+    point_b_column="post_pt_position",
+    segment_column="pt_root_id",
+    description_column=None,
+    tag_column=None,
+    data_resolution=None,
+    layer_name="lines",
+    shader=None,
+):
+    if shader is True:
+        shader = DEFAULT_SHADER_MAP.get("lines")
+    return (
+        ViewerState(infer_coordinates=True)
+        .add_layers_from_client(
+            client,
+        )
+        .add_lines(
+            data=DataMap(),
+            name=layer_name,
+            point_a_column=point_a_column,
+            point_b_column=point_b_column,
+            segment_column=segment_column,
+            description_column=description_column,
+            tag_column=tag_column,
+            data_resolution=data_resolution,
+            shader=shader,
+        )
+    )
