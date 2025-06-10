@@ -760,6 +760,8 @@ class AnnotationLayer(_Layer):
             The shader to add.
 
         """
+        if shader in DEFAULT_SHADER_MAP:
+            shader = DEFAULT_SHADER_MAP[shader]
         self.shader = shader
         return self
 
@@ -778,6 +780,10 @@ class LocalAnnotationLayer(_Layer):
 
     def __attrs_post_init__(self):
         self.color = parse_color(self.color)
+        if self.tags is None:
+            self.tags = []
+        if not self.shader:
+            self.shader = ""
 
     def to_neuroglancer_layer(self) -> viewer_state.LocalAnnotationLayer:
         super().to_neuroglancer_layer()
@@ -815,25 +821,36 @@ class LocalAnnotationLayer(_Layer):
             raise ValueError(
                 f"Resolution for annotation layer '{self.name}' must be set before converting to Neuroglancer"
             )
+        if self.linked_segmentation is True:
+            for l in viewer.layers:
+                if l.type == "segmentation":
+                    self.linked_segmentation = l.name
+                    break
+            else:
+                raise ValueError(
+                    "No SegmentationLayer found in viewer to link to. Please set linked_segmentation manually."
+                )
         if self.set_position:
-            # if viewer.position is None:
             if len(self.annotations) > 0:
                 if not isinstance(self.resolution, CoordSpace):
                     self.resolution = CoordSpace(resolution=self.resolution)
                 first_anno = self.annotations[0]
+                scale = viewer.dimensions.scales * 10**9
                 if isinstance(first_anno, PointAnnotation):
-                    new_position = _handle_annotations(
-                        [first_anno], {}, self.resolution.resolution
-                    )[0].point
+                    new_position = _handle_annotations([first_anno], {}, scale)[0].point
                 elif isinstance(first_anno, LineAnnotation) or isinstance(
                     first_anno, BoundingBoxAnnotation
                 ):
                     new_position = _handle_annotations(
-                        [self.annotations[0]], {}, self.resolution.resolution
+                        [self.annotations[0]],
+                        {},
+                        scale,
                     )[0].point_a
                 elif isinstance(self.annotations[0], EllipsoidAnnotation):
                     new_position = _handle_annotations(
-                        [self.annotations[0]], {}, self.resolution.resolution
+                        [self.annotations[0]],
+                        {},
+                        scale,
                     )[0].center
                 viewer.position = new_position
         self._apply_to_neuroglancer(viewer)

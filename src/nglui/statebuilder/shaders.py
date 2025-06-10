@@ -385,7 +385,17 @@ class PointShader:
         return f"PointShader(colormap={self.colors}, colormap={self.colormap})"
 
 
+simple_point_shader = """
+#uicontrol vec3 markerColor color(default="lightblue")
+#uicontrol float markerSize slider(min=0, max=20, default=5)
+void main() {{
+    setPointMarkerSize(markerSize);
+    setColor(markerColor);
+}}
+"""
+
 DEFAULT_SHADER_MAP = {
     "skeleton_compartments": simple_compartment_skeleton_shader,
-    "basic_point_shader": PointShader(colormap="Set1", n_colors=9).code,
+    "points": simple_point_shader,
+    "tags": PointShader(colormap="Set1", n_colors=9).code,
 }

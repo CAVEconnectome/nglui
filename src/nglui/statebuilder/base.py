@@ -162,6 +162,7 @@ class ViewerState:
 
     @property
     def viewer(self):
+        """Get the Neuroglancer viewer object."""
         if self._viewer is None:
             self._viewer = self.to_neuroglancer_state()
         return self._viewer
@@ -532,7 +533,8 @@ class ViewerState:
             If True, will link to the first segmentation layer found in the viewer.
             If False, will not link to any segmentation layer.
             If a string is provided, it will be used as the name of the segmentation layer to link to.
-
+        **kwargs : dict, optional
+            Additional keyword arguments to pass to the annotation layer constructor.
 
         Returns
         -------
@@ -633,7 +635,7 @@ class ViewerState:
 
     def add_points(
         self,
-        data: Union[list, np.ndarray, pd.DataFrame],
+        data: Union[list, np.ndarray, pd.DataFrame, DataMap],
         name: str = "annotation",
         point_column: Optional[str] = None,
         segment_column: Optional[str] = None,
