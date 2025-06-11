@@ -7,7 +7,7 @@ import numpy as np
 from IPython.display import HTML
 from neuroglancer import viewer, viewer_base
 
-from ..site_utils import neuroglancer_url
+from ..site_utils import MAX_URL_LENGTH, neuroglancer_url
 from . import source_info
 from .ngl_components import *
 
@@ -101,6 +101,9 @@ class ViewerState:
         skeleton_source: bool = True,
         resolution: bool = True,
         target_url: bool = False,
+        selected_alpha: Optional[float] = None,
+        alpha_3d: Optional[float] = None,
+        mesh_silhouette: Optional[float] = None,
     ) -> Self:
         """Configure the viewer with information from a CaveClient.
         Can set the target URL, viewer resolution, and add image and segmentation layers.
@@ -121,6 +124,12 @@ class ViewerState:
             Whether to infer viewer resolution from the client info, by default True
         target_url : bool, optional
             Whether to set the neuroglancer URL from the client, by default False
+        selected_alpha : Optional[float], optional
+            The alpha value for the segmentation layer, by default None.
+        alpha_3d : Optional[float], optional
+            The alpha value for 3D meshes, by default None.
+        mesh_silhouette : Optional[float], optional
+            The mesh silhouette value, by default None.
 
         Returns
         -------
@@ -153,10 +162,16 @@ class ViewerState:
                 self.add_segmentation_layer(
                     source=seg_source,
                     name=segmentation,
+                    selected_alpha=selected_alpha,
+                    alpha_3d=alpha_3d,
+                    mesh_silhouette=mesh_silhouette,
                 )
             else:
                 self.add_segmentation_layer(
-                    source=seg_source[0],
+                    source=seg_source,
+                    selected_alpha=selected_alpha,
+                    alpha_3d=alpha_3d,
+                    mesh_silhouette=mesh_silhouette,
                 )
         return self
 
@@ -1035,6 +1050,8 @@ class ViewerState:
     def to_url(
         self,
         target_url: str = None,
+        shorten: Union[bool, Literal["if_long"]] = False,
+        client: Optional[caveclient.CAVEclient] = None,
     ):
         """Return a URL representation of the viewer state.
 
@@ -1059,10 +1076,17 @@ class ViewerState:
             else:
                 target_url = self._target_url
 
-        url = neuroglancer.to_url(
-            self.viewer.state,
-            target_url,
-        )
+        if shorten == "if_long":
+            url = neuroglancer.to_url(
+                self.viewer.state,
+                target_url,
+            )
+            if len(url) > MAX_URL_LENGTH:
+                shorten = True
+            else:
+                shorten = False
+        if shorten:
+            url = self.to_link_shortener(client)
         return url
 
     def to_link(
@@ -1087,3 +1111,31 @@ class ViewerState:
         """
         url = self.to_url(target_url)
         return HTML(f'<a href="{url}" target="_blank">{link_text}</a>')
+
+    def to_link_shortener(
+        self,
+        client: caveclient.CAVEclient,
+        target_url: str = None,
+    ) -> str:
+        """Shorten the URL using the CAVE link shortener service.
+
+        Parameters
+        ----------
+        client : CAVEclient
+            The CAVE client to use for shortening the URL.
+        target_url : str, optional
+            The base URL to use for the Neuroglancer state. If not provided,
+            the default server URL will be used.
+
+        Returns
+        -------
+        str
+            A shortened URL representation of the viewer state.
+        """
+        state_id = client.state.upload_state_json(self.to_dict())
+        if target_url is None:
+            if self.interactive:
+                return self.viewer.get_viewer_url()
+            else:
+                target_url = self._target_url
+        return client.state.build_neuroglancer_url(state_id, target_url)

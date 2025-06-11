@@ -1123,7 +1123,7 @@ class LocalAnnotationLayer(_Layer):
 
     def add_ellipsoids(
         self,
-        data: pd.DataFrame,
+        data: Union[pd.DataFrame, DataMap],
         center_column: str,
         radii_column: str,
         segment_column: Optional[str] = None,
@@ -1165,6 +1165,20 @@ class LocalAnnotationLayer(_Layer):
         SegmentationLayer
             The SegmentationLayer object with added point annotations.
         """
+        if isinstance(data, DataMap):
+            self._register_datamap(
+                key=data.key,
+                func=self.add_ellipsoids,
+                center_column=center_column,
+                radii_column=radii_column,
+                segment_column=segment_column,
+                description_column=description_column,
+                tag_column=tag_column,
+                tag_bools=tag_bools,
+                data_resolution=data_resolution,
+            )
+            return self
+
         center_column = split_point_columns(center_column, data.columns)
         radii_column = split_point_columns(radii_column, data.columns)
 
@@ -1240,6 +1254,20 @@ class LocalAnnotationLayer(_Layer):
         SegmentationLayer
             The SegmentationLayer object with added point annotations.
         """
+        if isinstance(data, DataMap):
+            self._register_datamap(
+                key=data.key,
+                func=self.add_boxes,
+                point_a_column=point_a_column,
+                point_b_column=point_b_column,
+                segment_column=segment_column,
+                description_column=description_column,
+                tag_column=tag_column,
+                tag_bools=tag_bools,
+                data_resolution=data_resolution,
+            )
+            return self
+
         point_a_column = split_point_columns(point_a_column, data.columns)
         point_b_column = split_point_columns(point_b_column, data.columns)
 

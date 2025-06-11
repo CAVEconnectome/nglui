@@ -56,36 +56,9 @@ def sort_dataframe_by_root_id(
         return df.sort_values(by=[num_column, root_id_column], ascending=ascending)
 
 
-def add_random_column(
-    df: pd.DataFrame,
-    col_prefix: str = "sample_",
-    n_cols: int = 1,
-) -> pd.DataFrame:
-    """Add a column of uniformly distributed random numbers to a dataframe.
-    This can be useful to use to subsample ids in a segment property efficiently.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame that will be passed into a column
-    n_cols : str, optional
-        Name of the numerical column to use, by default 'sample_'
-    num_column : int, optional
-        Number of distinct random columns, by default 1
-
-    Returns
-    -------
-    pd.DataFrame
-        Copy of the input dataframe with the random columns added
-    """
-    df = df.copy()
-    for ii in range(n_cols):
-        df[f"{col_prefix}{ii}"] = np.random.rand(len(df))
-    return df
-
-
 def make_point_state(
     client: CAVEclient,
+    data: Optional[pd.DataFrame] = None,
     point_column: str = "pt_position",
     segment_column: str = "pt_root_id",
     description_column: Optional[str] = None,
@@ -94,6 +67,9 @@ def make_point_state(
     tags: Optional[list] = None,
     layer_name: str = "Points",
     shader: Optional[Union[bool, str]] = True,
+    selected_alpha: Optional[float] = None,
+    alpha_3d: Optional[float] = None,
+    mesh_silhouette: Optional[float] = None,
 ) -> ViewerState:
     """Generate a state builder that puts points on a single column with a linked segmentaton id
 
@@ -101,22 +77,32 @@ def make_point_state(
     ----------
     client : CAVEclient
         CAVEclient configured for the datastack desired
+    data : Optional[pd.DataFrame], optional
+        Dataframe to use for points, by default None.
+        If None, a simple DataMap will be used with no key.
+        Fill in the resulting state with viewer.map(df).
     point_column : str, optional
-        column in dataframe to pull points from. Defaults to "pre_pt_position".
-    linked_seg_column : str, optional
-        column to link to segmentation, None for no column. Defaults to "pt_root_id".
-    group_column : str, or list, optional
-        column(s) to group annotations by, None for no grouping (default=None)
-    tag_column : str, optional
-        column to use for tags, None for no tags (default=None)
-    description_column : str, optional
-        column to use for descriptions, None for no descriptions (default=None)
-    contrast : list, optional
-        Two elements specifying the black level and white level as
-        floats between 0 and 1, by default None. If None, no contrast
-        is set.
-    view_kws : dict, optional
-        dictionary of view keywords to configure neuroglancer view
+        Column in the dataframe to use for point positions, by default "pt_position"
+    segment_column : str, optional
+        Column in the dataframe to use for segment ids, by default "pt_root_id"
+    description_column : Optional[str], optional
+        Column in the dataframe to use for point descriptions, by default None
+    tag_column : Optional[str], optional
+        Column in the dataframe to use for tags, by default None
+    data_resolution : Optional[list], optional
+        Resolution of the data, by default None
+    tags : Optional[list], optional
+        List of tags to apply to the points, by default None
+    layer_name : str, optional
+        Name of the layer to create, by default "Points"
+    shader : Optional[Union[bool, str]], optional
+        Shader to use for the points, by default True (uses default shader)
+    selected_alpha : Optional[float], optional
+        Alpha value for selected segments in the 2D view, by default None (uses default value)
+    alpha_3d : Optional[float], optional
+        Alpha value for meshes, by default None (uses default value)
+    mesh_silhouette : Optional[float], optional
+        Mesh silhouette value, by default None (uses default value)
 
     Returns
     -------
@@ -125,14 +111,18 @@ def make_point_state(
     """
     if shader is True:
         shader = DEFAULT_SHADER_MAP.get("points")
-
+    if data is None:
+        data = DataMap()
     return (
         ViewerState(infer_coordinates=True)
         .add_layers_from_client(
             client,
+            selected_alpha=selected_alpha,
+            alpha_3d=alpha_3d,
+            mesh_silhouette=mesh_silhouette,
         )
         .add_points(
-            data=DataMap(),
+            data=data,
             name=layer_name,
             point_column=point_column,
             segment_column=segment_column,
@@ -147,24 +137,73 @@ def make_point_state(
 
 def make_line_state(
     client: CAVEclient,
-    point_a_column="pre_pt_position",
-    point_b_column="post_pt_position",
-    segment_column="pt_root_id",
-    description_column=None,
-    tag_column=None,
-    data_resolution=None,
-    layer_name="lines",
-    shader=None,
-):
+    data: Optional[pd.DataFrame] = None,
+    point_a_column: str = "pre_pt_position",
+    point_b_column: str = "post_pt_position",
+    segment_column: str = "pt_root_id",
+    description_column: Optional[str] = None,
+    tag_column: Optional[str] = None,
+    data_resolution: Optional[list] = None,
+    layer_name: str = "lines",
+    shader: Optional[Union[bool, str]] = True,
+    selected_alpha: Optional[float] = None,
+    alpha_3d: Optional[float] = None,
+    mesh_silhouette: Optional[float] = None,
+) -> ViewerState:
+    """Generate a state builder that puts line segments from two columns with a linked segmentaton id
+
+    Parameters
+    ----------
+    client : CAVEclient
+        CAVEclient configured for the datastack desired
+    data : Optional[pd.DataFrame], optional
+        Dataframe to use for points, by default None.
+        If None, a simple DataMap will be used with no key.
+        Fill in the resulting state with viewer.map(df).
+    point_a_column : str, optional
+        Column in the dataframe to use for line start positions, by default "pre_pt_position"
+    point_b_column : str, optional
+        Column in the dataframe to use for line end, by default "post_pt_position"
+    segment_column : str, optional
+        Column in the dataframe to use for segment ids, by default "pt_root_id"
+    description_column : Optional[str], optional
+        Column in the dataframe to use for point descriptions, by default None
+    tag_column : Optional[str], optional
+        Column in the dataframe to use for tags, by default None
+    data_resolution : Optional[list], optional
+        Resolution of the data, by default None
+    tags : Optional[list], optional
+        List of tags to apply to the points, by default None
+    layer_name : str, optional
+        Name of the layer to create, by default "Points"
+    shader : Optional[Union[bool, str]], optional
+        Shader to use for the points, by default True (uses default shader)
+    selected_alpha : Optional[float], optional
+        Alpha value for selected segments in the 2D view, by default None (uses default value)
+    alpha_3d : Optional[float], optional
+        Alpha value for meshes, by default None (uses default value)
+    mesh_silhouette : Optional[float], optional
+        Mesh silhouette value, by default None (uses default value)
+
+    Returns
+    -------
+    ViewerState:
+        A viewerstate to make points with linked segmentations
+    """
     if shader is True:
         shader = DEFAULT_SHADER_MAP.get("lines")
+    if data is None:
+        data = DataMap()
     return (
         ViewerState(infer_coordinates=True)
         .add_layers_from_client(
             client,
+            selected_alpha=selected_alpha,
+            alpha_3d=alpha_3d,
+            mesh_silhouette=mesh_silhouette,
         )
         .add_lines(
-            data=DataMap(),
+            data=data,
             name=layer_name,
             point_a_column=point_a_column,
             point_b_column=point_b_column,
@@ -175,3 +214,106 @@ def make_line_state(
             shader=shader,
         )
     )
+
+
+def make_connectivity_state_map(
+    client: CAVEclient,
+    show_inputs: bool = True,
+    show_outputs: bool = True,
+    point_column: str = "ctr_pt_position",
+    input_root_id_col: str = "pre_pt_root_id",
+    output_root_id_col: str = "post_pt_root_id",
+    dataframe_resolution_input: Optional[list] = None,
+    dataframe_resolution_output: Optional[list] = None,
+    input_layer_name: str = "syns_in",
+    output_layer_name: str = "syns_out",
+    input_layer_color: Union[tuple, str] = DEFAULT_POSTSYN_COLOR,
+    output_layer_color: Union[tuple, str] = DEFAULT_PRESYN_COLOR,
+    input_shader: Optional[Union[bool, str]] = True,
+    output_shader: Optional[Union[bool, str]] = True,
+    selected_alpha: Optional[float] = None,
+    alpha_3d: Optional[float] = None,
+    mesh_silhouette: Optional[float] = None,
+) -> ViewerState:
+    """Create a Neuroglancer state with input and output synapses.
+    Parameters
+    ----------
+    client : CAVEclient
+        CAVEclient configured for the datastack desired
+    show_inputs : bool, optional
+        Whether to show input synapses, by default True
+    show_outputs : bool, optional
+        Whether to show output synapses, by default True
+    point_column : str, optional
+        Column in the dataframe to use for point positions, by default "ctr_pt_position"
+    input_root_id_col : str, optional
+        Column in the dataframe to use for input synapse root ids, by default "pre_pt_root_id"
+    output_root_id_col : str, optional
+        Column in the dataframe to use for output synapse root ids, by default "post_pt_root_id"
+    dataframe_resolution_input : Optional[list], optional
+        Resolution of the input dataframe, by default None
+    dataframe_resolution_output : Optional[list], optional
+        Resolution of the output dataframe, by default None
+    input_layer_name : str, optional
+        Name of the input layer, by default "syns_in"
+    output_layer_name : str, optional
+        Name of the output layer, by default "syns_out"
+    input_layer_color : Union[tuple, str], optional
+        Color of the input layer, by default "turquoise"
+    output_layer_color : Union[tuple, str], optional
+        Color of the output layer, by default "tomato"
+    input_shader : Optional[Union[bool, str]], optional
+        Shader to use for input synapses, by default None.
+    output_shader : Optional[Union[bool, str]], optional
+        Shader to use for output synapses, by default None (uses default shader)
+    selected_alpha : Optional[float], optional
+        Alpha value for selected segments in the 2d view, by default None (uses default value)
+    alpha_3d : Optional[float], optional
+        Alpha value for meshes, by default None (uses default value)
+    mesh_silhouette : Optional[float], optional
+        Mesh silhouette value, by default None (uses default value)
+
+    Returns
+    -------
+    ViewerState
+        A Neuroglancer ViewerState with input and output synapses configured.
+    """
+    ngl = ViewerState(infer_coordinates=True).add_layers_from_client(
+        client,
+        selected_alpha=selected_alpha,
+        alpha_3d=alpha_3d,
+        mesh_silhouette=mesh_silhouette,
+    )
+    if show_inputs:
+        if input_shader is True:
+            input_shader = DEFAULT_SHADER_MAP.get("points")
+        ngl = ngl.add_layer(
+            LocalAnnotationLayer(
+                name=input_layer_name,
+                linked_segmentation="segmentation",
+                shader=input_shader,
+                color=input_layer_color,
+            ).add_points(
+                DataMap("inputs"),
+                point_column=point_column,
+                segment_column=input_root_id_col,
+                dataframe_resolution=dataframe_resolution_input,
+            )
+        )
+    if show_outputs:
+        if output_shader is True:
+            output_shader = DEFAULT_SHADER_MAP.get("points")
+        ngl = ngl.add_layer(
+            LocalAnnotationLayer(
+                name=output_layer_name,
+                linked_segmentation="segmentation",
+                shader=output_shader,
+                color=output_layer_color,
+            ).add_points(
+                DataMap("outputs"),
+                point_column=point_column,
+                segment_column=output_root_id_col,
+                dataframe_resolution=dataframe_resolution_output,
+            )
+        )
+    return ngl

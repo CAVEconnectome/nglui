@@ -10,6 +10,8 @@ NEUROGLANCER_SITES = {
 
 DEFAULT_TARGET_SITE = "spelunker"
 
+MAX_URL_LENGTH = 1_750_000
+
 
 def add_neuroglancer_site(
     site_name: str,
