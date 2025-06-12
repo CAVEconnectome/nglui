@@ -591,7 +591,7 @@ wheels = [
 
 [[package]]
 name = "cloud-volume"
-version = "12.2.0"
+version = "12.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3", version = "1.7.84", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
@@ -627,9 +627,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "urllib3", extra = ["brotli"] },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7a/44/446e5bca05fc3d03a938193a1b3e9f4ad02d370dc8707c8f183648c36ac7/cloud_volume-12.2.0.tar.gz", hash = "sha256:9f4ef5a11b6e4e48d67a983984c016041ca50b305e3017b2c603d354ac1444c5", size = 243582, upload-time = "2025-04-16T19:21:27.319Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/15/8a/f61fc57dadedb38aeae5e40e3c180a82750aaa97c9902812e3003a3dc306/cloud_volume-12.3.1.tar.gz", hash = "sha256:a94c4010226989a4100868e6b9e74922c094303102e640b44b7b1204a94528dd", size = 254471, upload-time = "2025-06-04T23:45:06.105Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bb/b6/d173bc80fef178cb1096d146410731eaacacd42dd35f06418e657517b329/cloud_volume-12.2.0-py3-none-any.whl", hash = "sha256:d59c8c2082a8620555ec5ecb9d9d7fcdb4063d875b924a8784d655cfcfb5f0a4", size = 203292, upload-time = "2025-04-16T19:21:25.289Z" },
+    { url = "https://files.pythonhosted.org/packages/64/9f/ab398aaeccf828bdec0eff7561e4e9523032b71cfc8ce3a966edac465ae4/cloud_volume-12.3.1-py3-none-any.whl", hash = "sha256:ccd8ab38d7c7c10521b62ff3e90e79641a00a599846aff75c6e0d7e17562719f", size = 222066, upload-time = "2025-06-04T23:45:03.925Z" },
 ]
 
 [[package]]
@@ -2092,7 +2092,7 @@ requires-dist = [
     { name = "attrs", specifier = ">=24.2.0" },
     { name = "cachetools", specifier = ">=5.5.2" },
     { name = "caveclient", specifier = ">=7.0.0" },
-    { name = "cloud-volume", marker = "extra == 'cv'", specifier = ">=12.2.0" },
+    { name = "cloud-volume", marker = "extra == 'cv'", specifier = ">=12.3.1" },
     { name = "ipython", specifier = ">=8.18.1" },
     { name = "neuroglancer", specifier = "==2.40.1" },
     { name = "numpy", specifier = ">=1.26.4" },

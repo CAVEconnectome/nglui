@@ -1,6 +1,9 @@
 import re
 from collections import namedtuple
+from itertools import cycle
+from typing import Optional, Union
 
+import palettable
 import webcolors
 
 
@@ -123,6 +126,81 @@ void main() {{
 """
 
 
+def skeleton_shader_base(
+    vertex_attributes: list[str],
+    checkbox_controls: Optional[Union[dict, list]] = None,
+    sliders: Optional[Union[dict, list]] = None,
+    defined_colors: Optional[dict] = None,
+    body: Optional[str] = None,
+) -> str:
+    """
+    Set a skeleton vertex attribute in the shader code.
+
+    Parameters
+    ----------
+    vertex_attribute : str
+        The names of the vertex attribute to set.
+    checkbox_controls : dict or list, optional
+        Dictionary of checkbox controls with names as keys and default values as values.
+        If a list is provided, it will be converted to a dictionary with True as default value.
+    sliders : dict, optional
+        Dictionary of slider controls with names as keys and a tuple of (type, min, max, default) as values.
+        If a list is provided, it will be converted to a dictionary with default values of float, 0, 1, 0.5.
+    defined_colors : dict, optional
+        Dictionary of defined colors with names as keys and color values as values.
+        If a list is provided, it will be converted to a dictionary with colors from the Tableau-10 palette.
+    body : str, optional
+        The body of the shader code to execute in the main function.
+        If none is provided, a simple emitRGB is given.
+
+    Returns
+    -------
+    str
+        The shader code to set the vertex attribute.
+    """
+    uicontrols = []
+    if checkbox_controls:
+        if not isinstance(checkbox_controls, dict):
+            checkbox_controls = {cc: True for cc in checkbox_controls}
+        for k, v in checkbox_controls.items():
+            uicontrols.append(
+                f"#uicontrol bool {k} checkbox(default={str(v).lower()});"
+            )
+    if sliders:
+        if not isinstance(sliders, dict):
+            sliders = {s: ("float", 0, 1, 0.5) for s in sliders}
+        for k, v in sliders.items():
+            uicontrols.append(
+                f"#uicontrol {v[0]} {k} slider(min={v[1]}, max={v[2]}, default={v[3]});"
+            )
+    if defined_colors:
+        if not isinstance(defined_colors, dict):
+            defined_colors = {
+                name: color.lower()
+                for name, color in zip(
+                    defined_colors, cycle(palettable.tableau.Tableau_10.hex_colors)
+                )
+            }
+        for k, v in defined_colors.items():
+            uicontrols.append(f'#uicontrol vec3 {k} color(default="{v}");')
+    attributes = []
+    for ii, attr in enumerate(vertex_attributes):
+        attributes.append(f"float {attr} = vCustom{ii + 1};")
+
+    if body is None:
+        body = "emitRGB(segmentColor().rgb);"
+
+    return f"""
+{"\n".join(uicontrols)}
+
+void main() {{
+{"  \n".join(attributes)}
+
+{body}
+}}
+"""
+
+
 class PointShader:
     def __init__(
         self,
@@ -181,8 +259,6 @@ class PointShader:
 
     def _get_colormap_colors(self, colormap_name, n_colors):
         """Get colors from a palettable colormap."""
-        import palettable
-
         # Define all module/subcategory combinations
         module_paths = [
             # ColorBrewer
@@ -386,7 +462,7 @@ class PointShader:
 
 
 simple_point_shader = """
-#uicontrol vec3 markerColor color(default="lightblue")
+#uicontrol vec3 markerColor color(default="tomato")
 #uicontrol float markerSize slider(min=0, max=20, default=5)
 void main() {{
     setPointMarkerSize(markerSize);

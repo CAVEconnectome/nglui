@@ -1076,11 +1076,11 @@ class ViewerState:
             else:
                 target_url = self._target_url
 
+        url = neuroglancer.to_url(
+            self.viewer.state,
+            target_url,
+        )
         if shorten == "if_long":
-            url = neuroglancer.to_url(
-                self.viewer.state,
-                target_url,
-            )
             if len(url) > MAX_URL_LENGTH:
                 shorten = True
             else:
@@ -1109,6 +1109,8 @@ class ViewerState:
         str
             An HTML link representation of the viewer state.
         """
+        if target_url is None:
+            target_url = self._target_url
         url = self.to_url(target_url)
         return HTML(f'<a href="{url}" target="_blank">{link_text}</a>')
 
