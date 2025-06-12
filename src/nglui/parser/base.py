@@ -6,7 +6,7 @@ import pandas as pd
 from box import Box
 from neuroglancer.coordinate_space import parse_unit
 
-from ..easyviewer.ev_base.base import SEGMENTATION_LAYER_TYPES
+from ..statebuilder.ev_base.base import SEGMENTATION_LAYER_TYPES
 
 
 def _is_spelunker_state(state) -> bool:

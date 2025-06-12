@@ -28,6 +28,25 @@ class SkeletonManager:
         initialize_info: bool = False,
         shader: Optional[str] = None,
     ):
+        """
+        Create a manager to format and upload skeletons to a cloud bucket.
+
+        Parameters
+        ----------
+        segmentation_source : Union[str, caveclient.CAVEclient]
+            The source of the segmentation data, either a string URL or a CAVEclient instance.
+            If a CAVEclient instance is provided, the segmentation_source will be derived from it.
+        cloudpath : str
+            The cloudpath where the skeletons will be stored. This is typically a gs:// or s3:// URL.
+        vertex_attributes : Optional[list[str]], optional
+            An ordered list of vertex attribute names to be included in the skeletons, by default None.
+            If None, no vertex attributes will be included.
+        initialize_info : bool, optional
+            Whether to initialize the skeleton info in the cloud bucket if it does not exist, by default False.
+            If False, an exception will be raised if the info file does not exist.
+        shader : Optional[str], optional
+            A shader string to be used for rendering the skeletons in Neuroglancer, by default None.
+        """
         if use_cloudvolume is False:
             raise ImportError(
                 "CloudVolume is required for handling skeleton data but is not available. Please install using `pip install cloud-volume`."
@@ -68,14 +87,17 @@ class SkeletonManager:
         return attribute_info
 
     @property
-    def vertex_attributes(self):
+    def vertex_attributes(self) -> dict:
         """
-        Get the vertex attributes for the skeletons.
+        The neuroglancer-formated vertex attribute dictionary for the skeletons.
         """
         return self._format_attribute_info()
 
     @property
     def vertex_attribute_names(self) -> list[str]:
+        """
+        The names of the vertex attributes in the skeletons.
+        """
         return [attr["id"] for attr in self._format_attribute_info()]
 
     def _generate_skeleton_metadata(self):
@@ -170,11 +192,29 @@ class SkeletonManager:
 
     def upload_skeleton(
         self,
-        vertices: np.ndarray,
-        edges: np.ndarray,
         root_id: int,
+        vertices: np.ndarray,
+        edges: Optional[np.ndarray] = None,
         vertex_attribute_data: Optional[Union[dict, pd.DataFrame]] = None,
     ):
+        """
+        Upload a skeleton to the cloud bucket.
+        Note that uploading the skeleton will add the root ID to the set of uploaded root IDs property.
+
+        Parameters
+        ----------
+        root_id : int
+            The root ID of the skeleton.
+        vertices : np.ndarray
+            The vertices of the skeleton as a numpy array of shape (N, 3).
+        edges : Optional[np.ndarray], optional
+            The edges of the skeleton as a numpy array of shape (M, 2), by default None.
+            If None, an empty edge list will be created and the "skeleton" will be treated as a set of disconnected vertices.
+        vertex_attribute_data : Optional[Union[dict, pd.DataFrame]], optional
+            A dictionary or DataFrame containing vertex attribute data, where keys are attribute names and values are arrays of the same length as vertices.
+            If any of the vertex attributes are not provided, they will default to zero arrays of the same length as vertices.
+
+        """
         skel = self._create_skeleton(
             vertices=vertices,
             edges=edges,
@@ -187,26 +227,46 @@ class SkeletonManager:
     @property
     def uploaded_root_ids(self) -> list[int]:
         """
-        Get the set of root IDs that have been uploaded.
+        Get the set of root IDs that have been uploaded since the SkeletonManager was initialized.
         """
         return list(self._uploaded_root_ids)
 
     @property
     def skeleton_source(self) -> str:
         """
-        Get the skeleton source URL.
+        Get the skeleton source URL for neuroglancer.
         """
         return self.cv.cloudpath
 
     def make_shader(
         self,
-        checkbox_controls: Optional[dict] = None,
-        sliders: Optional[dict] = None,
-        defined_colors: Optional[dict] = None,
+        checkbox_controls: Optional[Union[dict, list]] = None,
+        sliders: Optional[Union[dict, list]] = None,
+        defined_colors: Optional[Union[dict, list]] = None,
         body: Optional[str] = None,
     ) -> None:
         """
-        Create a shader for the skeletons.
+        Create a shader for the skeletons based on the vertex attributes and other parameters.
+        The value will be stored in the shader property of the SkeletonManager instance.
+
+        Parameters
+        ----------
+        checkbox_controls : Optional[dict], optional
+            A dictionary of checkbox controls for the shader, by default None.
+            Keys are the control names and values are booleans indicating whether the control is enabled by default.
+            A pure list can also be provided, in which case all controls will be enabled by default.
+        sliders : Optional[dict], optional
+            A dictionary or list of slider controls for the shader, by default None.
+            Keys are the control names and values are tuples with the type (float or int), min, max, and default value.
+            If provided as al list, all sliders will be set to float type with default range of 0 to 1 and value of 0.5.
+        defined_colors : Optional[dict], optional
+            A dictionary of defined colors for the shader, by default None.
+            Keys are the color variable names and values are tuples with hex or web color names.
+            If provided as a list, sequential colors from the Tableau 10 colormap will be used.
+        body : Optional[str], optional
+            Additional body code for the shader, by default None.
+            This can be used to add custom shader logic or functions and should contain the emitRGB function.
+            If None, a default body will be generated.
         """
         self._shader = skeleton_shader_base(
             vertex_attributes=self.vertex_attribute_names,
@@ -219,11 +279,11 @@ class SkeletonManager:
     @property
     def shader(self) -> str:
         """
-        Get the shader for the skeletons.
-        If no shader is set, return the default shader.
+        Return a skeleton shader with appropriate vertex properties and other attributes as set in `make_shader`.
+        If no shader is set, return a default shader that uses the vertex attributes defined in the SkeletonManager.
         """
         if self._shader is None:
-            return skeleton_shader_default(self.vertex_attribute_names)
+            return skeleton_shader_base(vertex_attributes=self.vertex_attribute_names)
         return self._shader
 
     def to_segmentation_layer(
@@ -234,7 +294,26 @@ class SkeletonManager:
         shader: Optional[Union[bool, str]] = None,
     ) -> SegmentationLayer:
         """
-        Convert the skeleton manager to a SegmentationLayer.
+        Generate a SegmentationLayer with the segmentation source and skeleton source, as well as uploaded segments and shader specified
+
+        Parameters
+        ----------
+        name : str, optional
+            The name of the segmentation layer, by default "seg".
+        uploaded_segments : bool, optional
+            Whether to include the uploaded segments in the layer, by default True.
+            If True, the segments will be set to the uploaded root IDs with visibility set to segments_visible.
+        segments_visible : bool, optional
+            Whether the uploaded segments should be visible in the layer, by default True.
+        shader : Optional[Union[bool, str]], optional
+            A shader string to be used for the segmentation layer, by default None.
+            If False, no shader will be applied. If None, the shader from the SkeletonManager will be used.
+
+        Returns
+        -------
+        SegmentationLayer
+            A SegmentationLayer object with the specified parameters.
+            This can be used in a ViewerState.add_layer method.
         """
         seg_source = []
         if isinstance(self.segmentation_source, str):
