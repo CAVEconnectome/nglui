@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from .ngl_components import SegmentationLayer
-from .shaders import skeleton_shader_base, skeleton_shader_default
+from .shaders import skeleton_shader_base
 
 try:
     import cloudvolume

@@ -57,7 +57,8 @@ def populate_info(layers):
                 source = [source]
             for s in source:
                 if hasattr(s, "url"):
-                    source = s.url
+                    s = s.url
+                    # Just use the path part of the URL
                 try:
                     source_info = get_source_info(s)
                     info_dict[s] = source_info

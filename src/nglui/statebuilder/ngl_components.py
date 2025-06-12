@@ -109,6 +109,7 @@ class Source:
 @define
 class _Layer(ABC):
     name = field(type=str)
+    resolution = field(default=None, type=list, kw_only=True)
     visible = field(default=True, type=bool, kw_only=True)
     archived = field(default=False, type=bool, kw_only=True)
     _datamaps = field(factory=dict, type=dict, init=False)
@@ -138,41 +139,6 @@ class _Layer(ABC):
             raise UnmappedDataError(
                 f"Layer '{self.name}' has datamaps registered but no datamap provided: {list(self._datamaps.keys())}"
             )
-
-    def add_source(
-        self,
-        source: Union[str, list, Source],
-        resolution: Optional[list] = None,
-    ) -> Self:
-        """Add a source to the layer.
-
-        Parameters
-        ----------
-        source : str or Source
-            The source to add.
-        resolution : list or np.typing.ArrayLike, optional
-            The resolution of the source. Default is None.
-
-        """
-        if self.source is None:
-            self.source = []
-        if isinstance(self.source, Source) or isinstance(self.source, str):
-            self.source = [self.source]
-        if isinstance(source, str):
-            self.source.append(Source(url=source, resolution=resolution))
-        elif isinstance(source, Source):
-            self.source.append(source)
-        elif is_list_like(source):
-            for src in source:
-                if isinstance(src, str):
-                    self.source.append(Source(url=src, resolution=resolution))
-                elif isinstance(src, Source):
-                    self.source.append(src)
-                else:
-                    raise ValueError("Invalid source type. Must be str or Source.")
-        else:
-            raise ValueError("Invalid source type. Must be str or Source.")
-        return self
 
     def _register_datamap(self, key, func, **kwargs):
         """Register a function to be called when the datamap is set.
@@ -259,6 +225,55 @@ class _Layer(ABC):
             self._apply_to_neuroglancer_state(viewer)
 
 
+@define
+class _LayerWithSource(_Layer):
+    source = field(factory=list, type=Union[list, Source])
+
+    def __attrs_post_init__(self):
+        if isinstance(self.source, DataMap):
+            self._register_datamap(
+                key=self.source.key,
+                func=self.add_source,
+                resolution=self.resolution,
+            )
+            self.source = []
+
+    def add_source(
+        self,
+        source: Union[str, list, Source],
+        resolution: Optional[list] = None,
+    ) -> Self:
+        """Add a source to the layer.
+
+        Parameters
+        ----------
+        source : str or Source
+            The source to add.
+        resolution : list or np.typing.ArrayLike, optional
+            The resolution of the source. Default is None.
+
+        """
+        if self.source is None:
+            self.source = []
+        if isinstance(self.source, Source) or isinstance(self.source, str):
+            self.source = [self.source]
+        if isinstance(source, str):
+            self.source.append(Source(url=source, resolution=resolution))
+        elif isinstance(source, Source):
+            self.source.append(source)
+        elif is_list_like(source):
+            for src in source:
+                if isinstance(src, str):
+                    self.source.append(Source(url=src, resolution=resolution))
+                elif isinstance(src, Source):
+                    self.source.append(src)
+                else:
+                    raise ValueError("Invalid source type. Must be str or Source.")
+        else:
+            raise ValueError("Invalid source type. Must be str or Source.")
+        return self
+
+
 def _handle_source(source, resolution=None, image_layer=False):
     "Convert one or more sources to a Source object."
     if image_layer:
@@ -327,10 +342,9 @@ def _handle_linked_segmentation(segmentation_layer) -> dict:
 
 
 @define
-class ImageLayer(_Layer):
+class ImageLayer(_LayerWithSource):
     name = field(default="img", type=str)
     source = field(factory=list, type=Union[list, Source])
-    resolution = field(default=None, type=list, kw_only=True)
     shader = field(default=None, type=Optional[str], kw_only=True)
     color = field(default=None, type=list, kw_only=True)
     opacity = field(default=1.0, type=float, kw_only=True)
@@ -342,6 +356,7 @@ class ImageLayer(_Layer):
 
     def __attrs_post_init__(self):
         self.color = parse_color(self.color)
+        super().__attrs_post_init__()
 
     def to_neuroglancer_layer(self) -> viewer_state.ImageLayer:
         super().to_neuroglancer_layer()
@@ -393,10 +408,9 @@ class ImageLayer(_Layer):
 
 
 @define
-class SegmentationLayer(_Layer):
+class SegmentationLayer(_LayerWithSource):
     name = field(default="seg", type=str)
     source = field(default=None, type=Source)
-    resolution = field(default=None, type=list, kw_only=True)
     segments = field(
         factory=list, type=Union[list, dict, viewer_state.VisibleSegments], kw_only=True
     )
@@ -410,6 +424,13 @@ class SegmentationLayer(_Layer):
     shader = field(default=None, type=str, kw_only=True)
 
     def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        if isinstance(self.segments, DataMap):
+            self._register_datamap(
+                key=self.segments.key,
+                func=self.add_segments,
+            )
+            self.segments = list()
         self.color = parse_color(self.color)
 
     def to_neuroglancer_layer(self) -> viewer_state.SegmentationLayer:
@@ -731,12 +752,15 @@ class SegmentationLayer(_Layer):
 
 
 @define
-class AnnotationLayer(_Layer):
+class AnnotationLayer(_LayerWithSource):
     name = field(default="anno", type=str)
-    source = field(default=None, type=Source)
+    source = field(default=None, type=Union[Source, DataMap])
     color = field(default=None, type=list, kw_only=True)
     linked_segmentation = field(default=None, type=Union[str, dict], kw_only=True)
     shader = field(default=None, type=str, kw_only=True)
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
 
     def to_neuroglancer_layer(
         self,
