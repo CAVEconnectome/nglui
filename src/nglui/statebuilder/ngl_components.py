@@ -37,6 +37,7 @@ class DataMap:
     """Deferred mapping of dataframes to ViewerState."""
 
     key = field(default=None, type=str)
+    priority = field(default=10, type=int)
 
 
 @define
@@ -113,6 +114,7 @@ class _Layer(ABC):
     visible = field(default=True, type=bool, kw_only=True)
     archived = field(default=False, type=bool, kw_only=True)
     _datamaps = field(factory=dict, type=dict, init=False)
+    _datamap_priority = field(factory=dict, type=dict, init=False)
 
     @contextmanager
     def with_datamap(self, datamap: dict):
@@ -121,11 +123,18 @@ class _Layer(ABC):
         else:
             if not isinstance(datamap, dict):
                 datamap = {None: datamap}
+
             layer_copy = copy.deepcopy(self)
-            for k, v in datamap.items():
-                if k in layer_copy._datamaps:
+            dm_keys = list(layer_copy._datamap_priority.keys())
+            dm_priorities = list(layer_copy._datamap_priority.values())
+            sorted_keys = [
+                x for x, _ in sorted(zip(dm_keys, dm_priorities), key=lambda x: x[1])
+            ]
+
+            for k in sorted_keys:
+                if k in datamap:
                     func = layer_copy._datamaps.pop(k)
-                    func(v)
+                    func(datamap.pop(k))
             yield layer_copy
 
     @property
@@ -145,12 +154,15 @@ class _Layer(ABC):
 
         Parameters
         ----------
+        key: DataMap
+            Object with a key and priority for the datamap.
         func : Callable
             The function to register.
         kwargs:
             Additional keyword arguments to pass to the function.
         """
-        self._datamaps[key] = partial(func, **kwargs)
+        self._datamaps[key.key] = partial(func, **kwargs)
+        self._datamap_priority[key.key] = key.priority
 
     def _apply_datamaps(self, datamap: dict):
         """Map"""
@@ -231,8 +243,9 @@ class _LayerWithSource(_Layer):
 
     def __attrs_post_init__(self):
         if isinstance(self.source, DataMap):
+            self.source.priority = 1
             self._register_datamap(
-                key=self.source.key,
+                key=self.source,
                 func=self.add_source,
                 resolution=self.resolution,
             )
@@ -427,7 +440,8 @@ class SegmentationLayer(_LayerWithSource):
         super().__attrs_post_init__()
         if isinstance(self.segments, DataMap):
             self._register_datamap(
-                key=self.segments.key,
+                key=self.segments,
+                priority=self.segments.priority,
                 func=self.add_segments,
             )
             self.segments = list()
@@ -504,7 +518,7 @@ class SegmentationLayer(_LayerWithSource):
         """
         if isinstance(segments, DataMap):
             self._register_datamap(
-                key=segments.key,
+                key=segments,
                 func=self.add_segments,
                 visible=visible,
             )
@@ -567,7 +581,7 @@ class SegmentationLayer(_LayerWithSource):
         """
         if isinstance(data, DataMap):
             self._register_datamap(
-                key=data.key,
+                key=data,
                 func=self.segments_from_dataframe,
                 segment_column=segment_column,
                 visible_column=visible_column,
@@ -653,7 +667,7 @@ class SegmentationLayer(_LayerWithSource):
         """
         if isinstance(data, DataMap):
             self._register_datamap(
-                key=data.key,
+                key=data,
                 func=self.segment_properties,
                 client=client,
                 id_column=id_column,
@@ -1004,7 +1018,7 @@ class LocalAnnotationLayer(_Layer):
         """
         if isinstance(data, DataMap):
             self._register_datamap(
-                key=data.key,
+                key=data,
                 func=self.add_points,
                 point_column=point_column,
                 segment_column=segment_column,
@@ -1091,7 +1105,7 @@ class LocalAnnotationLayer(_Layer):
         """
         if isinstance(data, DataMap):
             self._register_datamap(
-                key=data.key,
+                key=data,
                 func=self.add_lines,
                 point_a_column=point_a_column,
                 point_b_column=point_b_column,
@@ -1191,7 +1205,7 @@ class LocalAnnotationLayer(_Layer):
         """
         if isinstance(data, DataMap):
             self._register_datamap(
-                key=data.key,
+                key=data,
                 func=self.add_ellipsoids,
                 center_column=center_column,
                 radii_column=radii_column,
@@ -1280,7 +1294,7 @@ class LocalAnnotationLayer(_Layer):
         """
         if isinstance(data, DataMap):
             self._register_datamap(
-                key=data.key,
+                key=data,
                 func=self.add_boxes,
                 point_a_column=point_a_column,
                 point_b_column=point_b_column,

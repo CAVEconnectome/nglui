@@ -2,10 +2,10 @@ from typing import TYPE_CHECKING, Literal, Optional, Union
 
 from caveclient import CAVEclient
 
-from ..site_utils import neuroglancer_url
 from .base import *
 from .ngl_components import *
 from .shaders import DEFAULT_SHADER_MAP
+from .site_utils import neuroglancer_url
 
 if TYPE_CHECKING:
     from nglui.segmentprops import SegmentProperties

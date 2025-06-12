@@ -7,9 +7,9 @@ import numpy as np
 from IPython.display import HTML
 from neuroglancer import viewer, viewer_base
 
-from ..site_utils import MAX_URL_LENGTH, neuroglancer_url
 from . import source_info
 from .ngl_components import *
+from .site_utils import MAX_URL_LENGTH, neuroglancer_url
 
 
 class UnservedViewer(viewer_base.UnsynchronizedViewerBase):

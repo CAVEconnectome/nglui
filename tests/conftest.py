@@ -5,8 +5,6 @@ import pandas as pd
 import pytest
 from caveclient.tools.testing import CAVEclientMock
 
-from nglui import EasyViewer
-
 
 @pytest.fixture(scope="session")
 def client_simple():
@@ -24,16 +22,6 @@ def client_full():
     )
     print(client.materialize.version)
     return client
-
-
-@pytest.fixture(scope="function")
-def viewer_seunglab():
-    return EasyViewer(target_site="seunglab")
-
-
-@pytest.fixture(scope="function")
-def viewer_cave_explorer():
-    return EasyViewer(target_site="spelunker")
 
 
 @pytest.fixture(scope="session")
@@ -54,6 +42,13 @@ def seg_path_graphene():
 @pytest.fixture(scope="session")
 def anno_layer_name():
     return "test_anno_layer"
+
+
+@pytest.fixture(scope="session")
+def test_state():
+    with open("testdata/test_state.json", "r") as f:
+        state = json.load(f)
+    return state
 
 
 @pytest.fixture(scope="function")
@@ -79,35 +74,32 @@ def post_syn_df():
     return pd.read_feather("tests/testdata/post_syn_data.feather")
 
 
-@pytest.fixture(scope="session")
-def test_state():
-    with open("tests/testdata/test_state.json") as f:
-        state = json.load(f)
-    return state
+# @pytest.fixture
+# def soma_df():
+#     return pd.DataFrame(
+#         {
+#             "pt_position": [[100, 200, 300], [400, 500, 600], [700, 800, 900]],
+#             "pt_root_id": [123456, 789012, 345678],
+#             "cell_type": ["excitatory", "inhibitory", "excitatory"],
+#         }
+#     )
 
 
-@pytest.fixture(scope="function")
-def split_point_df():
-    seg_id = 864691135293185292
+# @pytest.fixture
+# def pre_syn_df():
+#     return pd.DataFrame(
+#         {
+#             "ctr_pt_position": [[150, 250, 350], [450, 550, 650], [750, 850, 950]],
+#             "pre_pt_root_id": [111111, 222222, 333333],
+#         }
+#     )
 
-    red_pts = [[182983, 172432, 20264], [182987, 172436, 20264]]
 
-    blue_pts = [[182546, 172262, 20338], [182483, 171930, 20316]]
-
-    red_df = pd.DataFrame(
-        {
-            "pts": np.array(red_pts).tolist(),
-            "team": "red",
-            "seg_id": seg_id,
-        }
-    )
-
-    blue_df = pd.DataFrame(
-        {
-            "pts": np.array(blue_pts).tolist(),
-            "team": "blue",
-            "seg_id": seg_id,
-        }
-    )
-
-    return pd.concat((red_df, blue_df))
+# @pytest.fixture
+# def post_syn_df():
+#     return pd.DataFrame(
+#         {
+#             "ctr_pt_position": [[175, 275, 375], [475, 575, 675], [775, 875, 975]],
+#             "post_pt_root_id": [444444, 555555, 666666],
+#         }
+#     )

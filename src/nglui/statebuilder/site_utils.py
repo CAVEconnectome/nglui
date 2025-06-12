@@ -30,7 +30,7 @@ def add_neuroglancer_site(
         Key for the configuration setting, by default None
     """
     if site_name in NEUROGLANCER_SITES:
-        ValueError(f"Neuroglancer site {site_name} already exists")
+        raise ValueError(f"Neuroglancer site {site_name} already exists")
     NEUROGLANCER_SITES[site_name] = site_url
 
 
