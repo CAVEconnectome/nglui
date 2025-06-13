@@ -1,10 +1,11 @@
 import re
 from collections import namedtuple
 from itertools import cycle
-from typing import Optional, Union
+from typing import Literal, Optional, Union
 
 import palettable
 import webcolors
+from attrs import define, field
 
 
 def rgb_to_triple(rgb: webcolors.IntegerRGB) -> list:
@@ -126,11 +127,91 @@ void main() {{
 """
 
 
+@define
+class ShaderControl:
+    name = field(type=str)
+
+
+@define
+class Checkbox(ShaderControl):
+    default = field(type=bool, default=False)
+
+    def __str__(self):
+        return f"#uicontrol bool {self.name} checkbox(default={str(self.default).lower()});"
+
+
+@define
+class Slider(ShaderControl):
+    type = field(
+        default="float", type=Literal["int", "float"]
+    )  # Can be 'float' or 'int' classes as well
+    min = field(default=0.0, type=float)
+    max = field(default=1.0, type=float)
+    default = field(default=0.5, type=float)
+    step = field(default=None, type=Optional[float], kw_only=True)
+
+    def __attrs_post_init__(self):
+        if self.type == int:
+            self.type = "int"
+        elif self.type == float:
+            self.type = "float"
+        if self.type not in ["float", "int"]:
+            raise ValueError(
+                f"Invalid slider type: {self.type}. Must be 'float' or 'int'."
+            )
+        if self.default < self.min or self.default > self.max:
+            self.default = (self.min + self.max) / 2.0
+
+        if self.type == "int":
+            self.min = int(self.min)
+            self.max = int(self.max)
+            self.default = int(self.default)
+        if self.step is not None and self.type == "int":
+            self.step = int(self.step)
+
+    def __str__(self):
+        if self.step is not None:
+            return f"#uicontrol {self.type} {self.name} slider(min={self.min}, max={self.max}, default={self.default}, step={self.step});"
+        else:
+            return f"#uicontrol {self.type} {self.name} slider(min={self.min}, max={self.max}, default={self.default});"
+
+
+@define
+class ColorControl(ShaderControl):
+    color: str = "white"
+
+    def __str__(self):
+        return f'#uicontrol vec3 {self.name} color(default="{self.color}");'
+
+
+@define
+class InverlpControl(ShaderControl):
+    range = field(type=list, default=None)
+    window = field(type=list, default=None)
+    channel = field(type=list, default=None)
+    clamp = field(type=bool, default=True)
+    property = field(type=str, default=None)
+
+    def __str__(self):
+        if self.range is not None:
+            range_str = f"range=[{self.range[0]}, {self.range[1]}]"
+        else:
+            range_str = ""
+        if self.window is not None:
+            window_str = f"window=[{self.window[0]}, {self.window[1]}]"
+        else:
+            window_str = ""
+        if self.channel is None:
+            self.channel = ["red", "green", "blue"]
+        return f'#uicontrol inverlp {self.name} range={self.range} window={self.window} channel={self.channel} clamp={str(self.clamp).lower()} property="{self.property}"'
+
+
 def skeleton_shader_base(
     vertex_attributes: list[str],
     checkbox_controls: Optional[Union[dict, list]] = None,
     sliders: Optional[Union[dict, list]] = None,
     defined_colors: Optional[dict] = None,
+    uicontrols: Optional[list] = None,
     body: Optional[str] = None,
 ) -> str:
     """
@@ -158,20 +239,19 @@ def skeleton_shader_base(
     str
         The shader code to set the vertex attribute.
     """
-    uicontrols = []
+    if uicontrols is None:
+        uicontrols = []
     if checkbox_controls:
         if not isinstance(checkbox_controls, dict):
             checkbox_controls = {cc: True for cc in checkbox_controls}
         for k, v in checkbox_controls.items():
-            uicontrols.append(
-                f"#uicontrol bool {k} checkbox(default={str(v).lower()});"
-            )
+            uicontrols.append(Checkbox(name=k, default=v))
     if sliders:
         if not isinstance(sliders, dict):
             sliders = {s: ("float", 0, 1, 0.5) for s in sliders}
         for k, v in sliders.items():
             uicontrols.append(
-                f"#uicontrol {v[0]} {k} slider(min={v[1]}, max={v[2]}, default={v[3]});"
+                Slider(name=k, type=v[0], min=v[1], max=v[2], default=v[3])
             )
     if defined_colors:
         if not isinstance(defined_colors, dict):
@@ -182,16 +262,16 @@ def skeleton_shader_base(
                 )
             }
         for k, v in defined_colors.items():
-            uicontrols.append(f'#uicontrol vec3 {k} color(default="{v}");')
+            uicontrols.append(ColorControl(name=k, color=v))
     attributes = []
     for ii, attr in enumerate(vertex_attributes):
         attributes.append(f"float {attr} = vCustom{ii + 1};")
 
     if body is None:
-        body = "emitRGB(segmentColor().rgb);"
+        body = "  emitDefault();"
 
     return f"""
-{"\n".join(uicontrols)}
+{"\n".join([str(x) for x in uicontrols])}
 
 void main() {{
 {"  \n".join(attributes)}

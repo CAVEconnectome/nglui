@@ -152,9 +152,8 @@ class ViewerState:
                 )
         if segmentation:
             seg_source = [client.info.segmentation_source()]
-            skel_source_path = (
-                client.info.get_datastack_info().get("skeleton_source"),
-            )
+            skel_source_path = client.info.get_datastack_info().get("skeleton_source")
+
             if skeleton_source and skel_source_path:
                 seg_source.append(skel_source_path)
 
@@ -332,6 +331,12 @@ class ViewerState:
             "layer": self._selected_layer,
             "visible": self._selected_layer_visible,
         }
+
+    @selected_layer.setter
+    def selected_layer(
+        self, value: Union[str, ImageLayer, SegmentationLayer, AnnotationLayer]
+    ):
+        self.set_selected_layer(value)
 
     def set_selected_layer(
         self, selected_layer: Union[str, ImageLayer, SegmentationLayer, AnnotationLayer]
