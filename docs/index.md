@@ -102,3 +102,17 @@ NGLui also has additional features such as:
 
 If you want to clone the repository and develop on NGLui, note that it uses [uv](https://astral.sh/blog/uv) for development and packaging, [material for mkdocs](https://squidfunk.github.io/mkdocs-material/) for documentation, and [pre-commit](https://pre-commit.com/) with [ruff](https://docs.astral.sh/ruff/) for code quality checks.
 [Poe-the-poet](https://poethepoet.natn.io/index.html) is used to simplify repetitive tasks, and you can run `poe help` to see the available tasks.
+
+## Migration from older versions
+
+If you are migrating from `nglui` v3.x to v4.0.0+, you will need to dramatically update your code.
+
+First and foremost, `nglui` now only works with contemporary versions of neuroglancer, *not* the older Seung-lab version.
+If you still need to support the older deployment, do not upgrade.
+
+Please read the new usage documentation!
+The main change is that it is now recommended to create states directly where possible, and there are now many more convenience functions.
+Instead of making a bunch of layer configs, now you make a `ViewerState` object and directly add layers and their information with functions like `add_image_layer`, `add_segmentation_layer`, and `add_annotation_layer`.
+Instead of always mapping annotation rules and data separately, you can now directly add annotation data through functions like `add_points` and then export with functions like `to_url`.
+You can still use the old pattern of rendering a state and mapping data with [DataMap](usage/statebuilder.md#mapping-data) objects.
+A new "pipeline" pattern makes it more efficient to build complex states in a smaller number of lines of code.
