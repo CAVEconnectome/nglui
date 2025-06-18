@@ -6,7 +6,7 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 
 This is a **major breaking release** that fully changes the way most of the library works.
 Code from previous verions will not work without significant changes.
-Parser and SegmentationProperties work as before, but the StateBuilder and EasyViewer modules have been completely rewritten with a different pattern and approach.
+Parser and SegmentationProperties work as before, but the StateBuilder and EasyViewer modules have been merged with a different pattern and approach.
 Only the current main and Spelunker branches of Neuroglancer are supported, and the older Seung-lab branch is no longer supported.
 The following is a small summary of the changes.
 
