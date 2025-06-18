@@ -79,5 +79,5 @@ Please read the new usage documentation!
 The main change is that it is now recommended to create states directly where possible, and there are now many more convenience functions.
 Instead of making a bunch of layer configs, now you make a `ViewerState` object and directly add layers and their information with functions like `add_image_layer`, `add_segmentation_layer`, and `add_annotation_layer`.
 Instead of always mapping annotation rules and data separately, you can now directly add annotation data through functions like `add_points` and then export with functions like `to_url`.
-You can still use the old pattern of rendering a state and mapping data with [DataMap](usage/statebuilder.md#mapping-data) objects.
+You can still use the old pattern of rendering a state and mapping data with [DataMap]([usage/statebuilder.md#mapping-data](https://caveconnectome.github.io/nglui/usage/statebuilder/#mapping-data)) objects.
 A new "pipeline" pattern makes it more efficient to build complex states in a smaller number of lines of code.
