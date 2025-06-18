@@ -19,19 +19,9 @@ def test_neuron_helper(client_full, mocker):
     root_id = 864691136137805181
     client_full.materialize.synapse_query = mocker.Mock()
     client_full.materialize.synapse_query.side_effect = query_sideeffect
-    state_dict = statebuilder.helpers.make_neuron_neuroglancer_link(
-        client_full,
-        root_id,
-        return_as="dict",
-        shorten="never",
-        show_inputs=True,
-        show_outputs=True,
-    )
-    df = pd.read_feather("tests/testdata/post_df_helper.feather")
-    assert len(state_dict["layers"][2]["annotations"]) == len(df)
-    assert "dimensions" not in state_dict.keys()
 
-    statebuilder.site_utils.set_default_config(target_site="spelunker")
+    print(client_full.info.get_datastack_info())
+
     state_dict_spelunker = statebuilder.helpers.make_neuron_neuroglancer_link(
         client_full,
         root_id,
@@ -39,5 +29,6 @@ def test_neuron_helper(client_full, mocker):
         shorten="never",
         show_inputs=True,
         show_outputs=True,
+        infer_coordinates=False,
     )
     assert "dimensions" in state_dict_spelunker.keys()

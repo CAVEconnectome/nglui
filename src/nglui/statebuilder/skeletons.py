@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from .ngl_components import SegmentationLayer
-from .shaders import skeleton_shader_base
+from .shaders import shader_base
 
 try:
     import cloudvolume
@@ -268,7 +268,7 @@ class SkeletonManager:
             This can be used to add custom shader logic or functions and should contain the emitRGB function.
             If None, a default body will be generated.
         """
-        self._shader = skeleton_shader_base(
+        self._shader = shader_base(
             vertex_attributes=self.vertex_attribute_names,
             checkbox_controls=checkbox_controls,
             sliders=sliders,
@@ -283,7 +283,7 @@ class SkeletonManager:
         If no shader is set, return a default shader that uses the vertex attributes defined in the SkeletonManager.
         """
         if self._shader is None:
-            return skeleton_shader_base(vertex_attributes=self.vertex_attribute_names)
+            return shader_base(vertex_attributes=self.vertex_attribute_names)
         return self._shader
 
     def to_segmentation_layer(

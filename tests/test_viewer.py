@@ -19,7 +19,7 @@ def test_basic_viewer(client_full, mocker):
                 name="TestSegmentationLayer",
             )
         )
-        .add_layer(LocalAnnotationLayer(name="some_annotations"))
+        .add_layer(AnnotationLayer(name="some_annotations"))
         .add_annotation_layer(
             name="other_annotations",
             linked_segmentation="TestSegmentationLayer",
@@ -30,6 +30,12 @@ def test_basic_viewer(client_full, mocker):
             scale_3d=1000.4,
             selected_layer="some_annotations",
             layout="xy",
+        )
+        .add_layer(
+            AnnotationLayer(
+                name="TestAnnotationLayer",
+                source="precomputed://gs://pathtoannotations",
+            )
         )
     )
     assert viewer.layers[0].name == "TestImageLayer"
@@ -46,6 +52,62 @@ def test_basic_viewer(client_full, mocker):
 
     assert "12345" in viewer.to_link_shortener(client=client_full)
 
+    site_utils.add_neuroglancer_site(
+        site_name="test_site",
+        site_url="https://test.neuroglancer.com",
+    )
+    assert "https://test.neuroglancer.com" in viewer.to_url(target_site="test_site")
+
 
 def test_adding_points(client_full, soma_df):
-    pass
+    viewer = (
+        ViewerState(infer_coordinates=False)
+        .add_layers_from_client(
+            client_full,
+        )
+        .add_points(
+            data=soma_df,
+            name="soma_points",
+            point_column="pt_position",
+            segment_column="pt_root_id",
+            tag_column="cell_type",
+        )
+    )
+    state = viewer.to_dict()
+    assert len(state["layers"][2]["annotations"]) == len(soma_df)
+
+
+def test_adding_lines(client_full, pre_syn_df):
+    viewer = (
+        ViewerState(infer_coordinates=False)
+        .add_layers_from_client(
+            client_full,
+        )
+        .add_lines(
+            data=pre_syn_df,
+            name="pre_syn_lines",
+            point_a_column="pre_pt_position",
+            point_b_column="post_pt_position",
+            segment_column="post_pt_root_id",
+        )
+    )
+    state = viewer.to_dict()
+    assert len(state["layers"][2]["annotations"]) == len(pre_syn_df)
+
+
+def test_translated_source(img_path):
+    img35_translate = Source(
+        url=img_path,
+        transform=CoordSpaceTransform(
+            output_dimensions=[4, 4, 40],
+            matrix=[
+                [1, 0, 0.5, 1000],
+                [0, 1, 0, 2000.0],
+                [0, 0, 1, -1000.0],
+            ],
+        ),
+    )
+
+    img_layer_translated = ImageLayer("imagery_translated", img35_translate)
+
+    img_layer_translated.to_dict()

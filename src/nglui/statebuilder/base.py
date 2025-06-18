@@ -1,6 +1,10 @@
+from __future__ import annotations
+
+import copy
 import json
 import warnings
-from typing import Literal, Optional, Self, Union
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Literal, Optional, Self, Union
 
 import neuroglancer
 import numpy as np
@@ -8,8 +12,18 @@ from IPython.display import HTML
 from neuroglancer import viewer, viewer_base
 
 from . import source_info
-from .ngl_components import *
+from .ngl_components import (
+    AnnotationLayer,
+    CoordSpace,
+    DataMap,
+    ImageLayer,
+    SegmentationLayer,
+)
 from .site_utils import MAX_URL_LENGTH, neuroglancer_url
+
+if TYPE_CHECKING:
+    import caveclient
+    import pandas as pd
 
 
 class UnservedViewer(viewer_base.UnsynchronizedViewerBase):
@@ -247,13 +261,7 @@ class ViewerState:
         Position : np.ndarray
 
         """
-        try:
-            position = source_info.suggest_position(self.source_info, resolution)
-        except source_info.NoCloudvolumeError:
-            warnings.warn(
-                "Cloudvolume is not installed (Install with `pip install cloud-volume`). Cannot suggest position."
-            )
-            position = None
+        position = source_info.suggest_position(self.source_info, resolution)
         return position
 
     def _suggest_resolution_from_source(self) -> np.ndarray:
@@ -268,13 +276,7 @@ class ViewerState:
         Resolution : np.ndarray
 
         """
-        try:
-            resolution = source_info.suggest_resolution(self.source_info)
-        except source_info.NoCloudvolumeError:
-            warnings.warn(
-                "Cloudvolume is not installed (Install with `pip install cloud-volume`). Cannot suggest resolution."
-            )
-            resolution = None
+        resolution = source_info.suggest_resolution(self.source_info)
         return resolution
 
     @property
@@ -513,6 +515,7 @@ class ViewerState:
         source: str,
         name: str = "segmentation",
         resolution: Optional[Union[list, np.ndarray]] = None,
+        segments: Optional[list] = None,
         **kwargs,
     ) -> Self:
         if resolution is None:
@@ -521,6 +524,7 @@ class ViewerState:
             name=name,
             source=source,
             resolution=resolution,
+            segments=segments,
             **kwargs,
         )
         self.add_layer(seg_layer)
@@ -532,7 +536,7 @@ class ViewerState:
         source: Optional[str] = None,
         resolution: Optional[Union[list, np.ndarray]] = None,
         tags: Optional[list] = None,
-        linked_segmentation: Union[str, bool] = True,
+        linked_segmentation: Union[str, bool, dict] = True,
         shader: str = None,
         **kwargs,
     ) -> Self:
@@ -569,25 +573,17 @@ class ViewerState:
                         break
                 else:
                     linked_segmentation = None
-        if source:
-            anno_layer = AnnotationLayer(
-                name=name,
-                source=source,
-                linked_segmentation=linked_segmentation,
-                shader=shader,
-                **kwargs,
-            )
-        else:
-            if resolution is None:
-                resolution = self.dimensions
-            anno_layer = LocalAnnotationLayer(
-                name=name,
-                resolution=resolution,
-                tags=tags,
-                linked_segmentation=linked_segmentation,
-                shader=shader,
-                **kwargs,
-            )
+        if resolution is None:
+            resolution = self.dimensions
+        anno_layer = AnnotationLayer(
+            name=name,
+            source=source,
+            resolution=resolution,
+            tags=tags,
+            linked_segmentation=linked_segmentation,
+            shader=shader,
+            **kwargs,
+        )
         self.add_layer(anno_layer)
         return self
 
@@ -655,7 +651,7 @@ class ViewerState:
 
     def add_points(
         self,
-        data: Union[list, np.ndarray, pd.DataFrame, DataMap],
+        data: Union[list, np.ndarray, "pd.DataFrame", DataMap],
         name: str = "annotation",
         point_column: Optional[str] = None,
         segment_column: Optional[str] = None,
@@ -708,12 +704,12 @@ class ViewerState:
 
         if name in self.layer_names:
             layer = self.get_layer(name)
-            if not isinstance(layer, LocalAnnotationLayer):
+            if not isinstance(layer, AnnotationLayer):
                 raise ValueError(
-                    f"Layer {name} already exists but is not a LocalAnnotationLayer."
+                    f"Layer {name} already exists but is not a AnnotationLayer."
                 )
         else:
-            layer = LocalAnnotationLayer(
+            layer = AnnotationLayer(
                 name=name,
                 resolution=data_resolution,
                 tags=tags,
@@ -733,7 +729,7 @@ class ViewerState:
 
     def add_lines(
         self,
-        data: pd.DataFrame,
+        data: "pd.DataFrame",
         name: str = "annotation",
         point_a_column: str = None,
         point_b_column: str = None,
@@ -784,12 +780,12 @@ class ViewerState:
         """
         if name in self.layer_names:
             layer = self.get_layer(name)
-            if not isinstance(layer, LocalAnnotationLayer):
+            if not isinstance(layer, AnnotationLayer):
                 raise ValueError(
-                    f"Layer {name} already exists but is not a LocalAnnotationLayer."
+                    f"Layer {name} already exists but is not a AnnotationLayer."
                 )
         else:
-            layer = LocalAnnotationLayer(
+            layer = AnnotationLayer(
                 name=name,
                 resolution=data_resolution,
                 tags=tags,
@@ -810,7 +806,7 @@ class ViewerState:
 
     def add_ellipsoids(
         self,
-        data: pd.DataFrame,
+        data: "pd.DataFrame",
         name: str = "annotation",
         center_column: str = None,
         radii_column: str = None,
@@ -861,12 +857,12 @@ class ViewerState:
         """
         if name in self.layer_names:
             layer = self.get_layer(name)
-            if not isinstance(layer, LocalAnnotationLayer):
+            if not isinstance(layer, AnnotationLayer):
                 raise ValueError(
-                    f"Layer {name} already exists but is not a LocalAnnotationLayer."
+                    f"Layer {name} already exists but is not a AnnotationLayer."
                 )
         else:
-            layer = LocalAnnotationLayer(
+            layer = AnnotationLayer(
                 name=name,
                 resolution=data_resolution,
                 tags=tags,
@@ -887,7 +883,7 @@ class ViewerState:
 
     def add_boxes(
         self,
-        data: pd.DataFrame,
+        data: "pd.DataFrame",
         name: str = "annotation",
         point_a_column: str = None,
         point_b_column: str = None,
@@ -938,12 +934,12 @@ class ViewerState:
         """
         if name in self.layer_names:
             layer = self.get_layer(name)
-            if not isinstance(layer, LocalAnnotationLayer):
+            if not isinstance(layer, AnnotationLayer):
                 raise ValueError(
-                    f"Layer {name} already exists but is not a LocalAnnotationLayer."
+                    f"Layer {name} already exists but is not a AnnotationLayer."
                 )
         else:
-            layer = LocalAnnotationLayer(
+            layer = AnnotationLayer(
                 name=name,
                 resolution=data_resolution,
                 tags=tags,
@@ -964,15 +960,18 @@ class ViewerState:
 
     def to_neuroglancer_state(self):
         if self.dimensions is None:
-            if self.infer_coordinates:
+            if self.infer_coordinates and source_info.HAS_CLOUDVOLUME:
                 self._dimensions = self._suggest_resolution_from_source()
             else:
+                warnings.warn(
+                    "No dimensions provided or inferred. Using a null CoordSpace which may cause unintended effects in Neuroglancer."
+                )
                 self._dimensions = CoordSpace()
         if not isinstance(self.dimensions, CoordSpace):
             self._dimensions = CoordSpace(self.dimensions)
 
         for layer in self.layers:
-            if isinstance(layer, LocalAnnotationLayer):
+            if isinstance(layer, AnnotationLayer):
                 if layer.resolution is None:
                     layer.resolution = self.dimensions.resolution
 
@@ -1019,6 +1018,7 @@ class ViewerState:
         Self
             A new ViewerState object with the datamap applied.
         """
+        self._reset_viewer()
         if inplace:
             self._apply_datamaps(datamap)
             return self
@@ -1055,8 +1055,9 @@ class ViewerState:
     def to_url(
         self,
         target_url: str = None,
+        target_site: str = None,
         shorten: Union[bool, Literal["if_long"]] = False,
-        client: Optional[caveclient.CAVEclient] = None,
+        client: Optional["caveclient.CAVEclient"] = None,
     ):
         """Return a URL representation of the viewer state.
 
@@ -1065,10 +1066,13 @@ class ViewerState:
         target_url : str
             The base URL to use for the Neuroglancer state. If not provided,
             the default server URL will be used.
-        html : bool
-            If True, return an HTML link instead of a plain URL.
-        link_text : str
-            The text to display for the HTML link. Only used if `html` is True.
+        target_site : str, optional
+            The target site for the URL, based on the keys in site_utils.NEUROGLANCER . If not provided, the default server URL will be used.
+        shorten: Union[bool, Literal["if_long"]], optional
+            If True, the URL will be shortened using the CAVE link shortener service.
+            If "if_long", the URL will only be shortened if it exceeds a certain length.
+        client : Optional[caveclient.CAVEclient], optional
+            The CAVE client to use for shortening the URL. If not provided, the URL will not be shortened.
 
         Returns
         -------
@@ -1076,10 +1080,13 @@ class ViewerState:
             A URL representation of the viewer state.
         """
         if target_url is None:
-            if self.interactive:
-                return self.viewer.get_viewer_url()
+            if target_site is None:
+                if self.interactive:
+                    return self.viewer.get_viewer_url()
+                else:
+                    target_url = self._target_url
             else:
-                target_url = self._target_url
+                target_url = neuroglancer_url(target_site=target_site)
 
         url = neuroglancer.to_url(
             self.viewer.state,
@@ -1097,7 +1104,10 @@ class ViewerState:
     def to_link(
         self,
         target_url: str = None,
+        target_site: str = None,
         link_text: str = "Neuroglancer Link",
+        shorten: Union[bool, Literal["if_long"]] = False,
+        client: Optional["caveclient.CAVEclient"] = None,
     ):
         """Return an HTML link representation of the viewer state.
 
@@ -1106,23 +1116,35 @@ class ViewerState:
         target_url : str
             The base URL to use for the Neuroglancer state. If not provided,
             the default server URL will be used.
+        target_site : str, optional
+            The target site for the URL, based on the keys in site_utils.NEUROGLANCER_SITES.
+            If not provided, the default server URL will be used.
         link_text : str
             The text to display for the HTML link.
+        shorten: Union[bool, Literal["if_long"]], optional
+            If True, the URL will be shortened using the CAVE link shortener service.
+            If "if_long", the URL will only be shortened if it exceeds a certain length.
+        client : Optional[caveclient.CAVEclient], optional
+            The CAVE client to use for shortening the URL. If not provided, the URL will not be shortened.
 
         Returns
         -------
-        str
+        HTML.HTML
             An HTML link representation of the viewer state.
         """
-        if target_url is None:
-            target_url = self._target_url
-        url = self.to_url(target_url)
+        url = self.to_url(
+            target_url=target_url,
+            target_site=target_site,
+            shorten=shorten,
+            client=client,
+        )
         return HTML(f'<a href="{url}" target="_blank">{link_text}</a>')
 
     def to_link_shortener(
         self,
-        client: caveclient.CAVEclient,
+        client: "caveclient.CAVEclient",
         target_url: str = None,
+        target_site: str = None,
     ) -> str:
         """Shorten the URL using the CAVE link shortener service.
 
@@ -1133,6 +1155,9 @@ class ViewerState:
         target_url : str, optional
             The base URL to use for the Neuroglancer state. If not provided,
             the default server URL will be used.
+        target_site : str, optional
+            The target site for the URL, based on the keys in site_utils.NEUROGLANCER_SITES.
+            If not provided, the default server URL will be used.
 
         Returns
         -------
@@ -1141,8 +1166,11 @@ class ViewerState:
         """
         state_id = client.state.upload_state_json(self.to_dict())
         if target_url is None:
-            if self.interactive:
-                return self.viewer.get_viewer_url()
+            if target_site is None:
+                if self.interactive:
+                    return self.viewer.get_viewer_url()
+                else:
+                    target_url = self._target_url
             else:
-                target_url = self._target_url
+                target_url = neuroglancer_url(target_site=target_site)
         return client.state.build_neuroglancer_url(state_id, target_url)

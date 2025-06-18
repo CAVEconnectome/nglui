@@ -1,8 +1,9 @@
 ---
-title: statebuilder.base
+title: statebuilder.shaders
 ---
 
-::: src.nglui.statebuilder.base
+::: src.nglui.statebuilder.shaders
     options:
         show_source: false
         heading_level: 2
+

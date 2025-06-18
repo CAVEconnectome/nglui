@@ -1,16 +1,17 @@
 try:
     import cloudvolume
 
-    has_cloudvolume = True
+    HAS_CLOUDVOLUME = True
 except ImportError:
-    has_cloudvolume = False
+    HAS_CLOUDVOLUME = False
     cloudvolume = None
+
 import warnings
 
 import numpy as np
 from cachetools import LRUCache, cached
 
-from .ngl_components import _Layer
+from .ngl_components import AnnotationLayer, _Layer
 
 
 class NoCloudvolumeError(Exception):
@@ -32,7 +33,7 @@ def get_source_info(source):
     dict
         Source info dictionary.
     """
-    if not has_cloudvolume:
+    if not HAS_CLOUDVOLUME:
         raise NoCloudvolumeError
     cv = cloudvolume.CloudVolume(source)
 
@@ -49,7 +50,7 @@ def get_source_info(source):
 def populate_info(layers):
     info_dict = {}
     for layer in layers:
-        if issubclass(type(layer), _Layer):
+        if issubclass(type(layer), _Layer) and not isinstance(layer, AnnotationLayer):
             if not hasattr(layer, "source"):
                 continue
             source = layer.source
@@ -62,8 +63,14 @@ def populate_info(layers):
                 try:
                     source_info = get_source_info(s)
                     info_dict[s] = source_info
-                except:
+                except KeyError:
+                    # No need to raise a warning if the source is the wrong type
                     info_dict[s] = {}
+                except NoCloudvolumeError:
+                    info_dict[s] = {}
+                    warnings.warn(
+                        f"CloudVolume is not available. Cannot get source information for {s}.",
+                    )
     return info_dict
 
 

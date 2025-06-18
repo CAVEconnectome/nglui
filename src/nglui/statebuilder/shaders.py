@@ -206,8 +206,8 @@ class InverlpControl(ShaderControl):
         return f'#uicontrol inverlp {self.name} range={self.range} window={self.window} channel={self.channel} clamp={str(self.clamp).lower()} property="{self.property}"'
 
 
-def skeleton_shader_base(
-    vertex_attributes: list[str],
+def shader_base(
+    vertex_attributes: Optional[list[str]] = None,
     checkbox_controls: Optional[Union[dict, list]] = None,
     sliders: Optional[Union[dict, list]] = None,
     defined_colors: Optional[dict] = None,
@@ -219,7 +219,7 @@ def skeleton_shader_base(
 
     Parameters
     ----------
-    vertex_attribute : str
+    vertex_attributes : list[str], optional
         The names of the vertex attribute to set.
     checkbox_controls : dict or list, optional
         Dictionary of checkbox controls with names as keys and default values as values.
@@ -241,6 +241,8 @@ def skeleton_shader_base(
     """
     if uicontrols is None:
         uicontrols = []
+    if vertex_attributes is None:
+        vertex_attributes = []
     if checkbox_controls:
         if not isinstance(checkbox_controls, dict):
             checkbox_controls = {cc: True for cc in checkbox_controls}
@@ -550,8 +552,43 @@ void main() {{
 }}
 """
 
+basic_shader = """
+void main() {
+  setColor(defaultColor());
+}
+"""
+
+
+def simple_point_shader(
+    color: str = "tomato",
+    markersize: float = 5.0,
+) -> str:
+    """
+    Generate a simple point shader with a specified color.
+
+    Parameters
+    ----------
+    color : str, optional
+        Color for the points, by default 'tomato'.
+
+    Returns
+    -------
+    str
+        The shader code.
+    """
+    return shader_base(
+        uicontrols=[
+            ColorControl(name="markerColor", color=color),
+            Slider(name="markerSize", type=float, min=0, max=20, default=markersize),
+        ],
+        body="""setPointMarkerSize(markerSize);
+setColor(markerColor);""",
+    )
+
+
 DEFAULT_SHADER_MAP = {
     "skeleton_compartments": simple_compartment_skeleton_shader,
-    "points": simple_point_shader,
+    "points": simple_point_shader(),
     "tags": PointShader(colormap="Set1", n_colors=9).code,
+    "basic": basic_shader,
 }

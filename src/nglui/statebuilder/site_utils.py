@@ -1,7 +1,4 @@
-import logging
 from typing import Optional
-
-logger = logging.getLogger(__name__)
 
 NEUROGLANCER_SITES = {
     "spelunker": "https://spelunker.cave-explorer.org/",
@@ -26,8 +23,6 @@ def add_neuroglancer_site(
         Name of the neuroglancer site.
     site_url : str
         URL of the neuroglancer site.
-    config_key : str, optional
-        Key for the configuration setting, by default None
     """
     if site_name in NEUROGLANCER_SITES:
         raise ValueError(f"Neuroglancer site {site_name} already exists")
@@ -66,3 +61,15 @@ def neuroglancer_url(
         raise ValueError(
             f"Neuroglancer site {target_site} not found. Available sites: {list(NEUROGLANCER_SITES.keys())}"
         )
+
+
+def target_sites() -> dict:
+    """
+    Get the list of available neuroglancer sites.
+
+    Returns
+    -------
+    dict
+        List of available neuroglancer URLs and their names.
+    """
+    return NEUROGLANCER_SITES.copy()

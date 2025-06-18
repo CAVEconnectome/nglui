@@ -1,15 +1,15 @@
-from typing import TYPE_CHECKING, Literal, Optional, Union
+from typing import TYPE_CHECKING, Iterable, Literal, Optional, Union
 
 from caveclient import CAVEclient
 
-from .base import *
-from .ngl_components import *
-from .shaders import DEFAULT_SHADER_MAP
-from .site_utils import neuroglancer_url
+from .base import DataMap, ViewerState
+from .ngl_components import AnnotationLayer
+from .shaders import DEFAULT_SHADER_MAP, simple_point_shader
 
 if TYPE_CHECKING:
-    from nglui.segmentprops import SegmentProperties
+    import datetime
 
+    import pandas as pd
 
 DEFAULT_POSTSYN_COLOR = "turquoise"
 DEFAULT_PRESYN_COLOR = "tomato"
@@ -19,7 +19,7 @@ MAX_URL_LENGTH = 1_750_000
 
 def sort_dataframe_by_root_id(
     df, root_id_column, ascending=False, num_column="n_times", drop=False
-) -> pd.DataFrame:
+) -> "pd.DataFrame":
     """Sort a dataframe so that rows belonging to the same root id are together, ordered by how many times the root id appears.
 
     Parameters
@@ -58,7 +58,7 @@ def sort_dataframe_by_root_id(
 
 def make_point_state(
     client: CAVEclient,
-    data: Optional[pd.DataFrame] = None,
+    data: Optional["pd.DataFrame"] = None,
     point_column: str = "pt_position",
     segment_column: str = "pt_root_id",
     description_column: Optional[str] = None,
@@ -137,13 +137,14 @@ def make_point_state(
 
 def make_line_state(
     client: CAVEclient,
-    data: Optional[pd.DataFrame] = None,
+    data: Optional["pd.DataFrame"] = None,
     point_a_column: str = "pre_pt_position",
     point_b_column: str = "post_pt_position",
     segment_column: str = "pt_root_id",
     description_column: Optional[str] = None,
     tag_column: Optional[str] = None,
     data_resolution: Optional[list] = None,
+    tags: Optional[list] = None,
     layer_name: str = "lines",
     shader: Optional[Union[bool, str]] = True,
     selected_alpha: Optional[float] = None,
@@ -211,6 +212,7 @@ def make_line_state(
             description_column=description_column,
             tag_column=tag_column,
             data_resolution=data_resolution,
+            tags=tags,
             shader=shader,
         )
     )
@@ -288,7 +290,7 @@ def make_connectivity_state_map(
         if input_shader is True:
             input_shader = DEFAULT_SHADER_MAP.get("points")
         ngl = ngl.add_layer(
-            LocalAnnotationLayer(
+            AnnotationLayer(
                 name=input_layer_name,
                 linked_segmentation="segmentation",
                 shader=input_shader,
@@ -304,7 +306,7 @@ def make_connectivity_state_map(
         if output_shader is True:
             output_shader = DEFAULT_SHADER_MAP.get("points")
         ngl = ngl.add_layer(
-            LocalAnnotationLayer(
+            AnnotationLayer(
                 name=output_layer_name,
                 linked_segmentation="segmentation",
                 shader=output_shader,
@@ -317,3 +319,112 @@ def make_connectivity_state_map(
             )
         )
     return ngl
+
+
+def make_neuron_neuroglancer_link(
+    client: CAVEclient,
+    root_ids: Union[int, list[int]],
+    return_as: Literal["link", "dict", "json", "url"] = "link",
+    shorten: Literal["never", "always", "if_long"] = "if_long",
+    show_inputs: bool = True,
+    show_outputs: bool = True,
+    point_column: str = "ctr_pt_position",
+    target_url: Optional[str] = None,
+    target_site: Optional[str] = None,
+    timestamp: Optional["datetime.datetime"] = None,
+    infer_coordinates: bool = True,
+):
+    """Create a Neuroglancer state with a neuron and optionally its inputs and outputs.
+    Parameters
+    ----------
+    client : CAVEclient
+        CAVEclient configured for the datastack desired
+    root_ids : Union[int, list[int]]
+        Root IDs of the neuron to visualize. Can be a single ID or a list of IDs.
+    return_as : Literal["link", "dict", "json", "url"], optional
+        Format to return the Neuroglancer state, by default "link".
+        Options are "link", "dict", "json", or "url".
+    shorten : Literal["never", "always", "if_long"], optional
+        Whether to shorten the URL if it is long, by default "if_long".
+        Options are "never", "always", or "if_long".
+    show_inputs : bool, optional
+        Whether to show input synapses, by default True
+    show_outputs : bool, optional
+        Whether to show output synapses, by default True
+    point_column : str, optional
+        Column in the dataframe to use for point positions, by default "ctr_pt_position"
+    target_url : Optional[str], optional
+        Target URL to use for the Neuroglancer link, by default None.
+        If None, the default CAVEclient URL will be used.
+    target_site : Optional[str], optional
+        Target site to use for the Neuroglancer link, by default None.
+        If None, the default CAVEclient site will be used.
+    timestamp : Optional[datetime.datetime], optional
+        Timestamp to use for the query, by default None.
+        If None, the current time will be used.
+    infer_coordinates : bool, optional
+        Whether to infer coordinates from the data, by default True.
+
+    Returns
+    -------
+    Neuroglancer state in the specified format.
+    """
+
+    if not isinstance(root_ids, Iterable):
+        root_ids = [root_ids]
+
+    viewer = ViewerState(infer_coordinates=infer_coordinates).add_layers_from_client(
+        client,
+    )
+    viewer.layers[1].add_segments(segments=root_ids)
+    if show_inputs:
+        post_df = client.materialize.synapse_query(
+            post_ids=root_ids,
+            desired_resolution=[1, 1, 1],
+            split_positions=True,
+            timestamp=timestamp,
+        )
+        viewer.add_points(
+            data=post_df,
+            name="inputs",
+            point_column=point_column,
+            segment_column="post_pt_root_id",
+            data_resolution=[1, 1, 1],
+            shader=simple_point_shader(color=DEFAULT_POSTSYN_COLOR),
+        )
+    if show_outputs:
+        pre_df = client.materialize.synapse_query(
+            pre_ids=root_ids,
+            desired_resolution=[1, 1, 1],
+            split_positions=True,
+            timestamp=timestamp,
+        )
+        viewer.add_points(
+            data=pre_df,
+            name="outputs",
+            point_column=point_column,
+            segment_column="pre_pt_root_id",
+            data_resolution=[1, 1, 1],
+            shader=simple_point_shader(color=DEFAULT_PRESYN_COLOR),
+        )
+    match return_as:
+        case "dict":
+            return viewer.to_dict()
+        case "json":
+            return viewer.to_json_string()
+        case "url":
+            return viewer.to_url(
+                shorten=shorten,
+                target_url=target_url,
+                target_site=target_site,
+            )
+        case "link":
+            return viewer.to_link(
+                shorten=shorten,
+                target_url=target_url,
+                target_site=target_site,
+            )
+        case _:
+            raise ValueError(
+                f"Invalid return_as value: {return_as}. Must be one of 'link', 'dict', 'json', or 'url'."
+            )

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-from typing import Union
 
 import attrs
 import numpy as np

@@ -2,7 +2,26 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
-## Unreleased
+## [4.0.0]
+
+This is a **major breaking release** that fully changes the way most of the library works.
+Code from previous verions will not work without significant changes.
+Parser and SegmentationProperties work as before, but the StateBuilder and EasyViewer modules have been completely rewritten with a different pattern and approach.
+Only the current main and Spelunker branches of Neuroglancer are supported, and the older Seung-lab branch is no longer supported.
+The following is a small summary of the changes.
+
+### Added
+
+- **StateBuilder/EasyViewer**: Complete rewrite joining StateBuilder and Easyviewer into a single module under the statebuilder namespace. Only supports spelunker.
+- **StateBuilder**: A new SkeletonManager to upload skeletons for use in Neuroglancer.
+- **StateBuilder**: Support for building some shaders.
+- **StateBuilder**: Added inference of properties from source info files.
+- **StateBuilder**: Added DataMaps to several places to allow for more flexible data handling and rendering.
+
+#### Removed
+
+- **StateBuilder/EasyViewer**: Fully removed support for the Seung-lab branch of Neuroglancer. This is no longer supported and will not be updated.
+- **StateBuilder/EasyViewer**: Removed both main classes and their functionality. Functionality is now merged into the ViewerState class.
 
 ## [3.8.2] - 2025-03-27
 

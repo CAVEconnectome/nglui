@@ -46,7 +46,7 @@ def anno_layer_name():
 
 @pytest.fixture(scope="session")
 def test_state():
-    with open("testdata/test_state.json", "r") as f:
+    with open("tests/testdata/test_state.json", "r") as f:
         state = json.load(f)
     return state
 
@@ -72,34 +72,3 @@ def pre_syn_df():
 @pytest.fixture(scope="function")
 def post_syn_df():
     return pd.read_feather("tests/testdata/post_syn_data.feather")
-
-
-# @pytest.fixture
-# def soma_df():
-#     return pd.DataFrame(
-#         {
-#             "pt_position": [[100, 200, 300], [400, 500, 600], [700, 800, 900]],
-#             "pt_root_id": [123456, 789012, 345678],
-#             "cell_type": ["excitatory", "inhibitory", "excitatory"],
-#         }
-#     )
-
-
-# @pytest.fixture
-# def pre_syn_df():
-#     return pd.DataFrame(
-#         {
-#             "ctr_pt_position": [[150, 250, 350], [450, 550, 650], [750, 850, 950]],
-#             "pre_pt_root_id": [111111, 222222, 333333],
-#         }
-#     )
-
-
-# @pytest.fixture
-# def post_syn_df():
-#     return pd.DataFrame(
-#         {
-#             "ctr_pt_position": [[175, 275, 375], [475, 575, 675], [775, 875, 975]],
-#             "post_pt_root_id": [444444, 555555, 666666],
-#         }
-#     )

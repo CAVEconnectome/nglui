@@ -19,7 +19,7 @@ There are four types of properties that can be viewed in Neuroglancer:
 In addition, the specification allows *string properties*, but these are not currently shown in Neuroglancer.
 
 <figure markdown="span">
-  ![Image title](seg_props.png){ width="500" }
+  ![Segment property example](img/seg_props.png){ width="500" }
   <figcaption>Segment properties help make Neuroglancer more browsable from data</figcaption>
 </figure>
 
