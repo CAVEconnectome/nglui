@@ -4,7 +4,12 @@ import copy
 import json
 import warnings
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Literal, Optional, Self, Union
+from typing import TYPE_CHECKING, Literal, Optional, Union
+
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 import neuroglancer
 import numpy as np

@@ -272,11 +272,13 @@ def shader_base(
     if body is None:
         body = "  emitDefault();"
 
+    ui_control_str = "\n".join([str(x) for x in uicontrols])
+    attr_str = "  \n".join(attributes)
     return f"""
-{"\n".join([str(x) for x in uicontrols])}
+{ui_control_str}
 
 void main() {{
-{"  \n".join(attributes)}
+{attr_str}
 
 {body}
 }}

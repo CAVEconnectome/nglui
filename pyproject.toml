@@ -21,6 +21,7 @@ dependencies = [
     "neuroglancer==2.40.1",
     "cachetools>=5.5.2",
     "palettable>=3.3.3,<4.0.0",
+    "typing-extensions>=4.13.2,<5.0.0 ; python_full_version < '3.11'",
 ]
 authors = [
     { name = "Casey Schneider-Mizell", email = "caseysm@gmail.com" },

@@ -5,7 +5,12 @@ import json
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from functools import partial
-from typing import Optional, Self, Union
+from typing import Optional, Union
+
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 import caveclient
 import numpy as np
