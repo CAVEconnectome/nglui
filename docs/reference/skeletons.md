@@ -1,8 +1,8 @@
 ---
-title: statebuilder.base
+title: statebuilder.skeletons
 ---
 
-::: src.nglui.statebuilder.base
+::: src.nglui.skeletons.skeletons
     options:
         show_source: false
         heading_level: 2

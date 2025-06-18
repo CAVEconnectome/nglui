@@ -19,7 +19,7 @@ There are four types of properties that can be viewed in Neuroglancer:
 In addition, the specification allows *string properties*, but these are not currently shown in Neuroglancer.
 
 <figure markdown="span">
-  ![Image title](seg_props.png){ width="500" }
+  ![Segment property example](img/seg_props.png){ width="500" }
   <figcaption>Segment properties help make Neuroglancer more browsable from data</figcaption>
 </figure>
 
@@ -192,40 +192,4 @@ If you want to do this manually in a browser you have already have open, select 
 ## Segment properties in StateBuilder.
 
 The `StateBuilder` class lets you set either static segment properties or segment properties that are generated from a dataframe.
-
-To set static segment properties from a hosted JSON file, you simply set a segment properties value on the SegmentationLayerConfig.
-
-```python
-from nglui import statebuilder
-
-seg = statebuilder.SegmentationLayerConfig(
-    source="precomputed://gs://my-bucket/my-segmentation",
-    segment_properties='precomputed://https://my-server/my-property',
-)
-```
-
-and proceed to build the state as normal.
-
-#### Segment property maps
-
-Alternatively, you can set segment properties from data when you render the state.
-Here, we have to create the segmentation layer first and then set the segment property mapping on the layer.
-
-```python
-seg = statebuilder.SegmentationLayerConfig(
-    source="precomputed://gs://my-bucket/my-segmentation",
-
-
-seg.add_segment_properties_map(
-    label_col='id_ref',
-    tag_value_cols=['cell_type', 'classification_system'],
-    number_cols=['soma_depth'],
-)
-```
-
-The arguments follow the `SegmentProperties.from_dataframe` method.
-Segment property maps require a CAVEclient to be set when building the StateBuilder object, as the resulting properties need to be uploaded to the CAVE state server.
-In addition, if you want to use a different dataframe for segment properties than for data, you can specfify a `mapping_set`.
-Mapping sets are found throughout StateBuilder, and let you pass a dictionary of dataframes to use for different purposes, where the keys are these mapping set values.
-Note that if you use a mapping set anywhere, you have to specify them for all data rules in the state.
-
+See the [StateBuilder documentation](../usage/statebuilder.md#segment-properties) for more details.

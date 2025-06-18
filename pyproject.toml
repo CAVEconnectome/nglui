@@ -7,18 +7,21 @@ name = "nglui"
 version = "3.8.2"
 description = "Framework for data-driven generation of neuroglancer states."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "attrs>=24.2.0",
     "caveclient>=7.0.0",
     "ipython>=8.18.1",
-    "neuroglancer>=2.40.1",
     "numpy>=1.26.4",
     "pandas>=2.2.3",
     "python-box>=7.2.0",
     "requests>=2.32.3",
     "six>=1.16.0",
     "webcolors>=24.11.1",
+    "neuroglancer==2.40.1",
+    "cachetools>=5.5.2",
+    "palettable>=3.3.3,<4.0.0",
+    "typing-extensions>=4.13.2,<5.0.0 ; python_full_version < '3.11'",
 ]
 authors = [
     { name = "Casey Schneider-Mizell", email = "caseysm@gmail.com" },
@@ -39,6 +42,11 @@ Homepage = "https://caveconnectome.github.io/nglui/"
 Repository = "https://github.com/CAVEconnectome/nglui.git"
 Changelog = "https://caveconnectome.github.io/nglui/changelog/"
 Issues = "https://github.com/CAVEconnectome/nglui/issues"
+
+[project.optional-dependencies]
+full = [
+    "cloud-volume>=12.3.1",
+]
 
 [dependency-groups]
 dev = [

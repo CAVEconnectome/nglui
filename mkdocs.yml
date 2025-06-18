@@ -5,17 +5,26 @@ repo_name: CAVEconnectome/NGLui
 
 nav:
 - About: index.md
+# - Case Study: casestudy.md
 - How to Use:
-    - usage/statebuilder.md
-    - usage/config.md
-    - usage/segmentprops.md
-    - usage/parser.md
+    - usage/index.md
+    - StateBuilder:
+      - usage/statebuilder.md
+      - usage/config.md
+    - Other Features:
+      - usage/skeletons.md
+      - usage/segmentprops.md
+      - usage/parser.md
 - Function Reference:
-    - reference/segmentprops.md
     - reference/statebuilder.md
-    - reference/easyviewer.md
-    - reference/parser.md
+    - reference/ngl_components.md
+    - reference/ngl_annotations.md
+    - reference/shaders.md
+    - reference/skeletons.md
+    - reference/helpers.md
     - reference/site_utils.md
+    - reference/segmentprops.md
+    - reference/parser.md
 - Changelog: changelog.md
 
   
@@ -23,24 +32,25 @@ theme:
   name: material
   language: en
   palette:
-    primary: blue grey
+    primary: indigo
     accent: deep orange
   font:
-    text: Bitter
-    code: Inconsolata
+    text: Funnel Sans 
+    code: JetBrains Mono
   icon:
     repo: fontawesome/brands/github
+    logo: material/brain
   features:
     - navigation.indexes
     - navigation.instant
-    # - navigation.footer
+    - navigation.footer
     # - navigation.path
     - navigation.prune
-    # - navigation.sections # toggle to have sections in side nav
+    - navigation.sections # toggle to have sections in side nav
     - navigation.tabs # toggle to mainly use top nav
     - navigation.tabs.sticky
     - toc.follow
-    - toc.integrate # whether to include the toc in the main nav bar to the left
+    # - toc.integrate # whether to include the toc in the main nav bar to the left
     - navigation.top
     - search.suggest
     - search.highlight
@@ -51,9 +61,20 @@ theme:
 markdown_extensions:
   - admonition
   - attr_list
+  - def_list
   - md_in_html
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.keys
+
 
 plugins:
+  - search
   - mkdocstrings:
       default_handler: python
       handlers:
@@ -70,7 +91,6 @@ plugins:
             docstring_options:
               ignore_init_summary: false
             merge_init_into_class: true
-            allow_section_blank_line: false
             show_root_heading: false
             show_root_toc_entry: false
             show_object_full_path: false
@@ -88,4 +108,7 @@ plugins:
             show_signature_annotations: false
             unwrap_annotated: false # https://mkdocstrings.github.io/python/usage/configuration/signatures/#unwrap_annotated
             heading_level: 2
-            inherited_members: true
+            inherited_members: false
+            filters:
+              - "!^_"  # Exclude private members
+              - "!^__"  # Exclude dunder methods

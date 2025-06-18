@@ -2,347 +2,536 @@
 title: StateBuilder
 ---
 
-The Statebuilder is a submodule that helps produce custom Neuroglancer states based on data in the form of Pandas dataframes. Neuroglancer organizes data sources into layers. Layers come in three types, image, segmentation, and annotation. Each has different properties and functions. The state builder lets the user define a set of rules for initializing layers and how to map data columns to selections and annotations. Let's see the simplest example in use now.
+Statebuilder is a submodule that to produce Neuroglancer links and the JSON states that define them.
+It is built on top of [neuroglancer-python](https://github.com/google/neuroglancer/tree/master/python), and helps simplify producing more complex and data-driven states, while automating much of the boilerplate code and integrating with CAVEclient for CAVE-backed datasets.
 
-```python
-from nglui.statebuilder import *
+## Neuroglancer Key Concepts
+
+To understand how to use StateBuilder, it's helpful to understand the basic Neuroglancer concepts of layers, states, and annotations.
+
+Neuroglancer is a web-based viewer for large 3d datasets.
+Notably, Neuroglancer is designed to be a bit of complex Javascript that runs in your web browser and, generally, looks for data in various cloud-hosted locations.
+There are a number of different **deployments** of Neuroglancer, which can be based on slightly different versions of the code or slightly different configurations available.
+The two deployments that are built into NGLui right now are ["Mainline" or the default deployment](https://neuroglancer-demo.appspot.com) built from the [main branch of Neuroglancer from Google](https://github.com/google/neuroglancer) and the [Spelunker](https://spelunker.cave-explorer.org) deployment based a [bleeding-edge branch](https://github.com/seung-lab/neuroglancer/tree/spelunker) focused on CAVE-related features.
+Additional Neuroglancer deployments can be added using [`site_utils`](config.md).
+
+Virtually every aspect of Neuroglancer is defined by this **state**, which is represented by a collection of keys and values in a JSON object that you can see if you click the `{}` button in the upper left of the Neuroglancer interface.
+Everything from selecting new objects or adding annotations to zooming or rotating your view is defined in this state, which can be imported or exported effectively as a readable `json` file.
+The complete description of the state is typically encoded in the URL, which is how you can easily share most Neuroglancer URLs.
+Building your own Neuroglancer view is thus simply the process of defining the state and passing it to a Neuroglancer viewer.
+
+The state has two main aspects, **viewer options** that define global properties like the position, the layout of views, and what tabs are open, and **layers** that define different datas sources and how they are visualized.
+Layers can be different types with different behaviors: Image layers show 3d imagery, Segmentation layers have "segments" with unique ids that can be selected and visualized in 3d with meshes or skeletons, and Annotation layers can show points, lines, or other objects associated with data.
+Each layer has a name, a source (typically a path to a cloud-hosted dataset), and various configuration options.
+Layers can actually have multiple complementary data sources of the same type, for example a Segmentation layer can have one source for segmentations and meshes while another source provides skeletons or segment property data.
+Unlike Image or Segmentation layers, Annotation layers can also have a "local" source, where the annotations are directly defined in the Neuroglancer state.
+
+The Statebuilder module follows this viewer-and-layer pattern, where you define a viewer with a set of options and then add layers of different types to it.
+Where possible, Statebuilder tries to tie components together as simply as possible and with reasonble defaults in order to make a Neuroglancer state with as little code as possible.
+
+!!! note
+
+    Current functionality is focused on viewing data. The many options for controlling the Neuroglancer interface are not yet implemented directly, although they are available in the underlying `neuroglancer` python library and JSON state.
+
+
+## NGLui ViewerState
+
+The central object in StateBuilder is the `ViewerState`, which is used to initialize a Neuroglancer state, set the viewer options, add layers, and finally return the state in various formats.
+A minimal state joins together a ViewerState with layers.
+In general, all functions to _add_ data to a state or layer start with *add_*, functions to _set_ options or parameters start with *set_*, and functions to _export_ the data to another form (e.g. a URL) start with *to_*.
+
+For example, to add a single image layer using the [Microns dataset](https://www.microns-explorer.org/cortical-mm3):
+
+``` py
+from nglui.statebuilder import ViewerState, ImageLayer, SegmentationLayer
+
+viewerstate = ViewerState()
+viewerstate.add_layer(ImageLayer(source='precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie35/em'))
+viewerstate.add_layer(SegmentationLayer(source='precomputed://gs://iarpa_microns/minnie/minnie35/seg_m1300'))
 ```
+
+You can see the layers in the state with in the `viewerstate.layers` attribute.
+
+``` pycon
+>>> viewerstate.layers
+[ImageLayer(name='img', source='precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie35/em'),
+ SegmentationLayer(name='seg', source='precomputed://gs://iarpa_microns/minnie/minnie35/seg')]
+```
+
+And then you can turn these options into a Neuroglancer state with functions like `to_link`:
+
+``` pycon
+>>> viewerstate.to_link()
+```
+
+Which returns a [Neuroglancer Link](https://spelunker.cave-explorer.org/#!%7B%22position%22:%5B112500.0,100000.0,11395.5%5D,%22layout%22:%22xy-3d%22,%22dimensions%22:%7B%22x%22:%5B8e-09,%22m%22%5D,%22y%22:%5B8e-09,%22m%22%5D,%22z%22:%5B4e-08,%22m%22%5D%7D,%22crossSectionScale%22:1.0,%22projectionScale%22:50000.0,%22showSlices%22:false,%22layers%22:%5B%7B%22type%22:%22image%22,%22source%22:%5B%7B%22url%22:%22precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie35/em%22,%22subsources%22:%7B%7D,%22enableDefaultSubsources%22:true%7D%5D,%22shader%22:%22None%22,%22name%22:%22img%22%7D,%7B%22type%22:%22segmentation%22,%22source%22:%5B%7B%22url%22:%22precomputed://gs://iarpa_microns/minnie/minnie35/seg%22,%22subsources%22:%7B%7D,%22enableDefaultSubsources%22:true%7D%5D,%22segments%22:%5B%5D,%22selectedAlpha%22:0.2,%22notSelectedAlpha%22:0.0,%22objectAlpha%22:0.9,%22segmentColors%22:%7B%7D,%22meshSilhouetteRendering%22:0.0,%22skeletonRendering%22:%7B%7D,%22name%22:%22seg%22%7D%5D%7D) with the configuration requested.
+
+!!! danger
+
+    It is highly recommended to install `cloud-volume` (which comes with `pip install nglui[full]`) in order to infer information like the resolution and size of datasets.
+    If you do not want or have `cloud-volume` installed, you should always set the `dimensions` property when making a ViewerState (e.g. `ViewerState(dimensions=[4,4,40])`) to set the voxel resolution in nm/voxel.
+    You can turn off automated resolution suggestions by setting `infer_dimensions=False` in the ViewerState constructor or explicitly setting the dimensions like above.
+    Note that Neuroglancer does not always behave well if the dimensions are not set ahead of time, for example by setting the initial location or zoom level to be extremely far from the data.
+
+Each function like `add_layer` returns the layer object, so you can also initialize the layers in a pipeline.
+This pipeline pattern is the one that we will typically use in this documentation.
+
+``` py
+viewerstate = (
+    ViewerState()
+    .add_layer(ImageLayer(source='precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em'))
+    .add_layer(SegmentationLayer(source='precomputed://gs://iarpa_microns/minnie/minnie65/seg_m1300'))
+)
+```
+
+Or, you could use convenience functions that a ViewerState object has to add layers of different types directly:
+
+``` py
+viewerstate = (
+    ViewerState()
+    .add_image_layer(source='precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em')
+    .add_segmentation_layer(source='precomputed://gs://iarpa_microns/minnie/minnie65/seg_m1300')
+)
+```
+
+There are many such convenience functions, with the goal of making the most typical use cases as simple as possible while allowing for more complex configurations by using the underlying layer classes directly.
+
+### Exporting States...
+
+You can export the ViewerState to a Neuroglancer state in a number of formats that are useful for different purposes.
+
+#### ...to URLs
+
+The most common way to export a state is to produce a Neuroglancer link or URL, which can be directly opened in a web browser.
+The basic `viewerstate.to_url()` function returns the URL as a string formated as a link to a specific Neuroglancer deployment.
+
+``` pycon
+>>> viewerstate = ViewerState().add_image_layer('precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em')
+>>> viewerstate.to_url()
+'https://spelunker.cave-explorer.org/#!%7B%22position%22:%5B120320.0,103936.0,21360.0%5D,%22layout%22:%22xy-3d%22,%22dimensions%22:%7B%22x%22:%5B8e-09,%22m%22%5D,%22y%22:%5B8e-09,%22m%22%5D,%22z%22:%5B4e-08,%22m%22%5D%7D,%22crossSectionScale%22:1.0,%22projectionScale%22:50000.0,%22showSlices%22:false,%22layers%22:%5B%7B%22type%22:%22image%22,%22source%22:%5B%7B%22url%22:%22precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em%22,%22subsources%22:%7B%7D,%22enableDefaultSubsources%22:true%7D%5D,%22shader%22:%22None%22,%22name%22:%22imagery%22%7D%5D%7D'
+```
+
+
+In a notebook context, it is often convenient to return the URL as a formatted HTML link (like we used above), which can be done with `viewerstate.to_link()`.
+
+In addition, CAVE offers a [link shortener](https://caveconnectome.github.io/CAVEclient/tutorials/state/
+) that can be used to store JSON states and return a shortened URL that can be used to access the state.
+We can use this link shortener directly using `to_link_shortener` and passing an appropriate CAVEclient client object.
+
+``` py
+from caveclient import CAVEclient
+client = CAVEclient('minnie65_public')
+
+viewerstate.to_link_shortener(client)
+```
+
+will upload the state and return a short link with a form like `'https://spelunker.cave-explorer.org/#!middleauth+https://global.daf-apis.com/nglstate/api/v1/4690769064493056'`.
+
+You can also use the link shortener in the `to_url` and `to_link` methods by setting the `shorten` argument to `True` or `if_long` and passing a CAVEclient object.
+The `if_long` option will only shorten the url if it gets long enough to start breaking the URL length limits of most browsers, approximately 1.75 million characters.
+
+To change the Neuroglancer web deployment used in all of the url and link functions, you can set a different URL in the `target_url` parameter of the `to_url` function.
+For example, to use the default Neuroglancer deployment, you can do:
+
+``` pycon
+>>> viewerstate.to_url(target_url='https://neuroglancer-demo.appspot.com')
+'https://neuroglancer-demo.appspot.com#!%7B%22position%22:%5B120320.0,103936.0,21360.0%5D,%22layout%22:%22xy-3d%22,%22dimensions%22:%7B%22x%22:%5B8e-09,%22m%22%5D,%22y%22:%5B8e-09,%22m%22%5D,%22z%22:%5B4e-08,%22m%22%5D%7D,%22crossSectionScale%22:1.0,%22projectionScale%22:50000.0,%22showSlices%22:false,%22layers%22:%5B%7B%22type%22:%22image%22,%22source%22:%5B%7B%22url%22:%22precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em%22,%22subsources%22:%7B%7D,%22enableDefaultSubsources%22:true%7D%5D,%22shader%22:%22None%22,%22name%22:%22imagery%22%7D%5D%7D'
+```
+
+There is also a `target_site` dictionary that can be used to set shortcuts for different Neuroglancer deployments, which is used by default in the `to_url` function.
+For example, you can set the `target_site` to `'spelunker'` to use the Spelunker deployment, or `'google'` to use the default Neuroglancer deployment.
+Additional deployments can be added to the `target_site` dictionary using `site_utils`.
+For example, if you want to add a new Neuroglancer deployment hosted at `'https://neuroglancer.my-deployment.com'` with a  `target_site` shortcut name `'my_new_shortcut'`, you could do the following:
+
+``` py
+from nglui.statebuilder import site_utils
+
+site_utils.add_neuroglancer_site(
+    site_name: 'my_new_shortcut',
+    site_url: 'https://neuroglancer.my-deployment.com',
+)
+```
+
+Note that this configuration is global and will affect all Neuroglancer states generated in the current Python session.
+
+#### ...to JSON
+
+The ViewerState can also be exported to a JSON object, which can be used to export to a file or to pass to other functions.
+
+The core function is `to_dict` which returns the state as a dictionary, with contents equivalent to what you see in the Neuroglancer `{}` tab.
+
+``` pycon
+>> viewerstate.to_dict()
+{'position': [120320.0, 103936.0, 21360.0],
+ 'layout': 'xy-3d',
+ 'dimensions': {'x': [np.float64(8e-09), 'm'],
+  'y': [np.float64(8e-09), 'm'],
+  'z': [np.float64(4e-08), 'm']},
+ 'crossSectionScale': 1.0,
+ 'projectionScale': 50000.0,
+ 'showSlices': False,
+ 'layers': [{'type': 'image',
+   'source': [{'url': 'precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em',
+     'subsources': {},
+     'enableDefaultSubsources': True}],
+   'shader': 'None',
+   'name': 'imagery'}]}
+```
+
+A string-formatted JSON state can be generated with `to_json_string`, which can be directed pasted into the Neuroglancer `{}` tab.
+The main difference is that the string version is formatted as a JSON string, with numpy types converted to standard Python types and uses `"` characters as required by JSON.
+Note that it also contains `\n` newline characters and (optional) indents and thus is amenable to `print` or writing to a file.
+
+#### ...to Neuroglancer python
+
+The ViewerState object can also be converted to a `neuroglancer.Viewer` object, which is the underlying object used by the Neuroglancer python library. This can be done with the `to_neuroglancer_state` function, which returns a `neuroglancer.Viewer` object that can be used to interact with the Neuroglancer state in Python for advanced functionality.
+
+!!! important
+    
+    The default `neuroglancer.Viewer` object used here differs from the one used in the `neuroglancer` python library by not launching a web server on creation.
+    If you want an interactive Neuroglancer viewer that can be run from Python, set `interactive=True` in the ViewerState initialiation.
+
+## Layers
+
+All layers have a certain common set of properties:
+
+* `source`: One or more cloudpaths pointing Neuroglancer at a data source.
+* `name`: A name for the layer, displayed in the tabs.
+* `visible`: A boolean value indicating if the layer is actively visible in the Neuroglancer interface.
+* `archived`: A boolean value indicating if the layer is archived, which removes it from the tab interface but allows it to be re-enabled from the Layers tab.
+* `shader`: A GL shader that can customize how data is rendered in the layer.
+
+In general, the only required property for a simple state is the `source`, with other properties having reasonable defaults for simple states.
+However, if you want to use multiple layers of the same type, you will need to set the `name` property for each layer to avoid conflicts.
 
 ### Image Layers
 
-Image layers in Neuroglancer are pretty simple. An image has a name (by default 'img' here) and a source, which is typically a path to a cloud hosted 3d image volume. We define an image layer with an ImageLayerConfig that lets the user set these key parameters. We are going to use the public Layer 2/3 EM dataset at [Microns Explorer](https://layer23.microns-explorer.org) as an example.
+Image layers are the simplest type of layer to specify, and are used to display 3d imagery.
+The most basic image layer is specified with just a source:
 
-```python
-img_source = 'precomputed://gs://neuroglancer/pinky100_v0/son_of_alignment_v15_rechunked'
-img_layer = ImageLayerConfig(name='layer23',
-                             source=img_source,
-                             )
+``` py
+img_layer = ImageLayer(
+    source='precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em',
+)
 ```
+
+which produces a layer with name `img`.
+``` pycon
+>>> img_layer.name
+'img'
+```
+
+You can also add **multiple sources** to an image layer, which will be displayed as a single layer in Neuroglancer by combining them in a list.
+
+``` py
+img_layer_multi = ImageLayer(
+    source=[
+      'precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie35/em',
+      'precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em',
+    ]
+)
+```
+
+Neuroglancer also lets you specify linear transformations for sources, such as translations or rotations.
+You can apply these transformations with the more complex `Source` class, which can specify not only a cloudpath source, but a CoordSpaceTransform that captures an affine transformation matrix.
+It requires more information, but also allows more complexity.
+For example, to add a source with a translation:
+
+``` py
+img_layer_transformed = ImageLayer(
+    source=Source(
+        url='precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em',
+        transform=CoordSpaceTransform(
+            output_dimensions=[4,4,40],
+            matrix=[[1, 0, 0, 1000],
+                    [0, 1, 0, 2000.0],
+                    [0, 0, 1, -2000]],
+        )
+    )
+)
+```
+
+The first three columns of the CoordSpaceTransform specify a linear transform matrix, while the last column is a translation vector.
+The 4th row is implicit and always `[0, 0, 0, 1]`, so it is not specified.
 
 ### Segmentation Layers
 
-Segmentation layers in Neuroglancer are more complex, since each object has a unique id and can be selected, loading the object and its mesh into the neuroglancer state. Like images, a segmentation layer has a name and a source. Neuroglancer supports two types of segmentation volume, 'precomputed' and 'graphene'. Precomputed is what we call a "flat" segmentation, in that the segmentation is frozen into an unchanging state. Flat segmentations are fast, but cannot be edited to fix mistakes. Graphene segmentations are dynamic, using an efficient graph data representation to allow edits to the segmentation state. For the most part, users should not need to care about the difference.
+Segmentation layers are also volumetric data, but have objects with segment ids that can be selected, hidden, and visualized in 3d using meshes or skeletons.
+The basic segmentation layer is just like an Image layer:
 
-Segmentation layers are configured by a SegmentationLayerConfig. At a minimum, a SegmentionLayerConfig has the same setup as an ImageLayerConfig.
-
-```python
-seg_source = 'precomputed://gs://microns_public_datasets/pinky100_v185/seg'
-seg_layer = SegmentationLayerConfig(name = 'seg',
-                                    source = seg_source)
+``` py
+seg_source = SegmentationLayer(
+    name='my_segmentation',
+    source='precomputed://gs://iarpa_microns/minnie/minnie65/seg_m1300'
+)
 ```
+
+However, now we can also select objects by segment id. Let's use the pipeline pattern to build up a segmentation layer with a source, two selected ids, and custom colors for them.
+
+``` py
+seg_layer = (
+    SegmentationLayer()
+    .add_source('precomputed://gs://iarpa_microns/minnie/minnie65/seg_m1300')
+    .add_segments([864691135356428751, 864691136032617659])
+    .add_segment_colors(
+        {
+            864691135356428751: '#ff0000',
+            864691136032617659: '#00ff00'
+        }
+    )
+)
+```
+
+Packaging that together with an image layer from above,
+
+``` py
+(
+    ViewerState()
+    .add_layer(img_layer)
+    .add_layer(seg_layer)
+).to_link()
+```
+
+would produce this [Neuroglancer link]('https://spelunker.cave-explorer.org/#!%7B%22position%22:%5B218809.0,161359.0,13929.0%5D,%22layout%22:%22xy-3d%22,%22dimensions%22:%7B%22x%22:%5B4e-09,%22m%22%5D,%22y%22:%5B4e-09,%22m%22%5D,%22z%22:%5B4e-08,%22m%22%5D%7D,%22crossSectionScale%22:1.0,%22projectionScale%22:50000.0,%22showSlices%22:false,%22layers%22:%5B%7B%22type%22:%22image%22,%22source%22:%5B%7B%22url%22:%22precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em%22,%22subsources%22:%7B%7D,%22enableDefaultSubsources%22:true%7D%5D,%22name%22:%22img%22%7D,%7B%22type%22:%22segmentation%22,%22source%22:%5B%7B%22url%22:%22precomputed://gs://iarpa_microns/minnie/minnie65/seg_m1300%22,%22subsources%22:%7B%7D,%22enableDefaultSubsources%22:true%7D%5D,%22segments%22:%5B%22864691135356428751%22,%22864691136032617659%22%5D,%22selectedAlpha%22:0.2,%22notSelectedAlpha%22:0.0,%22objectAlpha%22:0.9,%22segmentColors%22:%7B%22864691135356428751%22:%22#ff0000%22,%22864691136032617659%22:%22#00ff00%22%7D,%22meshSilhouetteRendering%22:0.0,%22name%22:%22seg%22%7D%5D%7D')
+
+There are also various parameters to set the appearance of the selected meshes and 2d overlays under the `set_view_options` method.
+
+You can also add selections from the data in a dataframe using `add_segments_from_data`, which will select all the segments in a column of the dataframe.
+
+``` py
+seg_layer = (
+    SegmentationLayer()
+    .add_source('precomputed://gs://iarpa_microns/minnie/minnie65/seg_m1300')
+    .add_segments_from_data(
+        data = my_dataframe,
+        segment_column = 'pt_root_id,
+        visible_column = 'is_visible',
+        color_column = 'color_value',
+    )
+)
+```
+
+Would select all segment ids in `my_dataframe['pt_root_id']` to the segmentation layer, toggle their visibility by the boolean values in `my_dataframe['is_visible']`, and set their colors to the values in `my_dataframe['color_value']`.
+Colors can be hex values or web-readable color names, such as `'red'`, `'blue'`, or `'green'`.
+
+#### Skeleton Sources
+
+You can add a custom skeleton source to a segmentation layer simply by adding it via `add_source` or including it on the initial source list.
+
+#### Segment Properties
+
+Just like Image layers can have multiple sources, Segmentation layers can also have multiple segmentation sources.
+In addition to the actual source of segmentation, you can also add sources to represent other aspects of the objects.
+
+Segment properties can be treated as an additional source and can be added directly to the list of sources (`add_source`) if you have an existing or static cloudpath.
+However, if you want to generate segment properties dynamically from a dataframe, you can use the `add_segment_properties` method, which will generate the segment properties file, upload it to a CAVE state server, and attach the resulting URL to the segmentation layer.
+Note that `add_segment_properties` requires a CAVEclient object and also has a `dry_run` option to avoid many duplicative uploads while developing your code.
+
+See the [Segment Properties documentation](segmentprops.md) for more information on how to generate segment properties in Neuroglancer and what different options mean.
+
+#### Skeleton Shader
+
+The `shader` field of a segmentation layer currently specifies how skeletons are rendered in Neuroglancer.
+The `statebuilder.shaders` module has some examples and tooling to help generate these shaders, but GL shaders like this are effectively a new language.
+Once you have a shader you want to use, you can set it with the `add_shader` method of the segmentation layer.
 
 ### Annotation Layers
 
-Annotation layers let a user define various spatial data annotations. We can define annotation layers with AnnotationLayerConfig objects. While annotation layers have a name, they don't have a source. We'll discuss how to map data to annotations later, but for now we will add a blank annotation layer.
+Annotation layers let a user define various types of annotations like points, lines, bounding boxes, and ellipses.
+Annotations can also be associated with segmentations, allowing you to filter annotations by the data that's being selected.
 
-```python
-anno_layer = AnnotationLayerConfig(name='annos')
+Annotation layers come in two types, **local** annotation layers that store their annotations directly in the Neuroglancer state and **cloud** annotation layers that get their annotations from a cloud-hosted source.
+While they can look and are created with the same functions similar, these behave differently in Neuroglancer and not all functions are available for both types.
+
+#### Local Annotations
+
+The simplest annotation layer is a local annotation layer, which can be created with just a name.
+
+``` py
+from nglui.statebuilder import AnnotationLayer
+annotation_layer = AnnotationLayer(name='my_annotations')
+
+viewer_state.add_layer(annotation_layer)
 ```
 
-### StateBuilders and state rendering
-
-At it's most basic, the StateBuilder is initialized with layer configs for each layer the user wants. A state isn't actually generated until the user calls `render_state`. While the function can also take a dataframe, it works with no argument to generate a default state. The default output is a url string that specifies the neuroglancer state, however other options are available with the optional `return_as` parameter.
-
-```python
-sb = StateBuilder(layers=[img_layer, seg_layer, anno_layer])
-sb.render_state()
-```
-
-Using `return_as="html"` provides a link, useful for interactive notebooks.
-
-```python
-sb.render_state(return_as='html')
-```
-
-Using `sb.render_state(return_as='json')` returns the JSON state as a string.
-This can be pasted directly into the neuroglancer JSON state and `sb.render_state(return_as='dict')` returns the state as a dictionary, useful for inspection and debugging.
-Finally, using `sb.render_state(return_as='viewer')` returns an EasyViewer object, which can be further manipulated (see documentation).
-
-!!!warning
-
-    The URL at which you want to view your state matters! While there are reasonable defaults, please look at the [configuration documentation](config.md) to make sure you are using the right settings for what you want.
-
-## Data-responsive state generation
-
-The key feature of the StateBuilder is to use data to add selected objects or annotations to a Neuroglancer state. Each layer has rules for how to map dataframe columns to its state. This is designed to be useful for consistent mapping of queries or analysis directly into data exploration.
-
-### Selected segmentations
-
-Segmentation layers principally control what what objects are selected. Objects are specified by root id and `SegmentationLayerConfig` can hold rules for how to select data.
-
-The `soma_df` example dataframe describes all excitatory neurons in the layer23 dataset. Each row is a different cell and it is described by a number of columns, of which 'pt_root_id' has the root id for each excitatory neuron.
-
-```python
-import pandas as pd
-
-soma_df = pd.read_hdf('soma_data.h5', 'soma')
-soma_df.head()
-```
-
-One common task is to select all the ids in a column of the dataframe, perhaps as a result of a query or some bit of analysis. We can tell the `SegmentationLayerConfig` which layer (or list of layers) to use with the `selected_ids_column` argument.
-
-```python
-seg_layer = SegmentationLayerConfig(name = 'seg',
-                                    source = seg_source,
-                                    selected_ids_column='pt_root_id')
-
-sb = StateBuilder(layers=[img_layer, seg_layer])
-```
-
-Now our statebuilder object also needs data. The `render_state` method can always take a dataframe. To avoid selecting hundreds of neurons, let's just take the first five rows of the dataframe. 
-
-```python
-sb.render_state(soma_df.head(), return_as='html')
-```
-
-For some purposes, it can also be useful to force certain objects to be selected no matter the data, for example if you want to show various points in space relative to a specific neuron.
-For that, we can use the `fixed_ids` argument. Here, we use it to load neuron `648518346349537042` no matter the data. Both data-driven and fixed ids can be used together.
-
-```python
-seg_layer = SegmentationLayerConfig(name = 'seg',
-                                    source = seg_source,
-                                    selected_ids_column='pt_root_id',
-                                    fixed_ids=[648518346349537042])
-
-sb = StateBuilder(layers=[img_layer, seg_layer, anno_layer])
-```
-
-### Assigning colors to cells
-
-You can also provide a column that species the color for each root id with the `color_column` argument. Colors in Neuroglancer are specified as an RGB hex string, for example a pure red would be `#ff0000`.
-
-In the example below, we specify the color list directly. Data visualization packages typically have methods to convert numeric RGB vectors to hex, for instance `matplotlib.colors.to_hex` for `matplotlib`.
-
-```python
-# First we have to add a column with legitimate colors
-reds = ['#fdd4c2', '#fca082', '#fb694a', '#e32f27', '#b11218']
-soma_colored_df = soma_df.head(5).copy()
-soma_colored_df['color'] = reds
-
-# Next we specify the color column when defining the segmentation layer.
-seg_layer = SegmentationLayerConfig(name = 'seg', source=seg_source, selected_ids_column='pt_root_id', color_column='color')
-
-sb = StateBuilder(layers=[img_layer, seg_layer])
-sb.render_state(soma_colored_df, return_as='html', link_text='State with color')
-```
-
-### Data-driven annotations
-
-Neuroglancer offers Annotation layers, which can put different kinds of markers in the volume. There are three main marker types:
-
-* Points
-* Lines
-* Spheres
-
-Each annotation layer can hold any collection of types, however colors and other organizational properties are shared among all annotations in one layer. To make a new annotation layer, we use an `AnnotationLayerConfig`. Unlike segmentation and image layers, there is no data source, but the data mapping options are more rich. Each annotation type has a mapper class (PointMapper, LineMapper, SphereMapper) to designate the rules. Each AnnotationLayerConfig works for a single annotation layer, but can take an arbitrary number of mappers.
-
-#### Point annotations
-
-Point annotations are a simple point in 3d space. Let's use the positions from the soma_df above. The only thing you need to set a point mapper is the column name, which should reference a column of 3-element locations in units of voxels.
-
-```python
-points = PointMapper(point_column='pt_position')
-anno_layer = AnnotationLayerConfig(name='annos',
-                                   mapping_rules=points )
-
-
-# Make a basic segmentation source
-seg_layer = SegmentationLayerConfig(seg_source)
-
-sb = StateBuilder([img_layer, seg_layer, anno_layer])
-sb.render_state(soma_df, return_as='html')
-```
-
-#### Line annotations
-
-Line differ from point annotations only by requiring two columns, not just one. The two columns set the beginning and end points of the line and are thus both columns should contain three element points. Let's use the example synapse dataframe as an example. We're going to use the `pre_pt_root_id` field to select the neuron ids to show and use the lines to indicate their outgoing synapses, which go from `ct_pt_position`, a point on the synaptic cleft itself, to `post_pt_position`, a point somewhat inside the target neuron.
-
-```python
-lines = LineMapper(point_column_a='ctr_pt_position', point_column_b='post_pt_position')
-anno_layer = AnnotationLayerConfig(name='synapses',
-                                   mapping_rules=lines)
-
-# Make a segmentation source with a selected ids column
-seg_layer = SegmentationLayerConfig(seg_source, selected_ids_column='pre_pt_root_id')
-
-sb = StateBuilder([img_layer, seg_layer, anno_layer])
-sb.render_state(pre_syn_df, return_as='html')
-```
-
-#### Sphere annotations
-
-Like line annotations, sphere annotations take two columns. The first is the center point (and thus a point in space) while the second is the radius in voxels (x/y only), and thus numeric. We're going to use the soma positions for the example, using the `pt_position` for the centers. Since we don't have radius data in the frame, we will add a column with a random radius.
-
-```python
-import numpy as np
-soma_df['radius'] = np.random.normal(1500, 250, len(soma_df)).astype(int)
-
-
-spheres = SphereMapper(center_column='pt_position', radius_column='radius')
-anno_layer = AnnotationLayerConfig(name='soma', mapping_rules=spheres)
-
-# Make a basic segmentation layer
-seg_layer = SegmentationLayerConfig(seg_source)
-
-sb = StateBuilder([img_layer, seg_layer, anno_layer])
-sb.render_state(soma_df, return_as='html')
-```
-
-### Enriching annotations
-
-Annotations can be enriched with metadata. There are three main types:
-1. Descriptions — Each annotation has a free text field.
-2. Linked Segmentations — Each annotation can have one or more linked segmentation ids. These can be made to automatically load on annotation selection.
-3. Tags — Neuroglancer states can have discrete tags that are useful for quickly categorizing annotations. Each annotation layer has a list of tags, and each annotation can have any number of tags.
-
-#### Descriptions
-Descriptions need a simple free text field (or None). Any annotation mapper can take a description column with strings that is then displayed with each annotation in Neuroglancer. After running the following code, right click on the annotation layer and you can see that each of the point annotions in the list has an 'e' or 'i' letter underneath it.
-
-```python
-points = PointMapper(point_column='pt_position', description_column='cell_type')
-
-anno_layer = AnnotationLayerConfig(name='annos', 
-                                   mapping_rules=points)
-
-# Basic segmentation layer
-seg_layer = SegmentationLayerConfig(seg_source)
-
-sb = StateBuilder([img_layer, seg_layer, anno_layer])
-sb.render_state(soma_df.head(), return_as='html')
-```
-
-#### Linked Segmentations
-
-An annotation can also be linked to an underlying segmentation, for example a synapse can be linked to its neurons. On the Neuroglancer side, the annotation layer has to know the name of the segmentation layer to use, while the annotation needs to know what root id or ids to look up. To make data-driven annotations with linked segmentations, we both
-1. Add a linked segmentation column name to the annotation Mapper class that will be one or more column names in the dataframe
-2. Pass a segmentation layer name to the AnnotationLayerConfig. This defaults to `None`. Note that while the default segmentation layer name is `seg`, no segmentation layer name is set by default. Thus, if you plan to use a segmentation layer that was not given an explicit name, use `seg` as the argument here.
-
-```python
-points = PointMapper('pt_position', linked_segmentation_column='pt_root_id')
-anno_layer = AnnotationLayerConfig(mapping_rules=points, linked_segmentation_layer='seg')
-
-# Basic segmentation layer
-seg_layer = SegmentationLayerConfig(seg_source)
-
-sb = StateBuilder([img_layer, seg_layer, anno_layer])
-sb.render_state(soma_df.head(), return_as='html')
-```
-
-#### Tags (Seung-lab neuroglancer only)
-
-Tags are categorical labels on annotations. Each annotation layer can have a defined set of up to ten tags (seen under the "shortcuts" tab). Each annotation can have any number of tags, toggled on and off with the key command from the shortcut tab. To pre-assign tags to annotations based on the data, you can assign a `tag_column`. For each row in the data, if the element in the tag column is in the annotation layer's tag list, it will assign it to the resulting annotation. Elements of the tag column can also be collections of values, if you want multiple tags assigned. Note that any values that are not in the layer's tag list are ignored.
-
-As before, there are two steps:
-1. If you want to pre-assign tags, add a `tag_column` argument to the annotation Mapper. This isn't needed if you just want to set tags for the layer.
-2. Pass a list of tags to the AnnotationLayerConfig. The order of the list matters for determining the exact shortcuts that are used for each tag; the first tag has the shortcut `shift-q`, the second tag `shift-w`, etc.
-
-```python
-points = PointMapper('pt_position', tag_column='cell_type')
-anno_layer = AnnotationLayerConfig(mapping_rules=points, tags=['e'])
-
-sb = StateBuilder([img_layer, seg_layer, anno_layer])
-sb.render_state(soma_df, return_as='html')
-```
-
-## Setting the View
-
-The StateBuilder offers some control over the initial position of the view and how data is visualized, while offering some fairly sensible defaults that look okay in most situations.
-
-#### Position, layout, and zoom options
-
-View options that do not affect individual layers can be set with a dict passed to the `view_kws` argument in StateBuilder, which are passed to `viewer.set_view_options`.
-
-* *show_slices* : Boolean, sets if slices are shown in the 3d view. Defaults to False.
-* *layout* : `xy-3d`/`xz-3d`/`yz-3d` (sections plus 3d pane), `xy`/`yz`/`xz`/`3d` (only one pane), or `4panel` (all panes). Default is `xy-3d`.
-* *show_axis_lines* : Boolean, determines if the axis lines are shown in the middle of each view.
-* *show_scale_bar* : Boolean, toggles showing the scale bar.
-* *orthographic* : Boolean, toggles orthographic view in the 3d pane.
-* *position* : 3-element vector, determines the centered location.
-* *zoom_image* : Zoom level for the imagery in units of nm per voxel. Defaults to 8.
-* *zoom_3d* : Zoom level for the 3d pane. Defaults to 2000. Smaller numbers are more zoomed in.
-* *background_color* : Sets the background color of the 3d mode. Defaults to black.
-
-Here's an example of setting some of these rules. Note that only providing default values for some parameters does not override the default values of others.
-
-```python
-view_options = {'layout': '4panel',
-                'show_slices': True,
-                'zoom_3d': 500,
-                'position': [71832, 54120, 1089],
-                'background_color': 'white',
-                }
-
-seg_layer = SegmentationLayerConfig(seg_source)
-
-sb = StateBuilder([img_layer, seg_layer], view_kws=view_options)
-sb.render_state(return_as='html')
-```
-
-#### Data-driven centering
-
-It can also be convenient to center the user on an annotation by default.
-Because this is tied to a specific spatial point column, this option is associated with a particular AnnotationMapper.
-Data-driven view centering takes precidence over the global view set in `view_kws`.
-For any of the mappers, setting `set_position` to `True` will center the view on the first annotation in the list.
-If multiple Mapper objects have `set_position=True`, then the view will follow the end-most one in the end-most annotation layer.
-
-This option is now set to True by default, but can be turned off if desired with `set_position=False`.
-
-```python
-points = PointMapper('pt_position', set_position=True)
-anno_layer = AnnotationLayerConfig(mapping_rules=points)
-
-sb = StateBuilder([img_layer, seg_layer, anno_layer])
-sb.render_state(soma_df, return_as='html')
-```
-
-#### Segmentation transparency options
-
-Each segmentation layer can control the transparency of selected, unselected, and 3d meshes. As with the global view, these can be passed as keyword arguments to `view_kws` in the SegmentationLayerConfig.
-
-* *alpha_selected* : Transparency (0–1) of selected segmentations in the imagery pane. Defaults to 0.3. 
-* *alpha_3d* : Transparency (0–1) of selected meshes in the 3d view. Defaults to 1.
-* *alpha_unselected* : Transparency (0–1) of unselected segmentations in the imagery pane. Defaults to 0.
-
-## Applying multple rules with multiple dataframes
-
-The default use of a Statebuilder only takes one dataframe, but there are many cases when multiple dataframes are useful to pass different kinds of points, for example pre and postsyanptic points of the same neuron, or synapses and soma.
-
-### Mapping Sets
-
-The simplest option is to handle this with `mapping_sets`, which let you name dataframesa and mapping rules.
-For each annotation or segmentation layer mapping, you can optionally set a `mapping_set` argument.
-This changes the way data is processed, and the statebuilder now expects to get the dataframe as a dictionary with keys that are the mapping sets and values that are the dataframes.
-Multiple mapping rules can use the same `mapping_set` value (and pull info from the same dataframe).
-Also, if you use mapping sets for any mapping rule, they must be used for all mapping rules and the data must be passed as a dictionary.
-
-Let's use mapping rules to make a statebuilder that displays presynaptic and postsynaptic points for the same neuron.
-
-```python
-seg_layer = SegmentationLayerConfig(seg_source, selected_ids_column='post_pt_root_id')
-
-postsyn_mapper = LineMapper(
-    point_column_a='pre_pt_position',
-    point_column_b='ctr_pt_position',
-    mapping_set='post',     # This tells the LineMapper to use the dataframe passed with the dictionary key `post`
+The simplest way to add annotations is through the `add_points`, `add_lines`, `add_boxes`, and `add_ellipses` methods.
+These methods work similarly, taking a dataframe where each row represents an annotation and the columns are specified by parameters.
+
+For example, to add points to the annotation layer, you can do:
+
+``` py
+annotation_layer.add_points(
+    data=my_dataframe,
+    point_column='location', # Column with point locations as x,y,z coordinates
+    segment_column='linked_segment', # Column with linked segment ids
+    description_column='description', # Column with annotation descriptions
+    data_resolution=[1, 1, 1], # Resolution of the point data in nm/voxel. Will default to the layer's default resolution if not specified.
 )
-postsyn_annos = AnnotationLayerConfig('post', color='#00CCCC', mapping_rules=postsyn_mapper)
+```
 
-presyn_mapper = LineMapper(
-    point_column_a='ctr_pt_position',
-    point_column_b='post_pt_position',
-    mapping_set='pre',      # This tells the LineMapper to use the dataframe passed with the dictionary key `pre`
+Put together into a pipeline, you could generate a Neuroglancer link with an annotation layer from a dataframe like so:
+
+``` py
+from nglui.statebuilder import ViewerState, AnnotationLayer
+(
+    ViewerState()
+    .add_layers_from_client(client, segmentation='seg') # Sets the name of the segmentation layer to 'seg'
+    .add_layer(
+        AnnotationLayer(
+            name='my_annotations',
+            linked_segmentations='seg', # Uses the `seg` name to link annotations to the segmentation layer
+        )
+        .add_points(
+            data=my_dataframe,
+            point_column='location',
+            segment_column='linked_segment',
+            description_column='description',
+            data_resolution=[1, 1, 1],
+        )
+    )
+).to_link()
+```
+
+However, while this gives you the most control over details, there's still a lot of boilerplate code to set up an annotation layer, link it to an existing segmentation layer, and then add points to it.
+If you just want to create a local annotation layer that will automatically link to the first existing segmentation layer in the ViewerState, you can use the `add_annotation_layer` method of the ViewerState object.
+Even better, if you want to create a local annotation layer with points, you can use `add_points` directly on the ViewerState object, which will create a local annotation layer with the specified points and link it to the first segmentation layer in the ViewerState, and do the same annotation creation.
+For example, the above code can be simplified to:
+
+``` py 
+(
+    ViewerState()
+    .add_layers_from_client(client)
+    .add_points(
+        data=my_dataframe,
+        name='my_annotations',
+        point_column='location',
+        segment_column='linked_segment',
+        description_column='description',
+        data_resolution=[1, 1, 1],
+    )
+).to_link()
+```
+
+This will add a local annotation layer with points defined by the `my_dataframe` dataframe, where each row has a point location in the `location` column, a linked segment id in the `linked_segment` column, and a description in the `description` column.
+
+!!! note Multi-column point locations
+
+    The `point_column` field can also refer to a situation where the x,y, and z coordinates of the point are stored in separate columns if they are formatted according to `{point_column}_x`, `{point_column}_y`, and `{point_column}_z`.
+
+There are also direct class to produce annotations in `statebuilder.ngl_annotations`, which can be added directly to an annotation layer via `add_annotations` for even more control.
+
+##### Tags
+
+Local annotations can have **tags**, which is a way to categorize annotations with shortcuts in Neuroglancer.
+When you make an annotation layer, you can specify a list of tags that will be used to categorize the annotations.
+The shortcuts for adding these tags will be ++shift+q++, ++shift+w++, ++shift+e++, and so on.
+The tags run ++q++ to ++t++ for the first five tags, then ++a++ to ++g++ for the next five tags.
+A max of ten tags can be used in a single annotation layer in nglui to avoid overloading the interface.
+
+You can specify which tags the annotations already in two ways.
+A `tag_column` specifies one or more column names, where each column has a single string per row that will be used as the tag for the annotation.
+With this approach, you can only use one tag per annotation per tag column.
+Alternatively, you can use `tag_bools`, which is a list of columns where each column name is taken to be a tag and the value in the column is a boolean indicating if the tag is applied to the annotation.
+In both cases, the layer will automatically generate the list of required tags based on the columns in the dataframe, added alphabetically if not already present in the specified tag list.
+
+
+#### Cloud Annotations
+
+Cloud annotations are similar to local annotations, but they are stored in a cloud-hosted source.
+Cloud annotations can be used simply by passing a `source` url to the `AnnotationLayer` or `add_annotation_layer` method.
+The AnnotationLayer object will detect if the `source` value is not `None` and will create a cloud annotation layer instead of a local one.
+
+Note that cloud annotations don't mix with local annotations, and if you have an explicit source defined then the local annotations will not be created even if they were specified.
+In addition, cloud annotations cannot currently have tags.
+
+### CAVEclient Integration
+
+NGLui integrates with the CAVEclient to make it easy to work with Neuroglancer states that are hosted on CAVE.
+You can use an initialized CAVEclient object to configure the resolution, image, and segmentation layers of a ViewerState:
+
+``` py
+from caveclient import CAVEclient
+client = CAVEclient('minnie65_public')
+viewer_state = (
+    ViewerState()
+    .add_layers_from_client(client)
 )
-presyn_annos = AnnotationLayerConfig('pre', color='#CC1111', mapping_rules=presyn_mapper)
+```
 
-sb = StateBuilder([seg_layer, postsyn_annos, presyn_annos], client=client)
+This will use the info in the CAVEclient to find any relevent information (including skeleton sources for segmentation layers) and add it to the ViewerState.
 
-# Note that the data is passed as a dictionary with the same keys as the mapping rules above.
-sb.render_state(
+``` pycon
+>>> viewer_state.layers
+[ImageLayer(name='imagery', source='precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em'),
+ SegmentationLayer(name='segmentation', source=['graphene://https://minnie.microns-daf.com/segmentation/table/minnie65_public', 'precomputed://middleauth+https://minnie.microns-daf.com/skeletoncache/api/v1/minnie65_public/precomputed/skeleton/'])]
+```
+
+There are a variety of parameters to control layer properties here, as well.
+In all cases, the image layer will be added first (if used) and then the segmentation layer.
+
+## Mapping Data
+
+In some situations, it can make sense to separate data from the Neuroglancer state creation rules.
+This effectively allows you to build one set of rules and then apply them to different data with the same code.
+
+This is handled now through a special `DataMap` class that can be used to replace certain arguments in functions relating to data sources and annotation creation.
+For example, instead of making a Image and Segmentation layers with pre-specified sources, you can add the source as a 'DataMap` object.
+Each DataMap has a `key` attribute that is used to map the data you will provide later to the correct role in state creation.
+
+``` py
+from nglui.statebuilder import ViewerState, SegmentationLayer, DataMap
+
+viewer_state = (
+    ViewerState()
+    .add_image_layer(source=DataMap('img_source'))
+    .add_segmentation_layer(source=DataMap('seg_source'))
+)
+```
+
+If you tried to run `viewer_state.to_link()` now, you would get an `UnmappedDataError` indicating that these values have yet to be replaced with actual data.
+
+To actually map data, you can use the `map` method of the ViewerState object, which takes a dictionary of key-value pairs where the keys are the DataMap keys and the values are the actual data to be used.
+For example, to replicate the previous example with the CAVEclient info, you could do:
+
+``` py
+viewer_state.map(
     {
-        'post': post_syn_df,
-        'pre': pre_syn_df,
-    },
-    return_as='html'
-)
+        'img_source': 'precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em',
+        'seg_source': [
+                'graphene://https://minnie.microns-daf.com/segmentation/table/minnie65_public',
+            ],
+    }
+).to_link()
 ```
+
+This will replace the DataMap keys with the actual data and produce a Neuroglancer link with the specified sources.
+Applying this across a list of data sources can easily generate a large collection of neuroglancer states.
+
+The other principle use of DataMaps is to support annotation creation by replacing the `data` argument in the `add_points`, `add_lines`, `add_boxes`, and `add_ellipses` methods.
+For example, you can create a DataMap for the annotation data and then use it to add points to the annotation layer with the following pattern:
+
+``` py
+from nglui.statebuilder import ViewerState, AnnotationLayer, DataMap
+viewer_state = (
+    ViewerState()
+    .add_annotation_layer(name='my_annotations', linked_segmentations='seg')
+    .add_points(
+        data=DataMap('annotation_data'),
+        point_column='location',
+        segment_column='linked_segment',
+        description_column='description',
+        data_resolution=[1, 1, 1],
+    )
+)
+
+viewer_state.map(
+    {
+        'annotation_data': my_dataframe,
+    }
+).to_link()
+```
+
+Note that the `map` method returns the ViewerState object itself, so you could in principle chain maps together to sequentially replace DataMap values.
+Only when all DataMaps are resolved will the `to_link` or other export functions work without error.
+
+A DataMap with an empty argument is treated as an implicit "None" value and a `map` call that gets anything other than a dictionary will be treated as a dictionary with a single key of `None` and the value being the data to be mapped.

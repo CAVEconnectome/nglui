@@ -112,3 +112,6 @@ var/
 
 docs/_site
 test_ngl.ipynb
+docs/casestudy.md
+nglui_scratch.ipynb
+scratch.ipynb
