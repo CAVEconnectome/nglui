@@ -13,7 +13,7 @@ Neuroglancer is a web-based viewer for large 3d datasets.
 Notably, Neuroglancer is designed to be a bit of complex Javascript that runs in your web browser and, generally, looks for data in various cloud-hosted locations.
 There are a number of different **deployments** of Neuroglancer, which can be based on slightly different versions of the code or slightly different configurations available.
 The two deployments that are built into NGLui right now are ["Mainline" or the default deployment](https://neuroglancer-demo.appspot.com) built from the [main branch of Neuroglancer from Google](https://github.com/google/neuroglancer) and the [Spelunker](https://spelunker.cave-explorer.org) deployment based a [bleeding-edge branch](https://github.com/seung-lab/neuroglancer/tree/spelunker) focused on CAVE-related features.
-Additional Neuroglancer deployments can be added using `site_utils` (TODO: LINK TO THIS).
+Additional Neuroglancer deployments can be added using [`site_utils`](config.md).
 
 Virtually every aspect of Neuroglancer is defined by this **state**, which is represented by a collection of keys and values in a JSON object that you can see if you click the `{}` button in the upper left of the Neuroglancer interface.
 Everything from selecting new objects or adding annotations to zooming or rotating your view is defined in this state, which can be imported or exported effectively as a readable `json` file.
