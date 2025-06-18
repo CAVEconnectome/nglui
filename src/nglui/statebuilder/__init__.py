@@ -1,4 +1,4 @@
-from . import helpers, shaders, skeletons
+from . import helpers, shaders
 from .base import *
 from .ngl_components import *
 from .site_utils import (

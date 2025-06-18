@@ -5,15 +5,15 @@ repo_name: CAVEconnectome/NGLui
 
 nav:
 - About: index.md
-- Case Study: casestudy.md
+# - Case Study: casestudy.md
 - How to Use:
     - usage/index.md
     - StateBuilder:
       - usage/statebuilder.md
       - usage/config.md
-    - Segment Properties:
+    - Other Features:
+      - usage/skeletons.md
       - usage/segmentprops.md
-    - Parser:
       - usage/parser.md
 - Function Reference:
     - reference/statebuilder.md

@@ -314,16 +314,20 @@ seg_layer = (
 Would select all segment ids in `my_dataframe['pt_root_id']` to the segmentation layer, toggle their visibility by the boolean values in `my_dataframe['is_visible']`, and set their colors to the values in `my_dataframe['color_value']`.
 Colors can be hex values or web-readable color names, such as `'red'`, `'blue'`, or `'green'`.
 
-#### Multiple Sources, Segment Properties, and Skeleton Sources
+#### Skeleton Sources
+
+You can add a custom skeleton source to a segmentation layer simply by adding it via `add_source` or including it on the initial source list.
+
+#### Segment Properties
 
 Just like Image layers can have multiple sources, Segmentation layers can also have multiple segmentation sources.
 In addition to the actual source of segmentation, you can also add sources to represent other aspects of the objects.
 
 Segment properties can be treated as an additional source and can be added directly to the list of sources (`add_source`) if you have an existing or static cloudpath.
-However, if you want to generate segment properties dynamically from a dataframe, you can use the `add_segment_properties` method.
-Please see the [Segment Properties documentation](segmentprops.md) for more information on how to use segment properties in Neuroglancer.
+However, if you want to generate segment properties dynamically from a dataframe, you can use the `add_segment_properties` method, which will generate the segment properties file, upload it to a CAVE state server, and attach the resulting URL to the segmentation layer.
+Note that `add_segment_properties` requires a CAVEclient object and also has a `dry_run` option to avoid many duplicative uploads while developing your code.
 
-Similarly, adding a separate skeleton source (useful in the CAVE context) can be done by adding its path via `add_source`.
+See the [Segment Properties documentation](segmentprops.md) for more information on how to generate segment properties in Neuroglancer and what different options mean.
 
 #### Skeleton Shader
 

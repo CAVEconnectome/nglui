@@ -4,8 +4,8 @@ import caveclient
 import numpy as np
 import pandas as pd
 
-from .ngl_components import SegmentationLayer
-from .shaders import shader_base
+from ..statebuilder.ngl_components import SegmentationLayer
+from ..statebuilder.shaders import shader_base
 
 try:
     import cloudvolume
@@ -17,6 +17,9 @@ except ImportError:
 
 class InfoMismatchException(Exception):
     pass
+
+
+__all__ = ["SkeletonManager", "InfoMismatchException"]
 
 
 class SkeletonManager:
@@ -236,7 +239,7 @@ class SkeletonManager:
         """
         Get the skeleton source URL for neuroglancer.
         """
-        return self.cv.cloudpath
+        return "precomputed://" + self.cv.cloudpath
 
     def make_shader(
         self,
