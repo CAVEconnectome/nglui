@@ -2,6 +2,15 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [4.1.0] - 2025-06-24
+
+## Added
+
+- **StateBuilder**: Added the `pick` option to layers that enable you to turn off new ID selection (`pick=False`).
+- **StateBuilder**: Added `color` options to `add_points`/`add_lines`/etc methods to set the layer color.
+- **StateBuilder**: Converted `viewer_state.layers` to a modified list class with names. Only objects with a `.name` attribute can be added to the list, and objects can be accessed by either name or index.
+- **StateBuilder**: Added a `client` argument to `ViewerState` that will be used as a default for any viewer_state functions that take a client.
+
 ## [4.0.0]
 
 This is a **major breaking release** that fully changes the way most of the library works.

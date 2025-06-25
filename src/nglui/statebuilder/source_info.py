@@ -11,7 +11,7 @@ import warnings
 import numpy as np
 from cachetools import LRUCache, cached
 
-from .ngl_components import AnnotationLayer, _Layer
+from .ngl_components import AnnotationLayer, Layer
 
 
 class NoCloudvolumeError(Exception):
@@ -50,7 +50,7 @@ def get_source_info(source):
 def populate_info(layers):
     info_dict = {}
     for layer in layers:
-        if issubclass(type(layer), _Layer) and not isinstance(layer, AnnotationLayer):
+        if issubclass(type(layer), Layer) and not isinstance(layer, AnnotationLayer):
             if not hasattr(layer, "source"):
                 continue
             source = layer.source
