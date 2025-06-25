@@ -183,11 +183,12 @@ class Source:
 
 
 @define
-class _Layer(ABC):
+class Layer(ABC):
     name = field(type=str)
     resolution = field(default=None, type=list, kw_only=True, repr=False)
     visible = field(default=True, type=bool, kw_only=True, repr=False)
     archived = field(default=False, type=bool, kw_only=True, repr=False)
+    pick = field(default=True, type=bool, kw_only=True, repr=False)
     _datamaps = field(factory=dict, type=dict, init=False, repr=False)
     _datamap_priority = field(factory=dict, type=dict, init=False, repr=False)
 
@@ -313,7 +314,7 @@ class _Layer(ABC):
 
 
 @define
-class _LayerWithSource(_Layer):
+class LayerWithSource(Layer):
     source = field(factory=list, type=Union[list, Source])
 
     def __attrs_post_init__(self):
@@ -353,6 +354,7 @@ class _LayerWithSource(_Layer):
                 func=self.add_source,
                 resolution=resolution,
             )
+            return self  # Return early for DataMap
         if isinstance(self.source, Source) or isinstance(self.source, str):
             self.source = [self.source]
         if isinstance(source, str):
@@ -459,7 +461,7 @@ def _handle_filter_by_segmentation(
 
 
 @define
-class ImageLayer(_LayerWithSource):
+class ImageLayer(LayerWithSource):
     """Configuration for a Neuroglancer image layer.
 
     Parameters
@@ -484,6 +486,8 @@ class ImageLayer(_LayerWithSource):
         The number of depth samples for volume rendering. Default is None, which will use the default number of samples.
     cross_section_render_scale : float, optional
         The scale for cross-section rendering. Default is None, which will use the default scale.
+    pick: bool, optional
+        Whether to allow cursor interaction with meshes and skeletons. Default is True.
     """
 
     name = field(default="img", type=str)
@@ -563,7 +567,7 @@ class ImageLayer(_LayerWithSource):
 
 
 @define
-class SegmentationLayer(_LayerWithSource):
+class SegmentationLayer(LayerWithSource):
     """Configuration for a Neuroglancer segmentation layer.
 
     Parameters
@@ -590,6 +594,8 @@ class SegmentationLayer(_LayerWithSource):
         A dictionary mapping segment IDs to colors. Default is None, which will use the default colors.
     shader : str, optional
         The shader to use for rendering the skeletons if a skeleton source is provided. Default is None, which will use the default shader.
+    pick: bool, optional
+        Whether to allow cursor interaction with meshes and skeletons. Default is True.
 
     """
 
@@ -633,6 +639,7 @@ class SegmentationLayer(_LayerWithSource):
                 object_alpha=self.alpha_3d,
                 segment_colors=self.segment_colors,
                 mesh_silhouette_rendering=self.mesh_silhouette,
+                pick=self.pick,
             )
         else:
             return viewer_state.SegmentationLayer(
@@ -645,6 +652,7 @@ class SegmentationLayer(_LayerWithSource):
                 segment_colors=self.segment_colors,
                 mesh_silhouette_rendering=self.mesh_silhouette,
                 skeleton_shader=self.shader,
+                pick=self.pick,
             )
 
     def apply_to_neuroglancer(self, viewer) -> viewer_state.SegmentationLayer:
@@ -872,7 +880,7 @@ class SegmentationLayer(_LayerWithSource):
                 random_column_prefix=random_column_prefix,
             )
         segprops = SegmentProperties.from_dataframe(
-            data=data,
+            df=data,
             id_col=id_column,
             label_col=label_column,
             description_col=description_column,
@@ -952,7 +960,7 @@ class SegmentationLayer(_LayerWithSource):
 
 
 @define
-class AnnotationLayer(_LayerWithSource):
+class AnnotationLayer(LayerWithSource):
     name = field(default="anno", type=str)
     source = field(default=None, type=Union[str, Source])
     resolution = field(default=None, type=list, kw_only=True, repr=False)
@@ -1027,7 +1035,7 @@ class AnnotationLayer(_LayerWithSource):
     def apply_to_neuroglancer(
         self,
         viewer,
-    ) -> viewer_state.AnnotationLayer:
+    ):
         "Can be a viewer or a viewer.txn()-context state"
         if self.source is None:
             if self.resolution is None:

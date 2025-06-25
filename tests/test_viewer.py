@@ -17,6 +17,7 @@ def test_basic_viewer(client_full, mocker):
             SegmentationLayer(
                 source=client_full.info.segmentation_source(),
                 name="TestSegmentationLayer",
+                pick=False,
             )
         )
         .add_layer(AnnotationLayer(name="some_annotations"))
@@ -39,6 +40,7 @@ def test_basic_viewer(client_full, mocker):
         )
     )
     assert viewer.layers[0].name == "TestImageLayer"
+    assert viewer.layers["TestImageLayer"].source == client_full.info.image_source()
     assert isinstance(viewer.to_dict(), dict)
     assert viewer.to_json_string() is not None
     assert "https" in viewer.to_url()

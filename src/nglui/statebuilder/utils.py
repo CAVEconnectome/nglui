@@ -9,6 +9,28 @@ import pandas as pd
 import webcolors
 
 
+class NamedList(list):
+    """A list that can be indexed by name."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._name_map = {str(item.name): item for item in self}
+
+    def __getitem__(self, key):
+        if isinstance(key, str):
+            return self._name_map[key]
+        return super().__getitem__(key)
+
+    def append(self, item):
+        super().append(item)
+        self._name_map[str(item.name)] = item
+
+    def extend(self, items):
+        super().extend(items)
+        for item in items:
+            self._name_map[str(item.name)] = item
+
+
 def split_point_columns(col_name: str, columns: list[str]) -> Union[str, list[str]]:
     if col_name in columns:
         return col_name

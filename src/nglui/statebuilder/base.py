@@ -25,6 +25,7 @@ from .ngl_components import (
     SegmentationLayer,
 )
 from .site_utils import MAX_URL_LENGTH, neuroglancer_url
+from .utils import NamedList
 
 if TYPE_CHECKING:
     import caveclient
@@ -60,6 +61,7 @@ class ViewerState:
         base_state: Optional[dict] = None,
         interactive: bool = False,
         infer_coordinates: bool = True,
+        client: Optional["caveclient.CAVEclient"] = None,
     ):
         """
         Parameters
@@ -92,11 +94,13 @@ class ViewerState:
             Whether the viewer is interactive. Default is False.
         infer_coordinates : bool
             Whether to infer resolution and position from the source information using CloudVolume. Default is True.
+        client : caveclient.CAVEclient, optional
+            A CAVE client to use for configuration. If provided, it will be used by default in functions that can accept it.
         """
 
         self._target_site = target_site
         self._target_url = neuroglancer_url(target_url, target_site)
-        self._layers = layers if layers else list()
+        self._layers = NamedList(layers) if layers else NamedList()
         self._dimensions = dimensions
         self._position = position
         self._scale_imagery = scale_imagery
@@ -111,10 +115,11 @@ class ViewerState:
         self._viewer = None
         self._source_info = None
         self._infer_coordinates = infer_coordinates
+        self._client = client
 
     def add_layers_from_client(
         self,
-        client: "caveclient.CAVEclient",
+        client: Optional["caveclient.CAVEclient"] = None,
         imagery: Union[bool, str] = True,
         segmentation: Union[bool, str] = True,
         skeleton_source: bool = True,
@@ -129,8 +134,8 @@ class ViewerState:
 
         Parameters
         ----------
-        client : caveclient.CAVEclient
-            The client to use for configuration.
+        client : caveclient.CAVEclient, optional
+            The client to use for configuration. If None, will use the client set in the viewer state if allowed.
         imagery : Union[bool, str], optional
             Whether to add an image layer, by default True.
             If a string is provided, it will be used as the name of the layer.
@@ -155,6 +160,14 @@ class ViewerState:
         Self
             The updated viewer state object.
         """
+        if client is None:
+            client = self._client
+        if client is None:
+            raise ValueError(
+                "No client provided and no client set in the viewer state. "
+                "Please provide a CAVEclient instance."
+            )
+
         if target_url:
             self._target_url = client.info.viewer_site()
         if resolution:
@@ -504,6 +517,19 @@ class ViewerState:
         resolution: Optional[Union[list, np.ndarray]] = None,
         **kwargs,
     ) -> Self:
+        """Add an image layer to the viewer.
+
+        Parameters
+        ----------
+        source : str
+            The source path for the image layer.
+        name : str, optional
+            The name of the image layer, by default "imagery".
+        resolution : Optional[Union[list, np.ndarray]], optional
+            The resolution of the image layer. If None, the viewer's current resolution will be used or it will be inferred from the source (if cloud-volume is installed).
+        **kwargs : dict, optional
+            Additional keyword arguments to pass to the image layer constructor.
+        """
         if resolution is None:
             resolution = self.dimensions
         img_layer = ImageLayer(
@@ -523,6 +549,21 @@ class ViewerState:
         segments: Optional[list] = None,
         **kwargs,
     ) -> Self:
+        """Add a segmentation layer to the viewer.
+
+        Parameters
+        ----------
+        source : str
+            The source path for the segmentation layer.
+        name : str, optional
+            The name of the segmentation layer, by default "segmentation".
+        resolution : Optional[Union[list, np.ndarray]], optional
+            The resolution of the segmentation layer. If None, the viewer's current resolution will be used or it will be inferred from the source (if cloud-volume is installed).
+        segments: list, optional
+            A list of segments to set as selected in the segmentation layer.
+        **kwargs : dict, optional
+            Additional keyword arguments to pass to the segmentation layer constructor.
+        """
         if resolution is None:
             resolution = self.dimensions
         seg_layer = SegmentationLayer(
@@ -613,11 +654,14 @@ class ViewerState:
     @contextmanager
     def with_datamap(self, datamap: dict):
         """Context manager to apply datamaps."""
-        if not isinstance(datamap, dict):
-            datamap = {None: datamap}
-        viewer_copy = copy.deepcopy(self)
-        viewer_copy.map(datamap, inplace=True)
-        yield viewer_copy
+        if datamap is None:
+            yield self
+        else:
+            if not isinstance(datamap, dict):
+                datamap = {None: datamap}
+            viewer_copy = copy.deepcopy(self)
+            viewer_copy.map(datamap, inplace=True)
+            yield viewer_copy
 
     def _apply_datamaps(self, datamap: dict):
         for layer in self.layers:
@@ -667,6 +711,7 @@ class ViewerState:
         tags: Optional[list] = None,
         linked_segmentation: Union[str, bool] = True,
         shader: Optional[str] = None,
+        color: Optional[str] = None,
     ) -> Self:
         """Add points to an existing annotation layer or create a new one.
         Parameters
@@ -719,6 +764,7 @@ class ViewerState:
                 resolution=data_resolution,
                 tags=tags,
                 linked_segmentation=linked_segmentation,
+                color=color,
                 shader=shader,
             ).add_points(
                 data,
@@ -746,6 +792,7 @@ class ViewerState:
         tags: Optional[list] = None,
         linked_segmentation: Union[str, bool] = True,
         shader: Optional[str] = None,
+        color: Optional[str] = None,
     ) -> Self:
         """Add lines to an existing annotation layer or create a new one.
 
@@ -777,6 +824,8 @@ class ViewerState:
             If False, will not link to any segmentation layer.
         shader : Optional[str], optional
             The shader to use for the annotation layer, by default None.
+        color : Optional[str], optional
+            The color to use for the lines, by default None.
 
         Returns
         -------
@@ -796,6 +845,7 @@ class ViewerState:
                 tags=tags,
                 linked_segmentation=linked_segmentation,
                 shader=shader,
+                color=color,
             ).add_lines(
                 data,
                 point_a_column=point_a_column,
@@ -823,6 +873,7 @@ class ViewerState:
         tags: Optional[list] = None,
         linked_segmentation: Union[str, bool] = True,
         shader: Optional[str] = None,
+        color: Optional[str] = None,
     ) -> Self:
         """Add ellipsoid annotations to an existing annotation layer or create a new one.
 
@@ -854,6 +905,8 @@ class ViewerState:
             If False, will not link to any segmentation layer.
         shader : Optional[str], optional
             The shader to use for the annotation layer, by default None.
+        color : Optional[str], optional
+            The color to use for the ellipsoids, by default None.
 
         Returns
         -------
@@ -873,6 +926,7 @@ class ViewerState:
                 tags=tags,
                 linked_segmentation=linked_segmentation,
                 shader=shader,
+                color=color,
             ).add_ellipsoids(
                 data,
                 center_column=center_column,
@@ -900,6 +954,7 @@ class ViewerState:
         tags: Optional[list] = None,
         linked_segmentation: Union[str, bool] = True,
         shader: Optional[str] = None,
+        color: Optional[str] = None,
     ) -> Self:
         """Add bounding box annotations to an existing annotation layer or create a new one.
 
@@ -931,6 +986,8 @@ class ViewerState:
             If False, will not link to any segmentation layer.
         shader : Optional[str], optional
             The shader to use for the annotation layer, by default None.
+        color : Optional[str], optional
+            The color to use for the bounding boxes, by default None.
 
         Returns
         -------
@@ -950,6 +1007,7 @@ class ViewerState:
                 tags=tags,
                 linked_segmentation=linked_segmentation,
                 shader=shader,
+                color=color,
             ).add_boxes(
                 data,
                 point_a_column=point_a_column,
@@ -1169,6 +1227,11 @@ class ViewerState:
         str
             A shortened URL representation of the viewer state.
         """
+        if client is None:
+            client = self._client
+        if client is None:
+            raise ValueError("A CAVEclient instance is required to shorten the URL.")
+
         state_id = client.state.upload_state_json(self.to_dict())
         if target_url is None:
             if target_site is None:
