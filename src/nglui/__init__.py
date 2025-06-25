@@ -1,3 +1,3 @@
 # from . import parser, segmentprops, site_utils, statebuilder
 
-__version__ = "3.8.2"
+__version__ = "3.9.0"
