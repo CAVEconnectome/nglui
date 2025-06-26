@@ -2,6 +2,10 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [4,2.0] - 2025-06-25
+
+- **StateBuilder**: Added `swap_visible_segments_on_move` option to AnnotationLayers.
+
 ## [4.1.0] - 2025-06-24
 
 ## Added
@@ -24,7 +28,7 @@ The following is a small summary of the changes.
 - **StateBuilder/EasyViewer**: Complete rewrite joining StateBuilder and Easyviewer into a single module under the statebuilder namespace. Only supports spelunker.
 - **StateBuilder**: A new SkeletonManager to upload skeletons for use in Neuroglancer.
 - **StateBuilder**: Support for building some shaders.
-- **StateBuilder**: Added inference of properties from source info files.
+- **StateBuilder**: Added inference of properties from source info files$$.
 - **StateBuilder**: Added DataMaps to several places to allow for more flexible data handling and rendering.
 
 #### Removed

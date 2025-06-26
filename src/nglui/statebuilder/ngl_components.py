@@ -18,6 +18,7 @@ import pandas as pd
 from attrs import define, field
 from neuroglancer import Viewer, viewer_state
 from neuroglancer.coordinate_space import CoordinateSpace
+from neuroglancer.json_wrappers import optional, wrapped_property
 
 from ..segmentprops import SegmentProperties
 from .ngl_annotations import (
@@ -40,6 +41,11 @@ from .utils import (
     parse_graphene_image_url,
     split_point_columns,
 )
+
+# Monkey-patch AnnotationLayer to add swap_visible_segments_on_move property
+viewer_state.AnnotationLayer.swap_visible_segments_on_move = (
+    viewer_state.AnnotationLayer.swapVisibleSegmentsOnMove
+) = wrapped_property("swapVisbleSegmentsOnMove", optional(bool, True))
 
 
 class UnmappedDataError(Exception):
@@ -975,6 +981,9 @@ class AnnotationLayer(LayerWithSource):
         default=None, type=Union[str, dict], kw_only=True, repr=False
     )
     set_position = field(default=True, type=bool, kw_only=True, repr=False)
+    swap_visible_segments_on_move = field(
+        default=True, type=bool, kw_only=True, repr=False
+    )
 
     def __attrs_post_init__(self):
         if self.source is not None:
@@ -995,19 +1004,35 @@ class AnnotationLayer(LayerWithSource):
         bindings = make_bindings(props)
         if not isinstance(self.resolution, CoordSpace):
             self.resolution = CoordSpace(resolution=self.resolution)
-        return viewer_state.LocalAnnotationLayer(
-            dimensions=self.resolution.to_neuroglancer(),
-            annotation_color=self.color,
-            annotations=_handle_annotations(
-                self.annotations, tag_map, self.resolution.resolution
-            ),
-            linked_segmentation_layer=_handle_linked_segmentation(
-                self.linked_segmentation
-            ),
-            shader=self.shader,
-            annotation_properties=props,
-            tool_bindings=bindings,
-        )
+        if self.shader is None:
+            return viewer_state.LocalAnnotationLayer(
+                dimensions=self.resolution.to_neuroglancer(),
+                annotation_color=self.color,
+                annotations=_handle_annotations(
+                    self.annotations, tag_map, self.resolution.resolution
+                ),
+                linked_segmentation_layer=_handle_linked_segmentation(
+                    self.linked_segmentation
+                ),
+                annotation_properties=props,
+                tool_bindings=bindings,
+                swap_visible_segments_on_move=self.swap_visible_segments_on_move,
+            )
+        else:
+            return viewer_state.LocalAnnotationLayer(
+                dimensions=self.resolution.to_neuroglancer(),
+                annotation_color=self.color,
+                annotations=_handle_annotations(
+                    self.annotations, tag_map, self.resolution.resolution
+                ),
+                linked_segmentation_layer=_handle_linked_segmentation(
+                    self.linked_segmentation
+                ),
+                shader=self.shader,
+                annotation_properties=props,
+                tool_bindings=bindings,
+                swap_visible_segments_on_move=self.swap_visible_segments_on_move,
+            )
 
     def _to_neuroglancer_layer_cloud(self) -> viewer_state.AnnotationLayer:
         return viewer_state.AnnotationLayer(
@@ -1021,6 +1046,7 @@ class AnnotationLayer(LayerWithSource):
                 self.linked_segmentation,
             ),
             shader=self.shader,
+            swap_visible_segments_on_move=self.swap_visible_segments_on_move,
         )
 
     def to_neuroglancer_layer(
