@@ -1699,7 +1699,7 @@ wheels = [
 
 [[package]]
 name = "nglui"
-version = "4.2.0"
+version = "4.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "attrs" },
@@ -1743,14 +1743,14 @@ lint = [
 
 [package.metadata]
 requires-dist = [
-    { name = "attrs", specifier = ">=24.2.0" },
+    { name = "attrs", specifier = ">=24.3.0" },
     { name = "cachetools", specifier = ">=5.5.2" },
     { name = "caveclient", specifier = ">=7.0.0" },
     { name = "cloud-volume", marker = "extra == 'full'", specifier = ">=12.3.1" },
     { name = "ipython", specifier = ">=8.18.1" },
     { name = "neuroglancer", specifier = "==2.40.1" },
     { name = "numpy", specifier = ">=1.26.4" },
-    { name = "palettable", specifier = ">=3.3.3,<4.2.0" },
+    { name = "palettable", specifier = ">=3.3.3,<4.3.0" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "python-box", specifier = ">=7.2.0" },
     { name = "requests", specifier = ">=2.32.3" },
