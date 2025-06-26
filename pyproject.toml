@@ -56,7 +56,6 @@ dev = [
     "responses",
     "ipykernel",
     "bump-my-version",
-    "cloud-volume>=12.3.1",
 ]
 docs = [
     "mkdocs",
