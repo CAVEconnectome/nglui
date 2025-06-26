@@ -2,6 +2,11 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [4.3.1] - 2025-06-25
+
+### Fixed
+- **StateBuilder**: More generous error handling when cloudvolume can't do its job for a given source.
+
 ## [4.3.0] - 2025-06-25
 
 - **StateBuilder**: Added `ViewerState.add_segments` and `ViewerState.add_segments_from_data` to the viewerstate object. They let you add segments to a segmentation layer without breaking a pipeline. Both pass through to SegmentationLayer functions, and default to the first segmentation layer in the state if no layer name is specified.
