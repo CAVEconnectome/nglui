@@ -70,6 +70,9 @@ def populate_info(layers):
                     )
                 except:
                     info_dict[s] = {}
+                # This is a hack to avoid long-delays for non-functional URLs that I can't avoid,
+                # But it assumes that the first source is the true segmentation which is not necessarily true.
+                break
     return info_dict
 
 

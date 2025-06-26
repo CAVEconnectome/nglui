@@ -1316,7 +1316,7 @@ class ViewerState:
 
     def to_link_shortener(
         self,
-        client: "caveclient.CAVEclient",
+        client: "caveclient.CAVEclient" = None,
         target_url: str = None,
         target_site: str = None,
     ) -> str:
