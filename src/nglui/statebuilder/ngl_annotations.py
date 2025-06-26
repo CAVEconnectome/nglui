@@ -150,6 +150,21 @@ class PointAnnotation(AnnotationBase):
 
 
 @define
+class PolylineAnnotation(AnnotationBase):
+    points = field(type=list, converter=strip_numpy_types)
+
+    def _scale_points(self, scale):
+        self.points = strip_numpy_types(np.array([p * scale for p in self.points]))
+
+    def to_neuroglancer(self, tag_map=dict(), layer_resolution=None) -> dict:
+        return self._to_neuroglancer(
+            viewer_state.PolylineAnnotation,
+            tag_map=tag_map,
+            layer_resolution=layer_resolution,
+        )
+
+
+@define
 class LineAnnotation(AnnotationBase):
     pointA = field(type=list, converter=strip_numpy_types)
     pointB = field(type=list, converter=strip_numpy_types)
