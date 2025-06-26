@@ -712,6 +712,7 @@ class ViewerState:
         linked_segmentation: Union[str, bool] = True,
         shader: Optional[str] = None,
         color: Optional[str] = None,
+        swap_visible_segments_on_move: bool = True,
     ) -> Self:
         """Add points to an existing annotation layer or create a new one.
         Parameters
@@ -745,7 +746,8 @@ class ViewerState:
         shader : Optional[str], optional
             The shader to use for the annotation layer, by default None.
             If None, the default shader will be used.
-
+        swap_visible_segments_on_move: bool, optional
+            If True, will swap the visibility of segments when moving points.
         Returns
         -------
         Self
@@ -766,6 +768,7 @@ class ViewerState:
                 linked_segmentation=linked_segmentation,
                 color=color,
                 shader=shader,
+                swap_visible_segments_on_move=swap_visible_segments_on_move,
             ).add_points(
                 data,
                 point_column=point_column,
@@ -793,6 +796,7 @@ class ViewerState:
         linked_segmentation: Union[str, bool] = True,
         shader: Optional[str] = None,
         color: Optional[str] = None,
+        swap_visible_segments_on_move: bool = True,
     ) -> Self:
         """Add lines to an existing annotation layer or create a new one.
 
@@ -826,7 +830,8 @@ class ViewerState:
             The shader to use for the annotation layer, by default None.
         color : Optional[str], optional
             The color to use for the lines, by default None.
-
+        swap_visible_segments_on_move : bool, optional
+            If True, will swap the visibility of segments when moving lines.
         Returns
         -------
         Self
@@ -846,6 +851,7 @@ class ViewerState:
                 linked_segmentation=linked_segmentation,
                 shader=shader,
                 color=color,
+                swap_visible_segments_on_move=swap_visible_segments_on_move,
             ).add_lines(
                 data,
                 point_a_column=point_a_column,
@@ -874,6 +880,7 @@ class ViewerState:
         linked_segmentation: Union[str, bool] = True,
         shader: Optional[str] = None,
         color: Optional[str] = None,
+        swap_visible_segments_on_move: bool = True,
     ) -> Self:
         """Add ellipsoid annotations to an existing annotation layer or create a new one.
 
@@ -907,7 +914,8 @@ class ViewerState:
             The shader to use for the annotation layer, by default None.
         color : Optional[str], optional
             The color to use for the ellipsoids, by default None.
-
+        swap_visible_segments_on_move : bool, optional
+            If True, will swap the visibility of segments when moving ellipsoids.
         Returns
         -------
         Self
@@ -927,6 +935,7 @@ class ViewerState:
                 linked_segmentation=linked_segmentation,
                 shader=shader,
                 color=color,
+                swap_visible_segments_on_move=swap_visible_segments_on_move,
             ).add_ellipsoids(
                 data,
                 center_column=center_column,
@@ -955,6 +964,7 @@ class ViewerState:
         linked_segmentation: Union[str, bool] = True,
         shader: Optional[str] = None,
         color: Optional[str] = None,
+        swap_visible_segments_on_move: bool = True,
     ) -> Self:
         """Add bounding box annotations to an existing annotation layer or create a new one.
 
@@ -988,6 +998,8 @@ class ViewerState:
             The shader to use for the annotation layer, by default None.
         color : Optional[str], optional
             The color to use for the bounding boxes, by default None.
+        swap_visible_segments_on_move : bool, optional
+            If True, will swap the visibility of segments when moving boxes.
 
         Returns
         -------
@@ -1008,6 +1020,7 @@ class ViewerState:
                 linked_segmentation=linked_segmentation,
                 shader=shader,
                 color=color,
+                swap_visible_segments_on_move=swap_visible_segments_on_move,
             ).add_boxes(
                 data,
                 point_a_column=point_a_column,
