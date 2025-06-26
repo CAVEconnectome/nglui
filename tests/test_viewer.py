@@ -20,6 +20,7 @@ def test_basic_viewer(client_full, mocker):
                 pick=False,
             )
         )
+        .add_segments(name="TestSegmentationLayer", segments=[1, 2, 3])
         .add_layer(AnnotationLayer(name="some_annotations"))
         .add_annotation_layer(
             name="other_annotations",
@@ -67,6 +68,10 @@ def test_adding_points(client_full, soma_df):
         .add_layers_from_client(
             client_full,
         )
+        .add_segments_from_data(
+            data=soma_df.head(2),
+            segment_column="pt_root_id",
+        )
         .add_points(
             data=soma_df,
             name="soma_points",
@@ -75,6 +80,7 @@ def test_adding_points(client_full, soma_df):
             tag_column="cell_type",
         )
     )
+    assert len(viewer.layers["segmentation"].segments) == 2
     state = viewer.to_dict()
     assert len(state["layers"][2]["annotations"]) == len(soma_df)
 
