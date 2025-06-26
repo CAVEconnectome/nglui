@@ -63,14 +63,13 @@ def populate_info(layers):
                 try:
                     source_info = get_source_info(s)
                     info_dict[s] = source_info
-                except KeyError:
-                    # No need to raise a warning if the source is the wrong type
-                    info_dict[s] = {}
                 except NoCloudvolumeError:
                     info_dict[s] = {}
                     warnings.warn(
                         f"CloudVolume is not available. Cannot get source information for {s}.",
                     )
+                except:
+                    info_dict[s] = {}
     return info_dict
 
 
