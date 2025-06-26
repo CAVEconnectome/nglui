@@ -1726,7 +1726,6 @@ full = [
 [package.dev-dependencies]
 dev = [
     { name = "bump-my-version" },
-    { name = "cloud-volume" },
     { name = "ipykernel" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -1764,7 +1763,6 @@ provides-extras = ["full"]
 [package.metadata.requires-dev]
 dev = [
     { name = "bump-my-version" },
-    { name = "cloud-volume", specifier = ">=12.3.1" },
     { name = "ipykernel" },
     { name = "pytest" },
     { name = "pytest-cov" },
