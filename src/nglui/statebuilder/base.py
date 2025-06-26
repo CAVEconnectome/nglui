@@ -128,6 +128,8 @@ class ViewerState:
         selected_alpha: Optional[float] = None,
         alpha_3d: Optional[float] = None,
         mesh_silhouette: Optional[float] = None,
+        imagery_kws: Optional[dict] = None,
+        segmentation_kws: Optional[dict] = None,
     ) -> Self:
         """Configure the viewer with information from a CaveClient.
         Can set the target URL, viewer resolution, and add image and segmentation layers.
@@ -154,6 +156,10 @@ class ViewerState:
             The alpha value for 3D meshes, by default None.
         mesh_silhouette : Optional[float], optional
             The mesh silhouette value, by default None.
+        imagery_kws : Optional[dict], optional
+            Additional keyword arguments to pass to the image layer constructor.
+        segmentation_kws : Optional[dict], optional
+            Additional keyword arguments to pass to the segmentation layer constructor.
 
         Returns
         -------
@@ -177,10 +183,12 @@ class ViewerState:
                 self.add_image_layer(
                     source=client.info.image_source(),
                     name=imagery,
+                    **(imagery_kws or {}),
                 )
             else:
                 self.add_image_layer(
                     source=client.info.image_source(),
+                    **(imagery_kws or {}),
                 )
         if segmentation:
             seg_source = [client.info.segmentation_source()]
@@ -196,6 +204,7 @@ class ViewerState:
                     selected_alpha=selected_alpha,
                     alpha_3d=alpha_3d,
                     mesh_silhouette=mesh_silhouette,
+                    **(segmentation_kws or {}),
                 )
             else:
                 self.add_segmentation_layer(
@@ -203,6 +212,7 @@ class ViewerState:
                     selected_alpha=selected_alpha,
                     alpha_3d=alpha_3d,
                     mesh_silhouette=mesh_silhouette,
+                    **(segmentation_kws or {}),
                 )
         return self
 
@@ -574,6 +584,94 @@ class ViewerState:
             **kwargs,
         )
         self.add_layer(seg_layer)
+        return self
+
+    def add_segments(
+        self,
+        segments: Union[list, np.ndarray, "pd.DataFrame", DataMap],
+        visible: Optional[Union[list, np.ndarray]] = None,
+        segment_colors: Optional[Union[str, list, dict]] = None,
+        name: Optional[str] = None,
+    ) -> Self:
+        """Add segments directly to an existing segmentation layer.
+        By default, it will use the first segmentation layer found in the viewer, otherwise you must specify a layer name.
+
+        Parameters
+        ----------
+        segments : list or dict or VisibleSegments
+            The segments to add. If a dict, the keys are the segment IDs and the values are the boolean visibility.
+        visible: list, optional
+            The visibility of the segments, assumed to be True if not provided.
+            Should be the same length as segments, and segments should be a list of the same length.
+        segment_colors : Union[str, list, dict], optional
+            The color(s) to assign to the segments. If a string or list, all segments will be assigned the same color.
+            A list is assumed to be a color tuple.
+            If a dict, the keys are segment IDs and the values are colors.
+        name: Optional[str]
+            The name of the segmentation layer to add segments to.
+            If None, it will use the first segmentation layer found in the viewer.
+
+        Returns
+        -------
+        The viewer state object with the added segments.
+        """
+        if name is None:
+            for l in self.layers:
+                if isinstance(l, SegmentationLayer):
+                    name = l.name
+                    break
+            else:
+                raise ValueError("No segmentation layer found in the viewer.")
+        self.layers[name].add_segments(
+            segments,
+            visible=visible,
+        )
+        if segment_colors is not None:
+            if not isinstance(segment_colors, dict):
+                segment_colors = {s: segment_colors for s in segments}
+            self.layers[name].add_segment_colors(segment_colors)
+        return self
+
+    def add_segments_from_data(
+        self,
+        data: Union["pd.DataFrame", DataMap],
+        segment_column: str,
+        visible_column: str = None,
+        color_column: str = None,
+        name: Optional[str] = None,
+    ) -> Self:
+        """Add segments from a DataFrame or DataMap to an existing segmentation layer.
+        By default, it will use the first segmentation layer found in the viewer, otherwise you must specify a layer name.
+
+        Parameters
+        ----------
+        data : Union[pd.DataFrame, DataMap]
+            The data containing segment information or a datamap to be filled in later
+        segment_column : str
+            The name of the column containing segment IDs in the DataFrame.
+        visible_column : str, optional
+            The name of the column containing visibility information in the DataFrame.
+            If not provided, all segments will be considered visible.
+        color_column : str, optional
+            The name of the column containing color information for the segments.
+        name: Optional[str]
+            The name of the segmentation layer to add segments to.
+            If None, it will use the first segmentation layer found in the viewer.
+        """
+
+        if name is None:
+            for l in self.layers:
+                if isinstance(l, SegmentationLayer):
+                    name = l.name
+                    break
+            else:
+                raise ValueError("No segmentation layer found in the viewer.")
+        self.layers[name].add_segments_from_data(
+            data,
+            segment_column=segment_column,
+            visible_column=visible_column,
+            color_column=color_column,
+        )
         return self
 
     def add_annotation_layer(
