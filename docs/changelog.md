@@ -2,7 +2,12 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
-## [4,2.0] - 2025-06-25
+## [4.3.0] - 2025-06-25
+
+- **StateBuilder**: Added `ViewerState.add_segments` and `ViewerState.add_segments_from_data` to the viewerstate object. They let you add segments to a segmentation layer without breaking a pipeline. Both pass through to SegmentationLayer functions, and default to the first segmentation layer in the state if no layer name is specified.
+
+
+## [4.2.0] - 2025-06-25
 
 - **StateBuilder**: Added `swap_visible_segments_on_move` option to AnnotationLayers.
 
