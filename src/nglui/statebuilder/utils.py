@@ -81,7 +81,7 @@ def strip_numpy_types(obj):
 
 def list_of_lists(obj):
     "Strip numpy types and return as a list of lists. Should not be used for dicts."
-    if pd.isnull(obj):
+    if not isinstance(obj, Iterable) and pd.isnull(obj):
         return None
     obj = strip_numpy_types(obj)
     if isinstance(obj, list):
