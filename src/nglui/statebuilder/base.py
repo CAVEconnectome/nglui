@@ -15,6 +15,7 @@ import neuroglancer
 import numpy as np
 from IPython.display import HTML
 from neuroglancer import viewer, viewer_base
+import pyperclip
 
 from . import source_info
 from .ngl_components import (
@@ -1353,3 +1354,41 @@ class ViewerState:
             else:
                 target_url = neuroglancer_url(target_site=target_site)
         return client.state.build_neuroglancer_url(state_id, target_url)
+
+    def to_clipboard(
+        self,
+        target_url: str = None,
+        target_site: str = None,
+        shorten: Union[bool, Literal["if_long"]] = False,
+        client: Optional["caveclient.CAVEclient"] = None,
+    ) -> str:
+        """Copy the viewer state URL to the system clipboard.
+
+        Parameters
+        ----------
+        target_url : str
+            The base URL to use for the Neuroglancer state. If not provided,
+            the default server URL will be used.
+        target_site : str, optional
+            The target site for the URL, based on the keys in site_utils.NEUROGLANCER_SITES.
+            If not provided, the default server URL will be used.
+        shorten: Union[bool, Literal["if_long"]], optional
+            If True, the URL will be shortened using the CAVE link shortener service.
+            If "if_long", the URL will only be shortened if it exceeds a certain length.
+        client : Optional[caveclient.CAVEclient], optional
+            The CAVE client to use for shortening the URL. If not provided, the URL will not be shortened.
+
+        Returns
+        -------
+        str
+            The URL representation of the viewer state that has also been copied to the 
+            clipboard.
+        """
+        url = self.to_url(
+            target_url=target_url,
+            target_site=target_site,
+            shorten=shorten,
+            client=client,
+        )
+        pyperclip.copy(url)
+        return url
