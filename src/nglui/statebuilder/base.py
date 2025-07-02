@@ -1431,7 +1431,11 @@ class ViewerState:
         browser : Optional[str], optional
             The name of the browser to use. If None, the system default browser will be
             used. Note that the browser name needs to be registered on your system,
-            see [webbrowser documentation](https://docs.python.org/3/library/webbrowser.html#webbrowser.register) for more details.
+            see [webbrowser.register][] for more details.
+
+        See Also
+        --------
+        [webbrowser.open][] : Opens a URL in the web browser.
 
         Returns
         -------
