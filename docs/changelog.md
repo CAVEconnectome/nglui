@@ -2,6 +2,12 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [x.x.x] - YYYY-MM-DD
+
+### Added
+
+- **StateBuilder**: Added `ViewerState.to_browser` method that parallels `ViewerState.to_url` that opens a URL in the browser (h/t Ben Pedigo)
+
 ## [4.4.1] - 2025-07-01
 
 ### Fixed
@@ -12,7 +18,7 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 
 ### Added
 
-- **StateBuilder**: Added `ViewerState.to_clipboard` method that parallels `ViewerState.to_link` that copies the URL or shortened link to the clipboard (h/t Ben Pedigo)
+- **StateBuilder**: Added `ViewerState.to_clipboard` method that parallels `ViewerState.to_url` that copies the URL or shortened link to the clipboard (h/t Ben Pedigo)
 
 ### Fixed
 
