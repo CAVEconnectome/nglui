@@ -5,6 +5,7 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 ## [4.4.1] - 2025-07-01
 
 ### Fixed
+
 - **StateBuilder**: Fixed segment properties to use correct auth formatting.
 
 ## [4.4.0] - 2025-06-30
@@ -14,12 +15,14 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 - **StateBuilder**: Added `ViewerState.to_clipboard` method that parallels `ViewerState.to_link` that copies the URL or shortened link to the clipboard (h/t Ben Pedigo)
 
 ### Fixed
+
 - **StateBuilder**: In certain conditions, empty lists were incorrectly being handled.
 
 
 ## [4.3.1] - 2025-06-25
 
 ### Fixed
+
 - **StateBuilder**: More generous error handling when cloudvolume can't do its job for a given source.
 
 ## [4.3.0] - 2025-06-25
