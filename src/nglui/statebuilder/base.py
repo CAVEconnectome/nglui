@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import warnings
+import webbrowser
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Literal, Optional, Union
 
@@ -13,9 +14,9 @@ except ImportError:
 
 import neuroglancer
 import numpy as np
+import pyperclip
 from IPython.display import HTML
 from neuroglancer import viewer, viewer_base
-import pyperclip
 
 from . import source_info
 from .ngl_components import (
@@ -1381,7 +1382,7 @@ class ViewerState:
         Returns
         -------
         str
-            The URL representation of the viewer state that has also been copied to the 
+            The URL representation of the viewer state that has also been copied to the
             clipboard.
         """
         url = self.to_url(
@@ -1391,4 +1392,62 @@ class ViewerState:
             client=client,
         )
         pyperclip.copy(url)
+        return url
+
+    def to_browser(
+        self,
+        target_url: str = None,
+        target_site: str = None,
+        shorten: Union[bool, Literal["if_long"]] = False,
+        client: Optional["caveclient.CAVEclient"] = None,
+        new: int = 2,
+        autoraise: bool = True,
+        browser: Optional[str] = None,
+    ):
+        """Open the viewer state URL in a web browser.
+
+        Parameters
+        ----------
+        target_url : str
+            The base URL to use for the Neuroglancer state. If not provided,
+            the default server URL will be used.
+        target_site : str, optional
+            The target site for the URL, based on the keys in site_utils.NEUROGLANCER_SITES.
+            If not provided, the default server URL will be used.
+        shorten: Union[bool, Literal["if_long"]], optional
+            If True, the URL will be shortened using the CAVE link shortener service.
+            If "if_long", the URL will only be shortened if it exceeds a certain length.
+        client : Optional[caveclient.CAVEclient], optional
+            The CAVE client to use for shortening the URL. If not provided, the URL will not be shortened.
+        new : int, optional
+            If new is 0, the url is opened in the same browser window if possible. If 
+            new is 1, a new browser window is opened if possible. If new is 2, a new 
+            browser page (“tab”) is opened if possible. Note that not all browsers
+            support all values of new, and some may ignore this parameter.
+        autoraise : bool, optional
+            If True, the browser window will be raised to the front when opened. Note 
+            that under many window managers this will occur regardless of the setting 
+            of this variable.
+        browser : Optional[str], optional
+            The name of the browser to use. If None, the system default browser will be
+            used. Note that the browser name needs to be registered on your system,
+            see [webbrowser documentation](https://docs.python.org/3/library/webbrowser.html#webbrowser.register) for more details.
+
+        Returns
+        -------
+        str
+            The URL representation of the viewer state that has also been opened in the
+            browser.
+        """
+        url = self.to_url(
+            target_url=target_url,
+            target_site=target_site,
+            shorten=shorten,
+            client=client,
+        )
+        if browser is None:
+            webbrowser.open(url, new=new, autoraise=autoraise)
+        else: 
+            browser_controller = webbrowser.get(browser)
+            browser_controller.open(url, new=new, autoraise=autoraise)
         return url
