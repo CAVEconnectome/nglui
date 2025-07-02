@@ -2,6 +2,11 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [4.4.1] - 2025-07-01
+
+### Fixed
+- **StateBuilder**: Fixed segment properties to use correct auth formatting.
+
 ## [4.4.0] - 2025-06-30
 
 ### Added
