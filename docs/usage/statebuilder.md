@@ -130,6 +130,20 @@ will upload the state and return a short link with a form like `'https://spelunk
 You can also use the link shortener in the `to_url` and `to_link` methods by setting the `shorten` argument to `True` or `if_long` and passing a CAVEclient object.
 The `if_long` option will only shorten the url if it gets long enough to start breaking the URL length limits of most browsers, approximately 1.75 million characters.
 
+There are also convenience functions for copying the URL to the clipboard or opening it in a web browser, both of which have similar paramaters as the `to_url` method.
+
+The [to_clipboard](../reference/statebuilder.md#src.nglui.statebuilder.base.ViewerState.to_clipboard) method will copy the URL to your system clipboard, after passing through the link shortener:
+
+```py
+viewerstate.to_clipboard(shorten=True, client=client)
+```
+
+And the [to_browser](../reference/statebuilder.md#src.nglui.statebuilder.base.ViewerState.to_browser) method will open the URL in your the web browser of your choosing, again after passing through the link shortener:
+
+```py
+viewerstate.to_browser(shorten=True, client=client, browser='firefox')
+```
+
 To change the Neuroglancer web deployment used in all of the url and link functions, you can set a different URL in the `target_url` parameter of the `to_url` function.
 For example, to use the default Neuroglancer deployment, you can do:
 
