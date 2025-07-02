@@ -905,7 +905,7 @@ class SegmentationLayer(LayerWithSource):
         if not dry_run:
             prop_id = client.state.upload_property_json(segprops.to_dict())
             prop_url = client.state.build_neuroglancer_url(
-                prop_id, format_properties=True
+                prop_id, format_properties=True, target_site="spelunker"
             )
         else:
             prop_url = "DRYRUN_SEGMENT_PROPERTIES"
