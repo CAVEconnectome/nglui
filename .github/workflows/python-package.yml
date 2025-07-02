@@ -22,7 +22,7 @@ jobs:
       - name: Install xclip and xsel
         run: |
           sudo apt-get update
-          sudo apt-get install -y xclip xselect
+          sudo apt-get install -y xclip xsel
       - name: Install uv
         uses: astral-sh/setup-uv@v2
         with:
