@@ -513,6 +513,30 @@ class TestViewerStateNeuroglancerConversion:
             assert "12345" in str(url)
             mock_client.state.upload_state_json.assert_called_once()
 
+    def test_to_clipboard(self):
+        vs = ViewerState()
+
+        with patch.object(vs, "to_json_string") as mock_to_json:
+            mock_to_json.return_value = '{"test": "state"}'
+
+            url = vs.to_clipboard()
+
+            # Just check that a URL is returned
+            assert isinstance(url, str)
+            assert len(url) > 0
+
+    def test_to_browser(self):
+        vs = ViewerState()
+
+        with patch.object(vs, "to_json_string") as mock_to_json:
+            mock_to_json.return_value = '{"test": "state"}'
+
+            url = vs.to_browser()
+
+            # Just check that a URL is returned
+            assert isinstance(url, str)
+            assert len(url) > 0
+
 
 class TestViewerStateValidation:
     def test_viewer_property_lazy_loading(self):
