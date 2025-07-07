@@ -23,10 +23,10 @@ jobs:
         uses: astral-sh/setup-uv@v2
         with:
           version: "0.5.2"
-      - name: Install xsel
+      - name: Install xselect
         run: |
           sudo apt-get update
-          sudo apt-get install -y xsel
+          sudo apt-get install -y xselect
       - name: Install project and dependencies
         run: uv sync --python ${{ matrix.python-version }}
       - name: Run tests
