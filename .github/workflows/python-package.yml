@@ -26,6 +26,6 @@ jobs:
       - name: Install project and dependencies
         run: uv sync --python ${{ matrix.python-version }}
       - name: Run tests
-        run: uv run --with qtpy pytest tests 
+        run: uv run pytest tests 
       - name: Lint with ruff
         run: uv run ruff check src/*
