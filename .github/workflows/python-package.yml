@@ -23,13 +23,9 @@ jobs:
         uses: astral-sh/setup-uv@v2
         with:
           version: "0.5.2"
-      - name: Install xselect
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y xselect
       - name: Install project and dependencies
         run: uv sync --python ${{ matrix.python-version }}
       - name: Run tests
-        run: uv run pytest tests
+        run: uv run pytest tests --with gtk
       - name: Lint with ruff
         run: uv run ruff check src/*
