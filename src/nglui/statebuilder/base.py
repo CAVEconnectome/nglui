@@ -1266,7 +1266,7 @@ class ViewerState:
 
         url = neuroglancer.to_url(
             self.viewer.state,
-            target_url,
+            prefix=target_url,
         )
         if shorten == "if_long":
             if len(url) > MAX_URL_LENGTH:
@@ -1274,7 +1274,7 @@ class ViewerState:
             else:
                 shorten = False
         if shorten:
-            url = self.to_link_shortener(client)
+            url = self.to_link_shortener(client, target_url=target_url)
         return url
 
     def to_link(
@@ -1420,13 +1420,13 @@ class ViewerState:
         client : Optional[caveclient.CAVEclient], optional
             The CAVE client to use for shortening the URL. If not provided, the URL will not be shortened.
         new : int, optional
-            If new is 0, the url is opened in the same browser window if possible. If 
-            new is 1, a new browser window is opened if possible. If new is 2, a new 
+            If new is 0, the url is opened in the same browser window if possible. If
+            new is 1, a new browser window is opened if possible. If new is 2, a new
             browser page (“tab”) is opened if possible. Note that not all browsers
             support all values of new, and some may ignore this parameter.
         autoraise : bool, optional
-            If True, the browser window will be raised to the front when opened. Note 
-            that under many window managers this will occur regardless of the setting 
+            If True, the browser window will be raised to the front when opened. Note
+            that under many window managers this will occur regardless of the setting
             of this variable.
         browser : Optional[str], optional
             The name of the browser to use. If None, the system default browser will be
@@ -1451,7 +1451,7 @@ class ViewerState:
         )
         if browser is None:
             webbrowser.open(url, new=new, autoraise=autoraise)
-        else: 
+        else:
             browser_controller = webbrowser.get(browser)
             browser_controller.open(url, new=new, autoraise=autoraise)
         return url
