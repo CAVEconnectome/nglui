@@ -2,11 +2,15 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
-## [x.x.x] - YYYY-MM-DD
+## [4.4.2] - YYYY-MM-DD
 
 ### Added
 
 - **StateBuilder**: Added `ViewerState.to_browser` method that parallels `ViewerState.to_url` that opens a URL in the browser (h/t Ben Pedigo)
+
+### Fixed
+
+- **StateBuilder**: Fixed a bug where the `to_url` method did not pass the `target_url` argument to the link shortener.
 
 ## [4.4.1] - 2025-07-01
 
