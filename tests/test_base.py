@@ -5,12 +5,13 @@ from unittest.mock import MagicMock, Mock, patch
 import numpy as np
 import pytest
 
-from nglui.statebuilder.base import UnservedViewer, ViewerState
+from nglui.statebuilder.base import UnservedViewer, ViewerState, webbrowser
 from nglui.statebuilder.ngl_components import (
     AnnotationLayer,
     CoordSpace,
     DataMap,
     ImageLayer,
+    RawLayer,
     SegmentationLayer,
 )
 
@@ -537,7 +538,9 @@ class TestViewerStateNeuroglancerConversion:
         with patch.object(vs, "to_json_string") as mock_to_json:
             mock_to_json.return_value = '{"test": "state"}'
 
+        with patch.object(webbrowser, "open", return_value=True) as mock_open:
             url = vs.to_browser()
+            mock_open.assert_called()  # Ensures the function was called, but no browser opens
 
             # Just check that a URL is returned
             assert isinstance(url, str)
@@ -602,3 +605,62 @@ class TestViewerStateEdgeCases:
 
         with pytest.raises(ValueError, match="Layer nonexistent_layer not found"):
             vs.get_layer("nonexistent_layer")
+
+
+def test_raw_layer_basic():
+    # Minimal raw layer data
+    raw_data = {
+        "type": "image",
+        "source": "precomputed://some/path",
+        "name": "raw_img",
+        "visible": True,
+        "archived": False,
+    }
+    # Create RawLayer instance
+    layer = RawLayer(json_data=raw_data)
+    assert layer.json_data["type"] == "image"
+    assert (
+        layer.name == "raw_img" or layer.name is None
+    )  # name may be set by field or from json_data
+    assert layer.visible is True
+    assert layer.archived is False
+
+    # Test to_neuroglancer_layer returns a Layer object
+    ng_layer = layer.to_neuroglancer_layer()
+    assert hasattr(ng_layer, "to_json")
+
+    # Test to_dict returns a dict with expected keys
+    layer_dict = layer.to_dict()
+    assert "type" in layer_dict
+    assert "source" in layer_dict
+
+    # Test to_json returns a valid JSON string
+    json_str = layer.to_json()
+    assert isinstance(json_str, str)
+    assert '"type": "image"' in json_str
+
+
+def test_raw_layer_name_and_source_remap():
+    from src.nglui.statebuilder.ngl_components import RawLayer
+
+    # Initial raw layer data
+    raw_data = {
+        "type": "image",
+        "source": "precomputed://old/path",
+        "name": "raw_img",
+        "visible": True,
+        "archived": False,
+    }
+    # Create RawLayer with a new name and visibility
+    layer = RawLayer(json_data=raw_data, name="new_name", visible=False, archived=True)
+    assert layer.name == "new_name"
+    assert layer.visible is False
+    assert layer.archived is True
+    # Remap the source
+    remap = {"precomputed://old/path": "precomputed://new/path"}
+    layer.remap_sources(remap)
+    # The json_data should have the new source
+    assert layer.json_data["source"] == "precomputed://new/path"
+    # to_dict should reflect the new source
+    layer_dict = layer.to_dict()
+    assert layer_dict["source"] == "precomputed://new/path"

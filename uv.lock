@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform != 'win32'",
@@ -1727,6 +1727,7 @@ full = [
 [package.dev-dependencies]
 dev = [
     { name = "bump-my-version" },
+    { name = "cloud-volume" },
     { name = "ipykernel" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -1765,6 +1766,7 @@ provides-extras = ["full"]
 [package.metadata.requires-dev]
 dev = [
     { name = "bump-my-version" },
+    { name = "cloud-volume" },
     { name = "ipykernel" },
     { name = "pytest" },
     { name = "pytest-cov" },
