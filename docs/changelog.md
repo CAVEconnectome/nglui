@@ -9,6 +9,11 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 - **StateBuilder**: Added RawLayer class that allows for the inclusion of layer specification directly from an existing neuroglancer state. You can also remap sources along the way using the `remap_sources` method, for example if you are changing states to a new endpoint. The easiest way to access is via `ViewerState.add_raw_layer`.
 - **StateBuilder**: Added `ViewerState.add_segment_properties` function to add segment properties within a viewer state pipeline.
 - **StateBuilder**: Annotation-adding functions now support adding arrays as well as dataframe columns. Data can now be None and columns can be specified completely.
+- **StateBuilder**: Added `strip_layers` function to remove layers from a viewer dictionary to ease its use as a base state.
+
+### Fixed
+
+- **StateBuilder**: The properties of a base state are better-preserved.
 
 ## [4.4.2] - 2025-06-12
 
