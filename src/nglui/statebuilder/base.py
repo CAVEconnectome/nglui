@@ -24,10 +24,11 @@ from .ngl_components import (
     CoordSpace,
     DataMap,
     ImageLayer,
+    RawLayer,
     SegmentationLayer,
 )
 from .site_utils import MAX_URL_LENGTH, neuroglancer_url
-from .utils import NamedList
+from .utils import NamedList, strip_layers, strip_state_properties
 
 if TYPE_CHECKING:
     import caveclient
@@ -522,6 +523,40 @@ class ViewerState:
             self.infer_coordinates = infer_coordinates
         return self
 
+    def add_raw_layer(
+        self,
+        data: dict,
+        name: Optional[str] = None,
+        visible: Optional[bool] = None,
+        archived: Optional[bool] = None,
+        source_remap: Optional[dict] = None,
+    ) -> Self:
+        """Add a layer based on a raw state dictionary. Useful when copying existing layers, but offers limited customization.
+
+        Parameters
+        ----------
+        data : dict
+            The raw state dictionary for the layer.
+        name : str, optional
+            The new name of the layer, if you want to change it.
+        visible : bool, optional
+            Whether the layer is visible, if you want to change it.
+        archived : bool, optional
+            Whether the layer is archived, if you want to change it.
+        source_remap: dict, optional
+            A dictionary mapping source cloudpaths to new cloudpaths, for example to update the layer's data source without changing anything else.
+
+        Returns
+        -------
+        Self
+            The updated viewer state object.
+        """
+        layer = RawLayer(
+            json_data=data, name=name, visible=visible, archived=archived
+        ).remap_sources(source_remap)
+        self.add_layer(layer)
+        return self
+
     def add_image_layer(
         self,
         source: str,
@@ -632,6 +667,109 @@ class ViewerState:
             if not isinstance(segment_colors, dict):
                 segment_colors = {s: segment_colors for s in segments}
             self.layers[name].add_segment_colors(segment_colors)
+        return self
+
+    def add_segment_properties(
+        self,
+        data: Union[pd.DataFrame, DataMap],
+        id_column: str = "pt_root_id",
+        client: Optional["caveclient.CAVEclient"] = None,
+        label_column: Optional[Union[str, list]] = None,
+        description_column: Optional[str] = None,
+        string_columns: Optional[list] = None,
+        number_columns: Optional[list] = None,
+        tag_value_columns: Optional[list] = None,
+        tag_bool_columns: Optional[list] = None,
+        tag_descriptions: Optional[list] = None,
+        allow_disambiguation: bool = True,
+        label_separator: str = "_",
+        label_format_map: Optional[str] = None,
+        prepend_col_name: bool = False,
+        random_columns: Optional[int] = None,
+        random_column_prefix: str = None,
+        dry_run: bool = False,
+        name: Optional[str] = None,
+    ) -> Self:
+        """Upload segment properties and add to the layer.
+        If you already have a segment properties cloud path, use `add_source` to add it to the layer.
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            The DataFrame containing the segment properties.
+        id_column : str, optional
+            The column name for the segment IDs. Default is 'pt_root_id'.
+        client : CAVEclient
+            The CAVEclient object needed to upload .
+        label_column : str or list, optional
+            The column name(s) for the segment labels. Default is None.
+        description_column : str, optional
+            The column name for the segment descriptions. Default is None.
+        string_columns : list, optional
+            The column names for string properties. Default is None.
+        number_columns : list, optional
+            The column names for number properties. Default is None.
+        tag_value_columns : list, optional
+            The column names for tag value properties. Default is None.
+        tag_bool_columns : list, optional
+            The column names for tag boolean properties. Default is None.
+        tag_descriptions : list, optional
+            The descriptions for the tags. Default is None.
+        allow_disambiguation : bool, optional
+            Whether to allow disambiguation of segment IDs. Default is True.
+        label_separator : str, optional
+            The separator for label formatting. Default is "_".
+        label_format_map : str, optional
+            The format map for labels. Default is None.
+        prepend_col_name: bool, optional
+            Whether to prepend the column name to the label. Default is False.
+        random_columns: int, optional
+            Number of random columns to add. Default is None.
+        random_column_prefix: str, optional
+            Name prefix of the random columns. Default is None.
+        dry_run: bool, optional
+            If dry run is true, build but do not actually upload and instead use a placeholder source text. Default is False.
+        name: str, optional
+            Layer name. Must be specified if there is more than one segmentation layer in the state.
+
+        Returns
+        -------
+        Self
+        """
+
+        if name is None:
+            for l in self.layers:
+                if isinstance(l, SegmentationLayer):
+                    name = l.name
+                    break
+            else:
+                raise ValueError("No segmentation layer found in the viewer.")
+
+        if client is None and self._client is not None:
+            client = self._client
+        else:
+            raise ValueError("Client must be specified.")
+
+        self.layers[name].add_segment_properties(
+            data,
+            id_column=id_column,
+            client=client,
+            label_column=label_column,
+            description_column=description_column,
+            string_columns=string_columns,
+            number_columns=number_columns,
+            tag_value_columns=tag_value_columns,
+            tag_bool_columns=tag_bool_columns,
+            tag_descriptions=tag_descriptions,
+            allow_disambiguation=allow_disambiguation,
+            label_separator=label_separator,
+            label_format_map=label_format_map,
+            prepend_col_name=prepend_col_name,
+            random_columns=random_columns,
+            random_column_prefix=random_column_prefix,
+            dry_run=dry_run,
+        )
+
         return self
 
     def add_segments_from_data(
@@ -800,7 +938,7 @@ class ViewerState:
 
     def add_points(
         self,
-        data: Union[list, np.ndarray, "pd.DataFrame", DataMap],
+        data: Optional[Union[list, np.ndarray, "pd.DataFrame", DataMap]] = None,
         name: str = "annotation",
         point_column: Optional[str] = None,
         segment_column: Optional[str] = None,
@@ -883,7 +1021,7 @@ class ViewerState:
 
     def add_lines(
         self,
-        data: "pd.DataFrame",
+        data: Optional["pd.DataFrame"] = None,
         name: str = "annotation",
         point_a_column: str = None,
         point_b_column: str = None,
@@ -967,7 +1105,7 @@ class ViewerState:
 
     def add_ellipsoids(
         self,
-        data: "pd.DataFrame",
+        data: Optional["pd.DataFrame"] = None,
         name: str = "annotation",
         center_column: str = None,
         radii_column: str = None,
@@ -1051,7 +1189,7 @@ class ViewerState:
 
     def add_boxes(
         self,
-        data: "pd.DataFrame",
+        data: Optional["pd.DataFrame"] = None,
         name: str = "annotation",
         point_a_column: str = None,
         point_b_column: str = None,
@@ -1161,16 +1299,19 @@ class ViewerState:
         with self._viewer.txn() as s:
             if self.position:
                 s.position = self.position
-            elif self.infer_coordinates:
+            elif self.infer_coordinates and s.position is None:
                 s.position = self._suggest_position_from_source(
                     resolution=self.dimensions.resolution
                 )
             if self.layout:
                 s.layout = self.layout
-            s.dimensions = self.dimensions.to_neuroglancer()
-            s.cross_section_scale = self.scale_imagery
-            s.projection_scale = self.scale_3d
-            s.show_slices = self.show_slices
+            print(s.dimensions.rank)
+            if s.dimensions.rank == 0:
+                s.dimensions = self.dimensions.to_neuroglancer()
+            if not self.base_state:
+                s.cross_section_scale = self.scale_imagery
+                s.projection_scale = self.scale_3d
+                s.show_slices = self.show_slices
             for layer in self.layers:
                 layer.apply_to_neuroglancer(s)
 

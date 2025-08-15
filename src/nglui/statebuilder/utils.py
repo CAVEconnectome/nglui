@@ -1,3 +1,4 @@
+import copy
 import numbers
 import re
 from collections.abc import Iterable, Mapping
@@ -7,6 +8,33 @@ from urllib.parse import urlparse
 import numpy as np
 import pandas as pd
 import webcolors
+
+
+def strip_state_properties(
+    state: dict,
+    strip_keys: list[str] = [],
+) -> dict:
+    """Remove layers from state"""
+    state = copy.deepcopy(state)
+    to_del = []
+    for k, v in state.items():
+        if k in strip_keys:
+            if isinstance(v, list):
+                state[k] = []
+            else:
+                to_del.append(k)
+    for k in to_del:
+        del state[k]
+    return state
+
+
+def strip_layers(
+    state: dict,
+) -> dict:
+    """Remove layers from a state while preserving other properties. Intended to modify an existing state into a base state."""
+    return strip_state_properties(
+        state, strip_keys=["layers", "selectedLayer", "selection"]
+    )
 
 
 class NamedList(list):

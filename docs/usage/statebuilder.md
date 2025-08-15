@@ -32,7 +32,7 @@ Where possible, Statebuilder tries to tie components together as simply as possi
 !!! note
 
     Current functionality is focused on viewing data. The many options for controlling the Neuroglancer interface are not yet implemented directly, although they are available in the underlying `neuroglancer` python library and JSON state.
-
+    You can always access the raw neuroglancer state with `vs.to_neuroglancer_state` for further manipulation.
 
 ## NGLui ViewerState
 
@@ -73,7 +73,7 @@ Which returns a [Neuroglancer Link](https://spelunker.cave-explorer.org/#!%7B%22
     You can turn off automated resolution suggestions by setting `infer_dimensions=False` in the ViewerState constructor or explicitly setting the dimensions like above.
     Note that Neuroglancer does not always behave well if the dimensions are not set ahead of time, for example by setting the initial location or zoom level to be extremely far from the data.
 
-Each function like `add_layer` returns the layer object, so you can also initialize the layers in a pipeline.
+Each function like [add_layer](../reference/statebuilder.md#src.nglui.statebuilder.base.ViewerState.add_layer) returns the layer object, so you can also initialize the layers in a pipeline.
 This pipeline pattern is the one that we will typically use in this documentation.
 
 ``` py
@@ -116,7 +116,7 @@ In a notebook context, it is often convenient to return the URL as a formatted H
 
 In addition, CAVE offers a [link shortener](https://caveconnectome.github.io/CAVEclient/tutorials/state/
 ) that can be used to store JSON states and return a shortened URL that can be used to access the state.
-We can use this link shortener directly using `to_link_shortener` and passing an appropriate CAVEclient client object.
+We can use this link shortener directly using [to_link_shortener](../reference/statebuilder.md#src.nglui.statebuilder.base.ViewerState.to_link_shortener) and passing an appropriate CAVEclient client object.
 
 ``` py
 from caveclient import CAVEclient
@@ -127,7 +127,7 @@ viewerstate.to_link_shortener(client)
 
 will upload the state and return a short link with a form like `'https://spelunker.cave-explorer.org/#!middleauth+https://global.daf-apis.com/nglstate/api/v1/4690769064493056'`.
 
-You can also use the link shortener in the `to_url` and `to_link` methods by setting the `shorten` argument to `True` or `if_long` and passing a CAVEclient object.
+You can also use the link shortener in the [to_url](../reference/statebuilder.md#src.nglui.statebuilder.base.ViewerState.to_url) and [to_link](../reference/statebuilder.md#src.nglui.statebuilder.base.ViewerState.to_link) methods by setting the `shorten` argument to `True` or `if_long` and passing a CAVEclient object.
 The `if_long` option will only shorten the url if it gets long enough to start breaking the URL length limits of most browsers, approximately 1.75 million characters.
 
 There are also convenience functions for copying the URL to the clipboard or opening it in a web browser, both of which have similar paramaters as the `to_url` method.
@@ -458,6 +458,21 @@ The AnnotationLayer object will detect if the `source` value is not `None` and w
 Note that cloud annotations don't mix with local annotations, and if you have an explicit source defined then the local annotations will not be created even if they were specified.
 In addition, cloud annotations cannot currently have tags.
 
+### Raw Layers
+
+Raw layers are a way to add existing layers from Neuroglancer states to the ViewerState without additional processing or linking.
+You can add a raw layer by calling the `add_raw_layer` method on the ViewerState object, passing the dictionary representation of the layer which you can get from the state JSON in Neuroglancer or downloaded.
+Raw layers have few configuration options, becuase the data is intended to be used as-is.
+However, there are a few changes you can make when bringing them into your ViewerState.
+
+1. You can specify a new `name` for the layer, which will replace the existing name, otherwise the name will be inherited from the data in the layer JSON. Similarly, you can adjust visibility and archived settings.
+2. You can also provide a `source_remap` dictionary to remap any source URLs for the layer. For example, if a cloudpath has changed locations or you want to migrate a state from an authenticated production endpoint to a public endpoint, you can provide a mapping of old paths to new paths as a dictionary.
+
+If you're using raw layers, you might find it useful to be using a base state as well.
+You can provide a `base_state` state dictionary to the `ViewerState` class on creation.
+You can strip out inconvenient parts with functions `strip_layers` (which strips just the layer definitions and active layer) and `strip_state_properties`, which offers more selective control.
+This might be useful if you want to preserve things that cannot be easily set in the python interface such as complex tool panels. 
+
 ### CAVEclient Integration
 
 NGLui integrates with the CAVEclient to make it easy to work with Neuroglancer states that are hosted on CAVE.
@@ -546,6 +561,6 @@ viewer_state.map(
 ```
 
 Note that the `map` method returns the ViewerState object itself, so you could in principle chain maps together to sequentially replace DataMap values.
-Only when all DataMaps are resolved will the `to_link` or other export functions work without error.
+Only when all DataMaps are resolv$$ed will the `to_link` or other export functions work without error.
 
 A DataMap with an empty argument is treated as an implicit "None" value and a `map` call that gets anything other than a dictionary will be treated as a dictionary with a single key of `None` and the value being the data to be mapped.

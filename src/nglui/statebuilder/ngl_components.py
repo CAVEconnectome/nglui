@@ -467,6 +467,63 @@ def _handle_filter_by_segmentation(
 
 
 @define
+class RawLayer(Layer):
+    """Configuration for a Neuroglancer raw layer from a data source"""
+
+    name = field(type=str, kw_only=True, default=None)
+    json_data = field(type=dict)
+
+    def __attrs_post_init__(self):
+        self.json_data = copy.deepcopy(self.json_data)
+        if self.name is None and "name" in self.json_data:
+            self.name = self.json_data.pop("name")
+        if self.visible is None and "visible" in self.json_data:
+            self.visible = self.json_data.pop("visible")
+        if self.archived is None and "archived" in self.json_data:
+            self.archived = self.json_data.pop("archived")
+
+    @property
+    def is_static(self):
+        return True
+
+    def to_neuroglancer_layer(self):
+        return viewer_state.Layer(json_data=self.json_data)
+
+    def apply_to_neuroglancer(self, viewer):
+        return self._apply_to_neuroglancer(viewer)
+
+    def remap_sources(self, source_map: dict) -> Self:
+        """
+        Remap the sources in the layer's JSON data using the provided source map.
+
+        Parameters
+        ----------
+        source_map : dict
+            A mapping from old source paths to new source identifiers.
+
+        Returns
+        -------
+        Self
+            The updated layer with remapped sources.
+        """
+        if source_map:
+            if isinstance(self.json_data.get("source"), str):
+                self.json_data["source"] = source_map.get(
+                    self.json_data["source"], self.json_data["source"]
+                )
+            elif isinstance(self.json_data.get("source"), list):
+                for ii, src in enumerate(self.json_data["source"]):
+                    if isinstance(src, str):
+                        self.json_data["source"][ii] = source_map.get(src, src)
+                    elif isinstance(src, dict):
+                        self.json_data["source"][ii]["url"] = source_map.get(
+                            self.json_data["source"][ii]["url"],
+                            self.json_data["source"][ii]["url"],
+                        )
+        return self
+
+
+@define
 class ImageLayer(LayerWithSource):
     """Configuration for a Neuroglancer image layer.
 
@@ -905,7 +962,7 @@ class SegmentationLayer(LayerWithSource):
         if not dry_run:
             prop_id = client.state.upload_property_json(segprops.to_dict())
             prop_url = client.state.build_neuroglancer_url(
-                prop_id, format_properties=True, target_site="spelunker"
+                prop_id, format_properties=True
             )
         else:
             prop_url = "DRYRUN_SEGMENT_PROPERTIES"
@@ -1155,32 +1212,46 @@ class AnnotationLayer(LayerWithSource):
         description_column,
         tag_column,
         tag_bools,
+        n_points,
     ):
         if segment_column is not None:
-            segments = df[segment_column].values
+            if isinstance(segment_column, str):
+                segments = df[segment_column].values
+            else:
+                segment_column = segment_column
         else:
-            segments = [None] * len(df)
+            segments = [None] * n_points
         if description_column is not None:
-            descriptions = df[description_column].values
+            if isinstance(description_column, str):
+                descriptions = df[description_column].values
+            else:
+                description_column = description_column
         else:
-            descriptions = [None] * len(df)
+            descriptions = [None] * n_points
 
         # Handle tags for annotations
-        tag_list = [[] for _ in range(len(df))]
+        tag_list = [[] for _ in range(n_points)]
         if tag_column is not None:
-            for ii, t in enumerate(df[tag_column].values):
-                tag_list[ii].extend([t])
+            if isinstance(tag_column, str):
+                for ii, t in enumerate(df[tag_column].values):
+                    tag_list[ii].extend([t])
+            else:
+                for ii, t in enumerate(tag_column):
+                    tag_list[ii].extend([t])
         if tag_bools is not None:
             for tag_ in tag_bools:
-                row_to_add = np.arange(len(df))[df[tag_]]
+                row_to_add = np.arange(n_points)[df[tag_]]
                 for i in row_to_add:
                     tag_list[i].extend([tag_])
 
         # Update annotation layer tag list with new unique values
         all_tags = []
-        if tag_column:
-            all_tags.extend(df[tag_column].unique().tolist())
-        if tag_bools:
+        if tag_column is not None:
+            if isinstance(tag_column, str):
+                all_tags.extend(df[tag_column].unique().tolist())
+            else:
+                all_tags.extend(np.unique(tag_column).tolist())
+        if tag_bools is not None:
             all_tags.extend(tag_bools)
         self.tags.extend(sorted(set([t for t in all_tags if t not in self.tags])))
 
@@ -1239,22 +1310,25 @@ class AnnotationLayer(LayerWithSource):
                 data_resolution=data_resolution,
             )
             return self
-        if isinstance(data, pd.DataFrame):
-            point_column = split_point_columns(point_column, data.columns)
-            points = data[point_column].values
-
-            segments, descriptions, tag_list = self._handle_annotation_details(
-                data,
-                segment_column,
-                description_column,
-                tag_column,
-                tag_bools,
-            )
-        else:
+        if isinstance(data, pd.DataFrame) or data is None:
+            if isinstance(point_column, str):
+                point_column = split_point_columns(point_column, data.columns)
+                points = data[point_column].values
+            else:
+                points = np.array(point_column).reshape(-1, 3)
+        elif is_list_like(data):
             points = np.array(data).reshape(-1, 3)
-            segments = [None] * len(points)
-            descriptions = [None] * len(points)
-            tag_list = [None] * len(points)
+        else:
+            raise ValueError("Invalid format for data")
+
+        segments, descriptions, tag_list = self._handle_annotation_details(
+            data,
+            segment_column,
+            description_column,
+            tag_column,
+            tag_bools,
+            len(points),
+        )
 
         self.add_annotations(
             [
@@ -1327,31 +1401,33 @@ class AnnotationLayer(LayerWithSource):
                 data_resolution=data_resolution,
             )
             return self
-        if isinstance(data, pd.DataFrame):
-            point_a_column = split_point_columns(point_a_column, data.columns)
-            point_b_column = split_point_columns(point_b_column, data.columns)
+        if isinstance(data, pd.DataFrame) or data is None:
+            if isinstance(point_a_column, str):
+                point_a_column = split_point_columns(point_a_column, data.columns)
+                points_a = data[point_a_column].values
+            else:
+                points_a = np.array(point_a_column).reshape(-1, 3)
 
-            points_a = data[point_a_column].values
-            points_b = data[point_b_column].values
-
-            segments, descriptions, tag_list = self._handle_annotation_details(
-                data,
-                segment_column,
-                description_column,
-                tag_column,
-                tag_bools,
-            )
+            if isinstance(point_b_column, str):
+                point_b_column = split_point_columns(point_b_column, data.columns)
+                points_b = data[point_b_column].values
+            else:
+                points_b = np.array(point_b_column).reshape(-1, 3)
         else:
             data_a, data_b = data
-            p_a = np.array(data_a).reshape(-1, 3)
-            p_b = np.array(data_b).reshape(-1, 3)
-            if len(p_a) != len(p_b):
-                raise ValueError(
-                    "Point A and Point B arrays must have the same length."
-                )
-            segments = [None] * len(p_a)
-            descriptions = [None] * len(p_a)
-            tag_list = [None] * len(p_a)
+            points_a = np.array(data_a).reshape(-1, 3)
+            points_b = np.array(data_b).reshape(-1, 3)
+        if len(points_a) != len(points_b):
+            raise ValueError("Point A and Point B arrays must have the same length.")
+
+        segments, descriptions, tag_list = self._handle_annotation_details(
+            data,
+            segment_column,
+            description_column,
+            tag_column,
+            tag_bools,
+            len(points_a),
+        )
 
         self.add_annotations(
             [
@@ -1427,12 +1503,18 @@ class AnnotationLayer(LayerWithSource):
                 data_resolution=data_resolution,
             )
             return self
+        if isinstance(data, pd.DataFrame) or data is None:
+            if isinstance(center_column, str):
+                center_column = split_point_columns(center_column, data.columns)
+                centers = data[center_column].values
+            else:
+                centers = np.array(center_column).reshape(-1, 3)
 
-        center_column = split_point_columns(center_column, data.columns)
-        radii_column = split_point_columns(radii_column, data.columns)
-
-        centers = data[center_column].values
-        radii_vals = data[radii_column].values
+            if isinstance(radii_column, str):
+                radii_column = split_point_columns(radii_column, data.columns)
+                radii_vals = data[radii_column].values
+            else:
+                radii_vals = np.array(radii_column)
 
         segments, descriptions, tag_list = self._handle_annotation_details(
             data,
@@ -1440,6 +1522,7 @@ class AnnotationLayer(LayerWithSource):
             description_column,
             tag_column,
             tag_bools,
+            len(centers),
         )
 
         self.add_annotations(
@@ -1516,12 +1599,22 @@ class AnnotationLayer(LayerWithSource):
                 data_resolution=data_resolution,
             )
             return self
+        if isinstance(data, pd.DataFrame) or data is None:
+            if isinstance(point_a_column, str):
+                point_a_column = split_point_columns(point_a_column, data.columns)
+                points_a = data[point_a_column].values
+            else:
+                points_a = np.array(point_a_column).reshape(-1, 3)
 
-        point_a_column = split_point_columns(point_a_column, data.columns)
-        point_b_column = split_point_columns(point_b_column, data.columns)
-
-        points_a = data[point_a_column].values
-        points_b = data[point_b_column].values
+            if isinstance(point_b_column, str):
+                point_b_column = split_point_columns(point_b_column, data.columns)
+                points_b = data[point_b_column].values
+            else:
+                points_b = np.array(point_b_column).reshape(-1, 3)
+        else:
+            points_a, points_b = data
+            points_a = np.array(points_a).reshape(-1, 3)
+            points_b = np.array(points_b).reshape(-1, 3)
 
         segments, descriptions, tag_list = self._handle_annotation_details(
             data,
@@ -1529,6 +1622,7 @@ class AnnotationLayer(LayerWithSource):
             description_column,
             tag_column,
             tag_bools,
+            len(points_a),
         )
         self.add_annotations(
             [
