@@ -10,7 +10,7 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 - **StateBuilder**: Added `ViewerState.add_segment_properties` function to add segment properties within a viewer state pipeline.
 - **StateBuilder**: Annotation-adding functions now support adding arrays as well as dataframe columns. Data can now be None and columns can be specified completely.
 
-## [4.4.2] - YYYY-MM-DD
+## [4.4.2] - 2025-06-12
 
 ### Added
 
