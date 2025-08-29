@@ -1633,8 +1633,8 @@ class AnnotationLayer(LayerWithSource):
         self.add_annotations(
             [
                 BoundingBoxAnnotation(
-                    point_a=p_a,
-                    point_b=p_b,
+                    pointA=p_a,
+                    pointB=p_b,
                     segments=seg,
                     description=d,
                     tags=t,

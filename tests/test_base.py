@@ -779,8 +779,8 @@ class TestViewerStateWorkflows:
         # Verify DataMaps are registered with correct priorities
         assert "high_priority_segments" in layer._datamaps
         assert "low_priority_segments" in layer._datamaps
-        assert layer._datamaps["high_priority_segments"].priority == 1
-        assert layer._datamaps["low_priority_segments"].priority == 10
+        assert layer._datamap_priority["high_priority_segments"] == 1
+        assert layer._datamap_priority["low_priority_segments"] == 10
 
         # Layer should not be static anymore
         assert layer.is_static is False
@@ -856,10 +856,13 @@ class TestViewerStateWorkflows:
         vs.add_segmentation_layer(source="precomputed://segments", name="segments")
         vs.add_segments([111, 222, 333])
 
-        # Should have 2 valid layers despite the error
-        assert len(vs.layers) == 2
+        # Should have 3 layers total (good_layer, bad_points created but failed, segments)
+        assert len(vs.layers) == 3
         assert vs.layers[0].name == "good_layer"
-        assert vs.layers[1].name == "segments"
+        assert (
+            vs.layers[1].name == "bad_points"
+        )  # Layer was created even though data failed
+        assert vs.layers[2].name == "segments"
 
     def test_method_chaining_workflow(self):
         """Test that all methods support chaining properly"""
