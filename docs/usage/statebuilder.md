@@ -325,6 +325,8 @@ seg_layer = (
 )
 ```
 
+As in images, any specification of sources can be either a string URL or a list of URLs.
+
 Would select all segment ids in `my_dataframe['pt_root_id']` to the segmentation layer, toggle their visibility by the boolean values in `my_dataframe['is_visible']`, and set their colors to the values in `my_dataframe['color_value']`.
 Colors can be hex values or web-readable color names, such as `'red'`, `'blue'`, or `'green'`.
 
@@ -340,6 +342,27 @@ In addition to the actual source of segmentation, you can also add sources to re
 Segment properties can be treated as an additional source and can be added directly to the list of sources (`add_source`) if you have an existing or static cloudpath.
 However, if you want to generate segment properties dynamically from a dataframe, you can use the `add_segment_properties` method, which will generate the segment properties file, upload it to a CAVE state server, and attach the resulting URL to the segmentation layer.
 Note that `add_segment_properties` requires a CAVEclient object and also has a `dry_run` option to avoid many duplicative uploads while developing your code.
+
+Segment properties can be added inline to the ViewerState and do not require a specified segmentation layer if only one segmentation layer is present.
+There is also a `random_columns` parameter which can be used to add a random number column to make it easier to subsample sets of cells without using a smaller table.
+For example, to download a CAVE table and then add it to a viewerstate with one random column, you could do:
+
+```pycon
+from caveclient import CAVEclient
+client = CAVEclient('minnie65_public')
+ct_df = client.materialize.tables.allen_column_mtypes_v2.get_all(split_positions=True)
+vs = (
+    ViewerState(client=client)
+    .add_layers_from_client(segmentation='seg')
+    .add_segment_properties(
+        data=ct_df,
+        id_column='pt_supervoxel_id',
+        label_column='target_id',
+        tag_value_columns=['cell_type'],
+        random_columns=1,
+    )
+)
+```
 
 See the [Segment Properties documentation](segmentprops.md) for more information on how to generate segment properties in Neuroglancer and what different options mean.
 
@@ -478,7 +501,7 @@ This might be useful if you want to preserve things that cannot be easily set in
 NGLui integrates with the CAVEclient to make it easy to work with Neuroglancer states that are hosted on CAVE.
 You can use an initialized CAVEclient object to configure the resolution, image, and segmentation layers of a ViewerState:
 
-``` py
+``` pycon
 from caveclient import CAVEclient
 client = CAVEclient('minnie65_public')
 viewer_state = (
@@ -507,7 +530,7 @@ This is handled now through a special `DataMap` class that can be used to replac
 For example, instead of making a Image and Segmentation layers with pre-specified sources, you can add the source as a 'DataMap` object.
 Each DataMap has a `key` attribute that is used to map the data you will provide later to the correct role in state creation.
 
-``` py
+``` pycon
 from nglui.statebuilder import ViewerState, SegmentationLayer, DataMap
 
 viewer_state = (
@@ -522,7 +545,7 @@ If you tried to run `viewer_state.to_link()` now, you would get an `UnmappedData
 To actually map data, you can use the `map` method of the ViewerState object, which takes a dictionary of key-value pairs where the keys are the DataMap keys and the values are the actual data to be used.
 For example, to replicate the previous example with the CAVEclient info, you could do:
 
-``` py
+``` pycon
 viewer_state.map(
     {
         'img_source': 'precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em',
@@ -539,7 +562,7 @@ Applying this across a list of data sources can easily generate a large collecti
 The other principle use of DataMaps is to support annotation creation by replacing the `data` argument in the `add_points`, `add_lines`, `add_boxes`, and `add_ellipses` methods.
 For example, you can create a DataMap for the annotation data and then use it to add points to the annotation layer with the following pattern:
 
-``` py
+``` pycon
 from nglui.statebuilder import ViewerState, AnnotationLayer, DataMap
 viewer_state = (
     ViewerState()

@@ -8,6 +8,10 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 
 - **StateBuilder**: Added support for passing an x,y,z column names explicitly as a list and improved docstrings around this parameter.
 
+### Fixed
+
+- **StateBuilder**: Slight improvements to docstrings.
+
 ## [4.5.0] - 2025-08-15
 
 ### Added
