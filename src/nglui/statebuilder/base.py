@@ -26,6 +26,7 @@ from .ngl_components import (
     ImageLayer,
     RawLayer,
     SegmentationLayer,
+    Source,
 )
 from .site_utils import MAX_URL_LENGTH, neuroglancer_url
 from .utils import NamedList, strip_layers, strip_state_properties
@@ -559,7 +560,7 @@ class ViewerState:
 
     def add_image_layer(
         self,
-        source: str,
+        source: Union[str, list, Source],
         name: str = "imagery",
         resolution: Optional[Union[list, np.ndarray]] = None,
         **kwargs,
@@ -590,7 +591,7 @@ class ViewerState:
 
     def add_segmentation_layer(
         self,
-        source: str,
+        source: Union[str, list, Source],
         name: str = "segmentation",
         resolution: Optional[Union[list, np.ndarray]] = None,
         segments: Optional[list] = None,
@@ -774,7 +775,7 @@ class ViewerState:
 
     def add_segments_from_data(
         self,
-        data: Union["pd.DataFrame", DataMap],
+        data: Union[pd.DataFrame, DataMap],
         segment_column: str,
         visible_column: str = None,
         color_column: str = None,
@@ -817,7 +818,7 @@ class ViewerState:
     def add_annotation_layer(
         self,
         name: str = "annotation",
-        source: Optional[str] = None,
+        source: Optional[Union[str, list, Source]] = None,
         resolution: Optional[Union[list, np.ndarray]] = None,
         tags: Optional[list] = None,
         linked_segmentation: Union[str, bool, dict] = True,
@@ -907,7 +908,7 @@ class ViewerState:
 
     def add_annotation_source(
         self,
-        source: str,
+        source: Union[str, list, Source],
         name: str = "annotation",
         linked_segmentation: Union[str, bool] = True,
         shader: Optional[str] = None,
@@ -938,9 +939,9 @@ class ViewerState:
 
     def add_points(
         self,
-        data: Optional[Union[list, np.ndarray, "pd.DataFrame", DataMap]] = None,
+        data: Optional[Union[list, np.ndarray, pd.DataFrame, DataMap]] = None,
         name: str = "annotation",
-        point_column: Optional[str] = None,
+        point_column: Optional[Union[str, list]] = None,
         segment_column: Optional[str] = None,
         description_column: Optional[str] = None,
         tag_column: Optional[str] = None,
@@ -959,8 +960,11 @@ class ViewerState:
             The data to add to the annotation layer.
         name : str, optional
             The name of the annotation layer, by default "annotation".
-        point_column : Optional[str], optional
+        point_column : Optional[Union[str, list]] = None,
             The name of the column containing point coordinates, by default None.
+            If you have a split point representation in the format {prefix}_x, {prefix}_y, {prefix}_z,
+            you can specify this with "prefix" only and the suffixes will be ignored.
+            If you provide a list, they will be used explicitly as the x,y, and z columns.
             None is needed if the data is an array, but is required if the data is a DataFrame.
         segment_column : Optional[str], optional
             The name of the column containing linked segment IDs, by default None.
@@ -1007,24 +1011,27 @@ class ViewerState:
                 color=color,
                 shader=shader,
                 swap_visible_segments_on_move=swap_visible_segments_on_move,
-            ).add_points(
-                data,
-                point_column=point_column,
-                segment_column=segment_column,
-                description_column=description_column,
-                tag_column=tag_column,
-                tag_bools=tag_bools,
-                data_resolution=data_resolution,
             )
             self.add_layer(layer)
+        layer.add_points(
+            data,
+            point_column=point_column,
+            segment_column=segment_column,
+            description_column=description_column,
+            tag_column=tag_column,
+            tag_bools=tag_bools,
+            data_resolution=data_resolution,
+        )
         return self
 
     def add_lines(
         self,
-        data: Optional["pd.DataFrame"] = None,
+        data: Optional[
+            Union[list, tuple[np.ndarray, np.ndarray], pd.DataFrame, DataMap]
+        ] = None,
         name: str = "annotation",
-        point_a_column: str = None,
-        point_b_column: str = None,
+        point_a_column: Optional[Union[str, list]] = None,
+        point_b_column: Optional[Union[str, list]] = None,
         segment_column: Optional[str] = None,
         description_column: Optional[str] = None,
         tag_column: Optional[str] = None,
@@ -1041,13 +1048,16 @@ class ViewerState:
         Parameters
         ----------
         data : pd.DataFrame
-            The DataFrame containing the line annotations.
+            The DataFrame containing the line annotations or a tuple of (start_points, end_points) as Nx3 arrays.
         name : str, optional
             The name of the annotation layer, by default "annotation".
         point_a_column : str
             The column name for the start point coordinates.
+            If you have a split point representation in the format {prefix}_x, {prefix}_y, {prefix}_z,
+            you can specify this with "prefix" only and the suffixes will be ignored.
+            If you provide a list, they will be used explicitly as the x,y, and z columns.
         point_b_column : str
-            The column name for the end point coordinates.
+            The column name for the end point coordinates, formatted similarly as `point_a_column`.
         segment_column : Optional[str], optional
             The name of the column containing linked segment IDs, by default None.
         description_column : Optional[str], optional
@@ -1090,22 +1100,23 @@ class ViewerState:
                 shader=shader,
                 color=color,
                 swap_visible_segments_on_move=swap_visible_segments_on_move,
-            ).add_lines(
-                data,
-                point_a_column=point_a_column,
-                point_b_column=point_b_column,
-                segment_column=segment_column,
-                description_column=description_column,
-                tag_column=tag_column,
-                tag_bools=tag_bools,
-                data_resolution=data_resolution,
             )
             self.add_layer(layer)
+        layer.add_lines(
+            data,
+            point_a_column=point_a_column,
+            point_b_column=point_b_column,
+            segment_column=segment_column,
+            description_column=description_column,
+            tag_column=tag_column,
+            tag_bools=tag_bools,
+            data_resolution=data_resolution,
+        )
         return self
 
     def add_ellipsoids(
         self,
-        data: Optional["pd.DataFrame"] = None,
+        data: Optional[pd.DataFrame] = None,
         name: str = "annotation",
         center_column: str = None,
         radii_column: str = None,
@@ -1174,17 +1185,18 @@ class ViewerState:
                 shader=shader,
                 color=color,
                 swap_visible_segments_on_move=swap_visible_segments_on_move,
-            ).add_ellipsoids(
-                data,
-                center_column=center_column,
-                radii_column=radii_column,
-                segment_column=segment_column,
-                description_column=description_column,
-                tag_column=tag_column,
-                tag_bools=tag_bools,
-                data_resolution=data_resolution,
             )
             self.add_layer(layer)
+        layer.add_ellipsoids(
+            data,
+            center_column=center_column,
+            radii_column=radii_column,
+            segment_column=segment_column,
+            description_column=description_column,
+            tag_column=tag_column,
+            tag_bools=tag_bools,
+            data_resolution=data_resolution,
+        )
         return self
 
     def add_boxes(
@@ -1259,17 +1271,18 @@ class ViewerState:
                 shader=shader,
                 color=color,
                 swap_visible_segments_on_move=swap_visible_segments_on_move,
-            ).add_boxes(
-                data,
-                point_a_column=point_a_column,
-                point_b_column=point_b_column,
-                segment_column=segment_column,
-                description_column=description_column,
-                tag_column=tag_column,
-                tag_bools=tag_bools,
-                data_resolution=data_resolution,
             )
             self.add_layer(layer)
+        layer.add_boxes(
+            data,
+            point_a_column=point_a_column,
+            point_b_column=point_b_column,
+            segment_column=segment_column,
+            description_column=description_column,
+            tag_column=tag_column,
+            tag_bools=tag_bools,
+            data_resolution=data_resolution,
+        )
         return self
 
     def to_neuroglancer_state(self):
