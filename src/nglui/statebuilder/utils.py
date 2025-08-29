@@ -59,7 +59,14 @@ class NamedList(list):
             self._name_map[str(item.name)] = item
 
 
-def split_point_columns(col_name: str, columns: list[str]) -> Union[str, list[str]]:
+def split_point_columns(
+    col_name: Union[str, list], columns: list[str]
+) -> Union[str, list[str]]:
+    if isinstance(col_name, list):
+        if all(isinstance(item, str) for item in col_name):
+            return col_name
+        else:
+            return None
     if col_name in columns:
         return col_name
     suffixes = ["x", "y", "z"]

@@ -139,7 +139,7 @@ class PointAnnotation(AnnotationBase):
     point = field(type=list, converter=strip_numpy_types)
 
     def _scale_points(self, scale):
-        self.point = strip_numpy_types(self.point * scale)
+        self.point = strip_numpy_types(np.array(self.point) * scale)
 
     def to_neuroglancer(self, tag_map=dict(), layer_resolution=None) -> dict:
         return self._to_neuroglancer(
@@ -155,8 +155,8 @@ class LineAnnotation(AnnotationBase):
     pointB = field(type=list, converter=strip_numpy_types)
 
     def _scale_points(self, scale):
-        self.pointA = strip_numpy_types(self.pointA * scale)
-        self.pointB = strip_numpy_types(self.pointB * scale)
+        self.pointA = strip_numpy_types(np.array(self.pointA) * scale)
+        self.pointB = strip_numpy_types(np.array(self.pointB) * scale)
 
     def to_neuroglancer(self, tag_map=dict, layer_resolution=None) -> dict:
         return self._to_neuroglancer(
@@ -167,13 +167,13 @@ class LineAnnotation(AnnotationBase):
 
 
 @define
-class EllipsoidAnnotation:
+class EllipsoidAnnotation(AnnotationBase):
     center = field(type=list, converter=strip_numpy_types)
     radii = field(type=list, converter=strip_numpy_types)
 
     def _scale_points(self, scale):
-        self.center = strip_numpy_types(self.center * scale)
-        self.radii = strip_numpy_types(self.radii * scale)
+        self.center = strip_numpy_types(np.array(self.center) * scale)
+        self.radii = strip_numpy_types(np.array(self.radii) * scale)
 
     def to_neuroglancer(self, tag_map=dict, layer_resolution=None) -> dict:
         return self._to_neuroglancer(
@@ -189,8 +189,8 @@ class BoundingBoxAnnotation(AnnotationBase):
     pointB = field(type=list, converter=strip_numpy_types)
 
     def _scale_points(self, scale):
-        self.pointA = strip_numpy_types(self.pointA * scale)
-        self.pointB = strip_numpy_types(self.pointB * scale)
+        self.pointA = strip_numpy_types(np.array(self.pointA) * scale)
+        self.pointB = strip_numpy_types(np.array(self.pointB) * scale)
 
     def to_neuroglancer(self, tag_map=dict, layer_resolution=None) -> dict:
         return self._to_neuroglancer(

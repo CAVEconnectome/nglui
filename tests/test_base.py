@@ -3,6 +3,7 @@ import sys
 from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from nglui.statebuilder.base import UnservedViewer, ViewerState, webbrowser
@@ -378,6 +379,69 @@ class TestViewerStateAnnotationMethods:
         assert isinstance(vs.layers[0], AnnotationLayer)
         assert result is vs
 
+    def test_add_points_with_list_columns(self):
+        """Test ViewerState add_points with point_column as list of column names"""
+        vs = ViewerState(dimensions=[4, 4, 40])
+
+        # Create test DataFrame with separate coordinate columns
+        df = pd.DataFrame(
+            {
+                "coord_x": [10, 20, 30],
+                "coord_y": [15, 25, 35],
+                "coord_z": [5, 7, 10],
+                "segment": [100, 200, 300],
+                "desc": ["pt1", "pt2", "pt3"],
+            }
+        )
+
+        # Test add_points with list of column names
+        result = vs.add_points(
+            data=df,
+            point_column=["coord_x", "coord_y", "coord_z"],
+            segment_column="segment",
+            description_column="desc",
+            name="list_column_points",
+        )
+
+        # Should return self for chaining
+        assert result is vs
+
+        # Should have created a layer
+        assert len(vs.layers) == 1
+        layer = vs.layers[0]
+        assert layer.name == "list_column_points"
+        assert isinstance(layer, AnnotationLayer)
+
+        # Should have annotations (exact number depends on implementation)
+        assert len(layer.annotations) > 0
+
+    def test_add_points_with_prefix_expansion(self):
+        """Test ViewerState add_points with point_column as prefix that expands to _x,_y,_z"""
+        vs = ViewerState(dimensions=[4, 4, 40])
+
+        # Create test DataFrame with prefixed coordinate columns
+        df = pd.DataFrame(
+            {
+                "location_x": [100, 200],
+                "location_y": [150, 250],
+                "location_z": [50, 75],
+                "cell_id": [1001, 1002],
+            }
+        )
+
+        # Test add_points with prefix that should expand
+        result = vs.add_points(
+            data=df,
+            point_column="location",  # Should expand to location_x, location_y, location_z
+            segment_column="cell_id",
+            name="prefix_points",
+        )
+
+        # Should work without error
+        assert result is vs
+        assert len(vs.layers) == 1
+        assert vs.layers[0].name == "prefix_points"
+
     def test_add_lines_basic(self):
         vs = ViewerState(dimensions=[4, 4, 40])
 
@@ -407,6 +471,420 @@ class TestViewerStateAnnotationMethods:
         assert vs.layers[0].name == "test_boxes"
         assert isinstance(vs.layers[0], AnnotationLayer)
         assert result is vs
+
+    def test_add_lines_with_data(self):
+        """Test add_lines with actual DataFrame data"""
+        vs = ViewerState(dimensions=[4, 4, 40])
+
+        # Create test data with line coordinates
+        df = pd.DataFrame(
+            {
+                "start_x": [10, 50],
+                "start_y": [20, 60],
+                "start_z": [30, 70],
+                "end_x": [40, 80],
+                "end_y": [50, 90],
+                "end_z": [60, 100],
+                "segment": [111, 222],
+                "desc": ["line1", "line2"],
+            }
+        )
+
+        result = vs.add_lines(
+            data=df,
+            point_a_column=["start_x", "start_y", "start_z"],
+            point_b_column=["end_x", "end_y", "end_z"],
+            segment_column="segment",
+            description_column="desc",
+            name="test_lines_data",
+        )
+
+        assert result is vs
+        assert len(vs.layers) == 1
+        layer = vs.layers[0]
+        assert layer.name == "test_lines_data"
+        assert len(layer.annotations) > 0
+
+    def test_add_ellipsoids_with_data(self):
+        """Test add_ellipsoids with actual DataFrame data"""
+        vs = ViewerState(dimensions=[4, 4, 40])
+
+        # Create test data with ellipsoid parameters
+        df = pd.DataFrame(
+            {
+                "center_x": [100, 200],
+                "center_y": [150, 250],
+                "center_z": [50, 75],
+                "radius_x": [10, 15],
+                "radius_y": [10, 15],
+                "radius_z": [5, 8],
+                "cell_id": [1001, 1002],
+                "type": ["soma", "nucleus"],
+            }
+        )
+
+        result = vs.add_ellipsoids(
+            data=df,
+            center_column=["center_x", "center_y", "center_z"],
+            radii_column=["radius_x", "radius_y", "radius_z"],
+            segment_column="cell_id",
+            description_column="type",
+            name="test_ellipsoids_data",
+        )
+
+        assert result is vs
+        assert len(vs.layers) == 1
+        layer = vs.layers[0]
+        assert layer.name == "test_ellipsoids_data"
+        assert len(layer.annotations) > 0
+
+    def test_add_boxes_with_data(self):
+        """Test add_boxes with actual DataFrame data"""
+        vs = ViewerState(dimensions=[4, 4, 40])
+
+        # Create test data with bounding box coordinates
+        df = pd.DataFrame(
+            {
+                "min_x": [0, 100],
+                "min_y": [0, 150],
+                "min_z": [0, 50],
+                "max_x": [50, 200],
+                "max_y": [75, 250],
+                "max_z": [25, 100],
+                "region_id": [501, 502],
+                "region_name": ["area1", "area2"],
+            }
+        )
+
+        result = vs.add_boxes(
+            data=df,
+            point_a_column=["min_x", "min_y", "min_z"],
+            point_b_column=["max_x", "max_y", "max_z"],
+            segment_column="region_id",
+            description_column="region_name",
+            name="test_boxes_data",
+        )
+
+        assert result is vs
+        assert len(vs.layers) == 1
+        layer = vs.layers[0]
+        assert layer.name == "test_boxes_data"
+        assert len(layer.annotations) > 0
+
+    def test_add_segments_comprehensive(self):
+        """Test add_segments with various data formats"""
+        vs = ViewerState(dimensions=[4, 4, 40])
+
+        # First add a segmentation layer
+        vs.add_segmentation_layer(source="precomputed://test_seg", name="main_seg")
+
+        # Test adding segments as list
+        result = vs.add_segments([12345, 67890, 11111])
+        assert result is vs
+
+        # Test adding segments with specific layer
+        result = vs.add_segments([22222, 33333], name="main_seg")
+        assert result is vs
+
+        # Verify segments were added
+        seg_layer = vs.layers[0]
+        assert 12345 in seg_layer.segments
+        assert 67890 in seg_layer.segments
+        assert 22222 in seg_layer.segments
+
+    def test_add_segments_from_data_comprehensive(self):
+        """Test add_segments_from_data with DataFrame"""
+        vs = ViewerState(dimensions=[4, 4, 40])
+
+        # Add segmentation layer first
+        vs.add_segmentation_layer(source="precomputed://test", name="seg_layer")
+
+        # Create test DataFrame with segment data
+        df = pd.DataFrame(
+            {
+                "segment_id": [100, 200, 300, 400],
+                "visible": [True, False, True, True],
+                "color": ["red", "blue", "green", "yellow"],
+            }
+        )
+
+        result = vs.add_segments_from_data(
+            data=df,
+            segment_column="segment_id",
+            visible_column="visible",
+            color_column="color",
+            name="seg_layer",
+        )
+
+        assert result is vs
+
+        # Verify segments and properties were added
+        seg_layer = vs.layers[0]
+        assert 100 in seg_layer.segments
+        assert 200 in seg_layer.segments
+        assert seg_layer.segments[100] is True  # visible
+        assert seg_layer.segments[200] is False  # not visible
+
+    def test_add_raw_layer_comprehensive(self):
+        """Test add_raw_layer with complex data"""
+        vs = ViewerState(dimensions=[4, 4, 40])
+
+        raw_data = {
+            "name": "custom_raw",
+            "source": "precomputed://custom_source",
+            "opacity": 0.8,
+            "blend": "additive",
+            "visible": True,
+        }
+
+        result = vs.add_raw_layer(
+            data=raw_data,
+            name="raw_test",
+            visible=False,  # Override visibility
+            archived=True,
+        )
+
+        assert result is vs
+        assert len(vs.layers) == 1
+        layer = vs.layers[0]
+        assert layer.name == "raw_test"
+        assert layer.visible is False  # Should use the override
+        assert layer.archived is True
+
+
+class TestViewerStateWorkflows:
+    """Test complex workflows and integrations"""
+
+    def test_multi_layer_annotation_workflow(self):
+        """Test creating multiple annotation layers with different types"""
+        vs = ViewerState(dimensions=[4, 4, 40])
+
+        # Create points layer
+        points_df = pd.DataFrame(
+            {
+                "x": [10, 20],
+                "y": [15, 25],
+                "z": [5, 8],
+                "id": [100, 200],
+                "type": ["cell", "synapse"],
+            }
+        )
+        vs.add_points(
+            data=points_df,
+            point_column=["x", "y", "z"],
+            segment_column="id",
+            description_column="type",
+            name="points",
+        )
+
+        # Create lines layer
+        lines_df = pd.DataFrame(
+            {
+                "x1": [10, 30],
+                "y1": [15, 35],
+                "z1": [5, 10],
+                "x2": [20, 40],
+                "y2": [25, 45],
+                "z2": [8, 15],
+                "conn_id": [1001, 1002],
+            }
+        )
+        vs.add_lines(
+            data=lines_df,
+            point_a_column=["x1", "y1", "z1"],
+            point_b_column=["x2", "y2", "z2"],
+            segment_column="conn_id",
+            name="connections",
+        )
+
+        # Should have created 2 annotation layers
+        assert len(vs.layers) == 2
+        assert vs.layers[0].name == "points"
+        assert vs.layers[1].name == "connections"
+        assert all(len(layer.annotations) > 0 for layer in vs.layers)
+
+    def test_layered_data_with_segmentation(self):
+        """Test workflow with segmentation + annotations + imagery"""
+        vs = ViewerState(dimensions=[4, 4, 40])
+
+        # Add base imagery layer
+        vs.add_image_layer(
+            source="precomputed://imagery", name="base_image", opacity=0.7
+        )
+
+        # Add segmentation layer with segments
+        vs.add_segmentation_layer(source="precomputed://segmentation", name="cells")
+        vs.add_segments([12345, 67890, 54321])
+
+        # Add annotations linked to segmentation
+        vs.add_annotation_layer(name="annotations", linked_segmentation="cells")
+
+        # Add points referencing the segmentation IDs
+        points_df = pd.DataFrame(
+            {
+                "pos_x": [100, 200, 300],
+                "pos_y": [150, 250, 350],
+                "pos_z": [50, 75, 100],
+                "segment_id": [12345, 67890, 54321],
+                "note": ["soma", "dendrite", "axon"],
+            }
+        )
+        vs.add_points(
+            data=points_df,
+            point_column=["pos_x", "pos_y", "pos_z"],
+            segment_column="segment_id",
+            description_column="note",
+            name="annotations",
+        )
+
+        # Should have 3 layers total
+        assert len(vs.layers) == 3
+
+        # Check layer types and linkage
+        image_layer = next(layer for layer in vs.layers if layer.name == "base_image")
+        seg_layer = next(layer for layer in vs.layers if layer.name == "cells")
+        anno_layer = next(layer for layer in vs.layers if layer.name == "annotations")
+
+        assert hasattr(image_layer, "opacity")
+        assert len(seg_layer.segments) == 3
+        assert anno_layer.linked_segmentation == "cells"
+
+    def test_datamap_priority_workflow(self):
+        """Test workflow using DataMaps with different priorities"""
+        vs = ViewerState(dimensions=[4, 4, 40])
+
+        # Add segmentation layer that will use DataMaps
+        seg_layer = vs.add_segmentation_layer(
+            source="precomputed://test", name="priority_test"
+        )
+
+        # Create DataMaps with different priorities
+        from nglui.statebuilder.ngl_components import DataMap
+
+        high_priority_dm = DataMap(key="high_priority_segments")
+        high_priority_dm._adjust_priority(1)
+
+        low_priority_dm = DataMap(key="low_priority_segments")
+        low_priority_dm._adjust_priority(10)
+
+        # Register DataMaps (this simulates what would happen in real usage)
+        layer = vs.layers[0]
+        layer._register_datamap(
+            high_priority_dm, lambda segments: layer.add_segments(segments)
+        )
+        layer._register_datamap(
+            low_priority_dm, lambda segments: layer.add_segments(segments)
+        )
+
+        # Verify DataMaps are registered with correct priorities
+        assert "high_priority_segments" in layer._datamaps
+        assert "low_priority_segments" in layer._datamaps
+        assert layer._datamap_priority["high_priority_segments"] == 1
+        assert layer._datamap_priority["low_priority_segments"] == 10
+
+        # Layer should not be static anymore
+        assert layer.is_static is False
+
+    def test_complex_coordinate_handling(self):
+        """Test various coordinate column formats in one workflow"""
+        vs = ViewerState(dimensions=[4, 4, 40])
+
+        # Test 1: Explicit column lists
+        df1 = pd.DataFrame(
+            {
+                "coord_x": [10, 20],
+                "coord_y": [15, 25],
+                "coord_z": [5, 8],
+                "segment": [100, 200],
+            }
+        )
+        vs.add_points(
+            data=df1,
+            point_column=["coord_x", "coord_y", "coord_z"],
+            segment_column="segment",
+            name="explicit_columns",
+        )
+
+        # Test 2: Prefix expansion
+        df2 = pd.DataFrame(
+            {
+                "position_x": [30, 40],
+                "position_y": [35, 45],
+                "position_z": [10, 15],
+                "segment": [300, 400],
+            }
+        )
+        vs.add_points(
+            data=df2,
+            point_column="position",
+            segment_column="segment",
+            name="prefix_expansion",
+        )
+
+        # Test 3: Single column (if supported)
+        df3 = pd.DataFrame(
+            {
+                "full_position": [[50, 55, 20], [60, 65, 25]],  # Array column
+                "segment": [500, 600],
+            }
+        )
+        vs.add_points(
+            data=df3,
+            point_column="full_position",
+            segment_column="segment",
+            name="array_column",
+        )
+
+        # Should create 3 annotation layers
+        assert len(vs.layers) == 3
+        assert all(len(layer.annotations) > 0 for layer in vs.layers)
+
+    def test_error_recovery_workflow(self):
+        """Test workflow continues after recoverable errors"""
+        vs = ViewerState(dimensions=[4, 4, 40])
+
+        # Add a valid layer first
+        vs.add_image_layer(source="precomputed://valid", name="good_layer")
+
+        # Try to add invalid data - should handle gracefully
+        try:
+            vs.add_points(data=None, point_column="nonexistent", name="bad_points")
+        except (ValueError, AttributeError, KeyError):
+            pass  # Expected for invalid data
+
+        # Continue with valid operations
+        vs.add_segmentation_layer(source="precomputed://segments", name="segments")
+        vs.add_segments([111, 222, 333])
+
+        # Should have 3 layers total (good_layer, bad_points created but failed, segments)
+        assert len(vs.layers) == 3
+        assert vs.layers[0].name == "good_layer"
+        assert (
+            vs.layers[1].name == "bad_points"
+        )  # Layer was created even though data failed
+        assert vs.layers[2].name == "segments"
+
+    def test_method_chaining_workflow(self):
+        """Test that all methods support chaining properly"""
+        vs = ViewerState(dimensions=[4, 4, 40])
+
+        # Test method chaining
+        result = (
+            vs.add_image_layer(source="precomputed://img", name="image")
+            .add_segmentation_layer(source="precomputed://seg", name="seg")
+            .add_segments([1, 2, 3])
+            .add_annotation_layer(name="anno", linked_segmentation="seg")
+        )
+
+        # All methods should return self for chaining
+        assert result is vs
+        assert len(vs.layers) == 3
+
+        # Verify the chain worked correctly
+        assert vs.layers[0].name == "image"
+        assert vs.layers[1].name == "seg"
+        assert vs.layers[2].name == "anno"
+        assert vs.layers[2].linked_segmentation == "seg"
 
 
 class TestViewerStateSourceInfo:

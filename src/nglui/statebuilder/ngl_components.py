@@ -384,7 +384,9 @@ class LayerWithSource(Layer):
         return self
 
 
-def _handle_source(source, resolution=None, image_layer=False):
+def _handle_source(
+    source: Union[list, str, Source, DataMap], resolution=None, image_layer=False
+) -> Union[list, str, Source]:
     "Convert one or more sources to a Source object."
     if image_layer:
         auth_parse_func = parse_graphene_image_url
@@ -403,7 +405,7 @@ def _handle_source(source, resolution=None, image_layer=False):
         raise ValueError("Invalid source type. Must be str or Source.")
 
 
-def _handle_annotations(annos, tag_map=None, resolution=None):
+def _handle_annotations(annos, tag_map=None, resolution=None) -> list:
     "Convert a multi-url source to a Source object."
     if annos is None:
         return []
@@ -1025,7 +1027,7 @@ class SegmentationLayer(LayerWithSource):
 @define
 class AnnotationLayer(LayerWithSource):
     name = field(default="anno", type=str)
-    source = field(default=None, type=Union[str, Source])
+    source = field(default=None, type=Union[str, list, Source])
     resolution = field(default=None, type=list, kw_only=True, repr=False)
     color = field(default=None, type=list, kw_only=True, repr=False)
     annotations = field(factory=list, type=list, kw_only=True, repr=False)
@@ -1311,11 +1313,15 @@ class AnnotationLayer(LayerWithSource):
             )
             return self
         if isinstance(data, pd.DataFrame) or data is None:
-            if isinstance(point_column, str):
-                point_column = split_point_columns(point_column, data.columns)
-                points = data[point_column].values
-            else:
-                points = np.array(point_column).reshape(-1, 3)
+            if isinstance(point_column, str) or is_list_like(point_column):
+                if isinstance(point_column, str):
+                    point_column = split_point_columns(point_column, data.columns)
+                elif is_list_like(point_column):
+                    point_column = split_point_columns(point_column, data.columns)
+                if point_column is not None:
+                    points = data[point_column].values
+                else:
+                    points = np.array(point_column).reshape(-1, 3)
         elif is_list_like(data):
             points = np.array(data).reshape(-1, 3)
         else:
@@ -1627,8 +1633,8 @@ class AnnotationLayer(LayerWithSource):
         self.add_annotations(
             [
                 BoundingBoxAnnotation(
-                    point_a=p_a,
-                    point_b=p_b,
+                    pointA=p_a,
+                    pointB=p_b,
                     segments=seg,
                     description=d,
                     tags=t,
