@@ -2,6 +2,12 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [4.5.1] - 2025-08-29
+
+### Added
+
+- **StateBuilder**: Added support for passing an x,y,z column names explicitly as a list and improved docstrings around this parameter.
+
 ## [4.5.0] - 2025-08-15
 
 ### Added
