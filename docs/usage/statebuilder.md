@@ -347,7 +347,7 @@ Segment properties can be added inline to the ViewerState and do not require a s
 There is also a `random_columns` parameter which can be used to add a random number column to make it easier to subsample sets of cells without using a smaller table.
 For example, to download a CAVE table and then add it to a viewerstate with one random column, you could do:
 
-```pycon
+``` pycon
 from caveclient import CAVEclient
 client = CAVEclient('minnie65_public')
 ct_df = client.materialize.tables.allen_column_mtypes_v2.get_all(split_positions=True)
