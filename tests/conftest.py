@@ -20,7 +20,6 @@ def client_full():
         available_materialization_versions=[1],
         set_version=1,
     )
-    print(client.materialize.version)
     return client
 
 

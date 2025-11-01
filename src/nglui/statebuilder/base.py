@@ -36,6 +36,44 @@ if TYPE_CHECKING:
     import pandas as pd
 
 
+class NumpyEncoder(json.JSONEncoder):
+    """Custom JSON encoder that handles numpy and pandas types.
+
+    Converts numpy scalars, arrays, and pandas Series to native Python types
+    for JSON serialization.
+    """
+
+    def default(self, obj):
+        """Override default method to handle numpy types.
+
+        Parameters
+        ----------
+        obj : any
+            Object to serialize
+
+        Returns
+        -------
+        any
+            JSON-serializable representation of the object
+        """
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, np.bool_):
+            return bool(obj)
+        try:
+            import pandas as pd
+
+            if isinstance(obj, pd.Series):
+                return obj.tolist()
+        except ImportError:
+            pass
+        return super().default(obj)
+
+
 class UnservedViewer(viewer_base.UnsynchronizedViewerBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -163,7 +201,7 @@ class ViewerState:
         imagery_kws : Optional[dict], optional
             Additional keyword arguments to pass to the image layer constructor.
         segmentation_kws : Optional[dict], optional
-            Additional keyword arguments to pass to the segmentation layer constructor.
+            Additional keyword arguments to pass to the segmentation layer constructor.P
 
         Returns
         -------
@@ -1318,7 +1356,6 @@ class ViewerState:
                 )
             if self.layout:
                 s.layout = self.layout
-            print(s.dimensions.rank)
             if s.dimensions.rank == 0:
                 s.dimensions = self.dimensions.to_neuroglancer()
             if not self.base_state:
@@ -1365,7 +1402,7 @@ class ViewerState:
         """
         return self.viewer.state.to_json()
 
-    def to_json_string(self, indent: int = 2) -> str:
+    def to_json_string(self, indent: int = 2, compact: bool = False) -> str:
         """Return a JSON string representation of the viewer state.
 
         Parameters
@@ -1373,6 +1410,9 @@ class ViewerState:
         indent : int
             The number of spaces to use for indentation in the JSON string.
             Default is 2.
+        compact: bool
+            If True, the JSON string will be compact with no extra whitespace or newlines.
+            Default is False.
 
         Returns
         -------
@@ -1380,7 +1420,9 @@ class ViewerState:
             A JSON string representation of the viewer state.
         """
 
-        return json.dumps(self.to_dict(), indent=indent)
+        if compact:
+            return json.dumps(self.to_dict(), separators=(",", ":"), cls=NumpyEncoder)
+        return json.dumps(self.to_dict(), indent=indent, cls=NumpyEncoder)
 
     def to_url(
         self,

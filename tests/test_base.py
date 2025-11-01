@@ -6,7 +6,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from nglui.statebuilder.base import UnservedViewer, ViewerState, webbrowser
+from nglui.statebuilder.base import (
+    NumpyEncoder,
+    UnservedViewer,
+    ViewerState,
+    webbrowser,
+)
 from nglui.statebuilder.ngl_components import (
     AnnotationLayer,
     CoordSpace,
@@ -953,6 +958,39 @@ class TestViewerStateNeuroglancerConversion:
             expected = json.dumps({"test": "data"}, indent=4)
             assert result == expected
 
+    def test_to_json_string_compact(self):
+        """Test that compact parameter removes newlines and spaces"""
+        vs = ViewerState()
+
+        test_data = {"key": "value", "array": [1, 2, 3], "nested": {"inner": "data"}}
+
+        with patch.object(vs, "to_dict") as mock_to_dict:
+            mock_to_dict.return_value = test_data
+
+            # Test default (pretty-printed with indent)
+            result_default = vs.to_json_string()
+            assert "\n" in result_default  # Should have newlines
+            assert "  " in result_default  # Should have indentation
+
+            # Test compact=False (explicit pretty-print)
+            result_pretty = vs.to_json_string(compact=False, indent=2)
+            assert "\n" in result_pretty  # Should have newlines
+            assert "  " in result_pretty  # Should have indentation
+
+            # Test compact=True (minimal JSON)
+            result_compact = vs.to_json_string(compact=True)
+            assert "\n" not in result_compact  # No newlines
+            assert ": " not in result_compact  # No space after colon
+            assert ", " not in result_compact  # No space after comma
+
+            # Verify it's still valid JSON
+            parsed = json.loads(result_compact)
+            assert parsed == test_data
+
+            # Verify compact output matches expected format
+            expected_compact = json.dumps(test_data, separators=(",", ":"))
+            assert result_compact == expected_compact
+
     def test_to_url(self):
         vs = ViewerState()
 
@@ -1083,6 +1121,148 @@ class TestViewerStateEdgeCases:
 
         with pytest.raises(ValueError, match="Layer nonexistent_layer not found"):
             vs.get_layer("nonexistent_layer")
+
+
+class TestNumpyEncoder:
+    """Test custom JSON encoder for numpy types"""
+
+    def test_numpy_int_encoding(self):
+        """Test that numpy integers are converted to Python ints"""
+        encoder = NumpyEncoder()
+
+        # Test various numpy integer types
+        assert encoder.default(np.int64(42)) == 42
+        assert encoder.default(np.int32(100)) == 100
+        assert encoder.default(np.int16(50)) == 50
+        assert isinstance(encoder.default(np.int64(42)), int)
+
+    def test_numpy_float_encoding(self):
+        """Test that numpy floats are converted to Python floats"""
+        encoder = NumpyEncoder()
+
+        # Test various numpy float types
+        assert encoder.default(np.float64(3.14)) == 3.14
+        assert encoder.default(np.float32(2.71)) == pytest.approx(2.71, rel=1e-6)
+        assert isinstance(encoder.default(np.float64(3.14)), float)
+
+    def test_numpy_bool_encoding(self):
+        """Test that numpy booleans are converted to Python bools"""
+        encoder = NumpyEncoder()
+
+        assert encoder.default(np.bool_(True)) is True
+        assert encoder.default(np.bool_(False)) is False
+        assert isinstance(encoder.default(np.bool_(True)), bool)
+
+    def test_numpy_array_encoding(self):
+        """Test that numpy arrays are converted to Python lists"""
+        encoder = NumpyEncoder()
+
+        # 1D array
+        arr_1d = np.array([1, 2, 3, 4, 5])
+        result_1d = encoder.default(arr_1d)
+        assert result_1d == [1, 2, 3, 4, 5]
+        assert isinstance(result_1d, list)
+
+        # 2D array
+        arr_2d = np.array([[1, 2], [3, 4]])
+        result_2d = encoder.default(arr_2d)
+        assert result_2d == [[1, 2], [3, 4]]
+        assert isinstance(result_2d, list)
+
+        # Array with floats
+        arr_float = np.array([1.1, 2.2, 3.3])
+        result_float = encoder.default(arr_float)
+        assert result_float == pytest.approx([1.1, 2.2, 3.3])
+
+    def test_pandas_series_encoding(self):
+        """Test that pandas Series are converted to Python lists"""
+        encoder = NumpyEncoder()
+
+        series = pd.Series([10, 20, 30, 40])
+        result = encoder.default(series)
+        assert result == [10, 20, 30, 40]
+        assert isinstance(result, list)
+
+        # Series with different dtypes
+        series_float = pd.Series([1.5, 2.5, 3.5])
+        result_float = encoder.default(series_float)
+        assert result_float == pytest.approx([1.5, 2.5, 3.5])
+
+    def test_json_dumps_with_numpy_types(self):
+        """Test json.dumps with NumpyEncoder for complex nested structures"""
+        data = {
+            "int_value": np.int64(42),
+            "float_value": np.float64(3.14159),
+            "bool_value": np.bool_(True),
+            "array": np.array([1, 2, 3]),
+            "nested": {
+                "another_int": np.int32(100),
+                "another_array": np.array([[1, 2], [3, 4]]),
+            },
+            "series": pd.Series([10, 20, 30]),
+        }
+
+        # Should not raise an error
+        result = json.dumps(data, cls=NumpyEncoder)
+        assert isinstance(result, str)
+
+        # Deserialize and verify
+        parsed = json.loads(result)
+        assert parsed["int_value"] == 42
+        assert parsed["float_value"] == pytest.approx(3.14159)
+        assert parsed["bool_value"] is True
+        assert parsed["array"] == [1, 2, 3]
+        assert parsed["nested"]["another_int"] == 100
+        assert parsed["nested"]["another_array"] == [[1, 2], [3, 4]]
+        assert parsed["series"] == [10, 20, 30]
+
+    def test_viewerstate_to_json_string_with_numpy(self):
+        """Test that ViewerState.to_json_string handles numpy types correctly"""
+        vs = ViewerState(dimensions=[4, 4, 40])
+
+        # Mock to_dict to return data with numpy types
+        with patch.object(vs, "to_dict") as mock_to_dict:
+            mock_to_dict.return_value = {
+                "position": np.array([100, 200, 300]),
+                "scale": np.float64(1.5),
+                "id": np.int64(12345),
+                "visible": np.bool_(True),
+            }
+
+            # Should not raise an error
+            result = vs.to_json_string(indent=2)
+            assert isinstance(result, str)
+
+            # Verify it's valid JSON
+            parsed = json.loads(result)
+            assert parsed["position"] == [100, 200, 300]
+            assert parsed["scale"] == pytest.approx(1.5)
+            assert parsed["id"] == 12345
+            assert parsed["visible"] is True
+
+    def test_edge_cases(self):
+        """Test edge cases for numpy type encoding"""
+        encoder = NumpyEncoder()
+
+        # Zero values
+        assert encoder.default(np.int64(0)) == 0
+        assert encoder.default(np.float64(0.0)) == 0.0
+
+        # Negative values
+        assert encoder.default(np.int64(-42)) == -42
+        assert encoder.default(np.float64(-3.14)) == pytest.approx(-3.14)
+
+        # Large values
+        large_int = np.int64(9223372036854775807)  # Max int64
+        assert encoder.default(large_int) == 9223372036854775807
+
+        # Empty array
+        empty_array = np.array([])
+        assert encoder.default(empty_array) == []
+
+        # Empty series
+        empty_series = pd.Series([])
+        assert encoder.default(empty_series) == []
 
 
 def test_raw_layer_basic():
