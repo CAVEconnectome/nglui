@@ -2,6 +2,16 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [4.6.0] - 2025-11-1
+
+### Added
+
+- **StateBuilder**: Added `compact` argument to `ViewerState.to_json_string` to produce more compact JSON output by removing whitespace.
+
+### Fixed
+
+- **StateBuilder**: Fixed a bug where `ViewerState.to_json_string` failed if numpy types were present in the state.
+
 ## [4.5.1] - 2025-08-29
 
 ### Added
