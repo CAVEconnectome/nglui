@@ -36,6 +36,44 @@ if TYPE_CHECKING:
     import pandas as pd
 
 
+class NumpyEncoder(json.JSONEncoder):
+    """Custom JSON encoder that handles numpy and pandas types.
+
+    Converts numpy scalars, arrays, and pandas Series to native Python types
+    for JSON serialization.
+    """
+
+    def default(self, obj):
+        """Override default method to handle numpy types.
+
+        Parameters
+        ----------
+        obj : any
+            Object to serialize
+
+        Returns
+        -------
+        any
+            JSON-serializable representation of the object
+        """
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, np.bool_):
+            return bool(obj)
+        try:
+            import pandas as pd
+
+            if isinstance(obj, pd.Series):
+                return obj.tolist()
+        except ImportError:
+            pass
+        return super().default(obj)
+
+
 class UnservedViewer(viewer_base.UnsynchronizedViewerBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -163,7 +201,7 @@ class ViewerState:
         imagery_kws : Optional[dict], optional
             Additional keyword arguments to pass to the image layer constructor.
         segmentation_kws : Optional[dict], optional
-            Additional keyword arguments to pass to the segmentation layer constructor.
+            Additional keyword arguments to pass to the segmentation layer constructor.P
 
         Returns
         -------
@@ -1379,7 +1417,7 @@ class ViewerState:
             A JSON string representation of the viewer state.
         """
 
-        return json.dumps(self.to_dict(), indent=indent)
+        return json.dumps(self.to_dict(), indent=indent, cls=NumpyEncoder)
 
     def to_url(
         self,
