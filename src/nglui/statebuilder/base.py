@@ -1318,7 +1318,6 @@ class ViewerState:
                 )
             if self.layout:
                 s.layout = self.layout
-            print(s.dimensions.rank)
             if s.dimensions.rank == 0:
                 s.dimensions = self.dimensions.to_neuroglancer()
             if not self.base_state:
