@@ -958,6 +958,39 @@ class TestViewerStateNeuroglancerConversion:
             expected = json.dumps({"test": "data"}, indent=4)
             assert result == expected
 
+    def test_to_json_string_compact(self):
+        """Test that compact parameter removes newlines and spaces"""
+        vs = ViewerState()
+
+        test_data = {"key": "value", "array": [1, 2, 3], "nested": {"inner": "data"}}
+
+        with patch.object(vs, "to_dict") as mock_to_dict:
+            mock_to_dict.return_value = test_data
+
+            # Test default (pretty-printed with indent)
+            result_default = vs.to_json_string()
+            assert "\n" in result_default  # Should have newlines
+            assert "  " in result_default  # Should have indentation
+
+            # Test compact=False (explicit pretty-print)
+            result_pretty = vs.to_json_string(compact=False, indent=2)
+            assert "\n" in result_pretty  # Should have newlines
+            assert "  " in result_pretty  # Should have indentation
+
+            # Test compact=True (minimal JSON)
+            result_compact = vs.to_json_string(compact=True)
+            assert "\n" not in result_compact  # No newlines
+            assert ": " not in result_compact  # No space after colon
+            assert ", " not in result_compact  # No space after comma
+
+            # Verify it's still valid JSON
+            parsed = json.loads(result_compact)
+            assert parsed == test_data
+
+            # Verify compact output matches expected format
+            expected_compact = json.dumps(test_data, separators=(",", ":"))
+            assert result_compact == expected_compact
+
     def test_to_url(self):
         vs = ViewerState()
 

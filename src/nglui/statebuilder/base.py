@@ -1402,7 +1402,7 @@ class ViewerState:
         """
         return self.viewer.state.to_json()
 
-    def to_json_string(self, indent: int = 2) -> str:
+    def to_json_string(self, indent: int = 2, compact: bool = False) -> str:
         """Return a JSON string representation of the viewer state.
 
         Parameters
@@ -1410,6 +1410,9 @@ class ViewerState:
         indent : int
             The number of spaces to use for indentation in the JSON string.
             Default is 2.
+        compact: bool
+            If True, the JSON string will be compact with no extra whitespace or newlines.
+            Default is False.
 
         Returns
         -------
@@ -1417,6 +1420,8 @@ class ViewerState:
             A JSON string representation of the viewer state.
         """
 
+        if compact:
+            return json.dumps(self.to_dict(), separators=(",", ":"), cls=NumpyEncoder)
         return json.dumps(self.to_dict(), indent=indent, cls=NumpyEncoder)
 
     def to_url(
