@@ -5,6 +5,14 @@ from typing import List, Optional, Union
 import attrs
 import numpy as np
 import pandas as pd
+from pandas.api.types import (
+    is_float_dtype,
+    is_integer_dtype,
+    is_object_dtype,
+    is_string_dtype,
+)
+
+from ..utils import convert_arrow_to_numpy
 
 """
 Options and validation for neuroglancer segment properties based on the segment properties spec:
@@ -184,11 +192,13 @@ def _find_column_dtype(column):
     "Get data type string from a dataframe column"
     if column.dtype in ALLOWED_NUMBER_DATA_TYPES:
         return str(column.dtype)
-    elif column.dtype == "int64":
+    elif is_integer_dtype(column):
         return "int32"
-    elif column.dtype == "float64":
+    elif is_float_dtype(column):
         return "float32"
-    elif column.dtype == "object":
+    elif is_string_dtype(column):
+        return "str"
+    elif is_object_dtype(column):
         try:
             column.astype("float32")
         except Exception:
@@ -463,6 +473,8 @@ class SegmentProperties:
         SegmentProperties
             Segment properties object
         """
+        df = convert_arrow_to_numpy(df)
+
         if random_columns:
             df = df.copy()
             random_column_names = []

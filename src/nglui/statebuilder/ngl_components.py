@@ -21,6 +21,7 @@ from neuroglancer.coordinate_space import CoordinateSpace
 from neuroglancer.json_wrappers import optional, wrapped_property
 
 from ..segmentprops import SegmentProperties
+from ..utils import convert_arrow_to_numpy
 from .ngl_annotations import (
     MAX_TAG_COUNT,
     AnnotationBase,
@@ -1312,6 +1313,19 @@ class AnnotationLayer(LayerWithSource):
                 data_resolution=data_resolution,
             )
             return self
+
+        # Convert PyArrow columns to numpy for compatibility
+        if isinstance(data, pd.DataFrame):
+            cols_to_convert = [
+                point_column,
+                segment_column,
+                description_column,
+                tag_column,
+            ]
+            if tag_bools:
+                cols_to_convert.extend(tag_bools)
+            data = convert_arrow_to_numpy(data, columns=cols_to_convert)
+
         if isinstance(data, pd.DataFrame) or data is None:
             if isinstance(point_column, str) or is_list_like(point_column):
                 if isinstance(point_column, str):
@@ -1407,16 +1421,42 @@ class AnnotationLayer(LayerWithSource):
                 data_resolution=data_resolution,
             )
             return self
+
+        # Convert PyArrow columns to numpy for compatibility
+        if isinstance(data, pd.DataFrame):
+            cols_to_convert = [
+                point_a_column,
+                point_b_column,
+                segment_column,
+                description_column,
+                tag_column,
+            ]
+            if tag_bools:
+                cols_to_convert.extend(tag_bools)
+            data = convert_arrow_to_numpy(data, columns=cols_to_convert)
+
         if isinstance(data, pd.DataFrame) or data is None:
-            if isinstance(point_a_column, str):
-                point_a_column = split_point_columns(point_a_column, data.columns)
-                points_a = data[point_a_column].values
+            if isinstance(point_a_column, str) or is_list_like(point_a_column):
+                if isinstance(point_a_column, str):
+                    point_a_column = split_point_columns(point_a_column, data.columns)
+                elif is_list_like(point_a_column):
+                    point_a_column = split_point_columns(point_a_column, data.columns)
+                if point_a_column is not None:
+                    points_a = data[point_a_column].values
+                else:
+                    points_a = np.array(point_a_column).reshape(-1, 3)
             else:
                 points_a = np.array(point_a_column).reshape(-1, 3)
 
-            if isinstance(point_b_column, str):
-                point_b_column = split_point_columns(point_b_column, data.columns)
-                points_b = data[point_b_column].values
+            if isinstance(point_b_column, str) or is_list_like(point_b_column):
+                if isinstance(point_b_column, str):
+                    point_b_column = split_point_columns(point_b_column, data.columns)
+                elif is_list_like(point_b_column):
+                    point_b_column = split_point_columns(point_b_column, data.columns)
+                if point_b_column is not None:
+                    points_b = data[point_b_column].values
+                else:
+                    points_b = np.array(point_b_column).reshape(-1, 3)
             else:
                 points_b = np.array(point_b_column).reshape(-1, 3)
         else:
@@ -1509,16 +1549,42 @@ class AnnotationLayer(LayerWithSource):
                 data_resolution=data_resolution,
             )
             return self
+
+        # Convert PyArrow columns to numpy for compatibility
+        if isinstance(data, pd.DataFrame):
+            cols_to_convert = [
+                center_column,
+                radii_column,
+                segment_column,
+                description_column,
+                tag_column,
+            ]
+            if tag_bools:
+                cols_to_convert.extend(tag_bools)
+            data = convert_arrow_to_numpy(data, columns=cols_to_convert)
+
         if isinstance(data, pd.DataFrame) or data is None:
-            if isinstance(center_column, str):
-                center_column = split_point_columns(center_column, data.columns)
-                centers = data[center_column].values
+            if isinstance(center_column, str) or is_list_like(center_column):
+                if isinstance(center_column, str):
+                    center_column = split_point_columns(center_column, data.columns)
+                elif is_list_like(center_column):
+                    center_column = split_point_columns(center_column, data.columns)
+                if center_column is not None:
+                    centers = data[center_column].values
+                else:
+                    centers = np.array(center_column).reshape(-1, 3)
             else:
                 centers = np.array(center_column).reshape(-1, 3)
 
-            if isinstance(radii_column, str):
-                radii_column = split_point_columns(radii_column, data.columns)
-                radii_vals = data[radii_column].values
+            if isinstance(radii_column, str) or is_list_like(radii_column):
+                if isinstance(radii_column, str):
+                    radii_column = split_point_columns(radii_column, data.columns)
+                elif is_list_like(radii_column):
+                    radii_column = split_point_columns(radii_column, data.columns)
+                if radii_column is not None:
+                    radii_vals = data[radii_column].values
+                else:
+                    radii_vals = np.array(radii_column)
             else:
                 radii_vals = np.array(radii_column)
 
@@ -1605,16 +1671,42 @@ class AnnotationLayer(LayerWithSource):
                 data_resolution=data_resolution,
             )
             return self
+
+        # Convert PyArrow columns to numpy for compatibility
+        if isinstance(data, pd.DataFrame):
+            cols_to_convert = [
+                point_a_column,
+                point_b_column,
+                segment_column,
+                description_column,
+                tag_column,
+            ]
+            if tag_bools:
+                cols_to_convert.extend(tag_bools)
+            data = convert_arrow_to_numpy(data, columns=cols_to_convert)
+
         if isinstance(data, pd.DataFrame) or data is None:
-            if isinstance(point_a_column, str):
-                point_a_column = split_point_columns(point_a_column, data.columns)
-                points_a = data[point_a_column].values
+            if isinstance(point_a_column, str) or is_list_like(point_a_column):
+                if isinstance(point_a_column, str):
+                    point_a_column = split_point_columns(point_a_column, data.columns)
+                elif is_list_like(point_a_column):
+                    point_a_column = split_point_columns(point_a_column, data.columns)
+                if point_a_column is not None:
+                    points_a = data[point_a_column].values
+                else:
+                    points_a = np.array(point_a_column).reshape(-1, 3)
             else:
                 points_a = np.array(point_a_column).reshape(-1, 3)
 
-            if isinstance(point_b_column, str):
-                point_b_column = split_point_columns(point_b_column, data.columns)
-                points_b = data[point_b_column].values
+            if isinstance(point_b_column, str) or is_list_like(point_b_column):
+                if isinstance(point_b_column, str):
+                    point_b_column = split_point_columns(point_b_column, data.columns)
+                elif is_list_like(point_b_column):
+                    point_b_column = split_point_columns(point_b_column, data.columns)
+                if point_b_column is not None:
+                    points_b = data[point_b_column].values
+                else:
+                    points_b = np.array(point_b_column).reshape(-1, 3)
             else:
                 points_b = np.array(point_b_column).reshape(-1, 3)
         else:
