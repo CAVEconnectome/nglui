@@ -1323,6 +1323,91 @@ class ViewerState:
         )
         return self
 
+    def add_polylines(
+        self,
+        data: Optional[Union[list, np.ndarray, pd.DataFrame, DataMap]] = None,
+        name: str = "annotation",
+        points_column: Optional[Union[str, list]] = None,
+        segment_column: Optional[str] = None,
+        description_column: Optional[str] = None,
+        tag_column: Optional[str] = None,
+        tag_bools: Optional[list] = None,
+        data_resolution: Optional[list] = None,
+        tags: Optional[list] = None,
+        linked_segmentation: Union[str, bool] = True,
+        shader: Optional[str] = None,
+        color: Optional[str] = None,
+        swap_visible_segments_on_move: bool = True,
+    ) -> Self:
+        """Add points to an existing annotation layer or create a new one.
+        Parameters
+        ----------
+        data : Union[list, np.ndarray, pd.DataFrame]
+            The data to add to the annotation layer.
+        name : str, optional
+            The name of the annotation layer, by default "annotation".
+        points_column : Optional[Union[str, list]] = None,
+            The name of the column containing lists of point coordinates, by default None.
+            None is needed if the data is an array, but is required if the data is a DataFrame.
+            Because the data is a list of 3d points, this cannot be a split prefix.
+        segment_column : Optional[str], optional
+            The name of the column containing linked segment IDs, by default None.
+        description_column : Optional[str], optional
+            The name of the column containing descriptions, by default None.
+            If None, no descriptions will be added.
+        tag_column : Optional[str], optional
+            The name of a column containing tags, by default None.
+        tag_bools : Optional[list], optional
+            A list of column names indicating tags as booleans, by default None.
+        data_resolution : Optional[list], optional
+            The resolution of the data, by default None.
+            If None, the viewer's current resolution will be used.
+        tags : Optional[list], optional
+            A list of tags to add to the annotation layer, by default None.
+            If None, tags will be inferred from the data, if any tag columns are provided.
+        linked_segmentation : str or bool, optional
+            The name of the segmentation layer to link to, by default None.
+            If True, will link to the first segmentation layer found in the viewer.
+            If False, will not link to any segmentation layer.
+        shader : Optional[str], optional
+            The shader to use for the annotation layer, by default None.
+            If None, the default shader will be used.
+        swap_visible_segments_on_move: bool, optional
+            If True, will swap the visibility of segments when moving points.
+        Returns
+        -------
+        Self
+            The viewer state object with the added points.
+        """
+
+        if name in self.layer_names:
+            layer = self.get_layer(name)
+            if not isinstance(layer, AnnotationLayer):
+                raise ValueError(
+                    f"Layer {name} already exists but is not a AnnotationLayer."
+                )
+        else:
+            layer = AnnotationLayer(
+                name=name,
+                resolution=data_resolution,
+                tags=tags,
+                linked_segmentation=linked_segmentation,
+                color=color,
+                shader=shader,
+                swap_visible_segments_on_move=swap_visible_segments_on_move,
+            )
+            self.add_layer(layer)
+        layer.add_polylines(
+            data,
+            points_column=points_column,
+            segment_column=segment_column,
+            description_column=description_column,
+            tag_column=tag_column,
+            tag_bools=tag_bools,
+            data_resolution=data_resolution,
+        )
+        return self
+
     def to_neuroglancer_state(self):
         if self.dimensions is None:
             if self.infer_coordinates and source_info.HAS_CLOUDVOLUME:

@@ -4,7 +4,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from nglui.statebuilder.ngl_annotations import LineAnnotation, PointAnnotation
+from nglui.statebuilder.ngl_annotations import (
+    LineAnnotation,
+    PointAnnotation,
+    PolylineAnnotation,
+)
 from nglui.statebuilder.ngl_components import (
     AnnotationLayer,
     CoordSpace,
@@ -840,6 +844,40 @@ class TestAnnotationLayerEdgeCases:
 
         with pytest.raises(ValueError, match="Invalid annotation type"):
             layer.add_annotations(invalid_annotations)
+
+    def test_annotationlayer_add_polyline_annotation(self):
+        layer = AnnotationLayer(name="test_anno")
+        polyline_anno = PolylineAnnotation(
+            points=[[0, 0, 0], [50, 50, 50], [100, 100, 100]]
+        )
+        layer.add_annotations([polyline_anno])
+        assert len(layer.annotations) == 1
+        assert layer.annotations[0] is polyline_anno
+
+    def test_annotationlayer_add_polylines_dataframe(self):
+        layer = AnnotationLayer(name="test_anno", resolution=[4, 4, 40])
+
+        df = pd.DataFrame(
+            {
+                "path": [
+                    [[10, 20, 30], [40, 50, 60]],
+                    [[70, 80, 90], [100, 110, 120], [130, 140, 150]],
+                ],
+                "segment_id": [123, 456],
+                "description": ["path1", "path2"],
+            }
+        )
+
+        layer.add_polylines(
+            data=df,
+            points_column="path",
+            segment_column="segment_id",
+            description_column="description",
+        )
+
+        assert len(layer.annotations) == 2
+        assert isinstance(layer.annotations[0], PolylineAnnotation)
+        assert layer.annotations[0].description == "path1"
 
     def test_annotationlayer_add_mixed_annotation_types(self):
         layer = AnnotationLayer(name="test_anno")

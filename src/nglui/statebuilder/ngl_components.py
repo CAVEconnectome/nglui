@@ -29,6 +29,7 @@ from .ngl_annotations import (
     EllipsoidAnnotation,
     LineAnnotation,
     PointAnnotation,
+    PolylineAnnotation,
     make_annotation_properties,
     make_bindings,
     strip_numpy_types,
@@ -1095,7 +1096,7 @@ class AnnotationLayer(LayerWithSource):
             )
 
     def _to_neuroglancer_layer_cloud(self) -> viewer_state.AnnotationLayer:
-        return viewer_state.AnnotationLayer(
+        kwargs = dict(
             source=source_to_neuroglancer(self.source),
             annotation_color=self.color,
             linked_segmentation_layer=_handle_linked_segmentation(
@@ -1105,9 +1106,11 @@ class AnnotationLayer(LayerWithSource):
                 self.filter_by_segmentation,
                 self.linked_segmentation,
             ),
-            shader=self.shader,
             swap_visible_segments_on_move=self.swap_visible_segments_on_move,
         )
+        if self.shader is not None:
+            kwargs["shader"] = self.shader
+        return viewer_state.AnnotationLayer(**kwargs)
 
     def to_neuroglancer_layer(
         self,
@@ -1161,6 +1164,12 @@ class AnnotationLayer(LayerWithSource):
                             {},
                             scale,
                         )[0].center
+                    elif isinstance(self.annotations[0], PolylineAnnotation):
+                        new_position = _handle_annotations(
+                            [self.annotations[0]],
+                            {},
+                            scale,
+                        )[0].points[0]
                     viewer.position = new_position
         self._apply_to_neuroglancer(viewer)
 
@@ -1204,7 +1213,7 @@ class AnnotationLayer(LayerWithSource):
                 self.annotations.append(annotation)
             else:
                 raise ValueError(
-                    "Invalid annotation type. Must be a PointAnnotation, LineAnnotation, Ellipse/SphereAnnotation, or BoundingBoxAnnotation."
+                    "Invalid annotation type. Must be a PointAnnotation, LineAnnotation, Ellipse/SphereAnnotation, BoundingBoxAnnotation, or PolylineAnnotation."
                 )
         return self
 
@@ -1735,6 +1744,101 @@ class AnnotationLayer(LayerWithSource):
                 for p_a, p_b, seg, d, t in zip(
                     points_a, points_b, segments, descriptions, tag_list
                 )
+            ]
+        )
+        return self
+
+    def add_polylines(
+        self,
+        data: pd.DataFrame,
+        points_column: str,
+        segment_column: Optional[str] = None,
+        description_column: Optional[str] = None,
+        tag_column: Optional[str] = None,
+        tag_bools: Optional[list] = None,
+        data_resolution: Optional[list] = None,
+    ) -> Self:
+        """Add polyline annotations to the layer.
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            The DataFrame containing the polyline annotations.
+        points_column : str
+            The column name for the polyline point coordinates. This can't be a prefix for split column names since polylines are variable length lists of points.
+        segment_column : str, optional
+            The column name for the segment IDs. Default is None.
+        description_column : str, optional
+            The column name for the segment descriptions. Default is None.
+        data_resolution : list, optional
+            The resolution of the data. Default is None.
+        tag_column: str, optional
+            The column name for the tags. Default is None.
+            Row values should be strings. Nones and NAs will be skipped.
+        tag_bools: list, optional
+            List of column names to treat as a tag, with values being booleans
+            indicating whether the tag is present or not. Default is None.
+        data_resolution : list, optional
+            The resolution of the data. If None, follows from layer resolution.
+            Default is None.
+
+        Returns
+        -------
+        SegmentationLayer
+            The SegmentationLayer object with added polyline annotations.
+        """
+        if isinstance(data, DataMap):
+            self._register_datamap(
+                key=data,
+                func=self.add_polylines,
+                points_column=points_column,
+                segment_column=segment_column,
+                description_column=description_column,
+                tag_column=tag_column,
+                tag_bools=tag_bools,
+                data_resolution=data_resolution,
+            )
+            return self
+
+        # Convert PyArrow columns to numpy for compatibility
+        if isinstance(data, pd.DataFrame):
+            cols_to_convert = [
+                points_column,
+                segment_column,
+                description_column,
+                tag_column,
+            ]
+            if tag_bools:
+                cols_to_convert.extend(tag_bools)
+            data = convert_arrow_to_numpy(data, columns=cols_to_convert)
+
+        if data is None:
+            points_ = []
+        elif isinstance(data, pd.DataFrame):
+            points_ = [np.array(x).reshape(-1, 3) for x in data[points_column].tolist()]
+        elif is_list_like(data):
+            points_ = [np.array(x).reshape(-1, 3) for x in data]
+        else:
+            raise ValueError("Invalid format for data")
+
+        segments, descriptions, tag_list = self._handle_annotation_details(
+            data,
+            segment_column,
+            description_column,
+            tag_column,
+            tag_bools,
+            len(points_),
+        )
+        self.add_annotations(
+            [
+                PolylineAnnotation(
+                    points=ps,
+                    segments=seg,
+                    description=d,
+                    tags=t,
+                    resolution=data_resolution,
+                )
+                for ps, seg, d, t in zip(points_, segments, descriptions, tag_list)
             ]
         )
         return self

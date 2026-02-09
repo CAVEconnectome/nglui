@@ -543,6 +543,45 @@ class TestViewerStateAnnotationMethods:
         assert layer.name == "test_ellipsoids_data"
         assert len(layer.annotations) > 0
 
+    def test_add_polylines_basic(self):
+        vs = ViewerState(dimensions=[4, 4, 40])
+
+        result = vs.add_annotation_layer(name="test_polylines")
+
+        assert len(vs.layers) == 1
+        assert vs.layers[0].name == "test_polylines"
+        assert isinstance(vs.layers[0], AnnotationLayer)
+        assert result is vs
+
+    def test_add_polylines_with_data(self):
+        """Test add_polylines with actual DataFrame data"""
+        vs = ViewerState(dimensions=[4, 4, 40])
+
+        df = pd.DataFrame(
+            {
+                "path": [
+                    [[10, 20, 30], [40, 50, 60]],
+                    [[70, 80, 90], [100, 110, 120], [130, 140, 150]],
+                ],
+                "segment_id": [111, 222],
+                "desc": ["polyline1", "polyline2"],
+            }
+        )
+
+        result = vs.add_polylines(
+            data=df,
+            points_column="path",
+            segment_column="segment_id",
+            description_column="desc",
+            name="test_polylines_data",
+        )
+
+        assert result is vs
+        assert len(vs.layers) == 1
+        layer = vs.layers[0]
+        assert layer.name == "test_polylines_data"
+        assert len(layer.annotations) == 2
+
     def test_add_boxes_with_data(self):
         """Test add_boxes with actual DataFrame data"""
         vs = ViewerState(dimensions=[4, 4, 40])

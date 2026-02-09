@@ -12,6 +12,7 @@ from nglui.statebuilder.ngl_annotations import (
     EllipsoidAnnotation,
     LineAnnotation,
     PointAnnotation,
+    PolylineAnnotation,
     TagTool,
     TagToolFactory,
     make_annotation_properties,
@@ -302,6 +303,57 @@ class TestBoundingBoxAnnotation:
         mock_bbox_annotation.assert_called_once()
 
 
+class TestPolylineAnnotation:
+    def test_polyline_annotation_creation(self):
+        polyline = PolylineAnnotation(points=[[10, 20, 30], [40, 50, 60], [70, 80, 90]])
+        assert len(polyline.points) == 3
+        assert polyline.points[0] == [10, 20, 30]
+        assert polyline.points[2] == [70, 80, 90]
+
+    def test_polyline_annotation_with_numpy_array(self):
+        np_points = np.array([[100.5, 200.7, 300.2], [400.1, 500.3, 600.9]])
+        polyline = PolylineAnnotation(points=np_points)
+        assert len(polyline.points) == 2
+
+    def test_scale_points(self):
+        polyline = PolylineAnnotation(points=[[100, 200, 300], [400, 500, 600]])
+        polyline._scale_points([2.0, 2.0, 1.0])
+
+        expected = [[200.0, 400.0, 300.0], [800.0, 1000.0, 600.0]]
+        assert np.allclose(polyline.points, expected)
+
+    @patch("neuroglancer.viewer_state.PolyLineAnnotation")
+    def test_to_neuroglancer(self, mock_polyline_annotation):
+        polyline = PolylineAnnotation(points=[[10, 20, 30], [40, 50, 60]])
+
+        polyline.to_neuroglancer(tag_map={}, layer_resolution=None)
+        mock_polyline_annotation.assert_called_once()
+
+    def test_polyline_with_resolution(self):
+        polyline = PolylineAnnotation(
+            points=[[100, 200, 300], [400, 500, 600]],
+            resolution=[8, 8, 40],
+        )
+        layer_resolution = [4, 4, 40]
+        polyline.scale_points(layer_resolution)
+
+        expected = [[200.0, 400.0, 300.0], [800.0, 1000.0, 600.0]]
+        assert np.allclose(polyline.points, expected)
+
+    def test_polyline_with_segments_and_tags(self):
+        polyline = PolylineAnnotation(
+            points=[[10, 20, 30], [40, 50, 60]],
+            segments=[123, 456],
+            tags=["dendrite", "axon"],
+        )
+        assert polyline.segments == [[123, 456]]
+        assert polyline.tags == ["dendrite", "axon"]
+
+    def test_polyline_single_point(self):
+        polyline = PolylineAnnotation(points=[[10, 20, 30]])
+        assert len(polyline.points) == 1
+
+
 class TestAnnotationIntegration:
     def test_annotation_with_complex_tags(self):
         # Test annotation with multiple tags and properties
@@ -351,7 +403,7 @@ class TestAnnotationIntegration:
 class TestAnnotationEdgeCases:
     def test_empty_segments_list(self):
         point = PointAnnotation(point=[10, 20, 30], segments=[])
-        assert point.segments == [[]]  # Empty list gets converted
+        assert point.segments == []
 
     def test_none_values(self):
         point = PointAnnotation(
