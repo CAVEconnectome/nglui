@@ -120,6 +120,8 @@ def list_of_lists(obj):
         return None
     obj = strip_numpy_types(obj)
     if isinstance(obj, list):
+        if all(isinstance(el, list) for el in obj):
+            return obj
         return [obj]
     else:
         return [[obj]]
