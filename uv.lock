@@ -1776,7 +1776,7 @@ dev = [
 docs = [
     { name = "mkdocs" },
     { name = "mkdocs-material" },
-    { name = "mkdocstrings", extras = ["python"] },
+    { name = "mkdocstrings", extras = ["python"], specifier = ">=0.29" },
 ]
 lint = [{ name = "ruff" }]
 
