@@ -2,6 +2,14 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [4.7.0] - 2026-02-10
+
+### Added
+
+- **StateBuilder**: Added Polyline annotation support, similar to other annotation types.
+- **Parser**: Added polyline annotation support.
+- **Parser**: Annotation ids are now supported as an optional return data for getting various annotation types and by default as an additional column in `parser.annotation_dataframe`.
+
 ## [4.6.0] - 2025-11-1
 
 ### Added
