@@ -2,6 +2,12 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [4.7.1] - 2026-02-10
+
+### Changed
+
+- Bumped various dependencies.
+
 ## [4.7.0] - 2026-02-10
 
 ### Added
