@@ -49,4 +49,5 @@ state_parser.annotation_dataframe()
 
 will give you a dataframe where each row is an annotation, and columns show layer name, points locations, annotation type, annotation id, linked segmentations, tags, etc. If you are using tags, the `expand_tags=True` argument will create a column for every tag and assign a boolean value to the row based on whether the tag is present in the annotation.
 Another option that is sometimes useful is `split_points=True`, which will create a separate column for each x, y, or z coordinate in the annotation.
+Note that polyline annotations will come back with all points in the "point" field.
 

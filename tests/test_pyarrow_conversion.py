@@ -458,6 +458,35 @@ class TestAnnotationLayersWithPyArrow:
         assert first_ellipsoid.center == [100, 150, 10]
         assert first_ellipsoid.radii == [5, 5, 5]
 
+    def test_add_polylines_with_pyarrow_df(self):
+        """Test adding polylines from PyArrow DataFrame."""
+        df = pd.DataFrame(
+            {
+                "path": [
+                    [[100, 150, 10], [200, 250, 20]],
+                    [[300, 350, 30], [400, 450, 40], [500, 550, 50]],
+                ],
+                "segment_id": pd.array([12345, 67890], dtype=pd.ArrowDtype(pa.int64())),
+                "description": pd.array(
+                    ["Path A", "Path B"],
+                    dtype=pd.ArrowDtype(pa.string()),
+                ),
+            }
+        )
+
+        layer = AnnotationLayer(name="test_polylines")
+        layer.add_polylines(
+            data=df,
+            points_column="path",
+            segment_column="segment_id",
+            description_column="description",
+        )
+
+        assert len(layer.annotations) == 2
+        first_polyline = layer.annotations[0]
+        assert len(first_polyline.points) == 2
+        assert first_polyline.description == "Path A"
+
     def test_add_boxes_with_pyarrow_df(self):
         """Test adding bounding boxes from PyArrow DataFrame."""
         df = pd.DataFrame(

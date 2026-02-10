@@ -292,8 +292,16 @@ def _get_group_annotations(state, layer_name):
     return _get_type_annotations(state, layer_name, "collection")
 
 
+def _get_polyline_annotations(state, layer_name):
+    return _get_type_annotations(state, layer_name, "polyline")
+
+
 def _extract_point_data(annos):
     return [[anno.get("point") for anno in annos]]
+
+
+def _extract_polyline_data(annos):
+    return [[anno.get("points") for anno in annos]]
 
 
 def _extract_sphere_data(annos):
@@ -326,6 +334,7 @@ _get_map = {
     "sphere": _get_sphere_annotations,
     "bbox": _get_bbox_annotations,
     "group": _get_group_annotations,
+    "polyline": _get_polyline_annotations,
 }
 
 _extraction_map = {
@@ -333,6 +342,7 @@ _extraction_map = {
     "line": _extract_line_data,
     "sphere": _extract_sphere_data,
     "bbox": _extract_bbox_data,
+    "polyline": _extract_polyline_data,
     "group": _extract_group_data,
 }
 
@@ -354,7 +364,14 @@ def _extract_segments(anno):
 
 
 def _generic_annotations(
-    state, layer_name, description, linked_segmentations, tags, group, anno_type
+    state,
+    layer_name,
+    description,
+    linked_segmentations,
+    tags,
+    group,
+    anno_type,
+    anno_id=False,
 ):
     annos = _get_map[anno_type](state, layer_name)
     out = _extraction_map[anno_type](annos)
@@ -375,6 +392,8 @@ def _generic_annotations(
     if group:
         group_ids = [anno.get("parentId") for anno in annos]
         out.append(group_ids)
+    if anno_id:
+        out.append([anno.get("id") for anno in annos])
     if len(out) == 1:
         return out[0]
     else:
@@ -388,6 +407,7 @@ def point_annotations(
     linked_segmentations: bool = False,
     tags: bool = False,
     group: bool = False,
+    anno_id: bool = False,
 ):
     """Get all point annotation points and other info from a layer.
 
@@ -425,6 +445,7 @@ def point_annotations(
         tags=tags,
         group=group,
         anno_type="point",
+        anno_id=anno_id,
     )
 
 
@@ -435,6 +456,7 @@ def line_annotations(
     linked_segmentations: bool = False,
     tags: bool = False,
     group: bool = False,
+    anno_id: bool = False,
 ):
     """Get all line annotation points and other info from a layer.
 
@@ -467,7 +489,14 @@ def line_annotations(
         List of group ids (as string) or None for annotations. Only returned if group=True
     """
     return _generic_annotations(
-        state, layer_name, description, linked_segmentations, tags, group, "line"
+        state,
+        layer_name,
+        description,
+        linked_segmentations,
+        tags,
+        group,
+        "line",
+        anno_id=anno_id,
     )
 
 
@@ -478,6 +507,7 @@ def bbox_annotations(
     linked_segmentations: bool = False,
     tags: bool = False,
     group: bool = False,
+    anno_id: bool = False,
 ):
     """Get all bounding box annotation points and other info from a layer.
 
@@ -510,7 +540,35 @@ def bbox_annotations(
         List of group ids (as string) or None for annotations. Only returned if group=True
     """
     return _generic_annotations(
-        state, layer_name, description, linked_segmentations, tags, group, "bbox"
+        state,
+        layer_name,
+        description,
+        linked_segmentations,
+        tags,
+        group,
+        "bbox",
+        anno_id=anno_id,
+    )
+
+
+def polyline_annotations(
+    state: dict,
+    layer_name: str,
+    description: bool = False,
+    linked_segmentations: bool = False,
+    tags: bool = False,
+    group: bool = False,
+    anno_id: bool = False,
+):
+    return _generic_annotations(
+        state,
+        layer_name,
+        description,
+        linked_segmentations,
+        tags,
+        group,
+        "polyline",
+        anno_id=anno_id,
     )
 
 
@@ -521,6 +579,7 @@ def sphere_annotations(
     linked_segmentations: bool = False,
     tags: bool = False,
     group: bool = False,
+    anno_id: bool = False,
 ):
     """Get all sphere annotation points and other info from a layer.
 
@@ -553,7 +612,14 @@ def sphere_annotations(
         List of group ids (as string) or None for annotations. Only returned if group=True
     """
     return _generic_annotations(
-        state, layer_name, description, linked_segmentations, tags, group, "sphere"
+        state,
+        layer_name,
+        description,
+        linked_segmentations,
+        tags,
+        group,
+        "sphere",
+        anno_id=anno_id,
     )
 
 
@@ -563,6 +629,7 @@ def group_annotations(
     description: bool = False,
     linked_segmentations: bool = False,
     tags: bool = False,
+    anno_id: bool = False,
 ):
     """All group annotations and their associated points
 
@@ -600,6 +667,7 @@ def group_annotations(
         tags=tags,
         group=False,
         anno_type="group",
+        anno_id=anno_id,
     )
 
 
@@ -691,18 +759,20 @@ def _parse_layer_dataframe(
     tags = []
     group_ids = []
     descs = []
+    anno_ids = []
     if point_resolution is not None:
         data_resolution = np.array(_data_resolution(state, layer=ln))
         scaling = data_resolution / np.array(point_resolution)
     else:
         scaling = np.array([1, 1, 1])
-    p_pt, p_desc, p_seg, p_tag, p_grp = point_annotations(
+    p_pt, p_desc, p_seg, p_tag, p_grp, p_aid = point_annotations(
         state,
         ln,
         description=True,
         linked_segmentations=True,
         tags=True,
         group=True,
+        anno_id=True,
     )
     p_pt = (np.array(p_pt).reshape(-1, 3) * scaling).tolist()
     n_p_pts = len(p_pt)
@@ -719,15 +789,17 @@ def _parse_layer_dataframe(
     tags.append(p_tag)
     group_ids.append(p_grp)
     descs.append(p_desc)
+    anno_ids.append(p_aid)
 
     # Lines
-    l_ptA, l_ptB, l_desc, l_seg, l_tag, l_grp = line_annotations(
+    l_ptA, l_ptB, l_desc, l_seg, l_tag, l_grp, l_aid = line_annotations(
         state,
         ln,
         description=True,
         linked_segmentations=True,
         tags=True,
         group=True,
+        anno_id=True,
     )
     l_ptA = (np.array(l_ptA).reshape(-1, 3) * scaling).tolist()
     l_ptB = (np.array(l_ptB).reshape(-1, 3) * scaling).tolist()
@@ -743,15 +815,17 @@ def _parse_layer_dataframe(
     tags.append(l_tag)
     group_ids.append(l_grp)
     descs.append(l_desc)
+    anno_ids.append(l_aid)
 
     # Spheres
-    s_ptA, s_ptB, s_desc, s_seg, s_tag, s_grp = sphere_annotations(
+    s_ptA, s_ptB, s_desc, s_seg, s_tag, s_grp, s_aid = sphere_annotations(
         state,
         ln,
         description=True,
         linked_segmentations=True,
         tags=True,
         group=True,
+        anno_id=True,
     )
     s_ptA = (np.array(s_ptA).reshape(-1, 3) * scaling).tolist()
     s_ptB = (np.array(s_ptB).reshape(-1, 3) * scaling).tolist()
@@ -767,15 +841,17 @@ def _parse_layer_dataframe(
     tags.append(s_tag)
     group_ids.append(s_grp)
     descs.append(s_desc)
+    anno_ids.append(s_aid)
 
     # Bboxes
-    b_ptA, b_ptB, b_desc, b_seg, b_tag, b_grp = bbox_annotations(
+    b_ptA, b_ptB, b_desc, b_seg, b_tag, b_grp, b_aid = bbox_annotations(
         state,
         ln,
         description=True,
         linked_segmentations=True,
         tags=True,
         group=True,
+        anno_id=True,
     )
     b_ptA = (np.array(b_ptA).reshape(-1, 3) * scaling).tolist()
     b_ptB = (np.array(b_ptB).reshape(-1, 3) * scaling).tolist()
@@ -791,6 +867,33 @@ def _parse_layer_dataframe(
     tags.append(b_tag)
     group_ids.append(b_grp)
     descs.append(b_desc)
+    anno_ids.append(b_aid)
+
+    # Polylines
+    pl_pts, pl_desc, pl_seg, pl_tag, pl_grp, pl_aid = polyline_annotations(
+        state,
+        ln,
+        description=True,
+        linked_segmentations=True,
+        tags=True,
+        group=True,
+        anno_id=True,
+    )
+    pl_pts = [(np.array(pts).reshape(-1, 3) * scaling).tolist() for pts in pl_pts]
+    n_pl_pts = len(pl_pts)
+    pl_type = ["polyline"] * n_pl_pts
+    pl_ln = [ln] * n_pl_pts
+    pl_ptB = [np.nan] * n_pl_pts
+
+    lns.append(pl_ln)
+    points.append(pl_pts)
+    anno_types.append(pl_type)
+    pointBs.append(pl_ptB)
+    linked_segs.append(pl_seg)
+    tags.append(pl_tag)
+    group_ids.append(pl_grp)
+    descs.append(pl_desc)
+    anno_ids.append(pl_aid)
 
     df = pd.DataFrame(
         {
@@ -800,24 +903,33 @@ def _parse_layer_dataframe(
             "pointB": _concat_list(pointBs),
             "linked_segmentation": _concat_list(linked_segs),
             "tags": _concat_list(tags),
+            "anno_id": _concat_list(anno_ids),
             "group_id": _concat_list(group_ids),
             "description": _concat_list(descs),
         }
     )
     if split_points:
-        df["point_x"] = df["point"].apply(lambda x: x[0])
-        df["point_y"] = df["point"].apply(lambda x: x[1])
-        df["point_z"] = df["point"].apply(lambda x: x[2])
-        df["pointB_x"] = df["pointB"].apply(
+        non_polyline = df["anno_type"] != "polyline"
+        df.loc[non_polyline, "point_x"] = df.loc[non_polyline, "point"].apply(
+            lambda x: x[0]
+        )
+        df.loc[non_polyline, "point_y"] = df.loc[non_polyline, "point"].apply(
+            lambda x: x[1]
+        )
+        df.loc[non_polyline, "point_z"] = df.loc[non_polyline, "point"].apply(
+            lambda x: x[2]
+        )
+        df.loc[non_polyline, "pointB_x"] = df.loc[non_polyline, "pointB"].apply(
             lambda x: x[0] if not np.isnan(x) else np.nan
         )
-        df["pointB_y"] = df["pointB"].apply(
+        df.loc[non_polyline, "pointB_y"] = df.loc[non_polyline, "pointB"].apply(
             lambda x: x[1] if not np.isnan(x) else np.nan
         )
-        df["pointB_z"] = df["pointB"].apply(
+        df.loc[non_polyline, "pointB_z"] = df.loc[non_polyline, "pointB"].apply(
             lambda x: x[2] if not np.isnan(x) else np.nan
         )
-        df.drop(columns=["point", "pointB"], inplace=True)
+        df.loc[non_polyline, "point"] = np.nan
+        df.drop(columns=["pointB"], inplace=True)
 
     if expand_tags:
         tag_dict = tag_dictionary(state, ln)
@@ -904,8 +1016,8 @@ def annotation_dataframe(
     Returns
     -------
     pd.DataFrame
-        Dataframe with columns layer, anno_type, point, pointB, linked_segmentation, tags, anno_id, group_id, description.
-        If expand_tags is True, an additional column will be added for each tag.
+        Dataframe with columns: layer, anno_type, point, pointB, linked_segmentation, tags, anno_id, group_id, description.
+        If expand_tags is True, an additional boolean column will be added for each tag.
     """
     dfs = [
         _parse_layer_dataframe(
