@@ -1,0 +1,5175 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://caveconnectome.github.io/nglui/changelog/">
+      
+      
+        <link rel="prev" href="../reference/parser/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Changelog - NGLui Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Funnel+Sans:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Funnel Sans";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#changelog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="NGLui Documentation" class="md-header__button md-logo" aria-label="NGLui Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.33 12.91c.09 1.55-.62 3.04-1.89 3.95l.77 1.49c.23.45.26.98.06 1.45-.19.47-.58.84-1.06 1l-.79.25a1.687 1.687 0 0 1-1.86-.55L14.44 18c-.89-.15-1.73-.53-2.44-1.1-.5.15-1 .23-1.5.23-.88 0-1.76-.27-2.5-.79-.53.16-1.07.23-1.62.22-.79.01-1.57-.15-2.3-.45a4.1 4.1 0 0 1-2.43-3.61c-.08-.72.04-1.45.35-2.11-.29-.75-.32-1.57-.07-2.33C2.3 7.11 3 6.32 3.87 5.82c.58-1.69 2.21-2.82 4-2.7 1.6-1.5 4.05-1.66 5.83-.37.42-.11.86-.17 1.3-.17 1.36-.03 2.65.57 3.5 1.64 2.04.53 3.5 2.35 3.58 4.47.05 1.11-.25 2.2-.86 3.13.07.36.11.72.11 1.09m-5-1.41c.57.07 1.02.5 1.02 1.07a1 1 0 0 1-1 1h-.63c-.32.9-.88 1.69-1.62 2.29.25.09.51.14.77.21 5.13-.07 4.53-3.2 4.53-3.25a2.59 2.59 0 0 0-2.69-2.49 1 1 0 0 1-1-1 1 1 0 0 1 1-1c1.23.03 2.41.49 3.33 1.3.05-.29.08-.59.08-.89-.06-1.24-.62-2.32-2.87-2.53-1.25-2.96-4.4-1.32-4.4-.4-.03.23.21.72.25.75a1 1 0 0 1 1 1c0 .55-.45 1-1 1-.53-.02-1.03-.22-1.43-.56-.48.31-1.03.5-1.6.56-.57.05-1.04-.35-1.07-.9a.97.97 0 0 1 .88-1.1c.16-.02.94-.14.94-.77 0-.66.25-1.29.68-1.79-.92-.25-1.91.08-2.91 1.29C6.75 5 6 5.25 5.45 7.2 4.5 7.67 4 8 3.78 9c1.08-.22 2.19-.13 3.22.25.5.19.78.75.59 1.29-.19.52-.77.78-1.29.59-.73-.32-1.55-.34-2.3-.06-.32.27-.32.83-.32 1.27 0 .74.37 1.43 1 1.83.53.27 1.12.41 1.71.4q-.225-.39-.39-.81a1.038 1.038 0 0 1 1.96-.68c.4 1.14 1.42 1.92 2.62 2.05 1.37-.07 2.59-.88 3.19-2.13.23-1.38 1.34-1.5 2.56-1.5m2 7.47-.62-1.3-.71.16 1 1.25zm-4.65-8.61a1 1 0 0 0-.91-1.03c-.71-.04-1.4.2-1.93.67-.57.58-.87 1.38-.84 2.19a1 1 0 0 0 1 1c.57 0 1-.45 1-1 0-.27.07-.54.23-.76.12-.1.27-.15.43-.15.55.03 1.02-.38 1.02-.92"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            NGLui Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Changelog
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/CAVEconnectome/nglui/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CAVEconnectome/NGLui
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  About
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../usage/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  How to Use
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../reference/statebuilder/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Function Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="NGLui Documentation" class="md-nav__button md-logo" aria-label="NGLui Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.33 12.91c.09 1.55-.62 3.04-1.89 3.95l.77 1.49c.23.45.26.98.06 1.45-.19.47-.58.84-1.06 1l-.79.25a1.687 1.687 0 0 1-1.86-.55L14.44 18c-.89-.15-1.73-.53-2.44-1.1-.5.15-1 .23-1.5.23-.88 0-1.76-.27-2.5-.79-.53.16-1.07.23-1.62.22-.79.01-1.57-.15-2.3-.45a4.1 4.1 0 0 1-2.43-3.61c-.08-.72.04-1.45.35-2.11-.29-.75-.32-1.57-.07-2.33C2.3 7.11 3 6.32 3.87 5.82c.58-1.69 2.21-2.82 4-2.7 1.6-1.5 4.05-1.66 5.83-.37.42-.11.86-.17 1.3-.17 1.36-.03 2.65.57 3.5 1.64 2.04.53 3.5 2.35 3.58 4.47.05 1.11-.25 2.2-.86 3.13.07.36.11.72.11 1.09m-5-1.41c.57.07 1.02.5 1.02 1.07a1 1 0 0 1-1 1h-.63c-.32.9-.88 1.69-1.62 2.29.25.09.51.14.77.21 5.13-.07 4.53-3.2 4.53-3.25a2.59 2.59 0 0 0-2.69-2.49 1 1 0 0 1-1-1 1 1 0 0 1 1-1c1.23.03 2.41.49 3.33 1.3.05-.29.08-.59.08-.89-.06-1.24-.62-2.32-2.87-2.53-1.25-2.96-4.4-1.32-4.4-.4-.03.23.21.72.25.75a1 1 0 0 1 1 1c0 .55-.45 1-1 1-.53-.02-1.03-.22-1.43-.56-.48.31-1.03.5-1.6.56-.57.05-1.04-.35-1.07-.9a.97.97 0 0 1 .88-1.1c.16-.02.94-.14.94-.77 0-.66.25-1.29.68-1.79-.92-.25-1.91.08-2.91 1.29C6.75 5 6 5.25 5.45 7.2 4.5 7.67 4 8 3.78 9c1.08-.22 2.19-.13 3.22.25.5.19.78.75.59 1.29-.19.52-.77.78-1.29.59-.73-.32-1.55-.34-2.3-.06-.32.27-.32.83-.32 1.27 0 .74.37 1.43 1 1.83.53.27 1.12.41 1.71.4q-.225-.39-.39-.81a1.038 1.038 0 0 1 1.96-.68c.4 1.14 1.42 1.92 2.62 2.05 1.37-.07 2.59-.88 3.19-2.13.23-1.38 1.34-1.5 2.56-1.5m2 7.47-.62-1.3-.71.16 1 1.25zm-4.65-8.61a1 1 0 0 0-.91-1.03c-.71-.04-1.4.2-1.93.67-.57.58-.87 1.38-.84 2.19a1 1 0 0 0 1 1c.57 0 1-.45 1-1 0-.27.07-.54.23-.76.12-.1.27-.15.43-.15.55.03 1.02-.38 1.02-.92"/></svg>
+
+    </a>
+    NGLui Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/CAVEconnectome/nglui/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CAVEconnectome/NGLui
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../usage/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How to Use
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../reference/statebuilder/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Function Reference
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#471-2026-02-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.7.1] - 2026-02-10
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.7.1] - 2026-02-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#470-2026-02-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.7.0] - 2026-02-10
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.7.0] - 2026-02-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#460-2025-11-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.6.0] - 2025-11-1
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.6.0] - 2025-11-1">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#451-2025-08-29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.5.1] - 2025-08-29
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.5.1] - 2025-08-29">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#450-2025-08-15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.5.0] - 2025-08-15
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.5.0] - 2025-08-15">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#442-2025-06-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.4.2] - 2025-06-12
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.4.2] - 2025-06-12">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#441-2025-07-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.4.1] - 2025-07-01
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.4.1] - 2025-07-01">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#440-2025-06-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.4.0] - 2025-06-30
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.4.0] - 2025-06-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#431-2025-06-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.3.1] - 2025-06-25
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.3.1] - 2025-06-25">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#430-2025-06-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.3.0] - 2025-06-25
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#420-2025-06-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.2.0] - 2025-06-25
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#410-2025-06-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.1.0] - 2025-06-24
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#added_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#400" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.0.0]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.0.0]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Added">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#382-2025-03-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.8.2] - 2025-03-27
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.8.2] - 2025-03-27">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#381-2025-01-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.8.1] - 2025-01-30
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.8.1] - 2025-01-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#380-2025-01-29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.8.0] - 2025-01-29
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.8.0] - 2025-01-29">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#372-2024-12-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.7.2] - 2024-12-18
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.7.2] - 2024-12-18">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#371-2024-12-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.7.1] - 2024-12-11
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.7.1] - 2024-12-11">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#370-2024-12-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.7.0] - 2024-12-10
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.7.0] - 2024-12-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#362-2024-11-22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.6.2] - 2024-11-22
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.6.2] - 2024-11-22">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#361-2024-11-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.6.1] - 2024-11-20
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.6.1] - 2024-11-20">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#352-2024-11-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.5.2] - 2024-11-11
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.5.2] - 2024-11-11">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#351-2024-11-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.5.1] - 2024-11-10
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.5.1] - 2024-11-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#350-2024-11-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.5.0] - 2024-11-10
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.5.0] - 2024-11-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#340-2024-08-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.4.0] - 2024-08-26
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.4.0] - 2024-08-26">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#337-2024-07-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.3.7] - 2024-07-24
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.3.7] - 2024-07-24">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#336-2024-07-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.3.6] - 2024-07-23
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.3.6] - 2024-07-23">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#335-2024-07-19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.3.5] - 2024-07-19
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.3.5] - 2024-07-19">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#334-2024-07-19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.3.4] - 2024-07-19
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.3.4] - 2024-07-19">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#333-2024-07-19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.3.3] - 2024-07-19
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.3.3] - 2024-07-19">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#332-2024-07-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.3.2] - 2024-07-18
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.3.2] - 2024-07-18">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#331-2024-07-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.3.1] - 2024-07-12
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.3.1] - 2024-07-12">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#330-2024-07-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.3.0] - 2024-07-12
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.3.0] - 2024-07-12">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#321-2024-07-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.2.1] - 2024-07-11
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.2.1] - 2024-07-11">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#320-2024-07-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.2.0] - 2024-07-10
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.2.0] - 2024-07-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#changed_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Changed">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#310-2024-05-29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.1.0] - 2024-05-29
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.1.0] - 2024-05-29">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#303-2024-4-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.0.3] – 2024-4-30
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.0.3] – 2024-4-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#302-2024-1-19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.0.2] – 2024-1-19
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.0.2] – 2024-1-19">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#301-2023-12-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.0.1] – 2023-12-20
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.0.1] – 2023-12-20">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#300-2023-12-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.0.0] – 2023-12-20
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.0.0] – 2023-12-20">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2141-2023-05-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.14.1] - 2023-05-14
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.14.1] - 2023-05-14">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2140-2023-04-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.14.0] - 2023-04-12
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.14.0] - 2023-04-12">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2130-2023-02-21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.13.0] - 2023-02-21
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.13.0] - 2023-02-21">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2121-2023-01-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.12.1] - 2023-01-30
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.12.1] - 2023-01-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2120-2023-01-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.12.0] - 2023-01-30
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.12.0] - 2023-01-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2100-2022-08-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.10.0] - 2022-08-11
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.10.0] - 2022-08-11">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#272-2021-06-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.7.2] - 2021-06-13
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.7.2] - 2021-06-13">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_33" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#271-2021-06-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.7.1] - 2021-06-13
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.7.1] - 2021-06-13">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_34" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#270-2021-06-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.7.0] - 2021-06-13
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.7.0] - 2021-06-13">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#260-2021-06-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.6.0] - 2021-06-11
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.6.0] - 2021-06-11">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#250" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.5.0]
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#240-2021-01-22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.4.0] - 2021-01-22
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.4.0] - 2021-01-22">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_35" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#231-2021-01-15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.3.1] - 2021-01-15
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.3.1] - 2021-01-15">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_36" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#230-2021-01-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.3.0] - 2021-01-14
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.3.0] - 2021-01-14">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_37" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#221-2020-10-21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.2.1] — 2020-10-21
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.2.1] — 2020-10-21">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_38" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#220-2020-09-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.2.0] — 2020-09-04
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.2.0] — 2020-09-04">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#211-2020-08-17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.1.1] — 2020-08-17
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.1.1] — 2020-08-17">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#210-2020-07-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.1.0] — 2020-07-14
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.1.0] — 2020-07-14">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_39" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#202-2020-06-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.0.2] - 2020-06-18
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.0.2] - 2020-06-18">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#201-2020-04-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.0.1] - 2020-04-27
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.0.1] - 2020-04-27">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_40" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#200-2020-04-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.0.0] - 2020-04-25
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.0.0] - 2020-04-25">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#471-2026-02-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.7.1] - 2026-02-10
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.7.1] - 2026-02-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#470-2026-02-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.7.0] - 2026-02-10
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.7.0] - 2026-02-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#460-2025-11-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.6.0] - 2025-11-1
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.6.0] - 2025-11-1">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#451-2025-08-29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.5.1] - 2025-08-29
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.5.1] - 2025-08-29">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#450-2025-08-15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.5.0] - 2025-08-15
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.5.0] - 2025-08-15">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#442-2025-06-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.4.2] - 2025-06-12
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.4.2] - 2025-06-12">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#441-2025-07-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.4.1] - 2025-07-01
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.4.1] - 2025-07-01">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#440-2025-06-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.4.0] - 2025-06-30
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.4.0] - 2025-06-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#431-2025-06-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.3.1] - 2025-06-25
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.3.1] - 2025-06-25">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#430-2025-06-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.3.0] - 2025-06-25
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#420-2025-06-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.2.0] - 2025-06-25
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#410-2025-06-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.1.0] - 2025-06-24
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#added_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#400" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [4.0.0]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[4.0.0]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Added">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#382-2025-03-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.8.2] - 2025-03-27
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.8.2] - 2025-03-27">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#381-2025-01-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.8.1] - 2025-01-30
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.8.1] - 2025-01-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#380-2025-01-29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.8.0] - 2025-01-29
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.8.0] - 2025-01-29">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#372-2024-12-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.7.2] - 2024-12-18
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.7.2] - 2024-12-18">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#371-2024-12-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.7.1] - 2024-12-11
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.7.1] - 2024-12-11">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#370-2024-12-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.7.0] - 2024-12-10
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.7.0] - 2024-12-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#362-2024-11-22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.6.2] - 2024-11-22
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.6.2] - 2024-11-22">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#361-2024-11-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.6.1] - 2024-11-20
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.6.1] - 2024-11-20">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#352-2024-11-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.5.2] - 2024-11-11
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.5.2] - 2024-11-11">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#351-2024-11-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.5.1] - 2024-11-10
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.5.1] - 2024-11-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#350-2024-11-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.5.0] - 2024-11-10
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.5.0] - 2024-11-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#340-2024-08-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.4.0] - 2024-08-26
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.4.0] - 2024-08-26">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#337-2024-07-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.3.7] - 2024-07-24
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.3.7] - 2024-07-24">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#336-2024-07-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.3.6] - 2024-07-23
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.3.6] - 2024-07-23">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#335-2024-07-19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.3.5] - 2024-07-19
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.3.5] - 2024-07-19">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#334-2024-07-19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.3.4] - 2024-07-19
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.3.4] - 2024-07-19">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#333-2024-07-19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.3.3] - 2024-07-19
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.3.3] - 2024-07-19">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#332-2024-07-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.3.2] - 2024-07-18
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.3.2] - 2024-07-18">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#331-2024-07-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.3.1] - 2024-07-12
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.3.1] - 2024-07-12">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#330-2024-07-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.3.0] - 2024-07-12
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.3.0] - 2024-07-12">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#321-2024-07-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.2.1] - 2024-07-11
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.2.1] - 2024-07-11">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#320-2024-07-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.2.0] - 2024-07-10
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.2.0] - 2024-07-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#changed_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Changed">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#310-2024-05-29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.1.0] - 2024-05-29
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.1.0] - 2024-05-29">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#303-2024-4-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.0.3] – 2024-4-30
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.0.3] – 2024-4-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#302-2024-1-19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.0.2] – 2024-1-19
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.0.2] – 2024-1-19">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#301-2023-12-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.0.1] – 2023-12-20
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.0.1] – 2023-12-20">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#300-2023-12-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [3.0.0] – 2023-12-20
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[3.0.0] – 2023-12-20">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2141-2023-05-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.14.1] - 2023-05-14
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.14.1] - 2023-05-14">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2140-2023-04-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.14.0] - 2023-04-12
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.14.0] - 2023-04-12">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2130-2023-02-21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.13.0] - 2023-02-21
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.13.0] - 2023-02-21">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2121-2023-01-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.12.1] - 2023-01-30
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.12.1] - 2023-01-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2120-2023-01-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.12.0] - 2023-01-30
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.12.0] - 2023-01-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2100-2022-08-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.10.0] - 2022-08-11
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.10.0] - 2022-08-11">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#272-2021-06-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.7.2] - 2021-06-13
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.7.2] - 2021-06-13">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_33" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#271-2021-06-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.7.1] - 2021-06-13
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.7.1] - 2021-06-13">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_34" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#270-2021-06-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.7.0] - 2021-06-13
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.7.0] - 2021-06-13">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#260-2021-06-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.6.0] - 2021-06-11
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.6.0] - 2021-06-11">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#250" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.5.0]
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#240-2021-01-22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.4.0] - 2021-01-22
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.4.0] - 2021-01-22">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_35" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#231-2021-01-15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.3.1] - 2021-01-15
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.3.1] - 2021-01-15">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_36" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#230-2021-01-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.3.0] - 2021-01-14
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.3.0] - 2021-01-14">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_37" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#221-2020-10-21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.2.1] — 2020-10-21
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.2.1] — 2020-10-21">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_38" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#220-2020-09-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.2.0] — 2020-09-04
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.2.0] — 2020-09-04">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#211-2020-08-17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.1.1] — 2020-08-17
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.1.1] — 2020-08-17">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#210-2020-07-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.1.0] — 2020-07-14
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.1.0] — 2020-07-14">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_39" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#202-2020-06-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.0.2] - 2020-06-18
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.0.2] - 2020-06-18">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#201-2020-04-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.0.1] - 2020-04-27
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.0.1] - 2020-04-27">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_40" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#200-2020-04-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [2.0.0] - 2020-04-25
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[2.0.0] - 2020-04-25">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="changelog">Changelog</h1>
+<p>This project attempts to follow <a href="https://semver.org">Semantic Versioning</a> and uses <a href="https://keepachangelog.com/en/1.0.0/">Keep-a-Changelog formatting</a>. But I make mistakes sometimes.</p>
+<h2 id="471-2026-02-10">[4.7.1] - 2026-02-10</h2>
+<h3 id="changed">Changed</h3>
+<ul>
+<li>Bumped various dependencies.</li>
+</ul>
+<h2 id="470-2026-02-10">[4.7.0] - 2026-02-10</h2>
+<h3 id="added">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong>: Added Polyline annotation support, similar to other annotation types.</li>
+<li><strong>Parser</strong>: Added polyline annotation support.</li>
+<li><strong>Parser</strong>: Annotation ids are now supported as an optional return data for getting various annotation types and by default as an additional column in <code>parser.annotation_dataframe</code>.</li>
+</ul>
+<h2 id="460-2025-11-1">[4.6.0] - 2025-11-1</h2>
+<h3 id="added_1">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong>: Added <code>compact</code> argument to <code>ViewerState.to_json_string</code> to produce more compact JSON output by removing whitespace.</li>
+</ul>
+<h3 id="fixed">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong>: Fixed a bug where <code>ViewerState.to_json_string</code> failed if numpy types were present in the state.</li>
+</ul>
+<h2 id="451-2025-08-29">[4.5.1] - 2025-08-29</h2>
+<h3 id="added_2">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong>: Added support for passing an x,y,z column names explicitly as a list and improved docstrings around this parameter.</li>
+</ul>
+<h3 id="fixed_1">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong>: Slight improvements to docstrings.</li>
+</ul>
+<h2 id="450-2025-08-15">[4.5.0] - 2025-08-15</h2>
+<h3 id="added_3">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong>: Added RawLayer class that allows for the inclusion of layer specification directly from an existing neuroglancer state. You can also remap sources along the way using the <code>remap_sources</code> method, for example if you are changing states to a new endpoint. The easiest way to access is via <code>ViewerState.add_raw_layer</code>.</li>
+<li><strong>StateBuilder</strong>: Added <code>ViewerState.add_segment_properties</code> function to add segment properties within a viewer state pipeline.</li>
+<li><strong>StateBuilder</strong>: Annotation-adding functions now support adding arrays as well as dataframe columns. Data can now be None and columns can be specified completely.</li>
+<li><strong>StateBuilder</strong>: Added <code>strip_layers</code> function to remove layers from a viewer dictionary to ease its use as a base state.</li>
+</ul>
+<h3 id="fixed_2">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong>: The properties of a base state are better-preserved.</li>
+</ul>
+<h2 id="442-2025-06-12">[4.4.2] - 2025-06-12</h2>
+<h3 id="added_4">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong>: Added <code>ViewerState.to_browser</code> method that parallels <code>ViewerState.to_url</code> that opens a URL in the browser (h/t Ben Pedigo)</li>
+</ul>
+<h3 id="fixed_3">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong>: Fixed a bug where the <code>to_url</code> method did not pass the <code>target_url</code> argument to the link shortener.</li>
+</ul>
+<h2 id="441-2025-07-01">[4.4.1] - 2025-07-01</h2>
+<h3 id="fixed_4">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong>: Fixed segment properties to use correct auth formatting.</li>
+</ul>
+<h2 id="440-2025-06-30">[4.4.0] - 2025-06-30</h2>
+<h3 id="added_5">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong>: Added <code>ViewerState.to_clipboard</code> method that parallels <code>ViewerState.to_url</code> that copies the URL or shortened link to the clipboard (h/t Ben Pedigo)</li>
+</ul>
+<h3 id="fixed_5">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong>: In certain conditions, empty lists were incorrectly being handled.</li>
+</ul>
+<h2 id="431-2025-06-25">[4.3.1] - 2025-06-25</h2>
+<h3 id="fixed_6">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong>: More generous error handling when cloudvolume can't do its job for a given source.</li>
+</ul>
+<h2 id="430-2025-06-25">[4.3.0] - 2025-06-25</h2>
+<ul>
+<li><strong>StateBuilder</strong>: Added <code>ViewerState.add_segments</code> and <code>ViewerState.add_segments_from_data</code> to the viewerstate object. They let you add segments to a segmentation layer without breaking a pipeline. Both pass through to SegmentationLayer functions, and default to the first segmentation layer in the state if no layer name is specified.</li>
+</ul>
+<h2 id="420-2025-06-25">[4.2.0] - 2025-06-25</h2>
+<ul>
+<li><strong>StateBuilder</strong>: Added <code>swap_visible_segments_on_move</code> option to AnnotationLayers.</li>
+</ul>
+<h2 id="410-2025-06-24">[4.1.0] - 2025-06-24</h2>
+<h2 id="added_6">Added</h2>
+<ul>
+<li><strong>StateBuilder</strong>: Added the <code>pick</code> option to layers that enable you to turn off new ID selection (<code>pick=False</code>).</li>
+<li><strong>StateBuilder</strong>: Added <code>color</code> options to <code>add_points</code>/<code>add_lines</code>/etc methods to set the layer color.</li>
+<li><strong>StateBuilder</strong>: Converted <code>viewer_state.layers</code> to a modified list class with names. Only objects with a <code>.name</code> attribute can be added to the list, and objects can be accessed by either name or index.</li>
+<li><strong>StateBuilder</strong>: Added a <code>client</code> argument to <code>ViewerState</code> that will be used as a default for any viewer_state functions that take a client.</li>
+</ul>
+<h2 id="400">[4.0.0]</h2>
+<p>This is a <strong>major breaking release</strong> that fully changes the way most of the library works.
+Code from previous verions will not work without significant changes.
+Parser and SegmentationProperties work as before, but the StateBuilder and EasyViewer modules have been merged with a different pattern and approach.
+Only the current main and Spelunker branches of Neuroglancer are supported, and the older Seung-lab branch is no longer supported.
+The following is a small summary of the changes.</p>
+<h3 id="added_7">Added</h3>
+<ul>
+<li><strong>StateBuilder/EasyViewer</strong>: Complete rewrite joining StateBuilder and Easyviewer into a single module under the statebuilder namespace. Only supports spelunker.</li>
+<li><strong>StateBuilder</strong>: A new SkeletonManager to upload skeletons for use in Neuroglancer.</li>
+<li><strong>StateBuilder</strong>: Support for building some shaders.</li>
+<li><strong>StateBuilder</strong>: Added inference of properties from source info files$$.</li>
+<li><strong>StateBuilder</strong>: Added DataMaps to several places to allow for more flexible data handling and rendering.</li>
+</ul>
+<h4 id="removed">Removed</h4>
+<ul>
+<li><strong>StateBuilder/EasyViewer</strong>: Fully removed support for the Seung-lab branch of Neuroglancer. This is no longer supported and will not be updated.</li>
+<li><strong>StateBuilder/EasyViewer</strong>: Removed both main classes and their functionality. Functionality is now merged into the ViewerState class.</li>
+</ul>
+<h2 id="382-2025-03-27">[3.8.2] - 2025-03-27</h2>
+<h3 id="fixed_7">Fixed</h3>
+<ul>
+<li><strong>Parser</strong> Fix issues with dimensions in the parser.</li>
+</ul>
+<h2 id="381-2025-01-30">[3.8.1] - 2025-01-30</h2>
+<h3 id="fixed_8">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong> SegmentationLayerConfig with a color column will ignore <code>None</code> values for data.</li>
+</ul>
+<h2 id="380-2025-01-29">[3.8.0] - 2025-01-29</h2>
+<h3 id="added_8">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong> Segmentation layers can be set to be non-interactive by default using the <code>selectable</code> parameter in <code>SegmentationLayerConfig</code>. Only works for <code>spelunker</code> branch.</li>
+</ul>
+<h3 id="fixed_9">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong> Adjusted sphere radius scaling to be correct.</li>
+</ul>
+<h2 id="372-2024-12-18">[3.7.2] - 2024-12-18</h2>
+<h3 id="fixed_10">Fixed</h3>
+<ul>
+<li><strong>Parser</strong>: Fixed a bug in annotation parsing if some layers have tags and some do not.</li>
+</ul>
+<h2 id="371-2024-12-11">[3.7.1] - 2024-12-11</h2>
+<h3 id="fixed_11">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong>:  Fixed a bug where the use of "helpers.make_state_url" (which includes most of the helpers) was not using information about urls to infer target sites.</li>
+</ul>
+<h2 id="370-2024-12-10">[3.7.0] - 2024-12-10</h2>
+<h3 id="added_9">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong> and <strong>SegmentProps</strong>: A new parameter for segment properties will create columns with a random number for you in a segment property, useful for sampling large lists of ids in neuroglancer.</li>
+<li><strong>StateBuilder</strong>: Made it so that <code>site_utils</code> configuration can be accessed from <code>statebuilder.site_utils</code> instead of needing a separate import.</li>
+</ul>
+<h3 id="fixed_12">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong>: Updated helpers to be compatible with new site_utils functionality.</li>
+</ul>
+<h2 id="362-2024-11-22">[3.6.2] - 2024-11-22</h2>
+<h3 id="fixed_13">Fixed</h3>
+<ul>
+<li>Fixed a bug where default configurations were overriding user configurations for target sites.</li>
+</ul>
+<h2 id="361-2024-11-20">[3.6.1] - 2024-11-20</h2>
+<h3 id="added_10">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong>: Added default configurations to make it much easier to configure links where you want them to go.</li>
+</ul>
+<h2 id="352-2024-11-11">[3.5.2] - 2024-11-11</h2>
+<h3 id="fixed_14">Fixed</h3>
+<ul>
+<li>Fixed behavior of <code>statebuilder.helpers.make_neuron_neuroglancer_link</code> to actually render the state as it used to.</li>
+</ul>
+<h2 id="351-2024-11-10">[3.5.1] - 2024-11-10</h2>
+<h3 id="fixed_15">Fixed</h3>
+<ul>
+<li>Removed inadvertent debug statement in the last release.</li>
+<li>Fixed a bug in the <code>expand_tags</code> option in the <code>annotation_dataframe</code> function.</li>
+</ul>
+<h2 id="350-2024-11-10">[3.5.0] - 2024-11-10</h2>
+<h3 id="added_11">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong>: Added tags to Spelunker neuroglancer states! Note that this might not be available in all mainline-style deployments yet.</li>
+<li><strong>Parser</strong>: Added a number of new features to parse classic and Spelunker-style states, including layer and segment information, filtering archived layers, and a new class-level interface to make life easier.</li>
+</ul>
+<h3 id="fixed_16">Fixed</h3>
+<ul>
+<li>Reformatted use of <code>target_site</code> to be more consistent when using "spelunker" as a name.</li>
+</ul>
+<h2 id="340-2024-08-26">[3.4.0] - 2024-08-26</h2>
+<h3 id="added_12">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong> : Added <code>use_skeleton_source</code> as an optional argument for <code>from_client</code> to use a skeleton service advertised in the info service.</li>
+<li><strong>SegmentProperties</strong> New option <code>prepend_col_name</code> in <code>SegmentProperties.from_dataframe</code> will prepend the column name to the tag values.</li>
+</ul>
+<h2 id="337-2024-07-24">[3.3.7] - 2024-07-24</h2>
+<h3 id="added_13">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong> New option on <code>StateBuilder.render_as</code>: <code>return_as="short"</code> will upload the state and return a short URL to the state.</li>
+<li><strong>StateBuilder</strong> New helper <code>statebuilder.helpers.segment_property_link</code> will quickly generate a basic link from a segment property.</li>
+</ul>
+<h3 id="changed_1">Changed</h3>
+<ul>
+<li>Default "spelunker" neuroglancer deployment was changed.</li>
+</ul>
+<h3 id="fixed_17">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong> Fixed a bug when setting the background color in Spelunker sites.</li>
+<li><strong>StateBuilder</strong> Fixed a bug in using segment property maps.</li>
+</ul>
+<h2 id="336-2024-07-23">[3.3.6] - 2024-07-23</h2>
+<h3 id="added_14">Added</h3>
+<ul>
+<li><strong>SegmentProperties</strong> New method "label_format_map" allows you to build arbitrary label formats from dataframe columns using </li>
+</ul>
+<h3 id="fixed_18">Fixed</h3>
+<ul>
+<li><strong>SegmentProperties</strong> Nulls in label columns are ignored as intended.</li>
+</ul>
+<h2 id="335-2024-07-19">[3.3.5] - 2024-07-19</h2>
+<h3 id="added_15">Added</h3>
+<ul>
+<li><strong>SegmentProperties</strong> The <code>label_col</code> argument in <code>SegmentProperties.from_dataframe</code> can now take a list of column names. Labels are concatenated with a seperator set with <code>label_separator</code> that defaults to an underscore (<code>_</code>).</li>
+<li><strong>StateBuilder</strong> Recent segment property arguments included in the segment property maps for SegmentationLayerConfigs.</li>
+</ul>
+<h3 id="changed_2">Changed</h3>
+<ul>
+<li><strong>SegmentProperties</strong> All property names (the <code>id</code> field) are coerced to strings, as required.</li>
+</ul>
+<h2 id="334-2024-07-19">[3.3.4] - 2024-07-19</h2>
+<h3 id="fixed_19">Fixed</h3>
+<ul>
+<li><strong>SegmentProperties</strong>: Fixed a bug in building tags from dataframes.</li>
+</ul>
+<h2 id="333-2024-07-19">[3.3.3] - 2024-07-19</h2>
+<h3 id="added_16">Added</h3>
+<ul>
+<li><strong>SegmentProperties</strong>: Tag columns will now automatically disambuguate tags if they are duplicated in different columns of the dataframe.
+For example, if you had "my_column" with value "type_a" and "their_column" also with value "type_a", the tag would become "my_column:type_a" and "their_column:type_a". This can be turned off by setting the <code>allow_disambiguation</code> argument to False.</li>
+<li><strong>SegmentProperties</strong>: The <code>SegmentProperties.from_dataframe</code> method now has a <code>allow_disambiguation</code> argument to control whether the disambiguation above is performed.</li>
+</ul>
+<h3 id="changed_3">Changed</h3>
+<ul>
+<li><strong>SegmentProperties</strong>: Tag property generation performance for long dataframes is improved.</li>
+</ul>
+<h3 id="fixed_20">Fixed</h3>
+<ul>
+<li><strong>SegmentProperties</strong>: Fixed a bug in handling tag columns with categorical dtype.</li>
+</ul>
+<h2 id="332-2024-07-18">[3.3.2] - 2024-07-18</h2>
+<h3 id="changed_4">Changed</h3>
+<ul>
+<li><strong>StateBuilder</strong>: When providing a URL but not a client, you will now get a warning that target-site cannot be inferred.</li>
+</ul>
+<h3 id="fixed_21">Fixed</h3>
+<ul>
+<li>Small changes to work in python 3.8, because the only issue was type hints.</li>
+</ul>
+<h2 id="331-2024-07-12">[3.3.1] - 2024-07-12</h2>
+<h3 id="fixed_22">Fixed</h3>
+<ul>
+<li>Removed debug statements left in after testing.</li>
+</ul>
+<h2 id="330-2024-07-12">[3.3.0] - 2024-07-12</h2>
+<h3 id="added_17">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong> : Added a <code>skeleton_source</code> and <code>skeleton_shader</code> parameter to SegmentationLayerConfig to put skeleton info into the state.</li>
+<li><strong>EasyViewer</strong> : Added <code>set_skeleton_source</code> and <code>set_skeleton_shader</code> methods to EasyViewer.</li>
+</ul>
+<h3 id="fixed_23">Fixed</h3>
+<ul>
+<li><strong>SegmentProperties</strong> : Better handling of null values (nan, None, and empty strings) in tag columns, all of which are ignored.</li>
+<li>Various requirements updates that were necessary.</li>
+</ul>
+<h2 id="321-2024-07-11">[3.2.1] - 2024-07-11</h2>
+<h3 id="added_18">Added</h3>
+<ul>
+<li><strong>SegmentProperties</strong> : Added a <code>.to_dataframe()</code> method for segment properties to convert them back to a dataframe.</li>
+</ul>
+<h2 id="320-2024-07-10">[3.2.0] - 2024-07-10</h2>
+<h3 id="added_19">Added</h3>
+<ul>
+<li><strong>SegmentProperties</strong> : A new module has been created to build Segment Properties, which are a method of organizing information about segment IDs in a Neuroglancer segmentation layer.
+Segment Properties only work with the newer Google/Spelunker branches, and offer a way to add browsable and searchable metadata to segments that can be viewed in the viewer.</li>
+<li><strong>StateBuilder</strong> : Various changes were made to support segment properties from both explicit URLs and from data-driven mapping. See documentation for details.</li>
+</ul>
+<h2 id="changed_5">Changed</h2>
+<ul>
+<li><strong>StateBuilder</strong> : Image layers for spelunker now use native contrast controls.</li>
+</ul>
+<h3 id="fixed_24">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong> : Improvements to the use of <code>target_site</code> and <code>url_prefix</code> in general when both creating statebuilder and rendering states. In particular, the values in <code>render_state</code> should now correctly take precendence over the values in <code>StateBuilder</code> when both are set.</li>
+</ul>
+<h2 id="310-2024-05-29">[3.1.0] - 2024-05-29</h2>
+<h3 id="added_20">Added</h3>
+<ul>
+<li>The <strong>Parser</strong> function <code>annotation_dataframe</code> now has a parameter <code>expand_tags</code> that will create a boolean column for each tag in each annotation layer indicating if the annotation has that tag or not.</li>
+</ul>
+<h3 id="fixed_25">Fixed</h3>
+<ul>
+<li><strong>Parser</strong> : Fixed bugs in getting bounding box annotations and in getting linked segmentations for Spelunker-style states.</li>
+</ul>
+<h2 id="303-2024-4-30">[3.0.3] – 2024-4-30</h2>
+<h3 id="fixed_26">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong> : Fixed a bug preventing tags from being set.</li>
+</ul>
+<h2 id="302-2024-1-19">[3.0.2] – 2024-1-19</h2>
+<h3 id="fixed_27">Fixed</h3>
+<ul>
+<li>Improve consistency of target_site argument in StateBuilder.</li>
+</ul>
+<h2 id="301-2023-12-20">[3.0.1] – 2023-12-20</h2>
+<h3 id="fixed_28">Fixed</h3>
+<ul>
+<li>Fixed an unnecessary import that caused an error.</li>
+<li>Added python package neuroglancer to the requirements so versions with errors or incompatibilities can be avoided.</li>
+</ul>
+<h2 id="300-2023-12-20">[3.0.0] – 2023-12-20</h2>
+<h3 id="added_21">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong> and <strong>EasyViewer</strong> Substantial refactor, adding basic support for the main Google Neuroglancer branch and the Cave-Explorer/Spelunker deployments coming online with CAVE.
+Most functionality should be seamless, with the client checking for version.
+Currently, only the <a href="https://ngl.cave-explorer.org/">Cave-Explorer</a> and <a href="https://spelunker.cave-explorer.org/">Spelunker</a> deployments are fully supported for this automated version check, as the response depends on a build-specific version.json file.
+If no automated version is set or one wants to override any settings, the <code>target_site</code> argument can be set to <code>cave-explorer</code> or <code>mainline</code> for the main Google branch or <code>seunglab</code> for the older Seung-lab branch.</li>
+</ul>
+<h2 id="2141-2023-05-14">[2.14.1] - 2023-05-14</h2>
+<h3 id="fixed_29">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong> Recast all layer names as strings to avoid issues with numeric.</li>
+</ul>
+<h2 id="2140-2023-04-12">[2.14.0] - 2023-04-12</h2>
+<h3 id="fixed_30">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong> Fixed various issues with stacking multiple points into a single row.</li>
+</ul>
+<h2 id="2130-2023-02-21">[2.13.0] - 2023-02-21</h2>
+<h3 id="added_22">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong> Adding a helper function for basic line annotation states</li>
+<li><strong>StateBuilder</strong> Helper functions can take <code>split_position</code> argument.</li>
+</ul>
+<h2 id="2121-2023-01-30">[2.12.1] - 2023-01-30</h2>
+<h3 id="fixed_31">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong> Handle None data correctly with mapping sets.</li>
+</ul>
+<h2 id="2120-2023-01-30">[2.12.0] - 2023-01-30</h2>
+<h3 id="added_23">Added</h3>
+<ul>
+<li><strong>EasyViewer</strong> At long last, you can set the background color in <code>set_view_options</code> with the argument <code>background_color</code>. As elsewhere, this uses <a href="https://webcolors.readthedocs.io/">webcolors</a> to deal with color parsing, so it can take names or rgb or hex.</li>
+<li><strong>StateBuilder</strong> StateBuilder can now set the background color in in <code>view_kws</code> with the key <code>background_color</code>.</li>
+<li><strong>StateBuilder</strong> <em>Mapping sets</em> offer a new and simple iapproach to having multiple dataframes with different mapping rules.</li>
+<li><strong>StateBuilder</strong> Mapping rules can handle dataframes where the point position components are split across different columns, assuming that the suffices are always <code>_x</code>, <code>_y</code>, and <code>_z</code>. Set <code>split_positions=True</code> in the mapping rule to use this.</li>
+</ul>
+<h3 id="changed_6">Changed</h3>
+<ul>
+<li><strong>StateBuilder</strong> Mapping rules now default to <code>set_position = True</code>.</li>
+</ul>
+<h2 id="2100-2022-08-11">[2.10.0] - 2022-08-11</h2>
+<h3 id="added_24">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong> A number of helper functions to produce common states have been added to statebuilder.
+You can use the function <code>make_neuron_neuroglancer_link</code> to generate a link with one or more root ids and, optionally, their synapses.
+Further, you can use the function <code>make_synapse_neuroglancer_link</code> to generate a state from a synapse dataframe.</li>
+<li><strong>StateBuilder</strong> Linked segmentations and annotation groups now support multiple columns.
+For linked segmentations, this adds multiple root ids per annotation.
+For groups, each unique combinations of values gets its own group.</li>
+<li><strong>StateBuilder</strong> and <strong>EasyViewer</strong> Colors for layers or segment ids can now be in RGB tuples with values between 0--1 or CSS3 named colors, not just hex.</li>
+<li><strong>StateBuilder</strong> When using the <code>client=</code> argument, viewer resolution is inferred from the client info and does not need to be passed as an additional argument.</li>
+</ul>
+<h3 id="fixed_32">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong> For SegmentationLayerConfigs, adding selection maps via <code>add_selection_map</code> is more robust.</li>
+</ul>
+<h2 id="272-2021-06-13">[2.7.2] - 2021-06-13</h2>
+<h3 id="fixed_33">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong> Multipoint now works with <code>set_position</code>.</li>
+</ul>
+<h2 id="271-2021-06-13">[2.7.1] - 2021-06-13</h2>
+<h3 id="fixed_34">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong> Multipoint performance has improved.</li>
+</ul>
+<h2 id="270-2021-06-13">[2.7.0] - 2021-06-13</h2>
+<h3 id="added_25">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong> In all Mappers, setting <code>multipoint=True</code> will allow the point columns to contain multiple points per row, with the other columns assigned to all points in the row. Note that for Mappers with multiple point columns (e.g. LineMappers, SphereMappers, and BoundingBoxMappers), the number of values must be the same in both columns.</li>
+</ul>
+<h2 id="260-2021-06-11">[2.6.0] - 2021-06-11</h2>
+<h3 id="added_26">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong> You can now set a timestamp in SegmentationLayerConfig. Either datetime or unix epoch are allowed.</li>
+</ul>
+<h2 id="250">[2.5.0]</h2>
+<ul>
+<li><strong>StateBuilder</strong> You can now set split points using a SplitPointMapper</li>
+</ul>
+<h2 id="240-2021-01-22">[2.4.0] - 2021-01-22</h2>
+<h3 id="added_27">Added</h3>
+<ul>
+<li><strong>Parser</strong>: <code>get_selected_ids</code> does what it says for a layer.</li>
+</ul>
+<h3 id="fixed_35">Fixed</h3>
+<ul>
+<li><strong>Parser</strong>: Getting annotations with tags/descriptions/etc works.</li>
+<li><strong>StateBuilder</strong>: <code>return_as</code> parameter works with ChainedStateBuilder now</li>
+</ul>
+<h2 id="231-2021-01-15">[2.3.1] - 2021-01-15</h2>
+<h3 id="fixed_36">Fixed</h3>
+<ul>
+<li>Remove pytables from requirements, because the pip install does not work on OS X (at least). If you want to run tests, you will need to install either with <code>pip install tables</code> if you're on a system where that works or <code>conda install pytables</code> otherwise.</li>
+</ul>
+<h2 id="230-2021-01-14">[2.3.0] - 2021-01-14</h2>
+<h3 id="added_28">Added</h3>
+<ul>
+<li><strong>StateBuilder</strong>: At long last, a BoundingBoxMapper</li>
+<li><strong>StateBuilder</strong>: A <code>from_client</code> function to generate simple image &amp; segmentation states from a FrameworkClient instance.</li>
+<li><strong>StateBuilder</strong>: Statebuilder can take a client to configure certain default parameters.</li>
+<li><strong>StateBuilder</strong>: SegmentationLayerConfig explicitly takes some view keyword arguments: <code>alpha_selected</code>, <code>alpha_3d</code>, and <code>alpha_unselected</code>.</li>
+<li><strong>Parser</strong>: New options to get annotation groups and group ids for all annotations.</li>
+<li><strong>Parser</strong>: New function to extract multicut information from a state.</li>
+</ul>
+<h3 id="fixed_37">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong>: Fixed a scenario where int64s get altered by a conversion through floats.</li>
+</ul>
+<h3 id="changed_7">Changed</h3>
+<ul>
+<li><strong>Statebuilder</strong>: Behind the scenes refactoring that should not affect use.</li>
+</ul>
+<h2 id="221-2020-10-21">[2.2.1] — 2020-10-21</h2>
+<h3 id="fixed_38">Fixed</h3>
+<ul>
+<li><strong>StateBuilder</strong>: Setting view options for Graphene segmentation layers now works</li>
+<li><strong>Parser</strong>: Now imported as a property of nglui if you import as <code>import nglui</code>.</li>
+<li>Small bug fixes.</li>
+</ul>
+<h2 id="220-2020-09-04">[2.2.0] — 2020-09-04</h2>
+<h3 id="added_29">Added</h3>
+<ul>
+<li>
+<p>Parser submodule <code>nglui.parser</code> for quickly extracting data from neuroglancer states.
+This should remove some of the boilerplate one writes every time you want to get data out of a state.</p>
+</li>
+<li>
+<p>AnnotationLayerConfig now can take arguments about user interactions such as filtering by segmentation and bracket shortcuts showing segmentations.</p>
+</li>
+</ul>
+<h3 id="changed_8">Changed</h3>
+<ul>
+<li>Default behavior for annotation layers now has filtering by segmentation turned off and bracket shortcuts showing segmentations turned on.</li>
+</ul>
+<h2 id="211-2020-08-17">[2.1.1] — 2020-08-17</h2>
+<h3 id="changed_9">Changed</h3>
+<ul>
+<li>Switched from numpy <code>isnan</code> to pandas <code>isnull</code> in StateBuilder. This allows nullable pandas Int64 dtypes to work as columns</li>
+</ul>
+<h2 id="210-2020-07-14">[2.1.0] — 2020-07-14</h2>
+<h3 id="added_30">Added</h3>
+<ul>
+<li>
+<p>Grouped annotations in nglite base and EasyViewer's annotation module.
+This feature lets you create annotation groups in the Seung-lab branches of Neuroglancer, where multiple annotations are related to one another.
+It works by passing a list of already-created annotations and getting a new "CollectionAnnotation" that groups them together.</p>
+</li>
+<li>
+<p>Grouped annotations in StateBuilder. PointMapper, SphereMapper, and LineMapper objects can take a 'group_column' value.
+Data in this column is intended to be numeric or NaN, and rows that share the same value are grouped together.
+At the moment, this feature only works within individual mapper objects.</p>
+</li>
+<li>
+<p>Two options for linked segmentation ids on grouped annotations:
+<code>gather_linked_segmentations</code> assigns all linked ids of objects within the group to the group annotation itself (True by default).
+<code>share_linked_segmentations</code> will add all linked objects within the group to all annotations within the group (False by default).</p>
+</li>
+<li>
+<p><code>array_data</code> option on AnnotationLayerConfig for simple cases where you just want to map Nx3 arrays to points, a pair of Nx3 arrays to lines, or an Nx3 + N array to spheres (centers+radii).</p>
+</li>
+</ul>
+<h3 id="fixed_39">Fixed</h3>
+<ul>
+<li>Bug in GL Shader that caused StateBuilder to fail when <code>constrast_controls</code> was set to True.</li>
+</ul>
+<h2 id="202-2020-06-18">[2.0.2] - 2020-06-18</h2>
+<h3 id="added_31">Added</h3>
+<ul>
+<li>
+<p>Custom GL Shaders (see <a href="https://github.com/google/neuroglancer/blob/a12552d03844fb6092cf300171d2f2077b3960e2/src/neuroglancer/sliceview/image_layer_rendering.md">documentation</a>) for image and segmentation layers can be set in EasyViewer.</p>
+</li>
+<li>
+<p>JSON State Server can be set in EasyViewer.</p>
+</li>
+<li>
+<p>Added <code>contrast_controls</code> argument to <code>statebuilder.ImageLayerConfig</code> to provide brightness/contrast controls to layer through GL Shader.</p>
+</li>
+<li>
+<p>Added <code>state_server</code> argument to <code>statebuilder.StateBuilder</code> to pre-set state server endpoints.</p>
+</li>
+</ul>
+<h2 id="201-2020-04-27">[2.0.1] - 2020-04-27</h2>
+<h3 id="fixed_40">Fixed</h3>
+<ul>
+<li>Removed unnecessary parts of the included neuroglancer module (<code>nglite</code>) for cleanliness.</li>
+</ul>
+<h2 id="200-2020-04-25">[2.0.0] - 2020-04-25</h2>
+<p>This update significantly changed the underlying nature and goals of the Neuroglancer Annotation UI project.</p>
+<h3 id="added_32">Added</h3>
+<ul>
+<li>
+<p>StateBuilder module for rule-based method of generating Neuroglancer states from Pandas DataFrames.</p>
+</li>
+<li>
+<p>Added various features to make use of specific aspects of the Seung-lab Neuroglancer fork.</p>
+</li>
+</ul>
+<h3 id="changed_10">Changed</h3>
+<ul>
+<li>Removed dependency on neuroglancer python package, which was not designed for the Seung-Lab Neuroglancer fork and had some difficult install requirements for features that were unnecessary for this project demanded.</li>
+</ul>
+<h3 id="removed_1">Removed</h3>
+<ul>
+<li>Dynamic state management via python server.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../reference/parser/" class="md-footer__link md-footer__link--prev" aria-label="Previous: parser">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                parser
+              </div>
+            </div>
+          </a>
+        
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.indexes", "navigation.instant", "navigation.footer", "navigation.prune", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "toc.follow", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.copy", "header.autohide"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

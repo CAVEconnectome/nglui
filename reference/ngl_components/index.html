@@ -1,0 +1,4837 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://caveconnectome.github.io/nglui/reference/ngl_components/">
+      
+      
+        <link rel="prev" href="../statebuilder/">
+      
+      
+        <link rel="next" href="../ngl_annotations/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>statebuilder.ngl_components - NGLui Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Funnel+Sans:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Funnel Sans";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="NGLui Documentation" class="md-header__button md-logo" aria-label="NGLui Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.33 12.91c.09 1.55-.62 3.04-1.89 3.95l.77 1.49c.23.45.26.98.06 1.45-.19.47-.58.84-1.06 1l-.79.25a1.687 1.687 0 0 1-1.86-.55L14.44 18c-.89-.15-1.73-.53-2.44-1.1-.5.15-1 .23-1.5.23-.88 0-1.76-.27-2.5-.79-.53.16-1.07.23-1.62.22-.79.01-1.57-.15-2.3-.45a4.1 4.1 0 0 1-2.43-3.61c-.08-.72.04-1.45.35-2.11-.29-.75-.32-1.57-.07-2.33C2.3 7.11 3 6.32 3.87 5.82c.58-1.69 2.21-2.82 4-2.7 1.6-1.5 4.05-1.66 5.83-.37.42-.11.86-.17 1.3-.17 1.36-.03 2.65.57 3.5 1.64 2.04.53 3.5 2.35 3.58 4.47.05 1.11-.25 2.2-.86 3.13.07.36.11.72.11 1.09m-5-1.41c.57.07 1.02.5 1.02 1.07a1 1 0 0 1-1 1h-.63c-.32.9-.88 1.69-1.62 2.29.25.09.51.14.77.21 5.13-.07 4.53-3.2 4.53-3.25a2.59 2.59 0 0 0-2.69-2.49 1 1 0 0 1-1-1 1 1 0 0 1 1-1c1.23.03 2.41.49 3.33 1.3.05-.29.08-.59.08-.89-.06-1.24-.62-2.32-2.87-2.53-1.25-2.96-4.4-1.32-4.4-.4-.03.23.21.72.25.75a1 1 0 0 1 1 1c0 .55-.45 1-1 1-.53-.02-1.03-.22-1.43-.56-.48.31-1.03.5-1.6.56-.57.05-1.04-.35-1.07-.9a.97.97 0 0 1 .88-1.1c.16-.02.94-.14.94-.77 0-.66.25-1.29.68-1.79-.92-.25-1.91.08-2.91 1.29C6.75 5 6 5.25 5.45 7.2 4.5 7.67 4 8 3.78 9c1.08-.22 2.19-.13 3.22.25.5.19.78.75.59 1.29-.19.52-.77.78-1.29.59-.73-.32-1.55-.34-2.3-.06-.32.27-.32.83-.32 1.27 0 .74.37 1.43 1 1.83.53.27 1.12.41 1.71.4q-.225-.39-.39-.81a1.038 1.038 0 0 1 1.96-.68c.4 1.14 1.42 1.92 2.62 2.05 1.37-.07 2.59-.88 3.19-2.13.23-1.38 1.34-1.5 2.56-1.5m2 7.47-.62-1.3-.71.16 1 1.25zm-4.65-8.61a1 1 0 0 0-.91-1.03c-.71-.04-1.4.2-1.93.67-.57.58-.87 1.38-.84 2.19a1 1 0 0 0 1 1c.57 0 1-.45 1-1 0-.27.07-.54.23-.76.12-.1.27-.15.43-.15.55.03 1.02-.38 1.02-.92"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            NGLui Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              statebuilder.ngl_components
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/CAVEconnectome/nglui/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CAVEconnectome/NGLui
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  About
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../usage/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  How to Use
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../statebuilder/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Function Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="NGLui Documentation" class="md-nav__button md-logo" aria-label="NGLui Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.33 12.91c.09 1.55-.62 3.04-1.89 3.95l.77 1.49c.23.45.26.98.06 1.45-.19.47-.58.84-1.06 1l-.79.25a1.687 1.687 0 0 1-1.86-.55L14.44 18c-.89-.15-1.73-.53-2.44-1.1-.5.15-1 .23-1.5.23-.88 0-1.76-.27-2.5-.79-.53.16-1.07.23-1.62.22-.79.01-1.57-.15-2.3-.45a4.1 4.1 0 0 1-2.43-3.61c-.08-.72.04-1.45.35-2.11-.29-.75-.32-1.57-.07-2.33C2.3 7.11 3 6.32 3.87 5.82c.58-1.69 2.21-2.82 4-2.7 1.6-1.5 4.05-1.66 5.83-.37.42-.11.86-.17 1.3-.17 1.36-.03 2.65.57 3.5 1.64 2.04.53 3.5 2.35 3.58 4.47.05 1.11-.25 2.2-.86 3.13.07.36.11.72.11 1.09m-5-1.41c.57.07 1.02.5 1.02 1.07a1 1 0 0 1-1 1h-.63c-.32.9-.88 1.69-1.62 2.29.25.09.51.14.77.21 5.13-.07 4.53-3.2 4.53-3.25a2.59 2.59 0 0 0-2.69-2.49 1 1 0 0 1-1-1 1 1 0 0 1 1-1c1.23.03 2.41.49 3.33 1.3.05-.29.08-.59.08-.89-.06-1.24-.62-2.32-2.87-2.53-1.25-2.96-4.4-1.32-4.4-.4-.03.23.21.72.25.75a1 1 0 0 1 1 1c0 .55-.45 1-1 1-.53-.02-1.03-.22-1.43-.56-.48.31-1.03.5-1.6.56-.57.05-1.04-.35-1.07-.9a.97.97 0 0 1 .88-1.1c.16-.02.94-.14.94-.77 0-.66.25-1.29.68-1.79-.92-.25-1.91.08-2.91 1.29C6.75 5 6 5.25 5.45 7.2 4.5 7.67 4 8 3.78 9c1.08-.22 2.19-.13 3.22.25.5.19.78.75.59 1.29-.19.52-.77.78-1.29.59-.73-.32-1.55-.34-2.3-.06-.32.27-.32.83-.32 1.27 0 .74.37 1.43 1 1.83.53.27 1.12.41 1.71.4q-.225-.39-.39-.81a1.038 1.038 0 0 1 1.96-.68c.4 1.14 1.42 1.92 2.62 2.05 1.37-.07 2.59-.88 3.19-2.13.23-1.38 1.34-1.5 2.56-1.5m2 7.47-.62-1.3-.71.16 1 1.25zm-4.65-8.61a1 1 0 0 0-.91-1.03c-.71-.04-1.4.2-1.93.67-.57.58-.87 1.38-.84 2.19a1 1 0 0 0 1 1c.57 0 1-.45 1-1 0-.27.07-.54.23-.76.12-.1.27-.15.43-.15.55.03 1.02-.38 1.02-.92"/></svg>
+
+    </a>
+    NGLui Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/CAVEconnectome/nglui/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CAVEconnectome/NGLui
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../usage/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How to Use
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Function Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Function Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../statebuilder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.base
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.ngl_components
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.ngl_components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AnnotationLayer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AnnotationLayer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_annotations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_boxes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_boxes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_ellipsoids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_ellipsoids
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_lines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_lines
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_points
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_polylines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_polylines
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_shader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_shader
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.apply_to_neuroglancer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        apply_to_neuroglancer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.set_linked_segmentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        set_linked_segmentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.CoordSpace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CoordSpace
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.CoordSpaceTransform" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CoordSpaceTransform
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.DataMap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DataMap
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.ImageLayer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ImageLayer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ImageLayer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.ImageLayer.add_from_client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_from_client
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.ImageLayer.add_shader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_shader
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="add_shader">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.ImageLayer.add_shader--_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.ImageLayer.apply_to_neuroglancer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        apply_to_neuroglancer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.Layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Layer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.Layer.is_static" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        is_static
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.Layer.map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        map
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.Layer.to_dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_dict
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.LayerWithSource" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LayerWithSource
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LayerWithSource">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.LayerWithSource.add_source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_source
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.RawLayer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RawLayer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RawLayer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.RawLayer.remap_sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        remap_sources
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SegmentationLayer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SegmentationLayer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_default_skeleton_shader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_default_skeleton_shader
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_from_client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_from_client
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segment_colors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_segment_colors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segment_properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_segment_properties
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_segments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segments_from_data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_segments_from_data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_shader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_shader
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.apply_to_neuroglancer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        apply_to_neuroglancer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.set_view_options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        set_view_options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.Source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Source
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Source">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.Source.to_neuroglancer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_neuroglancer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.UnmappedDataError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UnmappedDataError
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.segments_to_neuroglancer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        segments_to_neuroglancer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.source_to_neuroglancer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        source_to_neuroglancer
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ngl_annotations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.ngl_annotations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../shaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.shaders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../skeletons/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.skeletons
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../helpers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../site_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.site_utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../segmentprops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    segmentprops
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    parser
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AnnotationLayer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AnnotationLayer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_annotations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_boxes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_boxes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_ellipsoids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_ellipsoids
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_lines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_lines
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_points
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_polylines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_polylines
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_shader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_shader
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.apply_to_neuroglancer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        apply_to_neuroglancer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.set_linked_segmentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        set_linked_segmentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.CoordSpace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CoordSpace
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.CoordSpaceTransform" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CoordSpaceTransform
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.DataMap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DataMap
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.ImageLayer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ImageLayer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ImageLayer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.ImageLayer.add_from_client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_from_client
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.ImageLayer.add_shader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_shader
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="add_shader">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.ImageLayer.add_shader--_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.ImageLayer.apply_to_neuroglancer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        apply_to_neuroglancer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.Layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Layer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.Layer.is_static" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        is_static
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.Layer.map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        map
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.Layer.to_dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_dict
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.LayerWithSource" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LayerWithSource
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LayerWithSource">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.LayerWithSource.add_source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_source
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.RawLayer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RawLayer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RawLayer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.RawLayer.remap_sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        remap_sources
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SegmentationLayer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SegmentationLayer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_default_skeleton_shader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_default_skeleton_shader
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_from_client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_from_client
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segment_colors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_segment_colors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segment_properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_segment_properties
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_segments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segments_from_data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_segments_from_data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_shader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_shader
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.apply_to_neuroglancer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        apply_to_neuroglancer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.set_view_options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        set_view_options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.Source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Source
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Source">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.Source.to_neuroglancer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_neuroglancer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.UnmappedDataError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UnmappedDataError
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.segments_to_neuroglancer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        segments_to_neuroglancer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.nglui.statebuilder.ngl_components.source_to_neuroglancer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        source_to_neuroglancer
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>statebuilder.ngl_components</h1>
+
+<div class="doc doc-object doc-module">
+
+
+
+
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Classes:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="AnnotationLayer (src.nglui.statebuilder.ngl_components.AnnotationLayer)" href="#src.nglui.statebuilder.ngl_components.AnnotationLayer">AnnotationLayer</a></code></b>
+          –
+          <div class="doc-md-description">
+            
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="CoordSpace (src.nglui.statebuilder.ngl_components.CoordSpace)" href="#src.nglui.statebuilder.ngl_components.CoordSpace">CoordSpace</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Coordinate space for Neuroglancer.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="CoordSpaceTransform (src.nglui.statebuilder.ngl_components.CoordSpaceTransform)" href="#src.nglui.statebuilder.ngl_components.CoordSpaceTransform">CoordSpaceTransform</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Coordinate space transform for Neuroglancer.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="DataMap (src.nglui.statebuilder.ngl_components.DataMap)" href="#src.nglui.statebuilder.ngl_components.DataMap">DataMap</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Class to defer mapping of dataframes to a ViewerState or Layer.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="ImageLayer (src.nglui.statebuilder.ngl_components.ImageLayer)" href="#src.nglui.statebuilder.ngl_components.ImageLayer">ImageLayer</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Configuration for a Neuroglancer image layer.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="Layer (src.nglui.statebuilder.ngl_components.Layer)" href="#src.nglui.statebuilder.ngl_components.Layer">Layer</a></code></b>
+          –
+          <div class="doc-md-description">
+            
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="LayerWithSource (src.nglui.statebuilder.ngl_components.LayerWithSource)" href="#src.nglui.statebuilder.ngl_components.LayerWithSource">LayerWithSource</a></code></b>
+          –
+          <div class="doc-md-description">
+            
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="RawLayer (src.nglui.statebuilder.ngl_components.RawLayer)" href="#src.nglui.statebuilder.ngl_components.RawLayer">RawLayer</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Configuration for a Neuroglancer raw layer from a data source</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="SegmentationLayer (src.nglui.statebuilder.ngl_components.SegmentationLayer)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer">SegmentationLayer</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Configuration for a Neuroglancer segmentation layer.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="Source (src.nglui.statebuilder.ngl_components.Source)" href="#src.nglui.statebuilder.ngl_components.Source">Source</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Configuration for a Neuroglancer data source.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="UnmappedDataError (src.nglui.statebuilder.ngl_components.UnmappedDataError)" href="#src.nglui.statebuilder.ngl_components.UnmappedDataError">UnmappedDataError</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Exception raised when a layer is not fully mapped to a datamap.</p>
+          </div>
+        </li>
+    </ul>
+
+
+
+
+<p><span class="doc-section-title">Functions:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="segments_to_neuroglancer(segments) (src.nglui.statebuilder.ngl_components.segments_to_neuroglancer)" href="#src.nglui.statebuilder.ngl_components.segments_to_neuroglancer">segments_to_neuroglancer</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Convert a flat or mixed-visibility segment list to Neuroglancer.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="source_to_neuroglancer(source, resolution=None, image_layer=False) (src.nglui.statebuilder.ngl_components.source_to_neuroglancer)" href="#src.nglui.statebuilder.ngl_components.source_to_neuroglancer">source_to_neuroglancer</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Convert a possibly multi-url source to a Neuroglancer-compatible format.</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="src.nglui.statebuilder.ngl_components.AnnotationLayer" class="doc doc-heading">
+            <code>AnnotationLayer</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerWithSource (src.nglui.statebuilder.ngl_components.LayerWithSource)" href="#src.nglui.statebuilder.ngl_components.LayerWithSource">LayerWithSource</a></code></p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="add_annotations(annotations) (src.nglui.statebuilder.ngl_components.AnnotationLayer.add_annotations)" href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_annotations">add_annotations</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add annotations to the layer.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="add_boxes(data, point_a_column, point_b_column, segment_column=None, description_column=None, tag_column=None, tag_bools=None, data_resolution=None) (src.nglui.statebuilder.ngl_components.AnnotationLayer.add_boxes)" href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_boxes">add_boxes</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add point annotations to the layer.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="add_ellipsoids(data, center_column, radii_column, segment_column=None, description_column=None, tag_column=None, tag_bools=None, data_resolution=None) (src.nglui.statebuilder.ngl_components.AnnotationLayer.add_ellipsoids)" href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_ellipsoids">add_ellipsoids</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add point annotations to the layer.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="add_lines(data, point_a_column, point_b_column, segment_column=None, description_column=None, tag_column=None, tag_bools=None, data_resolution=None) (src.nglui.statebuilder.ngl_components.AnnotationLayer.add_lines)" href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_lines">add_lines</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add point annotations to the layer.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="add_points(data, point_column=None, segment_column=None, description_column=None, tag_column=None, tag_bools=None, data_resolution=None) (src.nglui.statebuilder.ngl_components.AnnotationLayer.add_points)" href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_points">add_points</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add point annotations to the layer.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="add_polylines(data, points_column, segment_column=None, description_column=None, tag_column=None, tag_bools=None, data_resolution=None) (src.nglui.statebuilder.ngl_components.AnnotationLayer.add_polylines)" href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_polylines">add_polylines</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add polyline annotations to the layer.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="add_shader(shader) (src.nglui.statebuilder.ngl_components.AnnotationLayer.add_shader)" href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.add_shader">add_shader</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add a shader to the layer.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="apply_to_neuroglancer(viewer) (src.nglui.statebuilder.ngl_components.AnnotationLayer.apply_to_neuroglancer)" href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.apply_to_neuroglancer">apply_to_neuroglancer</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Can be a viewer or a viewer.txn()-context state</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="set_linked_segmentation(layer) (src.nglui.statebuilder.ngl_components.AnnotationLayer.set_linked_segmentation)" href="#src.nglui.statebuilder.ngl_components.AnnotationLayer.set_linked_segmentation">set_linked_segmentation</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add a linked segmentation layer to the annotation layer.</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.AnnotationLayer.add_annotations" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_annotations</span><span class="p">(</span><span class="n">annotations</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add annotations to the layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>annotations</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The annotations to add.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="self">self</span></code>
+          –
+          <div class="doc-md-description">
+            <p>The AnnotationLayer object with added annotations.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.AnnotationLayer.add_boxes" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_boxes</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">point_a_column</span><span class="p">,</span> <span class="n">point_b_column</span><span class="p">,</span> <span class="n">segment_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tag_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tag_bools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">data_resolution</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add point annotations to the layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>data</code></b>
+              (<code><a class="autorefs autorefs-external" title="pandas.DataFrame" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame">DataFrame</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The DataFrame containing the point annotations.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>point_a_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the start point coordinates of the box.
+Can be a prefix for a split column name with _x, _y, _z as suffixes.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>point_b_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the end point coordinates of the box
+Can be a prefix for a split column name with _x, _y, _z as suffixes.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>segment_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the segment IDs. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>description_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the segment descriptions. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>data_resolution</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The resolution of the data. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tag_column</code></b>
+              (<code><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the tags. Default is None.
+Row values should be strings. Nones and NAs will be skipped.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tag_bools</code></b>
+              (<code><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>]</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>List of column names to treat as a tag, with values being booleans
+indicating whether the tag is present or not. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>data_resolution</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The resolution of the data. If None, follows from layer resolution.
+Default is None.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="SegmentationLayer (src.nglui.statebuilder.ngl_components.SegmentationLayer)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer">SegmentationLayer</a></code>
+          –
+          <div class="doc-md-description">
+            <p>The SegmentationLayer object with added point annotations.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.AnnotationLayer.add_ellipsoids" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_ellipsoids</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">center_column</span><span class="p">,</span> <span class="n">radii_column</span><span class="p">,</span> <span class="n">segment_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tag_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tag_bools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">data_resolution</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add point annotations to the layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>data</code></b>
+              (<code><a class="autorefs autorefs-external" title="pandas.DataFrame" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame">DataFrame</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The DataFrame containing the point annotations.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>center_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the center point coordinates.
+Can be a prefix for a split column name with _x, _y, _z as suffixes.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>radii_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the radius values.
+Can be a prefix for a split column name with _x, _y, _z as suffixes.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>segment_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the segment IDs. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>description_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the segment descriptions. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>data_resolution</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The resolution of the data. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tag_column</code></b>
+              (<code><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the tags. Default is None.
+Row values should be strings. Nones and NAs will be skipped.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tag_bools</code></b>
+              (<code><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>]</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>List of column names to treat as a tag, with values being booleans
+indicating whether the tag is present or not. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>data_resolution</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The resolution of the data. If None, follows from layer resolution.
+Default is None.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="SegmentationLayer (src.nglui.statebuilder.ngl_components.SegmentationLayer)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer">SegmentationLayer</a></code>
+          –
+          <div class="doc-md-description">
+            <p>The SegmentationLayer object with added point annotations.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.AnnotationLayer.add_lines" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_lines</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">point_a_column</span><span class="p">,</span> <span class="n">point_b_column</span><span class="p">,</span> <span class="n">segment_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tag_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tag_bools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">data_resolution</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add point annotations to the layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>data</code></b>
+              (<code><a class="autorefs autorefs-external" title="pandas.DataFrame" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame">DataFrame</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The DataFrame containing the point annotations.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>point_a_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the start point coordinates.
+Can be a prefix for a split column name with _x, _y, _z as suffixes.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>point_b_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the end point coordinates.
+Can be a prefix for a split column name with _x, _y, _z as suffixes.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>segment_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the segment IDs. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>description_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the segment descriptions. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>data_resolution</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The resolution of the data. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tag_column</code></b>
+              (<code><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the tags. Default is None.
+Row values should be strings. Nones and NAs will be skipped.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tag_bools</code></b>
+              (<code><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>]</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>List of column names to treat as a tag, with values being booleans
+indicating whether the tag is present or not. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>data_resolution</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The resolution of the data. If None, follows from layer resolution.
+Default is None.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="SegmentationLayer (src.nglui.statebuilder.ngl_components.SegmentationLayer)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer">SegmentationLayer</a></code>
+          –
+          <div class="doc-md-description">
+            <p>The SegmentationLayer object with added point annotations.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.AnnotationLayer.add_points" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_points</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">point_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">segment_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tag_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tag_bools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">data_resolution</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add point annotations to the layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>data</code></b>
+              (<code><a class="autorefs autorefs-external" title="pandas.DataFrame" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame">DataFrame</a> or <a class="autorefs autorefs-external" title="numpy.ndarray" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray">ndarray</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The DataFrame containing the point annotations or an Nx3 array.
+If using an array, there is no way to set segment IDs, descriptions, or tags.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>point_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the point coordinates.
+Can be a prefix for a split column name with _x, _y, _z as suffixes.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>segment_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the segment IDs. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>description_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the segment descriptions. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tag_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for segment descripion. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tag_column</code></b>
+              (<code><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the tags. Default is None.
+Row values should be strings. Nones and NAs will be skipped.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tag_bools</code></b>
+              (<code><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>]</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>List of column names to treat as a tag, with values being booleans
+indicating whether the tag is present or not. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>data_resolution</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The resolution of the data. If None, follows from layer resolution.
+Default is None.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="SegmentationLayer (src.nglui.statebuilder.ngl_components.SegmentationLayer)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer">SegmentationLayer</a></code>
+          –
+          <div class="doc-md-description">
+            <p>The SegmentationLayer object with added point annotations.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.AnnotationLayer.add_polylines" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_polylines</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">points_column</span><span class="p">,</span> <span class="n">segment_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tag_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tag_bools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">data_resolution</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add polyline annotations to the layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>data</code></b>
+              (<code><a class="autorefs autorefs-external" title="pandas.DataFrame" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame">DataFrame</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The DataFrame containing the polyline annotations.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>points_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the polyline point coordinates. This can't be a prefix for split column names since polylines are variable length lists of points.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>segment_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the segment IDs. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>description_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the segment descriptions. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>data_resolution</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The resolution of the data. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tag_column</code></b>
+              (<code><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the tags. Default is None.
+Row values should be strings. Nones and NAs will be skipped.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tag_bools</code></b>
+              (<code><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>]</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>List of column names to treat as a tag, with values being booleans
+indicating whether the tag is present or not. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>data_resolution</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The resolution of the data. If None, follows from layer resolution.
+Default is None.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="SegmentationLayer (src.nglui.statebuilder.ngl_components.SegmentationLayer)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer">SegmentationLayer</a></code>
+          –
+          <div class="doc-md-description">
+            <p>The SegmentationLayer object with added polyline annotations.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.AnnotationLayer.add_shader" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_shader</span><span class="p">(</span><span class="n">shader</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add a shader to the layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>shader</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The shader to add.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.AnnotationLayer.apply_to_neuroglancer" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">apply_to_neuroglancer</span><span class="p">(</span><span class="n">viewer</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Can be a viewer or a viewer.txn()-context state</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.AnnotationLayer.set_linked_segmentation" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">set_linked_segmentation</span><span class="p">(</span><span class="n">layer</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add a linked segmentation layer to the annotation layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>layer</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> or <a class="autorefs autorefs-internal" title="SegmentationLayer (src.nglui.statebuilder.ngl_components.SegmentationLayer)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer">SegmentationLayer</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The linked segmentation layer or the string value of its name.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="src.nglui.statebuilder.ngl_components.CoordSpace" class="doc doc-heading">
+            <code>CoordSpace</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Coordinate space for Neuroglancer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>resolution</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>The resolution of the coordinate space. Default is None, which will raise an error if not set.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>units</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> or <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>The units of the coordinate space. Default is "nm". If a single string is provided, it will be repeated for each dimension.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>names</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>The names of the dimensions. Default is ["x", "y", "z"]. If the length of names does not match the length of resolution, an error will be raised.</p>
+          </div>
+        </li>
+    </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="src.nglui.statebuilder.ngl_components.CoordSpaceTransform" class="doc doc-heading">
+            <code>CoordSpaceTransform</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Coordinate space transform for Neuroglancer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>output_dimensions</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>] or <a class="autorefs autorefs-internal" title="CoordSpace (src.nglui.statebuilder.ngl_components.CoordSpace)" href="#src.nglui.statebuilder.ngl_components.CoordSpace">CoordSpace</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The output dimensions of the transform. If a list, it will be converted to a CoordSpace.
+Default is None, which will create a transform with no output dimensions.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>input_dimensions</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>] or <a class="autorefs autorefs-internal" title="CoordSpace (src.nglui.statebuilder.ngl_components.CoordSpace)" href="#src.nglui.statebuilder.ngl_components.CoordSpace">CoordSpace</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The input dimensions of the transform. If a list, it will be converted to a CoordSpace.
+Default is None, which will create a transform with no input dimensions.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>matrix</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a>]]</code>)
+          –
+          <div class="doc-md-description">
+            <p>The transformation matrix. Default is None, which will create an identity matrix.
+The matrix should be a 4x4 list of lists, where the last row is [0, 0, 0, 1].
+If None, an identity matrix will be created based on the output dimensions.</p>
+          </div>
+        </li>
+    </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="src.nglui.statebuilder.ngl_components.DataMap" class="doc doc-heading">
+            <code>DataMap</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Class to defer mapping of dataframes to a ViewerState or Layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>key</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The key to use for the datamap, which is used to label data when using the <code>map</code> or <code>with_map</code> classes.
+If no key is provided, a default key of "None" is used and assumed if no dictionary is provided later.</p>
+          </div>
+        </li>
+    </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="src.nglui.statebuilder.ngl_components.ImageLayer" class="doc doc-heading">
+            <code>ImageLayer</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerWithSource (src.nglui.statebuilder.ngl_components.LayerWithSource)" href="#src.nglui.statebuilder.ngl_components.LayerWithSource">LayerWithSource</a></code></p>
+
+
+
+        <p>Configuration for a Neuroglancer image layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>name</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The name of the layer. Default is "img".</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>source</code></b>
+              (<code>Source or list of Source</code>)
+          –
+          <div class="doc-md-description">
+            <p>The source of the image data. Can be a Source object or a list of Source objects.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>shader</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The shader to use for rendering the image. Default is None, which will use the default shader.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>color</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The color to use for the image layer. Default is None, which will use the default color.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>opacity</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The opacity of the image layer. Default is 1.0.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>blend</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The blending mode for the image layer. Default is None, which will use the default blend mode.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>volume_rendering_mode</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The volume rendering mode for the image layer. Default is None, which will use the default mode.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>volume_rendering_gain</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The gain for volume rendering. Default is None, which will use the default gain.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>volume_rendering_depth_samples</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The number of depth samples for volume rendering. Default is None, which will use the default number of samples.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>cross_section_render_scale</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The scale for cross-section rendering. Default is None, which will use the default scale.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>pick</code></b>
+          –
+          <div class="doc-md-description">
+            <p>Whether to allow cursor interaction with meshes and skeletons. Default is True.</p>
+          </div>
+        </li>
+    </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="add_from_client(client) (src.nglui.statebuilder.ngl_components.ImageLayer.add_from_client)" href="#src.nglui.statebuilder.ngl_components.ImageLayer.add_from_client">add_from_client</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add an image layer source from caveclient.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="add_shader(shader) (src.nglui.statebuilder.ngl_components.ImageLayer.add_shader)" href="#src.nglui.statebuilder.ngl_components.ImageLayer.add_shader">add_shader</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add a shader to the layer.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="apply_to_neuroglancer(viewer) (src.nglui.statebuilder.ngl_components.ImageLayer.apply_to_neuroglancer)" href="#src.nglui.statebuilder.ngl_components.ImageLayer.apply_to_neuroglancer">apply_to_neuroglancer</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Can be a viewer or a viewer.txn()-context state</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.ImageLayer.add_from_client" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_from_client</span><span class="p">(</span><span class="n">client</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add an image layer source from caveclient.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>client</code></b>
+              (<code><span title="CAVEclient">CAVEclient</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The CAVEclient object.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="ImageLayer (src.nglui.statebuilder.ngl_components.ImageLayer)" href="#src.nglui.statebuilder.ngl_components.ImageLayer">ImageLayer</a></code>
+          –
+          <div class="doc-md-description">
+            <p>An ImageLayer object.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.ImageLayer.add_shader" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_shader</span><span class="p">(</span><span class="n">shader</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add a shader to the layer.</p>
+
+
+<details class="----parameters" open>
+  <summary><div class="language-text highlight"><pre><span></span><code>Parameters
+</code></pre></div></summary>
+  <div class="language-text highlight"><pre><span></span><code>shader : str
+    The shader to add.
+</code></pre></div>
+<h4 id="src.nglui.statebuilder.ngl_components.ImageLayer.add_shader--_1"></h4>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.ImageLayer.apply_to_neuroglancer" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">apply_to_neuroglancer</span><span class="p">(</span><span class="n">viewer</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Can be a viewer or a viewer.txn()-context state</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="src.nglui.statebuilder.ngl_components.Layer" class="doc doc-heading">
+            <code>Layer</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-external" title="abc.ABC" href="https://docs.python.org/3/library/abc.html#abc.ABC">ABC</a></code></p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="map(datamap, inplace=False) (src.nglui.statebuilder.ngl_components.Layer.map)" href="#src.nglui.statebuilder.ngl_components.Layer.map">map</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Map the layer to a datamap.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="to_dict(with_name=True) (src.nglui.statebuilder.ngl_components.Layer.to_dict)" href="#src.nglui.statebuilder.ngl_components.Layer.to_dict">to_dict</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Convert the layer to a dictionary.</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="is_static
+
+  
+      property
+   (src.nglui.statebuilder.ngl_components.Layer.is_static)" href="#src.nglui.statebuilder.ngl_components.Layer.is_static">is_static</a></code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Check if the layer is static.</p>
+          </div>
+        </li>
+    </ul>
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.Layer.is_static" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">is_static</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Check if the layer is static.</p>
+
+    </div>
+
+</div>
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.Layer.map" class="doc doc-heading">
+            <code class="highlight language-python"><span class="nb">map</span><span class="p">(</span><span class="n">datamap</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Map the layer to a datamap.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>datamap</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The datamap to map the layer to.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>inplace</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+                  <code>False</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Whether to modify the layer in place or return a new layer. Default is False.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.Layer.to_dict" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">to_dict</span><span class="p">(</span><span class="n">with_name</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Convert the layer to a dictionary.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>with_name</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+                  <code>True</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Whether to include the name, visibility, and archived states of the layer in the dictionary, by default True.
+These are not typically included until the layer is part of a state, but adding them in allows the resulting data to be passed to a viewer state string.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>datamap</code></b>
+          –
+          <div class="doc-md-description">
+            <p>A dictionary with keys being names of DataMap parameters and values being the data to be passed.
+Must be provided if the layer has any datamaps registered.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></code>
+          –
+          <div class="doc-md-description">
+            <p>The layer as a dictionary.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="src.nglui.statebuilder.ngl_components.LayerWithSource" class="doc doc-heading">
+            <code>LayerWithSource</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="Layer (src.nglui.statebuilder.ngl_components.Layer)" href="#src.nglui.statebuilder.ngl_components.Layer">Layer</a></code></p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="add_source(source, resolution=None) (src.nglui.statebuilder.ngl_components.LayerWithSource.add_source)" href="#src.nglui.statebuilder.ngl_components.LayerWithSource.add_source">add_source</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add a source to the layer.</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.LayerWithSource.add_source" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_source</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add a source to the layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>source</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> or <a class="autorefs autorefs-internal" title="Source (src.nglui.statebuilder.ngl_components.Source)" href="#src.nglui.statebuilder.ngl_components.Source">Source</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The source to add.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>resolution</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a> or <a class="autorefs autorefs-external" title="numpy.typing.ArrayLike" href="https://numpy.org/doc/stable/reference/typing.html#numpy.typing.ArrayLike">ArrayLike</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The resolution of the source. Default is None.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="src.nglui.statebuilder.ngl_components.RawLayer" class="doc doc-heading">
+            <code>RawLayer</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="Layer (src.nglui.statebuilder.ngl_components.Layer)" href="#src.nglui.statebuilder.ngl_components.Layer">Layer</a></code></p>
+
+
+
+        <p>Configuration for a Neuroglancer raw layer from a data source</p>
+
+
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="remap_sources(source_map) (src.nglui.statebuilder.ngl_components.RawLayer.remap_sources)" href="#src.nglui.statebuilder.ngl_components.RawLayer.remap_sources">remap_sources</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Remap the sources in the layer's JSON data using the provided source map.</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.RawLayer.remap_sources" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">remap_sources</span><span class="p">(</span><span class="n">source_map</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Remap the sources in the layer's JSON data using the provided source map.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>source_map</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>A mapping from old source paths to new source identifiers.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="typing_extensions.Self">Self</span></code>
+          –
+          <div class="doc-md-description">
+            <p>The updated layer with remapped sources.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="src.nglui.statebuilder.ngl_components.SegmentationLayer" class="doc doc-heading">
+            <code>SegmentationLayer</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerWithSource (src.nglui.statebuilder.ngl_components.LayerWithSource)" href="#src.nglui.statebuilder.ngl_components.LayerWithSource">LayerWithSource</a></code></p>
+
+
+
+        <p>Configuration for a Neuroglancer segmentation layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>name</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The name of the layer. Default is "seg".</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>source</code></b>
+              (<code><a class="autorefs autorefs-internal" title="Source (src.nglui.statebuilder.ngl_components.Source)" href="#src.nglui.statebuilder.ngl_components.Source">Source</a> or <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The source of the segmentation data. Can be a Source object or a string URL.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>segments</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a> or <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a> or <span title="VisibleSegments">VisibleSegments</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The segments to display in the layer. Can be a list of segment IDs, a dictionary with segment IDs as keys and visibility as values, or a VisibleSegments object.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>color</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The color to use for the segments. Default is None, which will use the default color.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>hide_segment_zero</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Whether to hide segment zero, which is typically treated as "no segmentation". Default is True.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>selected_alpha</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The transparency value for selected segments in the 2d views. Default is 0.2.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>not_selected_alpha</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The transparency value for unselected segments in the 2d views. Default is 0.0.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>alpha_3d</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The transparency value for segments in the 3d view. Default is 0.9.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>mesh_silhouette</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The silhouette rendering value for the mesh. Default is 0.0.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>segment_colors</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>A dictionary mapping segment IDs to colors. Default is None, which will use the default colors.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>shader</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The shader to use for rendering the skeletons if a skeleton source is provided. Default is None, which will use the default shader.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>pick</code></b>
+          –
+          <div class="doc-md-description">
+            <p>Whether to allow cursor interaction with meshes and skeletons. Default is True.</p>
+          </div>
+        </li>
+    </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="add_default_skeleton_shader() (src.nglui.statebuilder.ngl_components.SegmentationLayer.add_default_skeleton_shader)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_default_skeleton_shader">add_default_skeleton_shader</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add a default skeleton shader with desaturated axons to the layer.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="add_from_client(client, add_skeleton_source=True) (src.nglui.statebuilder.ngl_components.SegmentationLayer.add_from_client)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_from_client">add_from_client</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add a segmentation layer source from caveclient.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="add_segment_colors(segment_colors) (src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segment_colors)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segment_colors">add_segment_colors</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add segment colors to the layer.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="add_segment_properties(data, client, id_column='pt_root_id', label_column=None, description_column=None, string_columns=None, number_columns=None, tag_value_columns=None, tag_bool_columns=None, tag_descriptions=None, allow_disambiguation=True, label_separator='_', label_format_map=None, prepend_col_name=False, random_columns=None, random_column_prefix=None, dry_run=False) (src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segment_properties)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segment_properties">add_segment_properties</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Upload segment properties and add to the layer.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="add_segments(segments, visible=None) (src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segments)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segments">add_segments</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add segment ids to the layer.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="add_segments_from_data(data, segment_column, visible_column=None, color_column=None) (src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segments_from_data)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segments_from_data">add_segments_from_data</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Create a SegmentationLayer from a DataFrame.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="add_shader(shader) (src.nglui.statebuilder.ngl_components.SegmentationLayer.add_shader)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.add_shader">add_shader</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Add a shader to the layer.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="apply_to_neuroglancer(viewer) (src.nglui.statebuilder.ngl_components.SegmentationLayer.apply_to_neuroglancer)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.apply_to_neuroglancer">apply_to_neuroglancer</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Can be a viewer or a viewer.txn()-context state</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="set_view_options(selected_alpha=None, not_selected_alpha=None, alpha_3d=None, mesh_silhouette=None) (src.nglui.statebuilder.ngl_components.SegmentationLayer.set_view_options)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer.set_view_options">set_view_options</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Set the view options for the layer.</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.SegmentationLayer.add_default_skeleton_shader" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_default_skeleton_shader</span><span class="p">()</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add a default skeleton shader with desaturated axons to the layer.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.SegmentationLayer.add_from_client" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_from_client</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">add_skeleton_source</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add a segmentation layer source from caveclient.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>client</code></b>
+              (<code><span title="CAVEclient">CAVEclient</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The CAVEclient object.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="SegmentationLayer (src.nglui.statebuilder.ngl_components.SegmentationLayer)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer">SegmentationLayer</a></code>
+          –
+          <div class="doc-md-description">
+            <p>A SegmentationLayer object.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segment_colors" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_segment_colors</span><span class="p">(</span><span class="n">segment_colors</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add segment colors to the layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>segment_colors</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The segment colors to add.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="SegmentationLayer (src.nglui.statebuilder.ngl_components.SegmentationLayer)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer">SegmentationLayer</a></code>
+          –
+          <div class="doc-md-description">
+            <p>The SegmentationLayer object with the added segment colors.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segment_properties" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_segment_properties</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">client</span><span class="p">,</span> <span class="n">id_column</span><span class="o">=</span><span class="s1">&#39;pt_root_id&#39;</span><span class="p">,</span> <span class="n">label_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">string_columns</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">number_columns</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tag_value_columns</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tag_bool_columns</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tag_descriptions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">allow_disambiguation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">label_separator</span><span class="o">=</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="n">label_format_map</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prepend_col_name</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">random_columns</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">random_column_prefix</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Upload segment properties and add to the layer.
+If you already have a segment properties cloud path, use <code>add_source</code> to add it to the layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>data</code></b>
+              (<code><a class="autorefs autorefs-external" title="pandas.DataFrame" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame">DataFrame</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The DataFrame containing the segment properties.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>client</code></b>
+              (<code><span title="CAVEclient">CAVEclient</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The CAVEclient object needed to upload .</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>id_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>&#39;pt_root_id&#39;</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the segment IDs. Default is 'pt_root_id'.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>label_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> or <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name(s) for the segment labels. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>description_column</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column name for the segment descriptions. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>string_columns</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column names for string properties. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>number_columns</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column names for number properties. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tag_value_columns</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column names for tag value properties. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tag_bool_columns</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The column names for tag boolean properties. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tag_descriptions</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The descriptions for the tags. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>allow_disambiguation</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+                  <code>True</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Whether to allow disambiguation of segment IDs. Default is True.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>label_separator</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>&#39;_&#39;</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The separator for label formatting. Default is "_".</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>label_format_map</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The format map for labels. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>prepend_col_name</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+                  <code>False</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Whether to prepend the column name to the label. Default is False.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>random_columns</code></b>
+              (<code><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>]</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Number of random columns to add. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>random_column_prefix</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Name prefix of the random columns. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>dry_run</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+                  <code>False</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>If dry run is true, build but do not actually upload and instead use a placeholder source text. Default is False.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="SegmentationLayer (src.nglui.statebuilder.ngl_components.SegmentationLayer)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer">SegmentationLayer</a></code>
+          –
+          <div class="doc-md-description">
+            <p>A SegmentationLayer object with added segment properties.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segments" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_segments</span><span class="p">(</span><span class="n">segments</span><span class="p">,</span> <span class="n">visible</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add segment ids to the layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>segments</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a> or <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a> or <span title="VisibleSegments">VisibleSegments</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The segments to add. If a dict, the keys are the segment IDs and the values are the boolean visibility.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>visible</code></b>
+              (<code><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>]</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The visibility of the segments, assumed to be True if not provided.
+Should be the same length as segments, and segments should be a list of the same length.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="SegmentationLayer (src.nglui.statebuilder.ngl_components.SegmentationLayer)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer">SegmentationLayer</a></code>
+          –
+          <div class="doc-md-description">
+            <p>The SegmentationLayer object.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.SegmentationLayer.add_segments_from_data" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_segments_from_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">segment_column</span><span class="p">,</span> <span class="n">visible_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">color_column</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Create a SegmentationLayer from a DataFrame.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>data</code></b>
+              (<code><a class="autorefs autorefs-external" title="pandas.DataFrame" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame">DataFrame</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The DataFrame containing the segmentation data.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>name</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The name of the layer. Default is "seg".</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>color</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The color to use.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>shader</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The shader to use.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="SegmentationLayer (src.nglui.statebuilder.ngl_components.SegmentationLayer)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer">SegmentationLayer</a></code>
+          –
+          <div class="doc-md-description">
+            <p>A SegmentationLayer object.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.SegmentationLayer.add_shader" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_shader</span><span class="p">(</span><span class="n">shader</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add a shader to the layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>shader</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The shader to add.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.SegmentationLayer.apply_to_neuroglancer" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">apply_to_neuroglancer</span><span class="p">(</span><span class="n">viewer</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Can be a viewer or a viewer.txn()-context state</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.SegmentationLayer.set_view_options" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">set_view_options</span><span class="p">(</span><span class="n">selected_alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">not_selected_alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alpha_3d</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mesh_silhouette</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Set the view options for the layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>selected_alpha</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The alpha value for selected segments. Default is 0.2.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>not_selected_alpha</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The alpha value for not selected segments. Default is 0.0.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>alpha_3d</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The alpha value for 3D segments. Default is 0.9.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>mesh_silhouette</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The silhouette value for the mesh. Default is 0.0.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="SegmentationLayer (src.nglui.statebuilder.ngl_components.SegmentationLayer)" href="#src.nglui.statebuilder.ngl_components.SegmentationLayer">SegmentationLayer</a></code>
+          –
+          <div class="doc-md-description">
+            <p>A SegmentationLayer object with updated view options.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="src.nglui.statebuilder.ngl_components.Source" class="doc doc-heading">
+            <code>Source</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Configuration for a Neuroglancer data source.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>url</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The URL of the data source.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>resolution</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The resolution of the data source. Default is None.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>transform</code></b>
+              (<code><a class="autorefs autorefs-internal" title="CoordSpaceTransform (src.nglui.statebuilder.ngl_components.CoordSpaceTransform)" href="#src.nglui.statebuilder.ngl_components.CoordSpaceTransform">CoordSpaceTransform</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The coordinate space transform for the data source. Default is None, which will create a transform based on the resolution.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>subsources</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>A dictionary of subsources for the data source (e.g. meshes, skeletons, etc). Default is None, which includes all subsources.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>enable_default_subsources</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Whether to enable default subsources. Default is True, which includes all default subsources.</p>
+          </div>
+        </li>
+    </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="to_neuroglancer() (src.nglui.statebuilder.ngl_components.Source.to_neuroglancer)" href="#src.nglui.statebuilder.ngl_components.Source.to_neuroglancer">to_neuroglancer</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Convert the Source to a neuroglancer-python object.</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="src.nglui.statebuilder.ngl_components.Source.to_neuroglancer" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">to_neuroglancer</span><span class="p">()</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Convert the Source to a neuroglancer-python object.</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="src.nglui.statebuilder.ngl_components.UnmappedDataError" class="doc doc-heading">
+            <code>UnmappedDataError</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#Exception">Exception</a></code></p>
+
+
+
+        <p>Exception raised when a layer is not fully mapped to a datamap.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="src.nglui.statebuilder.ngl_components.segments_to_neuroglancer" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">segments_to_neuroglancer</span><span class="p">(</span><span class="n">segments</span><span class="p">)</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Convert a flat or mixed-visibility segment list to Neuroglancer.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="src.nglui.statebuilder.ngl_components.source_to_neuroglancer" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">source_to_neuroglancer</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">image_layer</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Convert a possibly multi-url source to a Neuroglancer-compatible format.</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../statebuilder/" class="md-footer__link md-footer__link--prev" aria-label="Previous: statebuilder.base">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                statebuilder.base
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../ngl_annotations/" class="md-footer__link md-footer__link--next" aria-label="Next: statebuilder.ngl_annotations">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                statebuilder.ngl_annotations
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.indexes", "navigation.instant", "navigation.footer", "navigation.prune", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "toc.follow", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

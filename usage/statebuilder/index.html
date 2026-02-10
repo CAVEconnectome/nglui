@@ -1,0 +1,1942 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://caveconnectome.github.io/nglui/usage/statebuilder/">
+      
+      
+        <link rel="prev" href="../">
+      
+      
+        <link rel="next" href="../config/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>StateBuilder - NGLui Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Funnel+Sans:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Funnel Sans";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#neuroglancer-key-concepts" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="NGLui Documentation" class="md-header__button md-logo" aria-label="NGLui Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.33 12.91c.09 1.55-.62 3.04-1.89 3.95l.77 1.49c.23.45.26.98.06 1.45-.19.47-.58.84-1.06 1l-.79.25a1.687 1.687 0 0 1-1.86-.55L14.44 18c-.89-.15-1.73-.53-2.44-1.1-.5.15-1 .23-1.5.23-.88 0-1.76-.27-2.5-.79-.53.16-1.07.23-1.62.22-.79.01-1.57-.15-2.3-.45a4.1 4.1 0 0 1-2.43-3.61c-.08-.72.04-1.45.35-2.11-.29-.75-.32-1.57-.07-2.33C2.3 7.11 3 6.32 3.87 5.82c.58-1.69 2.21-2.82 4-2.7 1.6-1.5 4.05-1.66 5.83-.37.42-.11.86-.17 1.3-.17 1.36-.03 2.65.57 3.5 1.64 2.04.53 3.5 2.35 3.58 4.47.05 1.11-.25 2.2-.86 3.13.07.36.11.72.11 1.09m-5-1.41c.57.07 1.02.5 1.02 1.07a1 1 0 0 1-1 1h-.63c-.32.9-.88 1.69-1.62 2.29.25.09.51.14.77.21 5.13-.07 4.53-3.2 4.53-3.25a2.59 2.59 0 0 0-2.69-2.49 1 1 0 0 1-1-1 1 1 0 0 1 1-1c1.23.03 2.41.49 3.33 1.3.05-.29.08-.59.08-.89-.06-1.24-.62-2.32-2.87-2.53-1.25-2.96-4.4-1.32-4.4-.4-.03.23.21.72.25.75a1 1 0 0 1 1 1c0 .55-.45 1-1 1-.53-.02-1.03-.22-1.43-.56-.48.31-1.03.5-1.6.56-.57.05-1.04-.35-1.07-.9a.97.97 0 0 1 .88-1.1c.16-.02.94-.14.94-.77 0-.66.25-1.29.68-1.79-.92-.25-1.91.08-2.91 1.29C6.75 5 6 5.25 5.45 7.2 4.5 7.67 4 8 3.78 9c1.08-.22 2.19-.13 3.22.25.5.19.78.75.59 1.29-.19.52-.77.78-1.29.59-.73-.32-1.55-.34-2.3-.06-.32.27-.32.83-.32 1.27 0 .74.37 1.43 1 1.83.53.27 1.12.41 1.71.4q-.225-.39-.39-.81a1.038 1.038 0 0 1 1.96-.68c.4 1.14 1.42 1.92 2.62 2.05 1.37-.07 2.59-.88 3.19-2.13.23-1.38 1.34-1.5 2.56-1.5m2 7.47-.62-1.3-.71.16 1 1.25zm-4.65-8.61a1 1 0 0 0-.91-1.03c-.71-.04-1.4.2-1.93.67-.57.58-.87 1.38-.84 2.19a1 1 0 0 0 1 1c.57 0 1-.45 1-1 0-.27.07-.54.23-.76.12-.1.27-.15.43-.15.55.03 1.02-.38 1.02-.92"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            NGLui Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              StateBuilder
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/CAVEconnectome/nglui/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CAVEconnectome/NGLui
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  About
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+    
+  
+  How to Use
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../reference/statebuilder/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Function Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="NGLui Documentation" class="md-nav__button md-logo" aria-label="NGLui Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.33 12.91c.09 1.55-.62 3.04-1.89 3.95l.77 1.49c.23.45.26.98.06 1.45-.19.47-.58.84-1.06 1l-.79.25a1.687 1.687 0 0 1-1.86-.55L14.44 18c-.89-.15-1.73-.53-2.44-1.1-.5.15-1 .23-1.5.23-.88 0-1.76-.27-2.5-.79-.53.16-1.07.23-1.62.22-.79.01-1.57-.15-2.3-.45a4.1 4.1 0 0 1-2.43-3.61c-.08-.72.04-1.45.35-2.11-.29-.75-.32-1.57-.07-2.33C2.3 7.11 3 6.32 3.87 5.82c.58-1.69 2.21-2.82 4-2.7 1.6-1.5 4.05-1.66 5.83-.37.42-.11.86-.17 1.3-.17 1.36-.03 2.65.57 3.5 1.64 2.04.53 3.5 2.35 3.58 4.47.05 1.11-.25 2.2-.86 3.13.07.36.11.72.11 1.09m-5-1.41c.57.07 1.02.5 1.02 1.07a1 1 0 0 1-1 1h-.63c-.32.9-.88 1.69-1.62 2.29.25.09.51.14.77.21 5.13-.07 4.53-3.2 4.53-3.25a2.59 2.59 0 0 0-2.69-2.49 1 1 0 0 1-1-1 1 1 0 0 1 1-1c1.23.03 2.41.49 3.33 1.3.05-.29.08-.59.08-.89-.06-1.24-.62-2.32-2.87-2.53-1.25-2.96-4.4-1.32-4.4-.4-.03.23.21.72.25.75a1 1 0 0 1 1 1c0 .55-.45 1-1 1-.53-.02-1.03-.22-1.43-.56-.48.31-1.03.5-1.6.56-.57.05-1.04-.35-1.07-.9a.97.97 0 0 1 .88-1.1c.16-.02.94-.14.94-.77 0-.66.25-1.29.68-1.79-.92-.25-1.91.08-2.91 1.29C6.75 5 6 5.25 5.45 7.2 4.5 7.67 4 8 3.78 9c1.08-.22 2.19-.13 3.22.25.5.19.78.75.59 1.29-.19.52-.77.78-1.29.59-.73-.32-1.55-.34-2.3-.06-.32.27-.32.83-.32 1.27 0 .74.37 1.43 1 1.83.53.27 1.12.41 1.71.4q-.225-.39-.39-.81a1.038 1.038 0 0 1 1.96-.68c.4 1.14 1.42 1.92 2.62 2.05 1.37-.07 2.59-.88 3.19-2.13.23-1.38 1.34-1.5 2.56-1.5m2 7.47-.62-1.3-.71.16 1 1.25zm-4.65-8.61a1 1 0 0 0-.91-1.03c-.71-.04-1.4.2-1.93.67-.57.58-.87 1.38-.84 2.19a1 1 0 0 0 1 1c.57 0 1-.45 1-1 0-.27.07-.54.23-.76.12-.1.27-.15.43-.15.55.03 1.02-.38 1.02-.92"/></svg>
+
+    </a>
+    NGLui Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/CAVEconnectome/nglui/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CAVEconnectome/NGLui
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How to Use
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How to Use
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    StateBuilder
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    StateBuilder
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    StateBuilder
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    StateBuilder
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#neuroglancer-key-concepts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Neuroglancer Key Concepts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui-viewerstate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NGLui ViewerState
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="NGLui ViewerState">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exporting-states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exporting States...
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Exporting States...">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#to-urls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ...to URLs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#to-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ...to JSON
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#to-neuroglancer-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ...to Neuroglancer python
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Layers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#image-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image Layers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#segmentation-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Segmentation Layers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Segmentation Layers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#skeleton-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skeleton Sources
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#segment-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Segment Properties
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#skeleton-shader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skeleton Shader
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#annotation-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Annotation Layers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Annotation Layers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#local-annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Annotations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Local Annotations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tags
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cloud-annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cloud Annotations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#raw-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raw Layers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#caveclient-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CAVEclient Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mapping-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mapping Data
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Site Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Other Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Other Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../skeletons/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skeletons
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../segmentprops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Segment Properties
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parser
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../reference/statebuilder/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Function Reference
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#neuroglancer-key-concepts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Neuroglancer Key Concepts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui-viewerstate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NGLui ViewerState
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="NGLui ViewerState">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exporting-states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exporting States...
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Exporting States...">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#to-urls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ...to URLs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#to-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ...to JSON
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#to-neuroglancer-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ...to Neuroglancer python
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Layers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#image-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image Layers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#segmentation-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Segmentation Layers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Segmentation Layers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#skeleton-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skeleton Sources
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#segment-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Segment Properties
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#skeleton-shader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skeleton Shader
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#annotation-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Annotation Layers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Annotation Layers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#local-annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Annotations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Local Annotations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tags
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cloud-annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cloud Annotations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#raw-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raw Layers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#caveclient-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CAVEclient Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mapping-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mapping Data
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>StateBuilder</h1>
+
+<p>Statebuilder is a submodule that to produce Neuroglancer links and the JSON states that define them.
+It is built on top of <a href="https://github.com/google/neuroglancer/tree/master/python">neuroglancer-python</a>, and helps simplify producing more complex and data-driven states, while automating much of the boilerplate code and integrating with CAVEclient for CAVE-backed datasets.</p>
+<h2 id="neuroglancer-key-concepts">Neuroglancer Key Concepts</h2>
+<p>To understand how to use StateBuilder, it's helpful to understand the basic Neuroglancer concepts of layers, states, and annotations.</p>
+<p>Neuroglancer is a web-based viewer for large 3d datasets.
+Notably, Neuroglancer is designed to be a bit of complex Javascript that runs in your web browser and, generally, looks for data in various cloud-hosted locations.
+There are a number of different <strong>deployments</strong> of Neuroglancer, which can be based on slightly different versions of the code or slightly different configurations available.
+The two deployments that are built into NGLui right now are <a href="https://neuroglancer-demo.appspot.com">"Mainline" or the default deployment</a> built from the <a href="https://github.com/google/neuroglancer">main branch of Neuroglancer from Google</a> and the <a href="https://spelunker.cave-explorer.org">Spelunker</a> deployment based a <a href="https://github.com/seung-lab/neuroglancer/tree/spelunker">bleeding-edge branch</a> focused on CAVE-related features.
+Additional Neuroglancer deployments can be added using <a href="../config/"><code>site_utils</code></a>.</p>
+<p>Virtually every aspect of Neuroglancer is defined by this <strong>state</strong>, which is represented by a collection of keys and values in a JSON object that you can see if you click the <code>{}</code> button in the upper left of the Neuroglancer interface.
+Everything from selecting new objects or adding annotations to zooming or rotating your view is defined in this state, which can be imported or exported effectively as a readable <code>json</code> file.
+The complete description of the state is typically encoded in the URL, which is how you can easily share most Neuroglancer URLs.
+Building your own Neuroglancer view is thus simply the process of defining the state and passing it to a Neuroglancer viewer.</p>
+<p>The state has two main aspects, <strong>viewer options</strong> that define global properties like the position, the layout of views, and what tabs are open, and <strong>layers</strong> that define different datas sources and how they are visualized.
+Layers can be different types with different behaviors: Image layers show 3d imagery, Segmentation layers have "segments" with unique ids that can be selected and visualized in 3d with meshes or skeletons, and Annotation layers can show points, lines, or other objects associated with data.
+Each layer has a name, a source (typically a path to a cloud-hosted dataset), and various configuration options.
+Layers can actually have multiple complementary data sources of the same type, for example a Segmentation layer can have one source for segmentations and meshes while another source provides skeletons or segment property data.
+Unlike Image or Segmentation layers, Annotation layers can also have a "local" source, where the annotations are directly defined in the Neuroglancer state.</p>
+<p>The Statebuilder module follows this viewer-and-layer pattern, where you define a viewer with a set of options and then add layers of different types to it.
+Where possible, Statebuilder tries to tie components together as simply as possible and with reasonble defaults in order to make a Neuroglancer state with as little code as possible.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Current functionality is focused on viewing data. The many options for controlling the Neuroglancer interface are not yet implemented directly, although they are available in the underlying <code>neuroglancer</code> python library and JSON state.
+You can always access the raw neuroglancer state with <code>vs.to_neuroglancer_state</code> for further manipulation.</p>
+</div>
+<h2 id="nglui-viewerstate">NGLui ViewerState</h2>
+<p>The central object in StateBuilder is the <code>ViewerState</code>, which is used to initialize a Neuroglancer state, set the viewer options, add layers, and finally return the state in various formats.
+A minimal state joins together a ViewerState with layers.
+In general, all functions to <em>add</em> data to a state or layer start with <em>add_</em>, functions to <em>set</em> options or parameters start with <em>set_</em>, and functions to <em>export</em> the data to another form (e.g. a URL) start with <em>to_</em>.</p>
+<p>For example, to add a single image layer using the <a href="https://www.microns-explorer.org/cortical-mm3">Microns dataset</a>:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">nglui.statebuilder</span><span class="w"> </span><span class="kn">import</span> <span class="n">ViewerState</span><span class="p">,</span> <span class="n">ImageLayer</span><span class="p">,</span> <span class="n">SegmentationLayer</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">viewerstate</span> <span class="o">=</span> <span class="n">ViewerState</span><span class="p">()</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">viewerstate</span><span class="o">.</span><span class="n">add_layer</span><span class="p">(</span><span class="n">ImageLayer</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s1">&#39;precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie35/em&#39;</span><span class="p">))</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">viewerstate</span><span class="o">.</span><span class="n">add_layer</span><span class="p">(</span><span class="n">SegmentationLayer</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s1">&#39;precomputed://gs://iarpa_microns/minnie/minnie35/seg_m1300&#39;</span><span class="p">))</span>
+</span></code></pre></div>
+<p>You can see the layers in the state with in the <code>viewerstate.layers</code> attribute.</p>
+<div class="language-pycon highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">viewerstate</span><span class="o">.</span><span class="n">layers</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="go">[ImageLayer(name=&#39;img&#39;, source=&#39;precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie35/em&#39;),</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="go"> SegmentationLayer(name=&#39;seg&#39;, source=&#39;precomputed://gs://iarpa_microns/minnie/minnie35/seg&#39;)]</span>
+</span></code></pre></div>
+<p>And then you can turn these options into a Neuroglancer state with functions like <code>to_link</code>:</p>
+<div class="language-pycon highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">viewerstate</span><span class="o">.</span><span class="n">to_link</span><span class="p">()</span>
+</span></code></pre></div>
+<p>Which returns a <a href="https://spelunker.cave-explorer.org/#!%7B%22position%22:%5B112500.0,100000.0,11395.5%5D,%22layout%22:%22xy-3d%22,%22dimensions%22:%7B%22x%22:%5B8e-09,%22m%22%5D,%22y%22:%5B8e-09,%22m%22%5D,%22z%22:%5B4e-08,%22m%22%5D%7D,%22crossSectionScale%22:1.0,%22projectionScale%22:50000.0,%22showSlices%22:false,%22layers%22:%5B%7B%22type%22:%22image%22,%22source%22:%5B%7B%22url%22:%22precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie35/em%22,%22subsources%22:%7B%7D,%22enableDefaultSubsources%22:true%7D%5D,%22shader%22:%22None%22,%22name%22:%22img%22%7D,%7B%22type%22:%22segmentation%22,%22source%22:%5B%7B%22url%22:%22precomputed://gs://iarpa_microns/minnie/minnie35/seg%22,%22subsources%22:%7B%7D,%22enableDefaultSubsources%22:true%7D%5D,%22segments%22:%5B%5D,%22selectedAlpha%22:0.2,%22notSelectedAlpha%22:0.0,%22objectAlpha%22:0.9,%22segmentColors%22:%7B%7D,%22meshSilhouetteRendering%22:0.0,%22skeletonRendering%22:%7B%7D,%22name%22:%22seg%22%7D%5D%7D">Neuroglancer Link</a> with the configuration requested.</p>
+<div class="admonition danger">
+<p class="admonition-title">Danger</p>
+<p>It is highly recommended to install <code>cloud-volume</code> (which comes with <code>pip install nglui[full]</code>) in order to infer information like the resolution and size of datasets.
+If you do not want or have <code>cloud-volume</code> installed, you should always set the <code>dimensions</code> property when making a ViewerState (e.g. <code>ViewerState(dimensions=[4,4,40])</code>) to set the voxel resolution in nm/voxel.
+You can turn off automated resolution suggestions by setting <code>infer_dimensions=False</code> in the ViewerState constructor or explicitly setting the dimensions like above.
+Note that Neuroglancer does not always behave well if the dimensions are not set ahead of time, for example by setting the initial location or zoom level to be extremely far from the data.</p>
+</div>
+<p>Each function like <a href="../../reference/statebuilder/#src.nglui.statebuilder.base.ViewerState.add_layer">add_layer</a> returns the layer object, so you can also initialize the layers in a pipeline.
+This pipeline pattern is the one that we will typically use in this documentation.</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">viewerstate</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">ViewerState</span><span class="p">()</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="o">.</span><span class="n">add_layer</span><span class="p">(</span><span class="n">ImageLayer</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s1">&#39;precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em&#39;</span><span class="p">))</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="o">.</span><span class="n">add_layer</span><span class="p">(</span><span class="n">SegmentationLayer</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s1">&#39;precomputed://gs://iarpa_microns/minnie/minnie65/seg_m1300&#39;</span><span class="p">))</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>Or, you could use convenience functions that a ViewerState object has to add layers of different types directly:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">viewerstate</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">ViewerState</span><span class="p">()</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="o">.</span><span class="n">add_image_layer</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s1">&#39;precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em&#39;</span><span class="p">)</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="o">.</span><span class="n">add_segmentation_layer</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s1">&#39;precomputed://gs://iarpa_microns/minnie/minnie65/seg_m1300&#39;</span><span class="p">)</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>There are many such convenience functions, with the goal of making the most typical use cases as simple as possible while allowing for more complex configurations by using the underlying layer classes directly.</p>
+<h3 id="exporting-states">Exporting States...</h3>
+<p>You can export the ViewerState to a Neuroglancer state in a number of formats that are useful for different purposes.</p>
+<h4 id="to-urls">...to URLs</h4>
+<p>The most common way to export a state is to produce a Neuroglancer link or URL, which can be directly opened in a web browser.
+The basic <code>viewerstate.to_url()</code> function returns the URL as a string formated as a link to a specific Neuroglancer deployment.</p>
+<div class="language-pycon highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">viewerstate</span> <span class="o">=</span> <span class="n">ViewerState</span><span class="p">()</span><span class="o">.</span><span class="n">add_image_layer</span><span class="p">(</span><span class="s1">&#39;precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em&#39;</span><span class="p">)</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">viewerstate</span><span class="o">.</span><span class="n">to_url</span><span class="p">()</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="go">&#39;https://spelunker.cave-explorer.org/#!%7B%22position%22:%5B120320.0,103936.0,21360.0%5D,%22layout%22:%22xy-3d%22,%22dimensions%22:%7B%22x%22:%5B8e-09,%22m%22%5D,%22y%22:%5B8e-09,%22m%22%5D,%22z%22:%5B4e-08,%22m%22%5D%7D,%22crossSectionScale%22:1.0,%22projectionScale%22:50000.0,%22showSlices%22:false,%22layers%22:%5B%7B%22type%22:%22image%22,%22source%22:%5B%7B%22url%22:%22precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em%22,%22subsources%22:%7B%7D,%22enableDefaultSubsources%22:true%7D%5D,%22shader%22:%22None%22,%22name%22:%22imagery%22%7D%5D%7D&#39;</span>
+</span></code></pre></div>
+<p>In a notebook context, it is often convenient to return the URL as a formatted HTML link (like we used above), which can be done with <code>viewerstate.to_link()</code>.</p>
+<p>In addition, CAVE offers a <a href="https://caveconnectome.github.io/CAVEclient/tutorials/state/">link shortener</a> that can be used to store JSON states and return a shortened URL that can be used to access the state.
+We can use this link shortener directly using <a href="../../reference/statebuilder/#src.nglui.statebuilder.base.ViewerState.to_link_shortener">to_link_shortener</a> and passing an appropriate CAVEclient client object.</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">caveclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">CAVEclient</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">client</span> <span class="o">=</span> <span class="n">CAVEclient</span><span class="p">(</span><span class="s1">&#39;minnie65_public&#39;</span><span class="p">)</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">viewerstate</span><span class="o">.</span><span class="n">to_link_shortener</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+</span></code></pre></div>
+<p>will upload the state and return a short link with a form like <code>'https://spelunker.cave-explorer.org/#!middleauth+https://global.daf-apis.com/nglstate/api/v1/4690769064493056'</code>.</p>
+<p>You can also use the link shortener in the <a href="../../reference/statebuilder/#src.nglui.statebuilder.base.ViewerState.to_url">to_url</a> and <a href="../../reference/statebuilder/#src.nglui.statebuilder.base.ViewerState.to_link">to_link</a> methods by setting the <code>shorten</code> argument to <code>True</code> or <code>if_long</code> and passing a CAVEclient object.
+The <code>if_long</code> option will only shorten the url if it gets long enough to start breaking the URL length limits of most browsers, approximately 1.75 million characters.</p>
+<p>There are also convenience functions for copying the URL to the clipboard or opening it in a web browser, both of which have similar paramaters as the <code>to_url</code> method.</p>
+<p>The <a href="../../reference/statebuilder/#src.nglui.statebuilder.base.ViewerState.to_clipboard">to_clipboard</a> method will copy the URL to your system clipboard, after passing through the link shortener:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">viewerstate</span><span class="o">.</span><span class="n">to_clipboard</span><span class="p">(</span><span class="n">shorten</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">client</span><span class="o">=</span><span class="n">client</span><span class="p">)</span>
+</span></code></pre></div>
+<p>And the <a href="../../reference/statebuilder/#src.nglui.statebuilder.base.ViewerState.to_browser">to_browser</a> method will open the URL in your the web browser of your choosing, again after passing through the link shortener:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">viewerstate</span><span class="o">.</span><span class="n">to_browser</span><span class="p">(</span><span class="n">shorten</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">client</span><span class="o">=</span><span class="n">client</span><span class="p">,</span> <span class="n">browser</span><span class="o">=</span><span class="s1">&#39;firefox&#39;</span><span class="p">)</span>
+</span></code></pre></div>
+<p>To change the Neuroglancer web deployment used in all of the url and link functions, you can set a different URL in the <code>target_url</code> parameter of the <code>to_url</code> function.
+For example, to use the default Neuroglancer deployment, you can do:</p>
+<div class="language-pycon highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">viewerstate</span><span class="o">.</span><span class="n">to_url</span><span class="p">(</span><span class="n">target_url</span><span class="o">=</span><span class="s1">&#39;https://neuroglancer-demo.appspot.com&#39;</span><span class="p">)</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="go">&#39;https://neuroglancer-demo.appspot.com#!%7B%22position%22:%5B120320.0,103936.0,21360.0%5D,%22layout%22:%22xy-3d%22,%22dimensions%22:%7B%22x%22:%5B8e-09,%22m%22%5D,%22y%22:%5B8e-09,%22m%22%5D,%22z%22:%5B4e-08,%22m%22%5D%7D,%22crossSectionScale%22:1.0,%22projectionScale%22:50000.0,%22showSlices%22:false,%22layers%22:%5B%7B%22type%22:%22image%22,%22source%22:%5B%7B%22url%22:%22precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em%22,%22subsources%22:%7B%7D,%22enableDefaultSubsources%22:true%7D%5D,%22shader%22:%22None%22,%22name%22:%22imagery%22%7D%5D%7D&#39;</span>
+</span></code></pre></div>
+<p>There is also a <code>target_site</code> dictionary that can be used to set shortcuts for different Neuroglancer deployments, which is used by default in the <code>to_url</code> function.
+For example, you can set the <code>target_site</code> to <code>'spelunker'</code> to use the Spelunker deployment, or <code>'google'</code> to use the default Neuroglancer deployment.
+Additional deployments can be added to the <code>target_site</code> dictionary using <code>site_utils</code>.
+For example, if you want to add a new Neuroglancer deployment hosted at <code>'https://neuroglancer.my-deployment.com'</code> with a  <code>target_site</code> shortcut name <code>'my_new_shortcut'</code>, you could do the following:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">nglui.statebuilder</span><span class="w"> </span><span class="kn">import</span> <span class="n">site_utils</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">site_utils</span><span class="o">.</span><span class="n">add_neuroglancer_site</span><span class="p">(</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="n">site_name</span><span class="p">:</span> <span class="s1">&#39;my_new_shortcut&#39;</span><span class="p">,</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">site_url</span><span class="p">:</span> <span class="s1">&#39;https://neuroglancer.my-deployment.com&#39;</span><span class="p">,</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>Note that this configuration is global and will affect all Neuroglancer states generated in the current Python session.</p>
+<h4 id="to-json">...to JSON</h4>
+<p>The ViewerState can also be exported to a JSON object, which can be used to export to a file or to pass to other functions.</p>
+<p>The core function is <code>to_dict</code> which returns the state as a dictionary, with contents equivalent to what you see in the Neuroglancer <code>{}</code> tab.</p>
+<div class="language-pycon highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="go">&gt;&gt; viewerstate.to_dict()</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="go">{&#39;position&#39;: [120320.0, 103936.0, 21360.0],</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="go"> &#39;layout&#39;: &#39;xy-3d&#39;,</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="go"> &#39;dimensions&#39;: {&#39;x&#39;: [np.float64(8e-09), &#39;m&#39;],</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="go">  &#39;y&#39;: [np.float64(8e-09), &#39;m&#39;],</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="go">  &#39;z&#39;: [np.float64(4e-08), &#39;m&#39;]},</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="go"> &#39;crossSectionScale&#39;: 1.0,</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="go"> &#39;projectionScale&#39;: 50000.0,</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="go"> &#39;showSlices&#39;: False,</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="go"> &#39;layers&#39;: [{&#39;type&#39;: &#39;image&#39;,</span>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="go">   &#39;source&#39;: [{&#39;url&#39;: &#39;precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em&#39;,</span>
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="go">     &#39;subsources&#39;: {},</span>
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="go">     &#39;enableDefaultSubsources&#39;: True}],</span>
+</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="go">   &#39;shader&#39;: &#39;None&#39;,</span>
+</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="go">   &#39;name&#39;: &#39;imagery&#39;}]}</span>
+</span></code></pre></div>
+<p>A string-formatted JSON state can be generated with <code>to_json_string</code>, which can be directed pasted into the Neuroglancer <code>{}</code> tab.
+The main difference is that the string version is formatted as a JSON string, with numpy types converted to standard Python types and uses <code>"</code> characters as required by JSON.
+Note that it also contains <code>\n</code> newline characters and (optional) indents and thus is amenable to <code>print</code> or writing to a file.</p>
+<h4 id="to-neuroglancer-python">...to Neuroglancer python</h4>
+<p>The ViewerState object can also be converted to a <code>neuroglancer.Viewer</code> object, which is the underlying object used by the Neuroglancer python library. This can be done with the <code>to_neuroglancer_state</code> function, which returns a <code>neuroglancer.Viewer</code> object that can be used to interact with the Neuroglancer state in Python for advanced functionality.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The default <code>neuroglancer.Viewer</code> object used here differs from the one used in the <code>neuroglancer</code> python library by not launching a web server on creation.
+If you want an interactive Neuroglancer viewer that can be run from Python, set <code>interactive=True</code> in the ViewerState initialiation.</p>
+</div>
+<h2 id="layers">Layers</h2>
+<p>All layers have a certain common set of properties:</p>
+<ul>
+<li><code>source</code>: One or more cloudpaths pointing Neuroglancer at a data source.</li>
+<li><code>name</code>: A name for the layer, displayed in the tabs.</li>
+<li><code>visible</code>: A boolean value indicating if the layer is actively visible in the Neuroglancer interface.</li>
+<li><code>archived</code>: A boolean value indicating if the layer is archived, which removes it from the tab interface but allows it to be re-enabled from the Layers tab.</li>
+<li><code>shader</code>: A GL shader that can customize how data is rendered in the layer.</li>
+</ul>
+<p>In general, the only required property for a simple state is the <code>source</code>, with other properties having reasonable defaults for simple states.
+However, if you want to use multiple layers of the same type, you will need to set the <code>name</code> property for each layer to avoid conflicts.</p>
+<h3 id="image-layers">Image Layers</h3>
+<p>Image layers are the simplest type of layer to specify, and are used to display 3d imagery.
+The most basic image layer is specified with just a source:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">img_layer</span> <span class="o">=</span> <span class="n">ImageLayer</span><span class="p">(</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>    <span class="n">source</span><span class="o">=</span><span class="s1">&#39;precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em&#39;</span><span class="p">,</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>which produces a layer with name <code>img</code>.
+<div class="language-pycon highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">img_layer</span><span class="o">.</span><span class="n">name</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="go">&#39;img&#39;</span>
+</span></code></pre></div></p>
+<p>You can also add <strong>multiple sources</strong> to an image layer, which will be displayed as a single layer in Neuroglancer by combining them in a list.</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">img_layer_multi</span> <span class="o">=</span> <span class="n">ImageLayer</span><span class="p">(</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>    <span class="n">source</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>      <span class="s1">&#39;precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie35/em&#39;</span><span class="p">,</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>      <span class="s1">&#39;precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em&#39;</span><span class="p">,</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>    <span class="p">]</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>Neuroglancer also lets you specify linear transformations for sources, such as translations or rotations.
+You can apply these transformations with the more complex <code>Source</code> class, which can specify not only a cloudpath source, but a CoordSpaceTransform that captures an affine transformation matrix.
+It requires more information, but also allows more complexity.
+For example, to add a source with a translation:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">img_layer_transformed</span> <span class="o">=</span> <span class="n">ImageLayer</span><span class="p">(</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>    <span class="n">source</span><span class="o">=</span><span class="n">Source</span><span class="p">(</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>        <span class="n">url</span><span class="o">=</span><span class="s1">&#39;precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em&#39;</span><span class="p">,</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>        <span class="n">transform</span><span class="o">=</span><span class="n">CoordSpaceTransform</span><span class="p">(</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>            <span class="n">output_dimensions</span><span class="o">=</span><span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">40</span><span class="p">],</span>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>            <span class="n">matrix</span><span class="o">=</span><span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1000</span><span class="p">],</span>
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>                    <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">2000.0</span><span class="p">],</span>
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>                    <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2000</span><span class="p">]],</span>
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>        <span class="p">)</span>
+</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>    <span class="p">)</span>
+</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>The first three columns of the CoordSpaceTransform specify a linear transform matrix, while the last column is a translation vector.
+The 4th row is implicit and always <code>[0, 0, 0, 1]</code>, so it is not specified.</p>
+<h3 id="segmentation-layers">Segmentation Layers</h3>
+<p>Segmentation layers are also volumetric data, but have objects with segment ids that can be selected, hidden, and visualized in 3d using meshes or skeletons.
+The basic segmentation layer is just like an Image layer:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">seg_source</span> <span class="o">=</span> <span class="n">SegmentationLayer</span><span class="p">(</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;my_segmentation&#39;</span><span class="p">,</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    <span class="n">source</span><span class="o">=</span><span class="s1">&#39;precomputed://gs://iarpa_microns/minnie/minnie65/seg_m1300&#39;</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>However, now we can also select objects by segment id. Let's use the pipeline pattern to build up a segmentation layer with a source, two selected ids, and custom colors for them.</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">seg_layer</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>    <span class="n">SegmentationLayer</span><span class="p">()</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>    <span class="o">.</span><span class="n">add_source</span><span class="p">(</span><span class="s1">&#39;precomputed://gs://iarpa_microns/minnie/minnie65/seg_m1300&#39;</span><span class="p">)</span>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>    <span class="o">.</span><span class="n">add_segments</span><span class="p">([</span><span class="mi">864691135356428751</span><span class="p">,</span> <span class="mi">864691136032617659</span><span class="p">])</span>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>    <span class="o">.</span><span class="n">add_segment_colors</span><span class="p">(</span>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>        <span class="p">{</span>
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>            <span class="mi">864691135356428751</span><span class="p">:</span> <span class="s1">&#39;#ff0000&#39;</span><span class="p">,</span>
+</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>            <span class="mi">864691136032617659</span><span class="p">:</span> <span class="s1">&#39;#00ff00&#39;</span>
+</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>        <span class="p">}</span>
+</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>    <span class="p">)</span>
+</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>Packaging that together with an image layer from above,</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="p">(</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>    <span class="n">ViewerState</span><span class="p">()</span>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    <span class="o">.</span><span class="n">add_layer</span><span class="p">(</span><span class="n">img_layer</span><span class="p">)</span>
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>    <span class="o">.</span><span class="n">add_layer</span><span class="p">(</span><span class="n">seg_layer</span><span class="p">)</span>
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="p">)</span><span class="o">.</span><span class="n">to_link</span><span class="p">()</span>
+</span></code></pre></div>
+<p>would produce this <a href="" title="https://spelunker.cave-explorer.org/#!%7B%22position%22:%5B218809.0,161359.0,13929.0%5D,%22layout%22:%22xy-3d%22,%22dimensions%22:%7B%22x%22:%5B4e-09,%22m%22%5D,%22y%22:%5B4e-09,%22m%22%5D,%22z%22:%5B4e-08,%22m%22%5D%7D,%22crossSectionScale%22:1.0,%22projectionScale%22:50000.0,%22showSlices%22:false,%22layers%22:%5B%7B%22type%22:%22image%22,%22source%22:%5B%7B%22url%22:%22precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em%22,%22subsources%22:%7B%7D,%22enableDefaultSubsources%22:true%7D%5D,%22name%22:%22img%22%7D,%7B%22type%22:%22segmentation%22,%22source%22:%5B%7B%22url%22:%22precomputed://gs://iarpa_microns/minnie/minnie65/seg_m1300%22,%22subsources%22:%7B%7D,%22enableDefaultSubsources%22:true%7D%5D,%22segments%22:%5B%22864691135356428751%22,%22864691136032617659%22%5D,%22selectedAlpha%22:0.2,%22notSelectedAlpha%22:0.0,%22objectAlpha%22:0.9,%22segmentColors%22:%7B%22864691135356428751%22:%22#ff0000%22,%22864691136032617659%22:%22#00ff00%22%7D,%22meshSilhouetteRendering%22:0.0,%22name%22:%22seg%22%7D%5D%7D">Neuroglancer link</a></p>
+<p>There are also various parameters to set the appearance of the selected meshes and 2d overlays under the <code>set_view_options</code> method.</p>
+<p>You can also add selections from the data in a dataframe using <code>add_segments_from_data</code>, which will select all the segments in a column of the dataframe.</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">seg_layer</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>    <span class="n">SegmentationLayer</span><span class="p">()</span>
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>    <span class="o">.</span><span class="n">add_source</span><span class="p">(</span><span class="s1">&#39;precomputed://gs://iarpa_microns/minnie/minnie65/seg_m1300&#39;</span><span class="p">)</span>
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>    <span class="o">.</span><span class="n">add_segments_from_data</span><span class="p">(</span>
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>        <span class="n">data</span> <span class="o">=</span> <span class="n">my_dataframe</span><span class="p">,</span>
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>        <span class="n">segment_column</span> <span class="o">=</span> <span class="s1">&#39;pt_root_id,</span>
+</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>        <span class="n">visible_column</span> <span class="o">=</span> <span class="s1">&#39;is_visible&#39;</span><span class="p">,</span>
+</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>        <span class="n">color_column</span> <span class="o">=</span> <span class="s1">&#39;color_value&#39;</span><span class="p">,</span>
+</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>    <span class="p">)</span>
+</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>As in images, any specification of sources can be either a string URL or a list of URLs.</p>
+<p>Would select all segment ids in <code>my_dataframe['pt_root_id']</code> to the segmentation layer, toggle their visibility by the boolean values in <code>my_dataframe['is_visible']</code>, and set their colors to the values in <code>my_dataframe['color_value']</code>.
+Colors can be hex values or web-readable color names, such as <code>'red'</code>, <code>'blue'</code>, or <code>'green'</code>.</p>
+<h4 id="skeleton-sources">Skeleton Sources</h4>
+<p>You can add a custom skeleton source to a segmentation layer simply by adding it via <code>add_source</code> or including it on the initial source list.</p>
+<h4 id="segment-properties">Segment Properties</h4>
+<p>Just like Image layers can have multiple sources, Segmentation layers can also have multiple segmentation sources.
+In addition to the actual source of segmentation, you can also add sources to represent other aspects of the objects.</p>
+<p>Segment properties can be treated as an additional source and can be added directly to the list of sources (<code>add_source</code>) if you have an existing or static cloudpath.
+However, if you want to generate segment properties dynamically from a dataframe, you can use the <code>add_segment_properties</code> method, which will generate the segment properties file, upload it to a CAVE state server, and attach the resulting URL to the segmentation layer.
+Note that <code>add_segment_properties</code> requires a CAVEclient object and also has a <code>dry_run</code> option to avoid many duplicative uploads while developing your code.</p>
+<p>Segment properties can be added inline to the ViewerState and do not require a specified segmentation layer if only one segmentation layer is present.
+There is also a <code>random_columns</code> parameter which can be used to add a random number column to make it easier to subsample sets of cells without using a smaller table.
+For example, to download a CAVE table and then add it to a viewerstate with one random column, you could do:</p>
+<div class="language-pycon highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="go">from caveclient import CAVEclient</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="go">client = CAVEclient(&#39;minnie65_public&#39;)</span>
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="go">ct_df = client.materialize.tables.allen_column_mtypes_v2.get_all(split_positions=True)</span>
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="go">vs = (</span>
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="go">    ViewerState(client=client)</span>
+</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="go">    .add_layers_from_client(segmentation=&#39;seg&#39;)</span>
+</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="go">    .add_segment_properties(</span>
+</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="go">        data=ct_df,</span>
+</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="go">        id_column=&#39;pt_supervoxel_id&#39;,</span>
+</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="go">        label_column=&#39;target_id&#39;,</span>
+</span><span id="__span-20-11"><a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a><span class="go">        tag_value_columns=[&#39;cell_type&#39;],</span>
+</span><span id="__span-20-12"><a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a><span class="go">        random_columns=1,</span>
+</span><span id="__span-20-13"><a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a><span class="go">    )</span>
+</span><span id="__span-20-14"><a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a><span class="go">)</span>
+</span></code></pre></div>
+<p>See the <a href="../segmentprops/">Segment Properties documentation</a> for more information on how to generate segment properties in Neuroglancer and what different options mean.</p>
+<h4 id="skeleton-shader">Skeleton Shader</h4>
+<p>The <code>shader</code> field of a segmentation layer currently specifies how skeletons are rendered in Neuroglancer.
+The <code>statebuilder.shaders</code> module has some examples and tooling to help generate these shaders, but GL shaders like this are effectively a new language.
+Once you have a shader you want to use, you can set it with the <code>add_shader</code> method of the segmentation layer.</p>
+<h3 id="annotation-layers">Annotation Layers</h3>
+<p>Annotation layers let a user define various types of annotations like points, lines, bounding boxes, ellipses, and polylines (a series of points, each connected to the next by lines).
+Annotations can also be associated with segmentations, allowing you to filter annotations by the data that's being selected.</p>
+<p>Annotation layers come in two types, <strong>local</strong> annotation layers that store their annotations directly in the Neuroglancer state and <strong>cloud</strong> annotation layers that get their annotations from a cloud-hosted source.
+While they can look and are created with the same functions similar, these behave differently in Neuroglancer and not all functions are available for both types.</p>
+<h4 id="local-annotations">Local Annotations</h4>
+<p>The simplest annotation layer is a local annotation layer, which can be created with just a name.</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">nglui.statebuilder</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnnotationLayer</span>
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="n">annotation_layer</span> <span class="o">=</span> <span class="n">AnnotationLayer</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;my_annotations&#39;</span><span class="p">)</span>
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="n">viewer_state</span><span class="o">.</span><span class="n">add_layer</span><span class="p">(</span><span class="n">annotation_layer</span><span class="p">)</span>
+</span></code></pre></div>
+<p>The simplest way to add annotations is through the <code>add_points</code>, <code>add_lines</code>, <code>add_boxes</code>, <code>add_ellipses</code>, and <code>add_polylines</code> methods.
+These methods work similarly, taking a dataframe where each row represents an annotation and the columns are specified by parameters.</p>
+<p>For example, to add points to the annotation layer, you can do:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="n">annotation_layer</span><span class="o">.</span><span class="n">add_points</span><span class="p">(</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>    <span class="n">data</span><span class="o">=</span><span class="n">my_dataframe</span><span class="p">,</span>
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>    <span class="n">point_column</span><span class="o">=</span><span class="s1">&#39;location&#39;</span><span class="p">,</span> <span class="c1"># Column with point locations as x,y,z coordinates</span>
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>    <span class="n">segment_column</span><span class="o">=</span><span class="s1">&#39;linked_segment&#39;</span><span class="p">,</span> <span class="c1"># Column with linked segment ids</span>
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>    <span class="n">description_column</span><span class="o">=</span><span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="c1"># Column with annotation descriptions</span>
+</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>    <span class="n">data_resolution</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="c1"># Resolution of the point data in nm/voxel. Will default to the layer&#39;s default resolution if not specified.</span>
+</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>Put together into a pipeline, you could generate a Neuroglancer link with an annotation layer from a dataframe like so:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">nglui.statebuilder</span><span class="w"> </span><span class="kn">import</span> <span class="n">ViewerState</span><span class="p">,</span> <span class="n">AnnotationLayer</span>
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="p">(</span>
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>    <span class="n">ViewerState</span><span class="p">()</span>
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>    <span class="o">.</span><span class="n">add_layers_from_client</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">segmentation</span><span class="o">=</span><span class="s1">&#39;seg&#39;</span><span class="p">)</span> <span class="c1"># Sets the name of the segmentation layer to &#39;seg&#39;</span>
+</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>    <span class="o">.</span><span class="n">add_layer</span><span class="p">(</span>
+</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>        <span class="n">AnnotationLayer</span><span class="p">(</span>
+</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>            <span class="n">name</span><span class="o">=</span><span class="s1">&#39;my_annotations&#39;</span><span class="p">,</span>
+</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>            <span class="n">linked_segmentations</span><span class="o">=</span><span class="s1">&#39;seg&#39;</span><span class="p">,</span> <span class="c1"># Uses the `seg` name to link annotations to the segmentation layer</span>
+</span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>        <span class="p">)</span>
+</span><span id="__span-23-10"><a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a>        <span class="o">.</span><span class="n">add_points</span><span class="p">(</span>
+</span><span id="__span-23-11"><a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a>            <span class="n">data</span><span class="o">=</span><span class="n">my_dataframe</span><span class="p">,</span>
+</span><span id="__span-23-12"><a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a>            <span class="n">point_column</span><span class="o">=</span><span class="s1">&#39;location&#39;</span><span class="p">,</span>
+</span><span id="__span-23-13"><a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a>            <span class="n">segment_column</span><span class="o">=</span><span class="s1">&#39;linked_segment&#39;</span><span class="p">,</span>
+</span><span id="__span-23-14"><a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a>            <span class="n">description_column</span><span class="o">=</span><span class="s1">&#39;description&#39;</span><span class="p">,</span>
+</span><span id="__span-23-15"><a id="__codelineno-23-15" name="__codelineno-23-15" href="#__codelineno-23-15"></a>            <span class="n">data_resolution</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+</span><span id="__span-23-16"><a id="__codelineno-23-16" name="__codelineno-23-16" href="#__codelineno-23-16"></a>        <span class="p">)</span>
+</span><span id="__span-23-17"><a id="__codelineno-23-17" name="__codelineno-23-17" href="#__codelineno-23-17"></a>    <span class="p">)</span>
+</span><span id="__span-23-18"><a id="__codelineno-23-18" name="__codelineno-23-18" href="#__codelineno-23-18"></a><span class="p">)</span><span class="o">.</span><span class="n">to_link</span><span class="p">()</span>
+</span></code></pre></div>
+<p>However, while this gives you the most control over details, there's still a lot of boilerplate code to set up an annotation layer, link it to an existing segmentation layer, and then add points to it.
+If you just want to create a local annotation layer that will automatically link to the first existing segmentation layer in the ViewerState, you can use the <code>add_annotation_layer</code> method of the ViewerState object.
+Even better, if you want to create a local annotation layer with points, you can use <code>add_points</code> directly on the ViewerState object, which will create a local annotation layer with the specified points and link it to the first segmentation layer in the ViewerState, and do the same annotation creation.
+For example, the above code can be simplified to:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="p">(</span>
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>    <span class="n">ViewerState</span><span class="p">()</span>
+</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>    <span class="o">.</span><span class="n">add_layers_from_client</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>    <span class="o">.</span><span class="n">add_points</span><span class="p">(</span>
+</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>        <span class="n">data</span><span class="o">=</span><span class="n">my_dataframe</span><span class="p">,</span>
+</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>        <span class="n">name</span><span class="o">=</span><span class="s1">&#39;my_annotations&#39;</span><span class="p">,</span>
+</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>        <span class="n">point_column</span><span class="o">=</span><span class="s1">&#39;location&#39;</span><span class="p">,</span>
+</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>        <span class="n">segment_column</span><span class="o">=</span><span class="s1">&#39;linked_segment&#39;</span><span class="p">,</span>
+</span><span id="__span-24-9"><a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a>        <span class="n">description_column</span><span class="o">=</span><span class="s1">&#39;description&#39;</span><span class="p">,</span>
+</span><span id="__span-24-10"><a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a>        <span class="n">data_resolution</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+</span><span id="__span-24-11"><a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a>    <span class="p">)</span>
+</span><span id="__span-24-12"><a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a><span class="p">)</span><span class="o">.</span><span class="n">to_link</span><span class="p">()</span>
+</span></code></pre></div>
+<p>This will add a local annotation layer with points defined by the <code>my_dataframe</code> dataframe, where each row has a point location in the <code>location</code> column, a linked segment id in the <code>linked_segment</code> column, and a description in the <code>description</code> column.</p>
+<div class="admonition note multi-column point locations">
+<p class="admonition-title">Note</p>
+<p>The <code>point_column</code> field can also refer to a situation where the x,y, and z coordinates of the point are stored in separate columns if they are formatted according to <code>{point_column}_x</code>, <code>{point_column}_y</code>, and <code>{point_column}_z</code>.</p>
+</div>
+<p>There are also direct class to produce annotations in <code>statebuilder.ngl_annotations</code>, which can be added directly to an annotation layer via <code>add_annotations</code> for even more control.</p>
+<h5 id="tags">Tags</h5>
+<p>Local annotations can have <strong>tags</strong>, which is a way to categorize annotations with shortcuts in Neuroglancer.
+When you make an annotation layer, you can specify a list of tags that will be used to categorize the annotations.
+The shortcuts for adding these tags will be <span class="keys"><kbd class="key-shift">Shift</kbd><span>+</span><kbd class="key-q">Q</kbd></span>, <span class="keys"><kbd class="key-shift">Shift</kbd><span>+</span><kbd class="key-w">W</kbd></span>, <span class="keys"><kbd class="key-shift">Shift</kbd><span>+</span><kbd class="key-e">E</kbd></span>, and so on.
+The tags run <span class="keys"><kbd class="key-q">Q</kbd></span> to <span class="keys"><kbd class="key-t">T</kbd></span> for the first five tags, then <span class="keys"><kbd class="key-a">A</kbd></span> to <span class="keys"><kbd class="key-g">G</kbd></span> for the next five tags.
+A max of ten tags can be used in a single annotation layer in nglui to avoid overloading the interface.</p>
+<p>You can specify which tags the annotations already in two ways.
+A <code>tag_column</code> specifies one or more column names, where each column has a single string per row that will be used as the tag for the annotation.
+With this approach, you can only use one tag per annotation per tag column.
+Alternatively, you can use <code>tag_bools</code>, which is a list of columns where each column name is taken to be a tag and the value in the column is a boolean indicating if the tag is applied to the annotation.
+In both cases, the layer will automatically generate the list of required tags based on the columns in the dataframe, added alphabetically if not already present in the specified tag list.</p>
+<h4 id="cloud-annotations">Cloud Annotations</h4>
+<p>Cloud annotations are similar to local annotations, but they are stored in a cloud-hosted source.
+Cloud annotations can be used simply by passing a <code>source</code> url to the <code>AnnotationLayer</code> or <code>add_annotation_layer</code> method.
+The AnnotationLayer object will detect if the <code>source</code> value is not <code>None</code> and will create a cloud annotation layer instead of a local one.</p>
+<p>Note that cloud annotations don't mix with local annotations, and if you have an explicit source defined then the local annotations will not be created even if they were specified.
+In addition, cloud annotations cannot currently have tags.</p>
+<h3 id="raw-layers">Raw Layers</h3>
+<p>Raw layers are a way to add existing layers from Neuroglancer states to the ViewerState without additional processing or linking.
+You can add a raw layer by calling the <code>add_raw_layer</code> method on the ViewerState object, passing the dictionary representation of the layer which you can get from the state JSON in Neuroglancer or downloaded.
+Raw layers have few configuration options, becuase the data is intended to be used as-is.
+However, there are a few changes you can make when bringing them into your ViewerState.</p>
+<ol>
+<li>You can specify a new <code>name</code> for the layer, which will replace the existing name, otherwise the name will be inherited from the data in the layer JSON. Similarly, you can adjust visibility and archived settings.</li>
+<li>You can also provide a <code>source_remap</code> dictionary to remap any source URLs for the layer. For example, if a cloudpath has changed locations or you want to migrate a state from an authenticated production endpoint to a public endpoint, you can provide a mapping of old paths to new paths as a dictionary.</li>
+</ol>
+<p>If you're using raw layers, you might find it useful to be using a base state as well.
+You can provide a <code>base_state</code> state dictionary to the <code>ViewerState</code> class on creation.
+You can strip out inconvenient parts with functions <code>strip_layers</code> (which strips just the layer definitions and active layer) and <code>strip_state_properties</code>, which offers more selective control.
+This might be useful if you want to preserve things that cannot be easily set in the python interface such as complex tool panels. </p>
+<h3 id="caveclient-integration">CAVEclient Integration</h3>
+<p>NGLui integrates with the CAVEclient to make it easy to work with Neuroglancer states that are hosted on CAVE.
+You can use an initialized CAVEclient object to configure the resolution, image, and segmentation layers of a ViewerState:</p>
+<div class="language-pycon highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="go">from caveclient import CAVEclient</span>
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="go">client = CAVEclient(&#39;minnie65_public&#39;)</span>
+</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="go">viewer_state = (</span>
+</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="go">    ViewerState()</span>
+</span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="go">    .add_layers_from_client(client)</span>
+</span><span id="__span-25-6"><a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a><span class="go">)</span>
+</span></code></pre></div>
+<p>This will use the info in the CAVEclient to find any relevent information (including skeleton sources for segmentation layers) and add it to the ViewerState.</p>
+<div class="language-pycon highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">viewer_state</span><span class="o">.</span><span class="n">layers</span>
+</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="go">[ImageLayer(name=&#39;imagery&#39;, source=&#39;precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em&#39;),</span>
+</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="go"> SegmentationLayer(name=&#39;segmentation&#39;, source=[&#39;graphene://https://minnie.microns-daf.com/segmentation/table/minnie65_public&#39;, &#39;precomputed://middleauth+https://minnie.microns-daf.com/skeletoncache/api/v1/minnie65_public/precomputed/skeleton/&#39;])]</span>
+</span></code></pre></div>
+<p>There are a variety of parameters to control layer properties here, as well.
+In all cases, the image layer will be added first (if used) and then the segmentation layer.</p>
+<h2 id="mapping-data">Mapping Data</h2>
+<p>In some situations, it can make sense to separate data from the Neuroglancer state creation rules.
+This effectively allows you to build one set of rules and then apply them to different data with the same code.</p>
+<p>This is handled now through a special <code>DataMap</code> class that can be used to replace certain arguments in functions relating to data sources and annotation creation.
+For example, instead of making a Image and Segmentation layers with pre-specified sources, you can add the source as a 'DataMap<code>object.
+Each DataMap has a</code>key` attribute that is used to map the data you will provide later to the correct role in state creation.</p>
+<div class="language-pycon highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="go">from nglui.statebuilder import ViewerState, SegmentationLayer, DataMap</span>
+</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>
+</span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="go">viewer_state = (</span>
+</span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="go">    ViewerState()</span>
+</span><span id="__span-27-5"><a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="go">    .add_image_layer(source=DataMap(&#39;img_source&#39;))</span>
+</span><span id="__span-27-6"><a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a><span class="go">    .add_segmentation_layer(source=DataMap(&#39;seg_source&#39;))</span>
+</span><span id="__span-27-7"><a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a><span class="go">)</span>
+</span></code></pre></div>
+<p>If you tried to run <code>viewer_state.to_link()</code> now, you would get an <code>UnmappedDataError</code> indicating that these values have yet to be replaced with actual data.</p>
+<p>To actually map data, you can use the <code>map</code> method of the ViewerState object, which takes a dictionary of key-value pairs where the keys are the DataMap keys and the values are the actual data to be used.
+For example, to replicate the previous example with the CAVEclient info, you could do:</p>
+<div class="language-pycon highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="go">viewer_state.map(</span>
+</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="go">    {</span>
+</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="go">        &#39;img_source&#39;: &#39;precomputed://https://bossdb-open-data.s3.amazonaws.com/iarpa_microns/minnie/minnie65/em&#39;,</span>
+</span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="go">        &#39;seg_source&#39;: [</span>
+</span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a><span class="go">                &#39;graphene://https://minnie.microns-daf.com/segmentation/table/minnie65_public&#39;,</span>
+</span><span id="__span-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a><span class="go">            ],</span>
+</span><span id="__span-28-7"><a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="go">    }</span>
+</span><span id="__span-28-8"><a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a><span class="go">).to_link()</span>
+</span></code></pre></div>
+<p>This will replace the DataMap keys with the actual data and produce a Neuroglancer link with the specified sources.
+Applying this across a list of data sources can easily generate a large collection of neuroglancer states.</p>
+<p>The other principle use of DataMaps is to support annotation creation by replacing the <code>data</code> argument in the <code>add_points</code>, <code>add_lines</code>, <code>add_boxes</code>, <code>add_ellipses</code>, and <code>add_polylines</code> methods.
+For example, you can create a DataMap for the annotation data and then use it to add points to the annotation layer with the following pattern:</p>
+<div class="language-pycon highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="go">from nglui.statebuilder import ViewerState, AnnotationLayer, DataMap</span>
+</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="go">viewer_state = (</span>
+</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="go">    ViewerState()</span>
+</span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a><span class="go">    .add_annotation_layer(name=&#39;my_annotations&#39;, linked_segmentations=&#39;seg&#39;)</span>
+</span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a><span class="go">    .add_points(</span>
+</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a><span class="go">        data=DataMap(&#39;annotation_data&#39;),</span>
+</span><span id="__span-29-7"><a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a><span class="go">        point_column=&#39;location&#39;,</span>
+</span><span id="__span-29-8"><a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a><span class="go">        segment_column=&#39;linked_segment&#39;,</span>
+</span><span id="__span-29-9"><a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a><span class="go">        description_column=&#39;description&#39;,</span>
+</span><span id="__span-29-10"><a id="__codelineno-29-10" name="__codelineno-29-10" href="#__codelineno-29-10"></a><span class="go">        data_resolution=[1, 1, 1],</span>
+</span><span id="__span-29-11"><a id="__codelineno-29-11" name="__codelineno-29-11" href="#__codelineno-29-11"></a><span class="go">    )</span>
+</span><span id="__span-29-12"><a id="__codelineno-29-12" name="__codelineno-29-12" href="#__codelineno-29-12"></a><span class="go">)</span>
+</span><span id="__span-29-13"><a id="__codelineno-29-13" name="__codelineno-29-13" href="#__codelineno-29-13"></a>
+</span><span id="__span-29-14"><a id="__codelineno-29-14" name="__codelineno-29-14" href="#__codelineno-29-14"></a><span class="go">viewer_state.map(</span>
+</span><span id="__span-29-15"><a id="__codelineno-29-15" name="__codelineno-29-15" href="#__codelineno-29-15"></a><span class="go">    {</span>
+</span><span id="__span-29-16"><a id="__codelineno-29-16" name="__codelineno-29-16" href="#__codelineno-29-16"></a><span class="go">        &#39;annotation_data&#39;: my_dataframe,</span>
+</span><span id="__span-29-17"><a id="__codelineno-29-17" name="__codelineno-29-17" href="#__codelineno-29-17"></a><span class="go">    }</span>
+</span><span id="__span-29-18"><a id="__codelineno-29-18" name="__codelineno-29-18" href="#__codelineno-29-18"></a><span class="go">).to_link()</span>
+</span></code></pre></div>
+<p>Note that the <code>map</code> method returns the ViewerState object itself, so you could in principle chain maps together to sequentially replace DataMap values.
+Only when all DataMaps are resolv$$ed will the <code>to_link</code> or other export functions work without error.</p>
+<p>A DataMap with an empty argument is treated as an implicit "None" value and a <code>map</code> call that gets anything other than a dictionary will be treated as a dictionary with a single key of <code>None</code> and the value being the data to be mapped.</p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../" class="md-footer__link md-footer__link--prev" aria-label="Previous: Introduction">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Introduction
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../config/" class="md-footer__link md-footer__link--next" aria-label="Next: Site Configuration">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Site Configuration
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.indexes", "navigation.instant", "navigation.footer", "navigation.prune", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "toc.follow", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
