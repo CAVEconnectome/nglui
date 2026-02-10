@@ -374,7 +374,7 @@ Once you have a shader you want to use, you can set it with the `add_shader` met
 
 ### Annotation Layers
 
-Annotation layers let a user define various types of annotations like points, lines, bounding boxes, and ellipses.
+Annotation layers let a user define various types of annotations like points, lines, bounding boxes, ellipses, and polylines (a series of points, each connected to the next by lines).
 Annotations can also be associated with segmentations, allowing you to filter annotations by the data that's being selected.
 
 Annotation layers come in two types, **local** annotation layers that store their annotations directly in the Neuroglancer state and **cloud** annotation layers that get their annotations from a cloud-hosted source.
@@ -391,7 +391,7 @@ annotation_layer = AnnotationLayer(name='my_annotations')
 viewer_state.add_layer(annotation_layer)
 ```
 
-The simplest way to add annotations is through the `add_points`, `add_lines`, `add_boxes`, and `add_ellipses` methods.
+The simplest way to add annotations is through the `add_points`, `add_lines`, `add_boxes`, `add_ellipses`, and `add_polylines` methods.
 These methods work similarly, taking a dataframe where each row represents an annotation and the columns are specified by parameters.
 
 For example, to add points to the annotation layer, you can do:
@@ -559,7 +559,7 @@ viewer_state.map(
 This will replace the DataMap keys with the actual data and produce a Neuroglancer link with the specified sources.
 Applying this across a list of data sources can easily generate a large collection of neuroglancer states.
 
-The other principle use of DataMaps is to support annotation creation by replacing the `data` argument in the `add_points`, `add_lines`, `add_boxes`, and `add_ellipses` methods.
+The other principle use of DataMaps is to support annotation creation by replacing the `data` argument in the `add_points`, `add_lines`, `add_boxes`, `add_ellipses`, and `add_polylines` methods.
 For example, you can create a DataMap for the annotation data and then use it to add points to the annotation layer with the following pattern:
 
 ``` pycon

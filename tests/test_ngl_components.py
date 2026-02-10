@@ -879,6 +879,32 @@ class TestAnnotationLayerEdgeCases:
         assert isinstance(layer.annotations[0], PolylineAnnotation)
         assert layer.annotations[0].description == "path1"
 
+    def test_annotationlayer_add_polylines_split_column_error(self):
+        """Test that split column prefixes give a clear error for polylines."""
+        layer = AnnotationLayer(name="test_anno", resolution=[4, 4, 40])
+
+        df = pd.DataFrame(
+            {
+                "path_x": [[10, 40], [70, 100]],
+                "path_y": [[20, 50], [80, 110]],
+                "path_z": [[30, 60], [90, 120]],
+            }
+        )
+
+        with pytest.raises(
+            ValueError, match="Split column prefixes are not supported for polylines"
+        ):
+            layer.add_polylines(data=df, points_column="path")
+
+    def test_annotationlayer_add_polylines_missing_column_error(self):
+        """Test that a missing column gives a clear KeyError for polylines."""
+        layer = AnnotationLayer(name="test_anno", resolution=[4, 4, 40])
+
+        df = pd.DataFrame({"other": [1, 2]})
+
+        with pytest.raises(KeyError, match="Column 'path' not found"):
+            layer.add_polylines(data=df, points_column="path")
+
     def test_annotationlayer_add_mixed_annotation_types(self):
         layer = AnnotationLayer(name="test_anno")
 

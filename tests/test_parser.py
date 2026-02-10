@@ -152,3 +152,29 @@ def test_polyline_annotation_parsing():
     df_scaled = parser.annotation_dataframe(state, point_resolution=[4, 4, 40])
     polyline_scaled = df_scaled[df_scaled["anno_type"] == "polyline"]
     assert len(polyline_scaled) == 2
+
+    # Test split_points works with mixed annotation types
+    df_split = parser.annotation_dataframe(state, split_points=True)
+    polyline_split = df_split[df_split["anno_type"] == "polyline"]
+    point_split = df_split[df_split["anno_type"] == "point"]
+
+    # Polyline rows keep their point data as list of points
+    assert len(polyline_split) == 2
+    first_pl = polyline_split.iloc[0]
+    assert len(first_pl["point"]) == 3
+    assert first_pl["point"][0] == [100.0, 200.0, 30.0]
+
+    # Non-polyline rows get split columns, point column is NaN
+    assert "point_x" in df_split.columns
+    assert "point_y" in df_split.columns
+    assert "point_z" in df_split.columns
+    assert point_split.iloc[0]["point_x"] == 50.0
+    assert point_split.iloc[0]["point_y"] == 60.0
+    assert point_split.iloc[0]["point_z"] == 10.0
+    assert pd.isna(point_split.iloc[0]["point"])
+
+    # Polyline rows have NaN for split columns
+    assert pd.isna(first_pl["point_x"])
+
+    # pointB column is dropped (as before for non-polyline types)
+    assert "pointB" not in df_split.columns

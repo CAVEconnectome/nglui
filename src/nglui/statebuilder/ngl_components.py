@@ -1815,6 +1815,17 @@ class AnnotationLayer(LayerWithSource):
         if data is None:
             points_ = []
         elif isinstance(data, pd.DataFrame):
+            if points_column not in data.columns:
+                suffixes = ["x", "y", "z"]
+                split_cols = [f"{points_column}_{s}" for s in suffixes]
+                if all(col in data.columns for col in split_cols):
+                    raise ValueError(
+                        f"Column '{points_column}' not found, but split columns {split_cols} exist. "
+                        "Split column prefixes are not supported for polylines because each row "
+                        "contains a variable-length list of 3D points. Use a single column where "
+                        "each value is a list of [x, y, z] points."
+                    )
+                raise KeyError(f"Column '{points_column}' not found in DataFrame.")
             points_ = [np.array(x).reshape(-1, 3) for x in data[points_column].tolist()]
         elif is_list_like(data):
             points_ = [np.array(x).reshape(-1, 3) for x in data]

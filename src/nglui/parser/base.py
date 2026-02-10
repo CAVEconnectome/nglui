@@ -909,19 +909,27 @@ def _parse_layer_dataframe(
         }
     )
     if split_points:
-        df["point_x"] = df["point"].apply(lambda x: x[0])
-        df["point_y"] = df["point"].apply(lambda x: x[1])
-        df["point_z"] = df["point"].apply(lambda x: x[2])
-        df["pointB_x"] = df["pointB"].apply(
+        non_polyline = df["anno_type"] != "polyline"
+        df.loc[non_polyline, "point_x"] = df.loc[non_polyline, "point"].apply(
+            lambda x: x[0]
+        )
+        df.loc[non_polyline, "point_y"] = df.loc[non_polyline, "point"].apply(
+            lambda x: x[1]
+        )
+        df.loc[non_polyline, "point_z"] = df.loc[non_polyline, "point"].apply(
+            lambda x: x[2]
+        )
+        df.loc[non_polyline, "pointB_x"] = df.loc[non_polyline, "pointB"].apply(
             lambda x: x[0] if not np.isnan(x) else np.nan
         )
-        df["pointB_y"] = df["pointB"].apply(
+        df.loc[non_polyline, "pointB_y"] = df.loc[non_polyline, "pointB"].apply(
             lambda x: x[1] if not np.isnan(x) else np.nan
         )
-        df["pointB_z"] = df["pointB"].apply(
+        df.loc[non_polyline, "pointB_z"] = df.loc[non_polyline, "pointB"].apply(
             lambda x: x[2] if not np.isnan(x) else np.nan
         )
-        df.drop(columns=["point", "pointB"], inplace=True)
+        df.loc[non_polyline, "point"] = np.nan
+        df.drop(columns=["pointB"], inplace=True)
 
     if expand_tags:
         tag_dict = tag_dictionary(state, ln)
