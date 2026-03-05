@@ -269,3 +269,100 @@ class TestAdditionalBase:
         position = vs._suggest_position_from_source(resolution=[4, 4, 40])
 
         mock_suggest_position.assert_called_once_with(vs.source_info, [4, 4, 40])
+
+    def test_swap_visible_segments_auto_without_segment_column(self):
+        """Test that swap_visible_segments_on_move defaults to False when no segment_column."""
+        import pandas as pd
+
+        df = pd.DataFrame({"x": [1, 2], "y": [3, 4], "z": [5, 6]})
+        vs = ViewerState(dimensions=[4, 4, 40])
+        vs.add_points(data=df, point_column=["x", "y", "z"])
+        layer = vs.get_layer("annotation")
+        assert layer.swap_visible_segments_on_move is False
+
+    def test_swap_visible_segments_auto_with_segment_column(self):
+        """Test that swap_visible_segments_on_move defaults to True when segment_column is provided."""
+        import pandas as pd
+
+        df = pd.DataFrame({"x": [1, 2], "y": [3, 4], "z": [5, 6], "seg": [10, 20]})
+        vs = ViewerState(dimensions=[4, 4, 40])
+        vs.add_points(data=df, point_column=["x", "y", "z"], segment_column="seg")
+        layer = vs.get_layer("annotation")
+        assert layer.swap_visible_segments_on_move is True
+
+    def test_swap_visible_segments_explicit_true_without_segment_column(self):
+        """Test that swap_visible_segments_on_move=True is respected even without segment_column."""
+        import pandas as pd
+
+        df = pd.DataFrame({"x": [1, 2], "y": [3, 4], "z": [5, 6]})
+        vs = ViewerState(dimensions=[4, 4, 40])
+        vs.add_points(
+            data=df,
+            point_column=["x", "y", "z"],
+            swap_visible_segments_on_move=True,
+        )
+        layer = vs.get_layer("annotation")
+        assert layer.swap_visible_segments_on_move is True
+
+    def test_swap_visible_segments_explicit_false_with_segment_column(self):
+        """Test that swap_visible_segments_on_move=False is respected even with segment_column."""
+        import pandas as pd
+
+        df = pd.DataFrame({"x": [1, 2], "y": [3, 4], "z": [5, 6], "seg": [10, 20]})
+        vs = ViewerState(dimensions=[4, 4, 40])
+        vs.add_points(
+            data=df,
+            point_column=["x", "y", "z"],
+            segment_column="seg",
+            swap_visible_segments_on_move=False,
+        )
+        layer = vs.get_layer("annotation")
+        assert layer.swap_visible_segments_on_move is False
+
+    def test_swap_visible_segments_auto_add_lines_without_segment_column(self):
+        """Test that add_lines with auto and no segment_column results in False."""
+        import pandas as pd
+
+        df = pd.DataFrame(
+            {
+                "ax": [1],
+                "ay": [2],
+                "az": [3],
+                "bx": [4],
+                "by": [5],
+                "bz": [6],
+            }
+        )
+        vs = ViewerState(dimensions=[4, 4, 40])
+        vs.add_lines(
+            data=df,
+            point_a_column=["ax", "ay", "az"],
+            point_b_column=["bx", "by", "bz"],
+        )
+        layer = vs.get_layer("annotation")
+        assert layer.swap_visible_segments_on_move is False
+
+    def test_swap_visible_segments_auto_add_lines_with_segment_column(self):
+        """Test that add_lines with auto and segment_column results in True."""
+        import pandas as pd
+
+        df = pd.DataFrame(
+            {
+                "ax": [1],
+                "ay": [2],
+                "az": [3],
+                "bx": [4],
+                "by": [5],
+                "bz": [6],
+                "seg": [10],
+            }
+        )
+        vs = ViewerState(dimensions=[4, 4, 40])
+        vs.add_lines(
+            data=df,
+            point_a_column=["ax", "ay", "az"],
+            point_b_column=["bx", "by", "bz"],
+            segment_column="seg",
+        )
+        layer = vs.get_layer("annotation")
+        assert layer.swap_visible_segments_on_move is True
