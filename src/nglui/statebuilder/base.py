@@ -989,7 +989,7 @@ class ViewerState:
         linked_segmentation: Union[str, bool] = True,
         shader: Optional[str] = None,
         color: Optional[str] = None,
-        swap_visible_segments_on_move: bool = True,
+        swap_visible_segments_on_move: Union[bool, Literal["auto"]] = "auto",
     ) -> Self:
         """Add points to an existing annotation layer or create a new one.
         Parameters
@@ -1026,13 +1026,16 @@ class ViewerState:
         shader : Optional[str], optional
             The shader to use for the annotation layer, by default None.
             If None, the default shader will be used.
-        swap_visible_segments_on_move: bool, optional
+        swap_visible_segments_on_move: bool or "auto", optional
             If True, will swap the visibility of segments when moving points.
+            If "auto" (default), will swap only when segment_column is provided.
         Returns
         -------
         Self
             The viewer state object with the added points.
         """
+        if swap_visible_segments_on_move == "auto":
+            swap_visible_segments_on_move = segment_column is not None
 
         if name in self.layer_names:
             layer = self.get_layer(name)
@@ -1079,7 +1082,7 @@ class ViewerState:
         linked_segmentation: Union[str, bool] = True,
         shader: Optional[str] = None,
         color: Optional[str] = None,
-        swap_visible_segments_on_move: bool = True,
+        swap_visible_segments_on_move: Union[bool, Literal["auto"]] = "auto",
     ) -> Self:
         """Add lines to an existing annotation layer or create a new one.
 
@@ -1116,13 +1119,17 @@ class ViewerState:
             The shader to use for the annotation layer, by default None.
         color : Optional[str], optional
             The color to use for the lines, by default None.
-        swap_visible_segments_on_move : bool, optional
+        swap_visible_segments_on_move : bool or "auto", optional
             If True, will swap the visibility of segments when moving lines.
+            If "auto" (default), will swap only when segment_column is provided.
         Returns
         -------
         Self
             The viewer state object with the added lines.
         """
+        if swap_visible_segments_on_move == "auto":
+            swap_visible_segments_on_move = segment_column is not None
+
         if name in self.layer_names:
             layer = self.get_layer(name)
             if not isinstance(layer, AnnotationLayer):
@@ -1167,7 +1174,7 @@ class ViewerState:
         linked_segmentation: Union[str, bool] = True,
         shader: Optional[str] = None,
         color: Optional[str] = None,
-        swap_visible_segments_on_move: bool = True,
+        swap_visible_segments_on_move: Union[bool, Literal["auto"]] = "auto",
     ) -> Self:
         """Add ellipsoid annotations to an existing annotation layer or create a new one.
 
@@ -1201,13 +1208,17 @@ class ViewerState:
             The shader to use for the annotation layer, by default None.
         color : Optional[str], optional
             The color to use for the ellipsoids, by default None.
-        swap_visible_segments_on_move : bool, optional
+        swap_visible_segments_on_move : bool or "auto", optional
             If True, will swap the visibility of segments when moving ellipsoids.
+            If "auto" (default), will swap only when segment_column is provided.
         Returns
         -------
         Self
             The viewer state object with the added ellipsoids.
         """
+        if swap_visible_segments_on_move == "auto":
+            swap_visible_segments_on_move = segment_column is not None
+
         if name in self.layer_names:
             layer = self.get_layer(name)
             if not isinstance(layer, AnnotationLayer):
@@ -1252,7 +1263,7 @@ class ViewerState:
         linked_segmentation: Union[str, bool] = True,
         shader: Optional[str] = None,
         color: Optional[str] = None,
-        swap_visible_segments_on_move: bool = True,
+        swap_visible_segments_on_move: Union[bool, Literal["auto"]] = "auto",
     ) -> Self:
         """Add bounding box annotations to an existing annotation layer or create a new one.
 
@@ -1286,14 +1297,18 @@ class ViewerState:
             The shader to use for the annotation layer, by default None.
         color : Optional[str], optional
             The color to use for the bounding boxes, by default None.
-        swap_visible_segments_on_move : bool, optional
+        swap_visible_segments_on_move : bool or "auto", optional
             If True, will swap the visibility of segments when moving boxes.
+            If "auto" (default), will swap only when segment_column is provided.
 
         Returns
         -------
         Self
             The viewer state object with the added bounding boxes.
         """
+        if swap_visible_segments_on_move == "auto":
+            swap_visible_segments_on_move = segment_column is not None
+
         if name in self.layer_names:
             layer = self.get_layer(name)
             if not isinstance(layer, AnnotationLayer):
@@ -1337,7 +1352,7 @@ class ViewerState:
         linked_segmentation: Union[str, bool] = True,
         shader: Optional[str] = None,
         color: Optional[str] = None,
-        swap_visible_segments_on_move: bool = True,
+        swap_visible_segments_on_move: Union[bool, Literal["auto"]] = "auto",
     ) -> Self:
         """Add points to an existing annotation layer or create a new one.
         Parameters
@@ -1372,13 +1387,16 @@ class ViewerState:
         shader : Optional[str], optional
             The shader to use for the annotation layer, by default None.
             If None, the default shader will be used.
-        swap_visible_segments_on_move: bool, optional
+        swap_visible_segments_on_move: bool or "auto", optional
             If True, will swap the visibility of segments when moving points.
+            If "auto" (default), will swap only when segment_column is provided.
         Returns
         -------
         Self
             The viewer state object with the added points.
         """
+        if swap_visible_segments_on_move == "auto":
+            swap_visible_segments_on_move = segment_column is not None
 
         if name in self.layer_names:
             layer = self.get_layer(name)
