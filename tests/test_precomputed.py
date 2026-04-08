@@ -403,11 +403,8 @@ class TestAnnotationDataFrameWriter:
     def test_write_xyz_columns(self, coordinate_space_3d, sample_df):
         with tempfile.TemporaryDirectory() as tmpdir:
             writer = AnnotationDataFrameWriter(
-                annotation_type="point",
                 coordinate_space=coordinate_space_3d,
-                x_column="pt_x",
-                y_column="pt_y",
-                z_column="pt_z",
+                point_column=["pt_x", "pt_y", "pt_z"],
                 write_sharded=False,
             )
             writer.write(sample_df, tmpdir)
@@ -420,7 +417,6 @@ class TestAnnotationDataFrameWriter:
     def test_write_array_column(self, coordinate_space_3d, sample_df_array_col):
         with tempfile.TemporaryDirectory() as tmpdir:
             writer = AnnotationDataFrameWriter(
-                annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 point_column="pt_position",
                 write_sharded=False,
@@ -435,12 +431,9 @@ class TestAnnotationDataFrameWriter:
     def test_write_with_properties(self, coordinate_space_3d, sample_df):
         with tempfile.TemporaryDirectory() as tmpdir:
             writer = AnnotationDataFrameWriter(
-                annotation_type="point",
                 coordinate_space=coordinate_space_3d,
-                x_column="pt_x",
-                y_column="pt_y",
-                z_column="pt_z",
-                property_columns={"score": "score"},
+                point_column=["pt_x", "pt_y", "pt_z"],
+                property_columns=["score"],
                 write_sharded=False,
             )
             writer.write(sample_df, tmpdir)
@@ -453,12 +446,9 @@ class TestAnnotationDataFrameWriter:
     def test_write_with_relationships(self, coordinate_space_3d, sample_df):
         with tempfile.TemporaryDirectory() as tmpdir:
             writer = AnnotationDataFrameWriter(
-                annotation_type="point",
                 coordinate_space=coordinate_space_3d,
-                x_column="pt_x",
-                y_column="pt_y",
-                z_column="pt_z",
-                relationship_columns={"segment": "segment_id"},
+                point_column=["pt_x", "pt_y", "pt_z"],
+                relationship_columns=["segment_id"],
                 write_sharded=False,
             )
             writer.write(sample_df, tmpdir)
@@ -466,9 +456,9 @@ class TestAnnotationDataFrameWriter:
             with open(os.path.join(tmpdir, "info")) as f:
                 info = json.load(f)
             assert len(info["relationships"]) == 1
-            assert info["relationships"][0]["id"] == "segment"
+            assert info["relationships"][0]["id"] == "segment_id"
 
-            rel_dir = os.path.join(tmpdir, "rel_segment")
+            rel_dir = os.path.join(tmpdir, "rel_segment_id")
             assert os.path.isdir(rel_dir)
             assert len(os.listdir(rel_dir)) > 0
 
@@ -496,18 +486,14 @@ class TestAnnotationDataFrameWriter:
             tempfile.TemporaryDirectory() as tmp2,
         ):
             w1 = AnnotationDataFrameWriter(
-                annotation_type="point",
                 coordinate_space=coordinate_space_3d,
-                x_column="x",
-                y_column="y",
-                z_column="z",
+                point_column=["x", "y", "z"],
                 write_sharded=False,
                 chunk_size=10000,
             )
             w1.write(df_xyz, tmp1)
 
             w2 = AnnotationDataFrameWriter(
-                annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 point_column="pt",
                 write_sharded=False,
@@ -525,19 +511,23 @@ class TestAnnotationDataFrameWriter:
     def test_validation_errors(self, coordinate_space_3d):
         with pytest.raises(ValueError, match="point_column"):
             AnnotationDataFrameWriter(
-                annotation_type="point",
                 coordinate_space=coordinate_space_3d,
             )
 
-        with pytest.raises(ValueError, match="not both"):
-            AnnotationDataFrameWriter(
-                annotation_type="point",
+    def test_write_prefix_expansion(self, coordinate_space_3d, sample_df):
+        """Test that point_column='pt' expands to pt_x, pt_y, pt_z."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = AnnotationDataFrameWriter(
                 coordinate_space=coordinate_space_3d,
                 point_column="pt",
-                x_column="x",
-                y_column="y",
-                z_column="z",
+                write_sharded=False,
             )
+            writer.write(sample_df, tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+            assert info["annotation_type"] == "point"
+            assert len(os.listdir(os.path.join(tmpdir, "by_id"))) == 100
 
     def test_bounds_match_data(self, coordinate_space_3d, sample_points):
         df = pd.DataFrame({"pt": list(sample_points)})
@@ -545,7 +535,6 @@ class TestAnnotationDataFrameWriter:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             w = AnnotationDataFrameWriter(
-                annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 point_column="pt",
                 write_sharded=False,
@@ -593,11 +582,8 @@ class TestSourceResolution:
         """Test AnnotationDataFrameWriter with resolution= parameter."""
         with tempfile.TemporaryDirectory() as tmpdir:
             writer = AnnotationDataFrameWriter(
-                annotation_type="point",
                 resolution=[1, 1, 1],
-                x_column="pt_x",
-                y_column="pt_y",
-                z_column="pt_z",
+                point_column=["pt_x", "pt_y", "pt_z"],
                 write_sharded=False,
             )
             writer.write(sample_df, tmpdir)
@@ -881,11 +867,8 @@ class TestMultiscaleWriter:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             writer = AnnotationDataFrameWriter(
-                annotation_type="point",
                 coordinate_space=coordinate_space_3d,
-                x_column="x",
-                y_column="y",
-                z_column="z",
+                point_column=["x", "y", "z"],
                 write_sharded=False,
                 limit=500,
             )
