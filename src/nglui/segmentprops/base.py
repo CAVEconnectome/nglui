@@ -507,6 +507,7 @@ class SegmentProperties:
                 label_vals = [
                     label_separator.join(filter(None, r))
                     for r in df[label_col]
+                    .astype(object)
                     .where(pd.notnull(df[label_col]), "")
                     .astype(str)
                     .values
