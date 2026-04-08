@@ -97,6 +97,8 @@ class AnnotationDataFrameWriter:
         Column for annotation IDs. If None, uses DataFrame index.
     chunk_size : float or array-like, optional
         Spatial index chunk size. If None, auto-computed.
+    limit : int
+        Target max annotations per spatial chunk (default 5000).
     write_sharded : bool
         Use sharded writes (default True).
 
@@ -144,6 +146,7 @@ class AnnotationDataFrameWriter:
         relationship_columns: Optional[dict[str, str]] = None,
         id_column: Optional[str] = None,
         chunk_size: Optional[Union[float, Sequence[float]]] = None,
+        limit: int = 5000,
         write_sharded: bool = True,
     ):
         self.annotation_type = annotation_type
@@ -164,6 +167,7 @@ class AnnotationDataFrameWriter:
         self.relationship_columns = relationship_columns or {}
         self.id_column = id_column
         self.chunk_size = chunk_size
+        self.limit = limit
         self.write_sharded = write_sharded
 
         self._validate_column_config()
@@ -292,6 +296,7 @@ class AnnotationDataFrameWriter:
             relationships=rel_names,
             properties=properties,
             chunk_size=self.chunk_size,
+            limit=self.limit,
             write_sharded=self.write_sharded,
         )
 

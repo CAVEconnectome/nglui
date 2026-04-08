@@ -21,9 +21,13 @@ from nglui.precomputed._encoding import (
 )
 from nglui.precomputed._sharding import ShardSpec, choose_output_spec
 from nglui.precomputed._spatial import (
+    MultiscaleAssignment,
+    SpatialLevel,
     auto_chunk_size,
+    build_spatial_levels,
     compressed_morton_code,
     compute_chunk_assignments,
+    compute_multiscale_assignments,
 )
 
 
@@ -615,3 +619,279 @@ class TestSourceResolution:
                 coordinate_space=coordinate_space_3d,
                 resolution=[1, 1, 1],
             )
+
+
+# ── Multi-Scale Spatial Index Tests ─────────────────────────────────
+
+
+class TestBuildSpatialLevels:
+    def test_single_level_small_data(self):
+        """Few annotations → single level with grid [1,1,1]."""
+        levels = build_spatial_levels(
+            np.array([0, 0, 0.0]),
+            np.array([100, 100, 100.0]),
+            n_annotations=10,
+            limit=5000,
+        )
+        assert len(levels) == 1
+        assert levels[0].key == "spatial0"
+        np.testing.assert_array_equal(levels[0].grid_shape, [1, 1, 1])
+
+    def test_multi_level_large_data(self):
+        """Many annotations → multiple levels, coarsest is [1,1,1]."""
+        levels = build_spatial_levels(
+            np.array([0, 0, 0.0]),
+            np.array([10000, 10000, 10000.0]),
+            n_annotations=100000,
+            limit=500,
+        )
+        assert len(levels) > 1
+        # Coarsest level should be [1,1,1]
+        np.testing.assert_array_equal(levels[0].grid_shape, [1, 1, 1])
+        # Finest level should be the last
+        assert np.all(levels[-1].grid_shape >= levels[0].grid_shape)
+        # Keys should be sequential
+        for i, level in enumerate(levels):
+            assert level.key == f"spatial{i}"
+
+    def test_custom_levels_passthrough(self):
+        """Explicit levels are returned as-is."""
+        custom = [
+            SpatialLevel(
+                "spatial0", np.array([1, 1, 1]), np.array([100, 100, 100.0]), 1000
+            ),
+            SpatialLevel(
+                "spatial1", np.array([2, 2, 2]), np.array([50, 50, 50.0]), 1000
+            ),
+        ]
+        result = build_spatial_levels(
+            np.zeros(3), np.ones(3) * 100, n_annotations=50000, levels=custom
+        )
+        assert result is custom
+
+    def test_levels_cover_extent(self):
+        """Each level's grid_shape * chunk_size should cover the extent."""
+        lower = np.array([0, 0, 0.0])
+        upper = np.array([1000, 2000, 500.0])
+        levels = build_spatial_levels(lower, upper, n_annotations=50000, limit=500)
+        extent = upper - lower
+        for level in levels:
+            coverage = level.grid_shape * level.chunk_size
+            np.testing.assert_allclose(coverage, extent, rtol=1e-10)
+
+
+class TestMultiscaleAssignments:
+    def test_every_row_assigned(self):
+        """Every annotation must appear in exactly one (level, cell)."""
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 1000, size=(500, 3)).astype(np.float32)
+        lower = np.array([0, 0, 0.0])
+        upper = np.array([1000, 1000, 1000.0])
+        levels = build_spatial_levels(lower, upper, len(coords), limit=100)
+
+        assignment = compute_multiscale_assignments(
+            coords, lower, levels, rng=np.random.default_rng(123)
+        )
+
+        # Each row should have at least one assignment
+        for i, assigns in enumerate(assignment.row_assignments):
+            assert len(assigns) >= 1, f"Row {i} has no assignment"
+
+        # Total assignments across all chunks should equal n (for points)
+        total_in_chunks = sum(
+            len(indices) for indices in assignment.level_chunks.values()
+        )
+        assert total_in_chunks == len(coords)
+
+    def test_forward_inverse_consistency(self):
+        """Forward and inverse mappings must agree."""
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 1000, size=(200, 3)).astype(np.float32)
+        lower = np.array([0, 0, 0.0])
+        upper = np.array([1000, 1000, 1000.0])
+        levels = build_spatial_levels(lower, upper, len(coords), limit=50)
+
+        assignment = compute_multiscale_assignments(
+            coords, lower, levels, rng=np.random.default_rng(0)
+        )
+
+        # Build inverse from forward and compare
+        from collections import defaultdict
+
+        rebuilt_inverse = defaultdict(list)
+        for row_idx, assigns in enumerate(assignment.row_assignments):
+            for level_idx, cell in assigns:
+                rebuilt_inverse[(level_idx, cell)].append(row_idx)
+
+        for key in rebuilt_inverse:
+            expected = sorted(rebuilt_inverse[key])
+            actual = sorted(assignment.level_chunks[key].tolist())
+            assert expected == actual, f"Mismatch at {key}"
+
+    def test_coarse_level_respects_limit(self):
+        """Coarsest level chunks should not vastly exceed limit."""
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 1000, size=(10000, 3)).astype(np.float32)
+        lower = np.array([0, 0, 0.0])
+        upper = np.array([1000, 1000, 1000.0])
+        limit = 500
+        levels = build_spatial_levels(lower, upper, len(coords), limit=limit)
+
+        assignment = compute_multiscale_assignments(
+            coords, lower, levels, rng=np.random.default_rng(99)
+        )
+
+        # Check coarsest level (level 0) doesn't have chunks vastly over limit
+        for (level_idx, cell), indices in assignment.level_chunks.items():
+            if level_idx == 0:
+                # Probabilistic: allow 2x margin
+                assert len(indices) <= limit * 2, (
+                    f"Coarse chunk {cell} has {len(indices)} > {limit * 2}"
+                )
+
+    def test_deterministic_with_seed(self):
+        """Same seed should produce identical assignments."""
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 1000, size=(200, 3)).astype(np.float32)
+        lower = np.array([0, 0, 0.0])
+        upper = np.array([1000, 1000, 1000.0])
+        levels = build_spatial_levels(lower, upper, len(coords), limit=50)
+
+        a1 = compute_multiscale_assignments(
+            coords, lower, levels, rng=np.random.default_rng(7)
+        )
+        a2 = compute_multiscale_assignments(
+            coords, lower, levels, rng=np.random.default_rng(7)
+        )
+
+        assert len(a1.level_chunks) == len(a2.level_chunks)
+        for key in a1.level_chunks:
+            np.testing.assert_array_equal(a1.level_chunks[key], a2.level_chunks[key])
+
+
+class TestMultiscaleWriter:
+    def test_write_produces_multiple_spatial_dirs(self, coordinate_space_3d):
+        """Writing many points should produce multiple spatial{i} dirs."""
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 1000, size=(10000, 3)).astype(np.float32)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = PrecomputedAnnotationWriter(
+                annotation_type="point",
+                coordinate_space=coordinate_space_3d,
+                write_sharded=False,
+                limit=500,
+            )
+            writer.set_coordinates(coords)
+            writer.write(tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+
+            # Should have multiple spatial levels
+            assert len(info["spatial"]) > 1
+
+            # Each level dir should exist and have chunks
+            for level_info in info["spatial"]:
+                level_dir = os.path.join(tmpdir, level_info["key"])
+                assert os.path.isdir(level_dir), f"Missing {level_info['key']}"
+                assert len(os.listdir(level_dir)) > 0
+
+    def test_info_spatial_coarsest_is_1_1_1(self, coordinate_space_3d):
+        """Coarsest level should have grid_shape [1,1,1]."""
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 1000, size=(5000, 3)).astype(np.float32)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = PrecomputedAnnotationWriter(
+                annotation_type="point",
+                coordinate_space=coordinate_space_3d,
+                write_sharded=False,
+                limit=500,
+            )
+            writer.set_coordinates(coords)
+            writer.write(tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+
+            assert info["spatial"][0]["grid_shape"] == [1, 1, 1]
+
+    def test_all_annotations_accounted_for(self, coordinate_space_3d):
+        """Total annotations across all spatial chunks must equal N."""
+        rng = np.random.default_rng(42)
+        n = 2000
+        coords = rng.uniform(0, 1000, size=(n, 3)).astype(np.float32)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = PrecomputedAnnotationWriter(
+                annotation_type="point",
+                coordinate_space=coordinate_space_3d,
+                write_sharded=False,
+                limit=200,
+            )
+            writer.set_coordinates(coords)
+            writer.write(tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+
+            # Count annotations across all spatial chunks
+            total = 0
+            for level_info in info["spatial"]:
+                level_dir = os.path.join(tmpdir, level_info["key"])
+                for chunk_file in os.listdir(level_dir):
+                    with open(os.path.join(level_dir, chunk_file), "rb") as f:
+                        data = f.read()
+                    count = struct.unpack_from("<Q", data, 0)[0]
+                    total += count
+
+            assert total == n
+
+    def test_backward_compat_high_limit(self, coordinate_space_3d, sample_points):
+        """With limit >= n_annotations, should produce a single level."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = PrecomputedAnnotationWriter(
+                annotation_type="point",
+                coordinate_space=coordinate_space_3d,
+                write_sharded=False,
+                limit=100000,
+            )
+            writer.set_coordinates(sample_points)
+            writer.write(tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+
+            assert len(info["spatial"]) == 1
+            assert info["spatial"][0]["grid_shape"] == [1, 1, 1]
+
+    def test_dataframe_writer_with_limit(self, coordinate_space_3d):
+        """AnnotationDataFrameWriter should pass limit through."""
+        rng = np.random.default_rng(42)
+        n = 5000
+        df = pd.DataFrame(
+            {
+                "x": rng.uniform(0, 1000, n).astype(np.float32),
+                "y": rng.uniform(0, 1000, n).astype(np.float32),
+                "z": rng.uniform(0, 1000, n).astype(np.float32),
+            }
+        )
+        df.index = np.arange(n, dtype=np.uint64)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = AnnotationDataFrameWriter(
+                annotation_type="point",
+                coordinate_space=coordinate_space_3d,
+                x_column="x",
+                y_column="y",
+                z_column="z",
+                write_sharded=False,
+                limit=500,
+            )
+            writer.write(df, tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+
+            assert len(info["spatial"]) > 1

@@ -9,6 +9,7 @@ from neuroglancer import viewer_state
 from neuroglancer.coordinate_space import CoordinateSpace
 
 from ._sharding import ShardSpec
+from ._spatial import SpatialLevel
 
 
 class _NumpyEncoder(json.JSONEncoder):
@@ -31,11 +32,9 @@ def build_info(
     upper_bound: np.ndarray,
     properties: Sequence[viewer_state.AnnotationPropertySpec],
     relationships: Sequence[str],
-    num_chunks: np.ndarray,
-    chunk_size: np.ndarray,
-    n_annotations: int,
+    levels: Sequence[SpatialLevel],
     by_id_sharding: Optional[ShardSpec] = None,
-    spatial_sharding: Optional[ShardSpec] = None,
+    spatial_shardings: Optional[dict[int, ShardSpec]] = None,
     relationship_shardings: Optional[dict[str, ShardSpec]] = None,
 ) -> dict:
     """Build the info JSON metadata for a precomputed annotation collection.
@@ -54,16 +53,12 @@ def build_info(
         Annotation properties.
     relationships : Sequence[str]
         Relationship names.
-    num_chunks : np.ndarray
-        (rank,) number of spatial grid cells.
-    chunk_size : np.ndarray
-        (rank,) size of each spatial grid cell.
-    n_annotations : int
-        Total number of annotations.
+    levels : Sequence[SpatialLevel]
+        Spatial index levels (coarsest first).
     by_id_sharding : ShardSpec or None
         Sharding spec for the by_id index.
-    spatial_sharding : ShardSpec or None
-        Sharding spec for the spatial index.
+    spatial_shardings : dict[int, ShardSpec] or None
+        Per-level sharding specs, keyed by level index.
     relationship_shardings : dict[str, ShardSpec] or None
         Per-relationship sharding specs.
 
@@ -72,6 +67,18 @@ def build_info(
     dict
         The info JSON metadata.
     """
+    spatial = []
+    for i, level in enumerate(levels):
+        entry = {
+            "key": level.key,
+            "grid_shape": [int(x) for x in level.grid_shape],
+            "chunk_size": [float(x) for x in level.chunk_size],
+            "limit": level.limit,
+        }
+        if spatial_shardings and i in spatial_shardings:
+            entry["sharding"] = spatial_shardings[i].to_json()
+        spatial.append(entry)
+
     metadata = {
         "@type": "neuroglancer_annotations_v1",
         "dimensions": coordinate_space.to_json(),
@@ -81,14 +88,7 @@ def build_info(
         "properties": [p.to_json() for p in properties],
         "relationships": [],
         "by_id": {"key": "by_id"},
-        "spatial": [
-            {
-                "key": "spatial0",
-                "grid_shape": [int(x) for x in num_chunks],
-                "chunk_size": [float(x) for x in chunk_size],
-                "limit": n_annotations,
-            }
-        ],
+        "spatial": spatial,
     }
 
     for relationship in relationships:
@@ -99,9 +99,6 @@ def build_info(
 
     if by_id_sharding is not None:
         metadata["by_id"]["sharding"] = by_id_sharding.to_json()
-
-    if spatial_sharding is not None:
-        metadata["spatial"][0]["sharding"] = spatial_sharding.to_json()
 
     return metadata
 

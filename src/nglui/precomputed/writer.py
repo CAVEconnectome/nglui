@@ -28,10 +28,12 @@ from ._metadata import build_info, serialize_info
 from ._sharding import ShardSpec, choose_output_spec
 from ._source import resolve_coordinate_space
 from ._spatial import (
+    SpatialLevel,
     auto_chunk_size,
+    build_spatial_levels,
     compressed_morton_code,
-    compute_chunk_assignments,
-    encode_spatial_chunks,
+    compute_multiscale_assignments,
+    encode_multiscale_spatial_chunks,
 )
 
 try:
@@ -99,7 +101,15 @@ class PrecomputedAnnotationWriter:
     properties : Sequence[AnnotationPropertySpec], optional
         Annotation property definitions.
     chunk_size : float or array-like, optional
-        Spatial index chunk size. If None, auto-computed from data bounds.
+        Spatial index chunk size for the finest level. If None,
+        auto-computed from data bounds.
+    limit : int
+        Target max annotations per spatial chunk (default 5000).
+        Controls both the finest grid size and the probabilistic
+        subsampling at coarser levels.
+    spatial_levels : list[SpatialLevel], optional
+        Explicit spatial level hierarchy. If provided, overrides
+        auto-computation from ``chunk_size`` and ``limit``.
     write_sharded : bool
         Whether to use sharded writes (default True).
     """
@@ -114,6 +124,8 @@ class PrecomputedAnnotationWriter:
         relationships: Sequence[str] = (),
         properties: Sequence[viewer_state.AnnotationPropertySpec] = (),
         chunk_size: Optional[Union[float, Sequence[float]]] = None,
+        limit: int = 5000,
+        spatial_levels: Optional[list[SpatialLevel]] = None,
         write_sharded: bool = True,
     ):
         self.coordinate_space = resolve_coordinate_space(
@@ -126,6 +138,8 @@ class PrecomputedAnnotationWriter:
         self.relationships = list(relationships)
         self.properties = sort_properties(properties)
         self.write_sharded = write_sharded
+        self.limit = limit
+        self._spatial_levels = spatial_levels
 
         self._dtype = build_dtype(annotation_type, self.rank, self.properties)
 
@@ -388,22 +402,48 @@ class PrecomputedAnnotationWriter:
         # Small epsilon to avoid zero-width bounds and float32 precision issues
         extent = upper_bound - lower_bound
         extent = np.maximum(extent, 1.0)
-        # Add epsilon proportional to extent to ensure bounds fully contain data
         upper_bound = lower_bound + extent
         upper_bound = np.nextafter(upper_bound, np.inf).astype(np.float64)
 
-        # Resolve chunk size
-        if self._user_chunk_size is not None:
+        # Build spatial level hierarchy
+        if self._spatial_levels is not None:
+            levels = self._spatial_levels
+        elif self._user_chunk_size is not None:
+            # User specified chunk_size → use as finest level, coarsen from there
             if isinstance(self._user_chunk_size, numbers.Real):
-                chunk_size = np.full(self.rank, float(self._user_chunk_size))
+                finest_cs = np.full(self.rank, float(self._user_chunk_size))
             else:
-                chunk_size = np.asarray(self._user_chunk_size, dtype=np.float64)
-        else:
-            chunk_size = auto_chunk_size(lower_bound, upper_bound, n)
+                finest_cs = np.asarray(self._user_chunk_size, dtype=np.float64)
+            finest_grid = np.maximum(np.ceil(extent / finest_cs).astype(int), 1)
+            # Snap upper_bound to grid
+            upper_bound = lower_bound + finest_grid * finest_cs
 
-        num_chunks = np.maximum(np.ceil(extent / chunk_size).astype(int), 1)
-        # Snap upper_bound to grid
-        upper_bound = lower_bound + num_chunks * chunk_size
+            # Build coarser levels from finest
+            grids = [finest_grid]
+            while np.any(grids[-1] > 1):
+                coarser = np.maximum(np.ceil(grids[-1] / 2).astype(int), 1)
+                grids.append(coarser)
+            grids.reverse()
+
+            levels = []
+            for i, grid in enumerate(grids):
+                cs = (upper_bound - lower_bound) / grid
+                levels.append(
+                    SpatialLevel(
+                        key=f"spatial{i}",
+                        grid_shape=grid,
+                        chunk_size=cs,
+                        limit=self.limit,
+                    )
+                )
+        else:
+            levels = build_spatial_levels(lower_bound, upper_bound, n, limit=self.limit)
+            # Snap upper_bound to finest grid
+            finest = levels[-1]
+            upper_bound = lower_bound + finest.grid_shape * finest.chunk_size
+
+        # Compute multi-scale assignments
+        assignment = compute_multiscale_assignments(coords, lower_bound, levels)
 
         # Encode fixed blocks
         fixed_blocks = encode_fixed_blocks(coords, self._properties, self._dtype)
@@ -415,21 +455,17 @@ class PrecomputedAnnotationWriter:
         # Encode by_id entries
         by_id_entries = encode_by_id_entries(fixed_blocks, by_id_rels)
 
-        # Compute spatial chunk assignments
-        chunk_assignments = compute_chunk_assignments(
-            coords, lower_bound, chunk_size, num_chunks
-        )
-        spatial_chunks = encode_spatial_chunks(fixed_blocks, ids, chunk_assignments)
+        # Encode multi-scale spatial chunks
+        spatial_chunks = encode_multiscale_spatial_chunks(fixed_blocks, ids, assignment)
 
         # Compute sharding specs
         total_ann_bytes = sum(len(e) for e in by_id_entries)
 
         by_id_sharding = None
-        spatial_sharding = None
+        spatial_shardings: dict[int, ShardSpec] = {}
         relationship_shardings = {}
         if self.write_sharded and _has_tensorstore:
             by_id_sharding = choose_output_spec(n, total_ann_bytes)
-            # spatial sharding left as None for now (single level, unsharded)
             for rel_name, inv in inverted_rels.items():
                 rel_total = sum(
                     len(
@@ -451,11 +487,9 @@ class PrecomputedAnnotationWriter:
             upper_bound=upper_bound,
             properties=self.properties,
             relationships=self.relationships,
-            num_chunks=num_chunks,
-            chunk_size=chunk_size,
-            n_annotations=n,
+            levels=levels,
             by_id_sharding=by_id_sharding,
-            spatial_sharding=spatial_sharding,
+            spatial_shardings=spatial_shardings or None,
             relationship_shardings=relationship_shardings or None,
         )
 
@@ -467,7 +501,7 @@ class PrecomputedAnnotationWriter:
                 by_id_entries,
                 ids,
                 spatial_chunks,
-                num_chunks,
+                levels,
                 by_id_sharding,
                 inverted_rels,
                 relationship_shardings,
@@ -480,7 +514,7 @@ class PrecomputedAnnotationWriter:
                 by_id_entries,
                 ids,
                 spatial_chunks,
-                num_chunks,
+                levels,
                 inverted_rels,
                 fixed_blocks,
             )
@@ -492,14 +526,15 @@ class PrecomputedAnnotationWriter:
         by_id_entries,
         ids,
         spatial_chunks,
-        num_chunks,
+        levels,
         inverted_rels,
         fixed_blocks,
     ):
         """Write annotation data in unsharded format to local filesystem."""
         os.makedirs(path, exist_ok=True)
         os.makedirs(os.path.join(path, "by_id"), exist_ok=True)
-        os.makedirs(os.path.join(path, "spatial0"), exist_ok=True)
+        for level in levels:
+            os.makedirs(os.path.join(path, level.key), exist_ok=True)
         for rel_name in self.relationships:
             os.makedirs(os.path.join(path, f"rel_{rel_name}"), exist_ok=True)
 
@@ -512,10 +547,11 @@ class PrecomputedAnnotationWriter:
             with open(os.path.join(path, "by_id", str(int(ids[i]))), "wb") as f:
                 f.write(entry)
 
-        # Write spatial chunks
-        for cell, data in spatial_chunks.items():
+        # Write spatial chunks (multi-level)
+        for (level_idx, cell), data in spatial_chunks.items():
+            level_key = levels[level_idx].key
             chunk_name = "_".join(str(c) for c in cell)
-            with open(os.path.join(path, "spatial0", chunk_name), "wb") as f:
+            with open(os.path.join(path, level_key, chunk_name), "wb") as f:
                 f.write(data)
 
         # Write relationship indexes
@@ -536,7 +572,7 @@ class PrecomputedAnnotationWriter:
         by_id_entries,
         ids,
         spatial_chunks,
-        num_chunks,
+        levels,
         by_id_sharding,
         inverted_rels,
         relationship_shardings,
@@ -573,10 +609,11 @@ class PrecomputedAnnotationWriter:
             by_id_store.with_transaction(txn)[key] = entry
         txn.commit_async().result()
 
-        # Write spatial0 (unsharded via tensorstore KvStore)
-        spatial_spec = os.path.join(ts_base, "spatial0") + "/"
-        spatial_store = ts.KvStore.open(spatial_spec).result()
-        for cell, data in spatial_chunks.items():
+        # Write spatial chunks per level (unsharded via tensorstore KvStore)
+        for (level_idx, cell), data in spatial_chunks.items():
+            level_key = levels[level_idx].key
+            spatial_spec = os.path.join(ts_base, level_key) + "/"
+            spatial_store = ts.KvStore.open(spatial_spec).result()
             chunk_name = "_".join(str(c) for c in cell)
             spatial_store[chunk_name] = data
 
