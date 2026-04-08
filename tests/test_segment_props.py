@@ -183,6 +183,42 @@ def test_categorical_props(test_categorical_df):
     assert p_dict["inline"]["properties"][2]["data_type"] == "int32"
 
 
+def test_categorical_label_col(test_categorical_df):
+    """Categorical dtype columns used as label_col should not raise TypeError."""
+    props = SegmentProperties.from_dataframe(
+        test_categorical_df,
+        id_col="seg_id",
+        label_col="cell_type",
+    )
+    assert len(props) == 100
+    p_dict = props.to_dict()
+    assert p_dict["inline"]["properties"][0]["values"][0] == "ct_a"
+
+
+def test_categorical_label_col_with_nulls():
+    """Categorical label_col with null values should fill nulls with empty string."""
+    df = pd.DataFrame(
+        {
+            "seg_id": np.arange(0, 5),
+            "cell_type": pd.Categorical(
+                ["ct_a", None, "ct_b", None, "ct_a"],
+                categories=["ct_a", "ct_b"],
+            ),
+        }
+    )
+    props = SegmentProperties.from_dataframe(
+        df,
+        id_col="seg_id",
+        label_col="cell_type",
+    )
+    assert len(props) == 5
+    p_dict = props.to_dict()
+    values = p_dict["inline"]["properties"][0]["values"]
+    assert values[0] == "ct_a"
+    assert values[1] == ""
+    assert values[3] == ""
+
+
 def test_prepend_col_name(test_categorical_df):
     props = SegmentProperties.from_dataframe(
         test_categorical_df,
