@@ -50,7 +50,14 @@ def _is_enum_column(series: pd.Series) -> bool:
     if isinstance(dtype, pd.StringDtype):
         return True
     if dtype == object:
-        first_non_null = next((v for v in series if v is not None and not (isinstance(v, float) and np.isnan(v))), None)
+        first_non_null = next(
+            (
+                v
+                for v in series
+                if v is not None and not (isinstance(v, float) and np.isnan(v))
+            ),
+            None,
+        )
         return isinstance(first_non_null, str)
     return False
 
@@ -360,4 +367,3 @@ class AnnotationDataFrameWriter:
 
         print("Writing precomputed data...")
         writer.write(path)
-
