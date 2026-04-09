@@ -607,6 +607,133 @@ class TestSourceResolution:
             )
 
 
+# ── Enum Property Encoding Tests ─────────────────────────────────────
+
+
+class TestEnumPropertyEncoding:
+    """Unit tests for _is_enum_column and _build_enum_property helpers."""
+
+    from nglui.precomputed.dataframe_writer import _build_enum_property, _is_enum_column
+
+    # -- _is_enum_column --
+
+    def test_is_enum_bool_numpy(self):
+        s = pd.Series([True, False, True], dtype=bool)
+        from nglui.precomputed.dataframe_writer import _is_enum_column
+
+        assert _is_enum_column(s)
+
+    def test_is_enum_bool_nullable(self):
+        s = pd.array([True, False, None], dtype=pd.BooleanDtype())
+        s = pd.Series(s)
+        from nglui.precomputed.dataframe_writer import _is_enum_column
+
+        assert _is_enum_column(s)
+
+    def test_is_enum_categorical(self):
+        s = pd.Categorical(["a", "b", "a"])
+        from nglui.precomputed.dataframe_writer import _is_enum_column
+
+        assert _is_enum_column(pd.Series(s))
+
+    def test_is_enum_string_object(self):
+        s = pd.Series(["foo", "bar", "foo"])
+        from nglui.precomputed.dataframe_writer import _is_enum_column
+
+        assert _is_enum_column(s)
+
+    def test_is_not_enum_numeric(self):
+        s = pd.Series([1.0, 2.0, 3.0])
+        from nglui.precomputed.dataframe_writer import _is_enum_column
+
+        assert not _is_enum_column(s)
+
+    # -- bool branch of _build_enum_property --
+
+    def test_bool_numpy_no_nulls(self):
+        from nglui.precomputed.dataframe_writer import _build_enum_property
+
+        s = pd.Series([True, False, True, False], dtype=bool)
+        spec, codes = _build_enum_property(s, "flag")
+
+        assert spec.id == "flag"
+        assert spec.type == "uint8"
+        assert list(spec.enum_labels) == ["False", "True"]
+        assert list(spec.enum_values) == [0, 1]
+        np.testing.assert_array_equal(codes, [1, 0, 1, 0])
+        assert codes.dtype == np.uint8
+
+    def test_bool_nullable_with_nulls(self):
+        from nglui.precomputed.dataframe_writer import _build_enum_property
+
+        s = pd.Series(pd.array([True, None, False, True], dtype=pd.BooleanDtype()))
+        spec, codes = _build_enum_property(s, "flag")
+
+        assert spec.id == "flag"
+        assert spec.type == "uint8"
+        assert list(spec.enum_labels) == ["null", "False", "True"]
+        assert list(spec.enum_values) == [0, 1, 2]
+        # True=2, null=0, False=1, True=2
+        np.testing.assert_array_equal(codes, [2, 0, 1, 2])
+        assert codes.dtype == np.uint8
+
+    def test_bool_no_nulls_uint_type(self):
+        """Two labels always fit in uint8."""
+        from nglui.precomputed.dataframe_writer import _build_enum_property
+
+        s = pd.Series([False, False, True], dtype=bool)
+        spec, codes = _build_enum_property(s, "x")
+        assert spec.type == "uint8"
+
+    # -- write round-trip with bool property --
+
+    def test_write_bool_property(self, coordinate_space_3d, sample_df):
+        sample_df = sample_df.copy()
+        rng = np.random.default_rng(0)
+        sample_df["is_active"] = rng.integers(0, 2, size=len(sample_df)).astype(bool)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = AnnotationDataFrameWriter(
+                coordinate_space=coordinate_space_3d,
+                point_column=["pt_x", "pt_y", "pt_z"],
+                property_columns=["is_active"],
+                write_sharded=False,
+            )
+            writer.write(sample_df, tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+
+        prop = info["properties"][0]
+        assert prop["id"] == "is_active"
+        assert prop["type"] == "uint8"
+        assert prop["enum_labels"] == ["False", "True"]
+        assert prop["enum_values"] == [0, 1]
+
+    def test_write_bool_nullable_property(self, coordinate_space_3d, sample_df):
+        sample_df = sample_df.copy()
+        vals = [True, False, None] * (len(sample_df) // 3) + [True] * (
+            len(sample_df) % 3
+        )
+        sample_df["is_active"] = pd.array(vals[: len(sample_df)], dtype=pd.BooleanDtype())
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = AnnotationDataFrameWriter(
+                coordinate_space=coordinate_space_3d,
+                point_column=["pt_x", "pt_y", "pt_z"],
+                property_columns=["is_active"],
+                write_sharded=False,
+            )
+            writer.write(sample_df, tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+
+        prop = info["properties"][0]
+        assert prop["enum_labels"] == ["null", "False", "True"]
+        assert prop["enum_values"] == [0, 1, 2]
+
+
 # ── Multi-Scale Spatial Index Tests ─────────────────────────────────
 
 

@@ -49,6 +49,10 @@ def _is_enum_column(series: pd.Series) -> bool:
         return True
     if isinstance(dtype, pd.StringDtype):
         return True
+    if isinstance(dtype, pd.BooleanDtype):
+        return True
+    if np.dtype(dtype).kind == "b":
+        return True
     if dtype == object:
         first_non_null = next(
             (
@@ -68,7 +72,18 @@ def _build_enum_property(
     """Build an enum AnnotationPropertySpec and encoded integer array for a string/categorical column."""
     has_nulls = series.isna().any()
 
-    if isinstance(series.dtype, pd.CategoricalDtype):
+    if isinstance(series.dtype, pd.BooleanDtype) or np.dtype(series.dtype).kind == "b":
+        # Bool: False=0, True=1; nullable adds "null" at 0 and shifts by +1
+        if has_nulls:
+            labels = ["null", "False", "True"]
+            raw = series.to_numpy(dtype=object, na_value=None)
+            codes = np.array(
+                [0 if v is None else (2 if v else 1) for v in raw], dtype=np.int64
+            )
+        else:
+            labels = ["False", "True"]
+            codes = series.to_numpy(dtype=bool).astype(np.int64)
+    elif isinstance(series.dtype, pd.CategoricalDtype):
         # Preserve existing category order
         categories = [str(c) for c in series.cat.categories]
         if has_nulls:
