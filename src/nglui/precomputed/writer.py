@@ -402,10 +402,15 @@ class PrecomputedAnnotationWriter:
         """
         coords, n = self._finalize_data()
 
-        # Rescale coordinates if data_resolution differs from coordinate_space
+        # Rescale coordinates if data_resolution differs from coordinate_space.
+        # coordinate_space.scales is stored in SI meters (CoordinateSpace normalises
+        # "nm" → "m"), but data_resolution is provided in nm (same units as
+        # CAVEclient.info.viewer_resolution()).  Convert scales to nm first so the
+        # ratio mirrors the statebuilder's  scale = data_res / layer_res  pattern
+        # where both sides are raw nm voxel sizes.
         if self._data_resolution is not None:
-            cs_scales = np.array(self.coordinate_space.scales, dtype=np.float64)
-            scale = self._data_resolution / cs_scales
+            cs_scales_nm = self.coordinate_space.scales / 1e-9  # m → nm
+            scale = self._data_resolution / cs_scales_nm
             # tile scale to cover all geometry columns (e.g. 6 cols for line = 2 * rank)
             coords = (coords * np.tile(scale, coords.shape[1] // self.rank)).astype(
                 np.float32
