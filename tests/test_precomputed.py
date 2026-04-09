@@ -715,7 +715,9 @@ class TestEnumPropertyEncoding:
         vals = [True, False, None] * (len(sample_df) // 3) + [True] * (
             len(sample_df) % 3
         )
-        sample_df["is_active"] = pd.array(vals[: len(sample_df)], dtype=pd.BooleanDtype())
+        sample_df["is_active"] = pd.array(
+            vals[: len(sample_df)], dtype=pd.BooleanDtype()
+        )
 
         with tempfile.TemporaryDirectory() as tmpdir:
             writer = AnnotationDataFrameWriter(

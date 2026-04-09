@@ -13,8 +13,10 @@ PrecomputedAnnotationWriter
 
 from .dataframe_writer import AnnotationDataFrameWriter
 from .writer import PrecomputedAnnotationWriter
+from .spatial_index_tree import SpatialIndexTree
 
 __all__ = [
     "AnnotationDataFrameWriter",
     "PrecomputedAnnotationWriter",
+    "SpatialIndexTree",
 ]
