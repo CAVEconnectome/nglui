@@ -632,7 +632,7 @@ class PrecomputedAnnotationWriter:
         by_id_store = ts.KvStore.open(by_id_spec).result()
         txn = ts.Transaction()
         for i, entry in enumerate(by_id_entries):
-            key = np.ascontiguousarray(ids[i], dtype=">u8").tobytes()
+            key = np.ascontiguousarray(ids[i], dtype="<u8").tobytes()
             by_id_store.with_transaction(txn)[key] = entry
         txn.commit_async().result()
 
@@ -656,7 +656,7 @@ class PrecomputedAnnotationWriter:
                 rel_store = ts.KvStore.open(rel_spec).result()
                 txn = ts.Transaction()
                 for segment_id, ann_indices in inv.items():
-                    key = np.ascontiguousarray(segment_id, dtype=">u8").tobytes()
+                    key = np.ascontiguousarray(segment_id, dtype="<u8").tobytes()
                     idx_arr = np.array(ann_indices)
                     value = encode_multiple_annotations(
                         fixed_blocks[idx_arr], ids[idx_arr]

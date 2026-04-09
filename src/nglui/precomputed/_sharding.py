@@ -14,7 +14,7 @@ class ShardSpec(NamedTuple):
     """Neuroglancer uint64 sharded v1 specification."""
 
     type: str
-    hash: Literal["murmurhash3_x86_128", "identity_hash"]
+    hash: Literal["murmurhash3_x86_128", "identity"]
     preshift_bits: int
     shard_bits: int
     minishard_bits: int
@@ -36,7 +36,7 @@ class ShardSpec(NamedTuple):
 def choose_output_spec(
     total_count: int,
     total_bytes: int,
-    hashtype: Literal["murmurhash3_x86_128", "identity_hash"] = "murmurhash3_x86_128",
+    hashtype: Literal["murmurhash3_x86_128", "identity"] = "identity",
     gzip_compress: bool = True,
 ) -> Optional[ShardSpec]:
     """Compute sharding parameters from annotation count and data size.
