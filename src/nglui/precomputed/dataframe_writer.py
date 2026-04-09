@@ -243,9 +243,13 @@ class AnnotationDataFrameWriter:
         path : str
             Output path (local or cloud).
         """
+        print("Extracting coords...")
         coords = self._extract_coordinates(df)
+        print("Resolving properties...")
         properties, prop_arrays = self._resolve_properties(df)
+        print("Extracting relationships...")
         rel_names, rel_data = self._extract_relationships(df)
+        print("Extracting IDs...")
         ids = self._extract_ids(df)
 
         writer = PrecomputedAnnotationWriter(
@@ -259,7 +263,9 @@ class AnnotationDataFrameWriter:
             write_sharded=self.write_sharded,
         )
 
+        print("Setting coords in writer...")
         writer.set_coordinates(coords)
+        print("Setting IDs in writer...")
         writer.set_ids(ids)
 
         for prop_name, arr in prop_arrays.items():
@@ -268,4 +274,6 @@ class AnnotationDataFrameWriter:
         for rel_name, data in rel_data.items():
             writer.set_relationship(rel_name, data)
 
+        print("Writing precomputed data...")
         writer.write(path)
+

@@ -433,6 +433,7 @@ class PrecomputedAnnotationWriter:
         upper_bound = np.nextafter(upper_bound, np.inf).astype(np.float64)
 
         # Build spatial level hierarchy
+        print("Building spatial levels...")
         if self._spatial_levels is not None:
             levels = self._spatial_levels
         elif self._user_chunk_size is not None:
@@ -469,19 +470,24 @@ class PrecomputedAnnotationWriter:
             finest = levels[-1]
             upper_bound = lower_bound + finest.grid_shape * finest.chunk_size
 
+        print("Computing assignments")
         # Compute multi-scale assignments
         assignment = compute_multiscale_assignments(coords, lower_bound, levels)
 
+        print("Encoding data")
         # Encode fixed blocks
         fixed_blocks = encode_fixed_blocks(coords, self._properties, self._dtype)
         ids = self._ids
 
+        print("Resolving relationships...")
         # Resolve relationships
         by_id_rels, inverted_rels = self._resolve_relationships(n)
 
+        print("Encoding by_id entries...")
         # Encode by_id entries
         by_id_entries = encode_by_id_entries(fixed_blocks, by_id_rels)
 
+        print("Encoding multi-scale spatial chunks...")
         # Encode multi-scale spatial chunks
         spatial_chunks = encode_multiscale_spatial_chunks(fixed_blocks, ids, assignment)
 
@@ -521,6 +527,7 @@ class PrecomputedAnnotationWriter:
         )
 
         # Write everything
+        print("Writing data...")
         if self.write_sharded and _has_tensorstore and by_id_sharding is not None:
             self._write_sharded(
                 path,
@@ -632,7 +639,7 @@ class PrecomputedAnnotationWriter:
         by_id_store = ts.KvStore.open(by_id_spec).result()
         txn = ts.Transaction()
         for i, entry in enumerate(by_id_entries):
-            key = np.ascontiguousarray(ids[i], dtype="<u8").tobytes()
+            key = np.ascontiguousarray(ids[i], dtype=">u8").tobytes()
             by_id_store.with_transaction(txn)[key] = entry
         txn.commit_async().result()
 
@@ -656,7 +663,7 @@ class PrecomputedAnnotationWriter:
                 rel_store = ts.KvStore.open(rel_spec).result()
                 txn = ts.Transaction()
                 for segment_id, ann_indices in inv.items():
-                    key = np.ascontiguousarray(segment_id, dtype="<u8").tobytes()
+                    key = np.ascontiguousarray(segment_id, dtype=">u8").tobytes()
                     idx_arr = np.array(ann_indices)
                     value = encode_multiple_annotations(
                         fixed_blocks[idx_arr], ids[idx_arr]
