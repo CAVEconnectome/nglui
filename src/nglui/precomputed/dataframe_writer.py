@@ -78,6 +78,13 @@ class AnnotationDataFrameWriter:
         Explicit resolution per axis (e.g., ``[8, 8, 40]``). Units
         default to nm, axis names to x/y/z. Mutually exclusive with
         ``segmentation_source`` and ``coordinate_space``.
+    data_resolution : sequence of float, optional
+        Resolution of the input coordinate data (e.g., ``[4, 4, 40]``).
+        If provided, coordinates are rescaled from ``data_resolution``
+        into the ``coordinate_space`` resolution before writing.
+        Use this when your point coordinates are in a different voxel
+        grid than the segmentation source (e.g., CAVE materialization
+        data at viewer resolution vs. segmentation at native resolution).
     point_column : str or list of str
         Column(s) for point coordinates. Accepts:
 
@@ -142,6 +149,7 @@ class AnnotationDataFrameWriter:
         *,
         coordinate_space: Optional[CoordinateSpace] = None,
         resolution: Optional[Sequence[float]] = None,
+        data_resolution: Optional[Sequence[float]] = None,
         point_column: Optional[Union[str, list[str]]] = None,
         property_columns: Optional[list[str]] = None,
         relationship_columns: Optional[list[str]] = None,
@@ -162,6 +170,7 @@ class AnnotationDataFrameWriter:
         self.property_columns = property_columns or []
         self.relationship_columns = relationship_columns or []
         self.id_column = id_column
+        self.data_resolution = data_resolution
         self.chunk_size = chunk_size
         self.limit = limit
         self.write_sharded = write_sharded
@@ -242,6 +251,7 @@ class AnnotationDataFrameWriter:
         writer = PrecomputedAnnotationWriter(
             annotation_type=self.annotation_type,
             coordinate_space=self.coordinate_space,
+            data_resolution=self.data_resolution,
             relationships=rel_names,
             properties=properties,
             chunk_size=self.chunk_size,

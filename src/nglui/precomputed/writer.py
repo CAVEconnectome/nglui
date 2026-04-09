@@ -96,6 +96,13 @@ class PrecomputedAnnotationWriter:
         Explicit resolution per axis (e.g., ``[8, 8, 40]``). Units
         default to nm, axis names to x/y/z. Mutually exclusive with
         ``segmentation_source`` and ``coordinate_space``.
+    data_resolution : sequence of float, optional
+        Resolution of the input coordinate data (e.g., ``[4, 4, 40]``).
+        If provided, coordinates are rescaled from ``data_resolution``
+        into the ``coordinate_space`` resolution before writing.
+        Use this when your point coordinates are in a different voxel
+        grid than the segmentation source (e.g., CAVE materialization
+        data at viewer resolution vs. segmentation at native resolution).
     relationships : Sequence[str], optional
         Names of relationships (e.g., segment ID links).
     properties : Sequence[AnnotationPropertySpec], optional
@@ -121,6 +128,7 @@ class PrecomputedAnnotationWriter:
         *,
         coordinate_space: Optional[CoordinateSpace] = None,
         resolution: Optional[Sequence[float]] = None,
+        data_resolution: Optional[Sequence[float]] = None,
         relationships: Sequence[str] = (),
         properties: Sequence[viewer_state.AnnotationPropertySpec] = (),
         chunk_size: Optional[Union[float, Sequence[float]]] = None,
@@ -132,6 +140,11 @@ class PrecomputedAnnotationWriter:
             segmentation_source=segmentation_source,
             coordinate_space=coordinate_space,
             resolution=resolution,
+        )
+        self._data_resolution = (
+            np.asarray(data_resolution, dtype=np.float64)
+            if data_resolution is not None
+            else None
         )
         self.annotation_type = annotation_type
         self.rank = self.coordinate_space.rank
@@ -388,6 +401,15 @@ class PrecomputedAnnotationWriter:
             (gs://, s3://) when using sharded writes with tensorstore.
         """
         coords, n = self._finalize_data()
+
+        # Rescale coordinates if data_resolution differs from coordinate_space
+        if self._data_resolution is not None:
+            cs_scales = np.array(self.coordinate_space.scales, dtype=np.float64)
+            scale = self._data_resolution / cs_scales
+            # tile scale to cover all geometry columns (e.g. 6 cols for line = 2 * rank)
+            coords = (coords * np.tile(scale, coords.shape[1] // self.rank)).astype(
+                np.float32
+            )
 
         # Compute bounds
         if self.annotation_type == "point":
