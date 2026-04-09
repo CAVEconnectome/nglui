@@ -52,6 +52,17 @@ def _ensure_tensorstore():
         )
 
 
+def _to_uri(path: str) -> str:
+    """Normalize a path to a URI suitable for tensorstore KvStore.
+
+    Local paths (no scheme) are converted to ``file://`` URIs with an
+    absolute path.  Paths that already carry a scheme are returned unchanged.
+    """
+    if path.startswith(("gs://", "s3://", "file://", "http://", "https://")):
+        return path
+    return f"file://{os.path.abspath(path)}"
+
+
 class PrecomputedAnnotationWriter:
     """Write annotations in the neuroglancer precomputed format.
 
@@ -528,8 +539,8 @@ class PrecomputedAnnotationWriter:
 
         # Write everything
         print("Writing data...")
-        if self.write_sharded and _has_tensorstore and by_id_sharding is not None:
-            self._write_sharded(
+        if _has_tensorstore:
+            self._write_output(
                 path,
                 info,
                 by_id_entries,
@@ -542,7 +553,7 @@ class PrecomputedAnnotationWriter:
                 fixed_blocks,
             )
         else:
-            self._write_unsharded(
+            self._write_output_no_ts(
                 path,
                 info,
                 by_id_entries,
@@ -553,7 +564,7 @@ class PrecomputedAnnotationWriter:
                 fixed_blocks,
             )
 
-    def _write_unsharded(
+    def _write_output_no_ts(
         self,
         path,
         info,
@@ -564,7 +575,7 @@ class PrecomputedAnnotationWriter:
         inverted_rels,
         fixed_blocks,
     ):
-        """Write annotation data in unsharded format to local filesystem."""
+        """Write annotation data in unsharded format using os/open (no tensorstore)."""
         os.makedirs(path, exist_ok=True)
         os.makedirs(os.path.join(path, "by_id"), exist_ok=True)
         for level in levels:
@@ -599,7 +610,7 @@ class PrecomputedAnnotationWriter:
                 with open(filepath, "wb") as f:
                     f.write(chunk_data)
 
-    def _write_sharded(
+    def _write_output(
         self,
         path,
         info,
@@ -612,53 +623,55 @@ class PrecomputedAnnotationWriter:
         relationship_shardings,
         fixed_blocks,
     ):
-        """Write annotation data in sharded format via tensorstore."""
+        """Write annotation data via tensorstore KvStore (local or cloud).
+
+        Works for both sharded and unsharded output: ``by_id_sharding`` and
+        entries in ``relationship_shardings`` are ``None`` / absent when
+        ``write_sharded=False``, causing those sections to fall back to plain
+        directory-style KvStore writes.  Tensorstore's ``file://`` driver
+        creates parent directories automatically, so no ``os.makedirs`` calls
+        are needed here.
+        """
         _ensure_tensorstore()
+        ts_base = _to_uri(path)
 
-        # Ensure path has file:// for local paths
-        if not path.startswith(("gs://", "s3://", "file://", "http://", "https://")):
-            ts_base = f"file://{os.path.abspath(path)}"
+        # Write info
+        root_store = ts.KvStore.open(f"{ts_base}/").result()
+        root_store["info"] = serialize_info(info).encode()
+
+        # Write by_id (sharded or plain directory)
+        if by_id_sharding is not None:
+            by_id_spec = {
+                "driver": "neuroglancer_uint64_sharded",
+                "metadata": by_id_sharding.to_json(),
+                "base": f"{ts_base}/by_id",
+            }
+            by_id_store = ts.KvStore.open(by_id_spec).result()
+            txn = ts.Transaction()
+            for i, entry in enumerate(by_id_entries):
+                key = np.ascontiguousarray(ids[i], dtype=">u8").tobytes()
+                by_id_store.with_transaction(txn)[key] = entry
+            txn.commit_async().result()
         else:
-            ts_base = path
+            by_id_store = ts.KvStore.open(f"{ts_base}/by_id/").result()
+            for i, entry in enumerate(by_id_entries):
+                by_id_store[str(int(ids[i]))] = entry
 
-        os.makedirs(path, exist_ok=True) if not path.startswith(
-            ("gs://", "s3://")
-        ) else None
-
-        # Write info via tensorstore json driver
-        info_spec = {"driver": "json", "kvstore": os.path.join(ts_base, "info")}
-        info_store = ts.open(info_spec).result()
-        info_store.write(info).result()
-
-        # Write by_id (sharded)
-        by_id_spec = {
-            "driver": "neuroglancer_uint64_sharded",
-            "metadata": by_id_sharding.to_json(),
-            "base": os.path.join(ts_base, "by_id"),
-        }
-        by_id_store = ts.KvStore.open(by_id_spec).result()
-        txn = ts.Transaction()
-        for i, entry in enumerate(by_id_entries):
-            key = np.ascontiguousarray(ids[i], dtype=">u8").tobytes()
-            by_id_store.with_transaction(txn)[key] = entry
-        txn.commit_async().result()
-
-        # Write spatial chunks per level (unsharded via tensorstore KvStore)
+        # Write spatial chunks per level (always plain directory)
         for (level_idx, cell), data in spatial_chunks.items():
             level_key = levels[level_idx].key
-            spatial_spec = os.path.join(ts_base, level_key) + "/"
-            spatial_store = ts.KvStore.open(spatial_spec).result()
+            spatial_store = ts.KvStore.open(f"{ts_base}/{level_key}/").result()
             chunk_name = "_".join(str(c) for c in cell)
             spatial_store[chunk_name] = data
 
-        # Write relationship indexes
+        # Write relationship indexes (sharded or plain directory per relationship)
         for rel_name, inv in inverted_rels.items():
             rel_sharding = relationship_shardings.get(rel_name)
             if rel_sharding is not None:
                 rel_spec = {
                     "driver": "neuroglancer_uint64_sharded",
                     "metadata": rel_sharding.to_json(),
-                    "base": os.path.join(ts_base, f"rel_{rel_name}"),
+                    "base": f"{ts_base}/rel_{rel_name}",
                 }
                 rel_store = ts.KvStore.open(rel_spec).result()
                 txn = ts.Transaction()
@@ -671,8 +684,7 @@ class PrecomputedAnnotationWriter:
                     rel_store.with_transaction(txn)[key] = value
                 txn.commit_async().result()
             else:
-                rel_spec = os.path.join(ts_base, f"rel_{rel_name}") + "/"
-                rel_store = ts.KvStore.open(rel_spec).result()
+                rel_store = ts.KvStore.open(f"{ts_base}/rel_{rel_name}/").result()
                 for segment_id, ann_indices in inv.items():
                     idx_arr = np.array(ann_indices)
                     value = encode_multiple_annotations(

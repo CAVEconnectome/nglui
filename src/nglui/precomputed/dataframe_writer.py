@@ -17,12 +17,92 @@ from ._encoding import AnnotationType
 from ._source import resolve_coordinate_space
 from .writer import PrecomputedAnnotationWriter
 
+# Pre-computed uint type info for enum encoding (sorted smallest to largest)
+_UINT_ENUM_TYPES: list[tuple[int, str, type]] = [
+    (np.iinfo(np.uint8).max, "uint8", np.uint8),
+    (np.iinfo(np.uint16).max, "uint16", np.uint16),
+    (np.iinfo(np.uint32).max, "uint32", np.uint32),
+]
+
 # Maps pandas/numpy dtype kinds to neuroglancer property types
 _DTYPE_TO_PROPERTY_TYPE = {
     "u": {1: "uint8", 2: "uint16", 4: "uint32"},
     "i": {1: "int8", 2: "int16", 4: "int32", 8: "int32"},
     "f": {2: "float32", 4: "float32", 8: "float32"},
 }
+
+
+def _choose_uint_for_count(n: int) -> tuple[str, type]:
+    """Return the smallest uint neuroglancer type (str) and numpy dtype that fits n values."""
+    for max_val, type_str, np_dtype in _UINT_ENUM_TYPES:
+        if n <= max_val:
+            return type_str, np_dtype
+    raise ValueError(
+        f"Too many distinct enum values ({n}) to encode in uint32 ({np.iinfo(np.uint32).max} max)."
+    )
+
+
+def _is_enum_column(series: pd.Series) -> bool:
+    """Return True if this column should be encoded as a neuroglancer enum property."""
+    dtype = series.dtype
+    if isinstance(dtype, pd.CategoricalDtype):
+        return True
+    if isinstance(dtype, pd.StringDtype):
+        return True
+    if dtype == object:
+        first_non_null = next((v for v in series if v is not None and not (isinstance(v, float) and np.isnan(v))), None)
+        return isinstance(first_non_null, str)
+    return False
+
+
+def _build_enum_property(
+    series: pd.Series, col_name: str
+) -> tuple["viewer_state.AnnotationPropertySpec", np.ndarray]:
+    """Build an enum AnnotationPropertySpec and encoded integer array for a string/categorical column."""
+    has_nulls = series.isna().any()
+
+    if isinstance(series.dtype, pd.CategoricalDtype):
+        # Preserve existing category order
+        categories = [str(c) for c in series.cat.categories]
+        if has_nulls:
+            labels = ["null"] + categories
+            # cat.codes are 0-based; -1 means NaN — shift all by +1, NaN becomes 0
+            codes = series.cat.codes.to_numpy().astype(np.int64) + 1
+        else:
+            labels = categories
+            codes = series.cat.codes.to_numpy().astype(np.int64)
+    else:
+        # String or object dtype — use sorted unique non-null values
+        non_null = series.dropna()
+        unique_vals = sorted({str(v) for v in non_null})
+
+        if has_nulls:
+            labels = ["null"] + unique_vals
+            label_to_code = {v: i + 1 for i, v in enumerate(unique_vals)}
+        else:
+            labels = unique_vals
+            label_to_code = {v: i for i, v in enumerate(unique_vals)}
+
+        def _encode(val):
+            if val is None or (isinstance(val, float) and np.isnan(val)) or val != val:
+                return 0
+            return label_to_code.get(str(val), 0)
+
+        if isinstance(series.dtype, pd.StringDtype):
+            raw = series.to_numpy(dtype=object, na_value=None)
+        else:
+            raw = series.to_numpy()
+        codes = np.array([_encode(v) for v in raw], dtype=np.int64)
+
+    type_str, np_dtype = _choose_uint_for_count(len(labels))
+    enum_values = list(range(len(labels)))
+    spec = viewer_state.AnnotationPropertySpec(
+        id=col_name,
+        type=type_str,
+        enum_values=enum_values,
+        enum_labels=labels,
+    )
+    return spec, codes.astype(np_dtype)
 
 
 def _infer_property_type(series: pd.Series) -> str:
@@ -195,10 +275,14 @@ class AnnotationDataFrameWriter:
         arrays = {}
 
         for col_name in self.property_columns:
-            prop_type = _infer_property_type(df[col_name])
-            spec = viewer_state.AnnotationPropertySpec(id=col_name, type=prop_type)
+            if _is_enum_column(df[col_name]):
+                spec, arr = _build_enum_property(df[col_name], col_name)
+            else:
+                prop_type = _infer_property_type(df[col_name])
+                spec = viewer_state.AnnotationPropertySpec(id=col_name, type=prop_type)
+                arr = _convert_arrow_column(df[col_name])
             specs.append(spec)
-            arrays[col_name] = _convert_arrow_column(df[col_name])
+            arrays[col_name] = arr
 
         return specs, arrays
 
