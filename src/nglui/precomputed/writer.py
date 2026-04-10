@@ -28,6 +28,7 @@ from ._metadata import build_info, serialize_info
 from ._sharding import ShardSpec, choose_output_spec
 from ._source import resolve_coordinate_space
 from ._spatial import (
+    MultiscaleAssignment,
     SpatialLevel,
     auto_chunk_size,
     build_spatial_levels,
@@ -35,6 +36,7 @@ from ._spatial import (
     compute_multiscale_assignments,
     encode_multiscale_spatial_chunks,
 )
+from .spatial_index_tree import SpatialIndexTree
 
 try:
     import tensorstore as ts
@@ -61,6 +63,42 @@ def _to_uri(path: str) -> str:
     if path.startswith(("gs://", "s3://", "file://", "http://", "https://")):
         return path
     return f"file://{os.path.abspath(path)}"
+
+
+def _sit_to_multiscale_assignment(
+    sit: SpatialIndexTree,
+    sit_assignments: list,
+) -> "MultiscaleAssignment":
+    """Convert SpatialIndexTree output to a MultiscaleAssignment.
+
+    Maps the flat list of SpatialAssignment objects returned by
+    SpatialIndexTree.fit_transform into the MultiscaleAssignment structure
+    expected by encode_multiscale_spatial_chunks.
+    """
+    levels = [
+        SpatialLevel(
+            key=m["key"],
+            grid_shape=np.asarray(m["grid_shape"], dtype=int),
+            chunk_size=np.asarray(m["chunk_size"], dtype=np.float64),
+            limit=m["limit"],
+        )
+        for m in sit.metadata_
+    ]
+
+    n = len(sit_assignments)
+    row_assignments: list[list[tuple[int, tuple[int, ...]]]] = [[] for _ in range(n)]
+    level_chunks: dict[tuple[int, tuple[int, ...]], list[int]] = defaultdict(list)
+
+    for i, sa in enumerate(sit_assignments):
+        key = (sa.level, sa.cell)
+        row_assignments[i].append(key)
+        level_chunks[key].append(i)
+
+    return MultiscaleAssignment(
+        levels=levels,
+        row_assignments=row_assignments,
+        level_chunks={k: np.array(v, dtype=int) for k, v in level_chunks.items()},
+    )
 
 
 class PrecomputedAnnotationWriter:
@@ -483,7 +521,16 @@ class PrecomputedAnnotationWriter:
 
         print("Computing assignments")
         # Compute multi-scale assignments
-        assignment = compute_multiscale_assignments(coords, lower_bound, levels)
+        sit = SpatialIndexTree(
+            target_limit=self.limit, max_levels=20, subsample=None
+        )
+        sit_row_assignments = sit.fit_transform(coords)
+        assignment = _sit_to_multiscale_assignment(sit, sit_row_assignments)
+
+        # SIT determines the authoritative hierarchy; override local levels/bounds
+        levels = assignment.levels
+        lower_bound = sit.lower_bound_
+        upper_bound = sit.upper_bound_
 
         print("Encoding data")
         # Encode fixed blocks

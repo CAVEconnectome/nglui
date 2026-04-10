@@ -45,11 +45,13 @@ class SpatialIndexTree:
         max_levels: int = 20,
         subsample: Optional[int] = 10000,
         seed: int = 0,
+        bound_padding: float = 0.05,
     ):
         self.target_limit = target_limit
         self.max_levels = max_levels
         self.subsample = subsample
         self.seed = seed
+        self.bound_padding = bound_padding
 
         # Set after fit
         self.metadata_: list[dict] = []
@@ -144,7 +146,7 @@ class SpatialIndexTree:
         assignments : list[SpatialAssignment]
             Per-point level and cell where it was emitted.
         """
-        points = np.asarray(points, dtype=np.float64)
+        points = np.asarray(points, dtype=np.float32)
         rank = points.shape[1]
 
         # here n is the expected number of points in the overall hierarchy
@@ -162,21 +164,26 @@ class SpatialIndexTree:
         # this also handles a shuffle just once
         points = points[rng.choice(len(points), size=n_subsamples, replace=False)]
 
-        self.lower_bound_ = (
-            np.asarray(lower_bound, dtype=np.float64)
+        lower_bound = (
+            np.asarray(lower_bound, dtype=np.float32)
             if lower_bound is not None
             else points.min(axis=0)
         )
-        self.upper_bound_ = (
-            np.asarray(upper_bound, dtype=np.float64)
+        upper_bound = (
+            np.asarray(upper_bound, dtype=np.float32)
             if upper_bound is not None
-            else points.max(axis=0) + 1e-6
+            else points.max(axis=0)
         )
+        # get the distance in each dimension
+        extent = upper_bound - lower_bound
+        max_extent = np.max(extent)
+        # pad bounds by a fraction of the max extent to avoid unsampled points outside
+        padding = np.full(rank, max_extent * self.bound_padding, dtype=np.float32)
+        self.lower_bound_ = lower_bound - padding
+        self.upper_bound_ = upper_bound + padding
 
         self.grid_shapes_ = self._build_grid_shapes(rank)
         self._chunk_sizes = [self._compute_chunk_size(gs) for gs in self.grid_shapes_]
-
-        assignments: list[Optional[SpatialAssignment]] = [None] * n_subsamples
 
         # Level-0 grouping
         all_idx = np.arange(n_subsamples, dtype=int)
@@ -192,13 +199,11 @@ class SpatialIndexTree:
             if max_count == 0:
                 break
 
-            prob = min(1.0, limit / max_count)
             leftovers: list[np.ndarray] = []
 
             for cell, pt_idx in remaining.items():
-                mask = rng.random(len(pt_idx)) < prob
-                for i in pt_idx[mask]:
-                    assignments[i] = SpatialAssignment(level=level, cell=cell)
+                # since we already shuffled, just take the first `limit` points and push the rest down
+                mask = np.arange(len(pt_idx)) < limit
                 kept = pt_idx[~mask]
                 if len(kept):
                     leftovers.append(kept)
@@ -221,16 +226,8 @@ class SpatialIndexTree:
             else:
                 remaining = {}
 
-        # Any stragglers that survived all levels get forced into the last
-        # level at whatever cell they fall in.
-        if remaining:
-            last = len(self.metadata_) - 1
-            for cell, pt_idx in remaining.items():
-                for i in pt_idx:
-                    assignments[i] = SpatialAssignment(level=last, cell=cell)
-
         self._fitted = True
-        return
+        return self
 
     # ------------------------------------------------------------------
     # transform
@@ -262,7 +259,7 @@ class SpatialIndexTree:
         """
         self._ensure_fitted()
 
-        points = np.asarray(points, dtype=np.float64)
+        points = np.asarray(points, dtype=np.float32)
         m = len(points)
         assignments: list[Optional[SpatialAssignment]] = [None] * m
         rng = np.random.default_rng(seed if seed is not None else self.seed)
@@ -278,14 +275,17 @@ class SpatialIndexTree:
             leftovers: list[np.ndarray] = []
 
             for cell, pt_idx in remaining.items():
-                if len(pt_idx) <= self.limit:
+                if len(pt_idx) <= self.target_limit:
                     # Entire cell fits — emit everything here
                     for i in pt_idx:
                         assignments[i] = SpatialAssignment(level=level, cell=cell)
                 else:
-                    # Shuffle, take `limit`, push the rest down
+                    # Shuffle, take `target_limit`, push the rest down
                     rng.shuffle(pt_idx)
-                    emitted, kept = pt_idx[: self.limit], pt_idx[self.limit :]
+                    emitted, kept = (
+                        pt_idx[: self.target_limit],
+                        pt_idx[self.target_limit :],
+                    )
                     for i in emitted:
                         assignments[i] = SpatialAssignment(level=level, cell=cell)
                     leftovers.append(kept)
@@ -308,6 +308,20 @@ class SpatialIndexTree:
                 remaining = {}
 
         return assignments
+
+    def fit_transform(
+        self,
+        points: np.ndarray,
+        lower_bound: Optional[np.ndarray] = None,
+        upper_bound: Optional[np.ndarray] = None,
+        n_samples: Optional[int] = None,
+        seed: Optional[int] = None,
+    ) -> list[SpatialAssignment]:
+        """
+        Convenience method to fit and transform in one call. See fit() and transform().
+        """
+        self.fit(points, lower_bound, upper_bound, n_samples)
+        return self.transform(points, seed)
 
 
 # n_samples = 100_000
