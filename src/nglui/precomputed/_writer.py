@@ -1,0 +1,566 @@
+"""Low-level precomputed annotation writer.
+
+Provides both a bulk array API (fast, for use by DataFrame writer)
+and a per-row API (streaming, for future polyline support).
+Writes to local or cloud storage via tensorstore.
+"""
+
+import numbers
+import os
+from collections import defaultdict
+from collections.abc import Sequence
+from typing import Literal, Optional, Union
+
+import numpy as np
+from neuroglancer import viewer_state
+from neuroglancer.coordinate_space import CoordinateSpace
+
+from ._encoding import (
+    AnnotationType,
+    build_dtype,
+    encode_by_id_entries,
+    encode_fixed_blocks,
+    encode_multiple_annotations,
+    sort_properties,
+)
+from ._metadata import build_info, serialize_info
+from ._sharding import ShardSpec, choose_output_spec
+from ._source import resolve_coordinate_space
+from ._spatial import (
+    SpatialLevel,
+    _IsotropicHierarchy,
+    _SpatialHierarchy,
+    _UniformHierarchy,
+    encode_multiscale_spatial_chunks,
+)
+
+try:
+    import tensorstore as ts
+except ImportError:
+    raise ImportError(
+        "The nglui.precomputed module requires tensorstore. "
+        "Install it with: pip install 'nglui[precomputed]'"
+    ) from None
+
+
+def _to_uri(path: str) -> str:
+    """Normalize a path to a URI suitable for tensorstore KvStore.
+
+    Local paths (no scheme) are converted to ``file://`` URIs with an
+    absolute path.  Paths that already carry a scheme are returned unchanged.
+    """
+    if path.startswith(("gs://", "s3://", "file://", "http://", "https://")):
+        return path
+    return f"file://{os.path.abspath(path)}"
+
+
+class _PrecomputedAnnotationWriter:
+    """Write annotations in the neuroglancer precomputed format.
+
+    Supports two usage patterns:
+
+    **Bulk array API** (fast, used by AnnotationDataFrameWriter)::
+
+        writer = PrecomputedAnnotationWriter(
+            annotation_type="point",
+            segmentation_source=client,
+        )
+        writer.set_coordinates(coords_array)
+        writer.set_property("score", scores_array)
+        writer.set_relationship("segment", segment_ids)
+        writer.write("/path/to/output")
+
+    **Per-row API** (streaming)::
+
+        writer = PrecomputedAnnotationWriter(
+            annotation_type="point",
+            resolution=[8, 8, 40],
+            relationships=["segment"],
+            properties=[AnnotationPropertySpec(id="score", type="float32")],
+        )
+        writer.add_point([100, 200, 50], score=0.95, segment=123)
+        writer.add_point([110, 210, 55], score=0.87, segment=456)
+        writer.write("/path/to/output")
+
+    Parameters
+    ----------
+    annotation_type : str
+        One of "point", "line", "axis_aligned_bounding_box", "ellipsoid".
+    segmentation_source : CAVEclient, CloudVolume, or str, optional
+        Source to derive coordinate space from. Accepts a CAVEclient
+        (uses its segmentation source), a CloudVolume instance, or a
+        segmentation source URL. Mutually exclusive with
+        ``coordinate_space`` and ``resolution``.
+    coordinate_space : CoordinateSpace, optional
+        Explicit neuroglancer coordinate space. Mutually exclusive with
+        ``segmentation_source`` and ``resolution``.
+    resolution : sequence of float, optional
+        Explicit resolution per axis (e.g., ``[8, 8, 40]``). Units
+        default to nm, axis names to x/y/z. Mutually exclusive with
+        ``segmentation_source`` and ``coordinate_space``.
+    data_resolution : sequence of float, optional
+        Resolution of the input coordinate data (e.g., ``[4, 4, 40]``).
+        If provided, coordinates are rescaled from ``data_resolution``
+        into the ``coordinate_space`` resolution before writing.
+    relationships : Sequence[str], optional
+        Names of relationships (e.g., segment ID links).
+    properties : Sequence[AnnotationPropertySpec], optional
+        Annotation property definitions.
+    spatial_hierarchy : SpatialHierarchy, optional
+        Spatial hierarchy for computing the multi-level spatial index.
+        Defaults to ``IsotropicHierarchy()`` if not provided.
+    write_sharded : bool
+        Whether to use sharded writes (default True).
+    """
+
+    def __init__(
+        self,
+        annotation_type: AnnotationType,
+        segmentation_source=None,
+        *,
+        coordinate_space: Optional[CoordinateSpace] = None,
+        resolution: Optional[Sequence[float]] = None,
+        data_resolution: Optional[Sequence[float]] = None,
+        relationships: Sequence[str] = (),
+        properties: Sequence[viewer_state.AnnotationPropertySpec] = (),
+        spatial_hierarchy: Optional[_SpatialHierarchy] = None,
+        write_sharded: bool = True,
+    ):
+        self.coordinate_space = resolve_coordinate_space(
+            segmentation_source=segmentation_source,
+            coordinate_space=coordinate_space,
+            resolution=resolution,
+        )
+        self._data_resolution = (
+            np.asarray(data_resolution, dtype=np.float64)
+            if data_resolution is not None
+            else None
+        )
+        self.annotation_type = annotation_type
+        self.rank = self.coordinate_space.rank
+        self.relationships = list(relationships)
+        self.properties = sort_properties(properties)
+        self.write_sharded = write_sharded
+        self.spatial_hierarchy = (
+            spatial_hierarchy
+            if spatial_hierarchy is not None
+            else _IsotropicHierarchy(rank=self.rank)
+        )
+
+        self._dtype = build_dtype(annotation_type, self.rank, self.properties)
+
+        # Bulk data (set via set_* methods or accumulated via add_* methods)
+        self._coordinates: Optional[np.ndarray] = None
+        self._properties: dict[str, np.ndarray] = {}
+        self._relationships: dict[str, Union[np.ndarray, list]] = {}
+        self._ids: Optional[np.ndarray] = None
+
+        # Per-row accumulation buffers (used by add_* methods)
+        self._row_coords: list[np.ndarray] = []
+        self._row_properties: dict[str, list] = defaultdict(list)
+        self._row_relationships: dict[str, list] = defaultdict(list)
+        self._row_ids: list[int] = []
+
+    # ── Bulk array API ──────────────────────────────────────────────────
+
+    def set_coordinates(self, coordinates: np.ndarray):
+        """Set all annotation coordinates at once.
+
+        Parameters
+        ----------
+        coordinates : np.ndarray
+            (N, rank) for points, (N, 2*rank) for line/bbox/ellipsoid.
+        """
+        self._coordinates = np.asarray(coordinates, dtype=np.float32)
+
+    def set_property(self, name: str, values: np.ndarray):
+        """Set values for a named property.
+
+        Parameters
+        ----------
+        name : str
+            Property id (must match one of the property specs).
+        values : np.ndarray
+            (N,) array of property values.
+        """
+        self._properties[name] = np.asarray(values)
+
+    def set_relationship(
+        self, name: str, ids: Union[np.ndarray, list[list[int]], list[int]]
+    ):
+        """Set relationship IDs for a named relationship.
+
+        Parameters
+        ----------
+        name : str
+            Relationship name.
+        ids : np.ndarray or list
+            (N,) array of scalar segment IDs, or list of lists for variable-length.
+        """
+        self._relationships[name] = ids
+
+    def set_ids(self, ids: np.ndarray):
+        """Set annotation IDs.
+
+        Parameters
+        ----------
+        ids : np.ndarray
+            (N,) uint64 array of annotation IDs.
+        """
+        self._ids = np.asarray(ids, dtype=np.uint64)
+
+    # ── Per-row API ─────────────────────────────────────────────────────
+
+    def add_point(self, point: Sequence[float], id: Optional[int] = None, **kwargs):
+        """Add a single point annotation.
+
+        Parameters
+        ----------
+        point : Sequence[float]
+            (rank,) coordinate.
+        id : int, optional
+            Annotation ID. Auto-assigned if None.
+        **kwargs
+            Property values and relationship IDs by name.
+        """
+        if self.annotation_type != "point":
+            raise ValueError(f"Cannot add point to {self.annotation_type} writer")
+        self._add_row(np.asarray(point, dtype=np.float32), id, **kwargs)
+
+    def add_line(
+        self,
+        point_a: Sequence[float],
+        point_b: Sequence[float],
+        id: Optional[int] = None,
+        **kwargs,
+    ):
+        """Add a single line annotation."""
+        if self.annotation_type != "line":
+            raise ValueError(f"Cannot add line to {self.annotation_type} writer")
+        coords = np.concatenate(
+            [
+                np.asarray(point_a, dtype=np.float32),
+                np.asarray(point_b, dtype=np.float32),
+            ]
+        )
+        self._add_row(coords, id, **kwargs)
+
+    def add_ellipsoid(
+        self,
+        center: Sequence[float],
+        radii: Sequence[float],
+        id: Optional[int] = None,
+        **kwargs,
+    ):
+        """Add a single ellipsoid annotation."""
+        if self.annotation_type != "ellipsoid":
+            raise ValueError(f"Cannot add ellipsoid to {self.annotation_type} writer")
+        coords = np.concatenate(
+            [np.asarray(center, dtype=np.float32), np.asarray(radii, dtype=np.float32)]
+        )
+        self._add_row(coords, id, **kwargs)
+
+    def add_axis_aligned_bounding_box(
+        self,
+        point_a: Sequence[float],
+        point_b: Sequence[float],
+        id: Optional[int] = None,
+        **kwargs,
+    ):
+        """Add a single axis-aligned bounding box annotation."""
+        if self.annotation_type != "axis_aligned_bounding_box":
+            raise ValueError(
+                f"Cannot add bounding box to {self.annotation_type} writer"
+            )
+        coords = np.concatenate(
+            [
+                np.asarray(point_a, dtype=np.float32),
+                np.asarray(point_b, dtype=np.float32),
+            ]
+        )
+        self._add_row(coords, id, **kwargs)
+
+    def _add_row(self, coords: np.ndarray, id: Optional[int], **kwargs):
+        """Add a single annotation from the per-row API."""
+        self._row_coords.append(coords)
+        if id is None:
+            id = len(self._row_coords) - 1
+        self._row_ids.append(id)
+
+        for p in self.properties:
+            value = kwargs.pop(p.id, 0)
+            self._row_properties[p.id].append(value)
+
+        for rel in self.relationships:
+            ids = kwargs.pop(rel, [])
+            if isinstance(ids, numbers.Integral):
+                ids = [ids]
+            self._row_relationships[rel].append(ids)
+
+        if kwargs:
+            raise ValueError(f"Unexpected keyword arguments: {kwargs}")
+
+    # ── Write ───────────────────────────────────────────────────────────
+
+    def _finalize_data(self):
+        """Merge per-row data into bulk arrays if needed."""
+        if self._coordinates is not None:
+            # Bulk API was used; data is already set
+            coords = self._coordinates
+        elif self._row_coords:
+            # Per-row API was used; stack into arrays
+            coords = np.stack(self._row_coords).astype(np.float32)
+            for name, values in self._row_properties.items():
+                if name not in self._properties:
+                    self._properties[name] = np.asarray(values)
+            for name, values in self._row_relationships.items():
+                if name not in self._relationships:
+                    self._relationships[name] = values
+            if self._ids is None and self._row_ids:
+                self._ids = np.array(self._row_ids, dtype=np.uint64)
+        else:
+            raise ValueError("No annotation data provided.")
+
+        n = len(coords)
+        if self._ids is None:
+            self._ids = np.arange(n, dtype=np.uint64)
+
+        return coords, n
+
+    def _resolve_relationships(
+        self, n: int
+    ) -> tuple[list[list[list[int]]] | None, dict[str, dict[int, list[int]]]]:
+        """Convert relationship data to canonical formats.
+
+        Returns
+        -------
+        by_id_rels : list[list[list[int]]] or None
+            relationships[r][i] = list of segment IDs for relationship r, annotation i.
+        inverted_rels : dict[str, dict[int, list[int]]]
+            Maps relationship name → {segment_id: [annotation_indices]}.
+        """
+        if not self.relationships:
+            return None, {}
+
+        by_id_rels: list[list[list[int]]] = []
+        inverted_rels: dict[str, dict[int, list[int]]] = {}
+
+        for rel_name in self.relationships:
+            raw = self._relationships.get(rel_name)
+            rel_per_row: list[list[int]] = []
+            inverted: dict[int, list[int]] = defaultdict(list)
+
+            if raw is None:
+                # No data for this relationship
+                rel_per_row = [[] for _ in range(n)]
+            elif isinstance(raw, np.ndarray) and raw.ndim == 1:
+                # Scalar: one ID per row
+                for i, sid in enumerate(raw):
+                    sid_int = int(sid)
+                    if sid_int != 0:
+                        rel_per_row.append([sid_int])
+                        inverted[sid_int].append(i)
+                    else:
+                        rel_per_row.append([])
+            elif isinstance(raw, list):
+                # List of lists: variable IDs per row
+                for i, ids in enumerate(raw):
+                    if isinstance(ids, numbers.Integral):
+                        ids = [ids]
+                    ids_int = [int(x) for x in ids]
+                    rel_per_row.append(ids_int)
+                    for sid in ids_int:
+                        inverted[sid].append(i)
+            else:
+                raise ValueError(
+                    f"Unexpected relationship data type for '{rel_name}': {type(raw)}"
+                )
+
+            by_id_rels.append(rel_per_row)
+            inverted_rels[rel_name] = dict(inverted)
+
+        return by_id_rels, inverted_rels
+
+    def write(self, path: str):
+        """Write all annotations to the given path.
+
+        Parameters
+        ----------
+        path : str
+            Output path. Can be local filesystem path, or a cloud path
+            (gs://, s3://) when using sharded writes with tensorstore.
+        """
+        coords, n = self._finalize_data()
+
+        # Rescale coordinates if data_resolution differs from coordinate_space.
+        # coordinate_space.scales is stored in SI meters (CoordinateSpace normalises
+        # "nm" → "m"), but data_resolution is provided in nm (same units as
+        # CAVEclient.info.viewer_resolution()).  Convert scales to nm first so the
+        # ratio mirrors the statebuilder's  scale = data_res / layer_res  pattern
+        # where both sides are raw nm voxel sizes.
+        if self._data_resolution is not None:
+            cs_scales_nm = self.coordinate_space.scales / 1e-9  # m → nm
+            scale = self._data_resolution / cs_scales_nm
+            # tile scale to cover all geometry columns (e.g. 6 cols for line = 2 * rank)
+            coords = (coords * np.tile(scale, coords.shape[1] // self.rank)).astype(
+                np.float32
+            )
+
+        # Build spatial hierarchy and compute assignments
+        print("Building spatial levels...")
+        hierarchy = self.spatial_hierarchy
+        hierarchy.fit(coords)
+        levels = hierarchy.levels_
+        lower_bound = hierarchy.lower_bound_
+        upper_bound = hierarchy.upper_bound_
+
+        print("Computing assignments")
+        assignment = hierarchy.assign(coords)
+
+        print("Encoding data")
+        # Encode fixed blocks
+        fixed_blocks = encode_fixed_blocks(coords, self._properties, self._dtype)
+        ids = self._ids
+
+        print("Resolving relationships...")
+        # Resolve relationships
+        by_id_rels, inverted_rels = self._resolve_relationships(n)
+
+        print("Encoding by_id entries...")
+        # Encode by_id entries
+        by_id_entries = encode_by_id_entries(fixed_blocks, by_id_rels)
+
+        print("Encoding multi-scale spatial chunks...")
+        # Encode multi-scale spatial chunks
+        spatial_chunks = encode_multiscale_spatial_chunks(fixed_blocks, ids, assignment)
+
+        # Compute sharding specs
+        total_ann_bytes = sum(len(e) for e in by_id_entries)
+
+        by_id_sharding = None
+        spatial_shardings: dict[int, ShardSpec] = {}
+        relationship_shardings = {}
+        if self.write_sharded:
+            by_id_sharding = choose_output_spec(n, total_ann_bytes)
+            for rel_name, inv in inverted_rels.items():
+                rel_total = sum(
+                    len(
+                        encode_multiple_annotations(
+                            fixed_blocks[np.array(idx)], ids[np.array(idx)]
+                        )
+                    )
+                    for idx in inv.values()
+                )
+                rel_shard = choose_output_spec(len(inv), rel_total)
+                if rel_shard is not None:
+                    relationship_shardings[rel_name] = rel_shard
+
+        # Build metadata
+        info = build_info(
+            coordinate_space=self.coordinate_space,
+            annotation_type=self.annotation_type,
+            lower_bound=lower_bound,
+            upper_bound=upper_bound,
+            properties=self.properties,
+            relationships=self.relationships,
+            levels=levels,
+            by_id_sharding=by_id_sharding,
+            spatial_shardings=spatial_shardings or None,
+            relationship_shardings=relationship_shardings or None,
+        )
+
+        # Write everything
+        print("Writing data...")
+        self._write_output(
+            path,
+            info,
+            by_id_entries,
+            ids,
+            spatial_chunks,
+            levels,
+            by_id_sharding,
+            inverted_rels,
+            relationship_shardings,
+            fixed_blocks,
+        )
+
+    def _write_output(
+        self,
+        path,
+        info,
+        by_id_entries,
+        ids,
+        spatial_chunks,
+        levels,
+        by_id_sharding,
+        inverted_rels,
+        relationship_shardings,
+        fixed_blocks,
+    ):
+        """Write annotation data via tensorstore KvStore (local or cloud).
+
+        Works for both sharded and unsharded output: ``by_id_sharding`` and
+        entries in ``relationship_shardings`` are ``None`` / absent when
+        ``write_sharded=False``, causing those sections to fall back to plain
+        directory-style KvStore writes.  Tensorstore's ``file://`` driver
+        creates parent directories automatically, so no ``os.makedirs`` calls
+        are needed here.
+        """
+        ts_base = _to_uri(path)
+
+        # Write info
+        root_store = ts.KvStore.open(f"{ts_base}/").result()
+        root_store["info"] = serialize_info(info).encode()
+
+        # Write by_id (sharded or plain directory)
+        if by_id_sharding is not None:
+            by_id_spec = {
+                "driver": "neuroglancer_uint64_sharded",
+                "metadata": by_id_sharding.to_json(),
+                "base": f"{ts_base}/by_id",
+            }
+            by_id_store = ts.KvStore.open(by_id_spec).result()
+            txn = ts.Transaction()
+            for i, entry in enumerate(by_id_entries):
+                key = np.ascontiguousarray(ids[i], dtype=">u8").tobytes()
+                by_id_store.with_transaction(txn)[key] = entry
+            txn.commit_async().result()
+        else:
+            by_id_store = ts.KvStore.open(f"{ts_base}/by_id/").result()
+            for i, entry in enumerate(by_id_entries):
+                by_id_store[str(int(ids[i]))] = entry
+
+        # Write spatial chunks per level (always plain directory)
+        for (level_idx, cell), data in spatial_chunks.items():
+            level_key = levels[level_idx].key
+            spatial_store = ts.KvStore.open(f"{ts_base}/{level_key}/").result()
+            chunk_name = "_".join(str(c) for c in cell)
+            spatial_store[chunk_name] = data
+
+        # Write relationship indexes (sharded or plain directory per relationship)
+        for rel_name, inv in inverted_rels.items():
+            rel_sharding = relationship_shardings.get(rel_name)
+            if rel_sharding is not None:
+                rel_spec = {
+                    "driver": "neuroglancer_uint64_sharded",
+                    "metadata": rel_sharding.to_json(),
+                    "base": f"{ts_base}/rel_{rel_name}",
+                }
+                rel_store = ts.KvStore.open(rel_spec).result()
+                txn = ts.Transaction()
+                for segment_id, ann_indices in inv.items():
+                    key = np.ascontiguousarray(segment_id, dtype=">u8").tobytes()
+                    idx_arr = np.array(ann_indices)
+                    value = encode_multiple_annotations(
+                        fixed_blocks[idx_arr], ids[idx_arr]
+                    )
+                    rel_store.with_transaction(txn)[key] = value
+                txn.commit_async().result()
+            else:
+                rel_store = ts.KvStore.open(f"{ts_base}/rel_{rel_name}/").result()
+                for segment_id, ann_indices in inv.items():
+                    idx_arr = np.array(ann_indices)
+                    value = encode_multiple_annotations(
+                        fixed_blocks[idx_arr], ids[idx_arr]
+                    )
+                    rel_store[str(segment_id)] = value
