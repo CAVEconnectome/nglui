@@ -959,7 +959,7 @@ class ViewerState:
         self,
         source: Union[str, list, Source],
         name: str = "annotation",
-        linked_segmentation: Union[str, bool] = True,
+        linked_segmentation: Union[str, bool, dict] = True,
         relationship_columns: Optional[list] = None,
         shader: Optional[str] = None,
     ) -> Self:
@@ -971,6 +971,9 @@ class ViewerState:
             The source path for the annotation layer.
         name : str, optional
             The name of the annotation layer, by default "annotation".
+        linked_segmentation : Union[str, bool, dict], optional
+            Specifies the linked segmentation layer. Use ``True`` to auto-select,
+            a layer name string, or a relationship mapping dictionary.
         relationship_columns : list, optional
             Names of the relationship columns in the precomputed annotation source
             (the ``"id"`` values in the ``"relationships"`` array of the info file).
