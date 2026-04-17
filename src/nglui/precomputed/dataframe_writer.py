@@ -16,7 +16,7 @@ from ..statebuilder.utils import split_point_columns
 from ._encoding import AnnotationType
 from ._source import resolve_coordinate_space
 from ._spatial import _IsotropicHierarchy, _UniformHierarchy
-from .writer import _PrecomputedAnnotationWriter
+from ._writer import _PrecomputedAnnotationWriter
 
 # Pre-computed uint type info for enum encoding (sorted smallest to largest)
 _UINT_ENUM_TYPES: list[tuple[int, str, type]] = [

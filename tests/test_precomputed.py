@@ -16,8 +16,8 @@ from nglui.precomputed import (
     EllipsoidAnnotationWriter,
     LineAnnotationWriter,
     PointAnnotationWriter,
-    _PrecomputedAnnotationWriter,
 )
+from nglui.precomputed._writer import _PrecomputedAnnotationWriter
 from nglui.precomputed._encoding import (
     build_dtype,
     encode_by_id_entries,
