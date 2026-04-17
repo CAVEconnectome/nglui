@@ -7,7 +7,6 @@ Writes to local or cloud storage via tensorstore.
 
 import numbers
 import os
-import struct
 from collections import defaultdict
 from collections.abc import Sequence
 from typing import Literal, Optional, Union
@@ -37,18 +36,11 @@ from ._spatial import (
 
 try:
     import tensorstore as ts
-
-    _has_tensorstore = True
 except ImportError:
-    _has_tensorstore = False
-
-
-def _ensure_tensorstore():
-    if not _has_tensorstore:
-        raise ImportError(
-            "tensorstore is required for precomputed annotation writing. "
-            "Install with: pip install 'nglui[precomputed]'"
-        )
+    raise ImportError(
+        "The nglui.precomputed module requires tensorstore. "
+        "Install it with: pip install 'nglui[precomputed]'"
+    ) from None
 
 
 def _to_uri(path: str) -> str:
@@ -152,7 +144,7 @@ class _PrecomputedAnnotationWriter:
         self.spatial_hierarchy = (
             spatial_hierarchy
             if spatial_hierarchy is not None
-            else _IsotropicHierarchy()
+            else _IsotropicHierarchy(rank=self.rank)
         )
 
         self._dtype = build_dtype(annotation_type, self.rank, self.properties)
@@ -448,7 +440,7 @@ class _PrecomputedAnnotationWriter:
         by_id_sharding = None
         spatial_shardings: dict[int, ShardSpec] = {}
         relationship_shardings = {}
-        if self.write_sharded and _has_tensorstore:
+        if self.write_sharded:
             by_id_sharding = choose_output_spec(n, total_ann_bytes)
             for rel_name, inv in inverted_rels.items():
                 rel_total = sum(
@@ -479,76 +471,18 @@ class _PrecomputedAnnotationWriter:
 
         # Write everything
         print("Writing data...")
-        if _has_tensorstore:
-            self._write_output(
-                path,
-                info,
-                by_id_entries,
-                ids,
-                spatial_chunks,
-                levels,
-                by_id_sharding,
-                inverted_rels,
-                relationship_shardings,
-                fixed_blocks,
-            )
-        else:
-            self._write_output_no_ts(
-                path,
-                info,
-                by_id_entries,
-                ids,
-                spatial_chunks,
-                levels,
-                inverted_rels,
-                fixed_blocks,
-            )
-
-    def _write_output_no_ts(
-        self,
-        path,
-        info,
-        by_id_entries,
-        ids,
-        spatial_chunks,
-        levels,
-        inverted_rels,
-        fixed_blocks,
-    ):
-        """Write annotation data in unsharded format using os/open (no tensorstore)."""
-        os.makedirs(path, exist_ok=True)
-        os.makedirs(os.path.join(path, "by_id"), exist_ok=True)
-        for level in levels:
-            os.makedirs(os.path.join(path, level.key), exist_ok=True)
-        for rel_name in self.relationships:
-            os.makedirs(os.path.join(path, f"rel_{rel_name}"), exist_ok=True)
-
-        # Write info
-        with open(os.path.join(path, "info"), "w") as f:
-            f.write(serialize_info(info))
-
-        # Write by_id
-        for i, entry in enumerate(by_id_entries):
-            with open(os.path.join(path, "by_id", str(int(ids[i]))), "wb") as f:
-                f.write(entry)
-
-        # Write spatial chunks (multi-level)
-        for (level_idx, cell), data in spatial_chunks.items():
-            level_key = levels[level_idx].key
-            chunk_name = "_".join(str(c) for c in cell)
-            with open(os.path.join(path, level_key, chunk_name), "wb") as f:
-                f.write(data)
-
-        # Write relationship indexes
-        for rel_name, inv in inverted_rels.items():
-            for segment_id, ann_indices in inv.items():
-                idx_arr = np.array(ann_indices)
-                chunk_data = encode_multiple_annotations(
-                    fixed_blocks[idx_arr], ids[idx_arr]
-                )
-                filepath = os.path.join(path, f"rel_{rel_name}", str(segment_id))
-                with open(filepath, "wb") as f:
-                    f.write(chunk_data)
+        self._write_output(
+            path,
+            info,
+            by_id_entries,
+            ids,
+            spatial_chunks,
+            levels,
+            by_id_sharding,
+            inverted_rels,
+            relationship_shardings,
+            fixed_blocks,
+        )
 
     def _write_output(
         self,
@@ -572,7 +506,6 @@ class _PrecomputedAnnotationWriter:
         creates parent directories automatically, so no ``os.makedirs`` calls
         are needed here.
         """
-        _ensure_tensorstore()
         ts_base = _to_uri(path)
 
         # Write info

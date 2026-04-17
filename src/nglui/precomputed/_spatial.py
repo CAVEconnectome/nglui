@@ -437,6 +437,8 @@ class _SpatialHierarchy(ABC):
 
     Parameters
     ----------
+    rank : int
+        Number of spatial dimensions (e.g. 3 for 3-D data).
     limit : int
         Target maximum annotations per chunk at each level.
     lower_bound : np.ndarray, optional
@@ -461,12 +463,14 @@ class _SpatialHierarchy(ABC):
 
     def __init__(
         self,
+        rank: int,
         limit: int = 5000,
         lower_bound: Optional[np.ndarray] = None,
         upper_bound: Optional[np.ndarray] = None,
         bound_padding: float = 0.0,
         out_of_bounds: Literal["error", "warn", "ignore"] = "warn",
     ) -> None:
+        self.rank = rank
         self.limit = limit
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
@@ -484,6 +488,16 @@ class _SpatialHierarchy(ABC):
                 f"{type(self).__name__} has not been fitted. Call fit() first."
             )
 
+    def _check_coords(self, coordinates: np.ndarray) -> None:
+        """Validate that coordinate dimensions are consistent with rank."""
+        geom_size = coordinates.shape[1]
+        if geom_size not in (self.rank, 2 * self.rank):
+            raise ValueError(
+                f"Coordinate columns ({geom_size}) inconsistent with rank "
+                f"({self.rank}). Expected {self.rank} (point) or "
+                f"{2 * self.rank} (two-point)."
+            )
+
     def _compute_bounds(self, coordinates: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """Compute or adopt bounds from coordinates.
 
@@ -491,16 +505,15 @@ class _SpatialHierarchy(ABC):
         data. Applies ``bound_padding`` only to auto-computed bounds.
         Applies float32 precision adjustment to upper bound.
         """
-        rank = coordinates.shape[1]
+        rank = self.rank
         geom_size = coordinates.shape[1]
 
         if geom_size == rank:
             data_lower = coordinates.min(axis=0)
             data_upper = coordinates.max(axis=0)
         else:
-            half = rank
-            coords_a = coordinates[:, :half]
-            coords_b = coordinates[:, half:]
+            coords_a = coordinates[:, :rank]
+            coords_b = coordinates[:, rank:]
             data_lower = np.minimum(coords_a, coords_b).min(axis=0)
             data_upper = np.maximum(coords_a, coords_b).max(axis=0)
 
@@ -536,7 +549,7 @@ class _SpatialHierarchy(ABC):
 
     def _check_oob(self, coordinates: np.ndarray) -> None:
         """Check for out-of-bounds coordinates and handle per policy."""
-        rank = self.lower_bound_.shape[0]
+        rank = self.rank
         geom_size = coordinates.shape[1]
 
         # Extract all coordinate columns for OOB check
@@ -579,6 +592,7 @@ class _SpatialHierarchy(ABC):
         -------
         self
         """
+        self._check_coords(coordinates)
         self.lower_bound_, self.upper_bound_ = self._compute_bounds(coordinates)
         self.levels_ = self._build_levels(coordinates)
         return self
@@ -625,6 +639,7 @@ class _SpatialHierarchy(ABC):
         MultiscaleAssignment
         """
         self._check_is_fitted()
+        self._check_coords(coordinates)
         self._check_oob(coordinates)
         return compute_multiscale_assignments(
             coordinates, self.lower_bound_, self.levels_, rng=rng
@@ -681,7 +696,7 @@ class _UniformHierarchy(_SpatialHierarchy):
         n_annotations = len(coordinates)
 
         if self.chunk_size is not None:
-            rank = len(extent)
+            rank = self.rank
             if isinstance(self.chunk_size, (int, float)):
                 finest_cs = np.full(rank, float(self.chunk_size))
             else:
@@ -736,7 +751,7 @@ class _IsotropicHierarchy(_SpatialHierarchy):
     def _build_levels(self, coordinates: np.ndarray) -> list[SpatialLevel]:
         extent = (self.upper_bound_ - self.lower_bound_).astype(np.float64)
         extent = np.maximum(extent, 1.0)
-        rank = len(extent)
+        rank = self.rank
         n_annotations = len(coordinates)
 
         # Start with coarsest level: [1, 1, ..., 1]

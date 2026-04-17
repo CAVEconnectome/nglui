@@ -194,8 +194,7 @@ class _AnnotationWriter:
     chunk_size : float or array-like, optional
         Spatial index chunk size. If set, uses uniform-grid spatial indexing.
     limit : int
-        Target max annotations per spatial chunk (default 5000).
-        Uses isotropic subdivision when ``chunk_size`` is not set.
+        Target max annotations per spatial chunk.
     write_sharded : bool
         Use sharded writes (default True).
     """
@@ -229,12 +228,13 @@ class _AnnotationWriter:
         self.write_sharded = write_sharded
 
         # Resolve spatial hierarchy from convenience params
+        rank = self.coordinate_space.rank
         if chunk_size is not None:
             self.spatial_hierarchy = _UniformHierarchy(
-                chunk_size=chunk_size, limit=limit
+                rank=rank, chunk_size=chunk_size, limit=limit
             )
         else:
-            self.spatial_hierarchy = _IsotropicHierarchy(limit=limit)
+            self.spatial_hierarchy = _IsotropicHierarchy(rank=rank, limit=limit)
 
     def _extract_one_position(
         self, df: pd.DataFrame, column_spec: Union[str, list[str]]
@@ -396,18 +396,22 @@ class PointAnnotationWriter(_AnnotationWriter):
         Spatial index chunk size for the finest level of the spatial hierarchy.
         If set, uses uniform-grid spatial indexing.
     limit : int
-        Target max annotations per spatial chunk (default 5000).
+        Target max annotations per spatial chunk.
     write_sharded : bool
         Use sharded writes (default True).
 
     Notes
     -----
-    We leverage tensorstore for writing to cloud storage. Please see the
-    [tensorstore documentation](https://google.github.io/tensorstore/kvstore/gcs/index.html#gcs-authentication)
+    This module requires ``tensorstore``. Install it with::
+
+        pip install 'nglui[precomputed]'
+
+    We leverage tensorstore for writing to both local and cloud storage. Please see the
+    `tensorstore documentation <https://google.github.io/tensorstore/kvstore/gcs/index.html#gcs-authentication>`_
     for information on setting up authentication for writing to cloud buckets.
 
     More information about the Neuroglancer precomputed annotation format is available
-    [here](https://github.com/google/neuroglancer/blob/master/src/datasource/precomputed/annotations.md).
+    `here <https://github.com/google/neuroglancer/blob/master/src/datasource/precomputed/annotations.md>`_.
 
     The implementation of the spatial hierarchy used in this implementation currently
     assumes an approximately uniform distribution of annotations in space when deciding
@@ -501,18 +505,22 @@ class LineAnnotationWriter(_AnnotationWriter):
         Spatial index chunk size for the finest level of the spatial hierarchy.
         If set, uses uniform-grid spatial indexing.
     limit : int
-        Target max annotations per spatial chunk (default 5000).
+        Target max annotations per spatial chunk.
     write_sharded : bool
         Use sharded writes (default True).
 
     Notes
     -----
-    We leverage tensorstore for writing to cloud storage. Please see the
-    [tensorstore documentation](https://google.github.io/tensorstore/kvstore/gcs/index.html#gcs-authentication)
+    This module requires ``tensorstore``. Install it with::
+
+        pip install 'nglui[precomputed]'
+
+    We leverage tensorstore for writing to both local and cloud storage. Please see the
+    `tensorstore documentation <https://google.github.io/tensorstore/kvstore/gcs/index.html#gcs-authentication>`_
     for information on setting up authentication for writing to cloud buckets.
 
     More information about the Neuroglancer precomputed annotation format is available
-    [here](https://github.com/google/neuroglancer/blob/master/src/datasource/precomputed/annotations.md).
+    `here <https://github.com/google/neuroglancer/blob/master/src/datasource/precomputed/annotations.md>`_.
 
     The implementation of the spatial hierarchy used in this implementation currently
     assumes an approximately uniform distribution of annotations in space when deciding
@@ -609,18 +617,22 @@ class BoundingBoxAnnotationWriter(_AnnotationWriter):
         Spatial index chunk size for the finest level of the spatial hierarchy.
         If set, uses uniform-grid spatial indexing.
     limit : int
-        Target max annotations per spatial chunk (default 5000).
+        Target max annotations per spatial chunk.
     write_sharded : bool
         Use sharded writes (default True).
 
     Notes
     -----
-    We leverage tensorstore for writing to cloud storage. Please see the
-    [tensorstore documentation](https://google.github.io/tensorstore/kvstore/gcs/index.html#gcs-authentication)
+    This module requires ``tensorstore``. Install it with::
+
+        pip install 'nglui[precomputed]'
+
+    We leverage tensorstore for writing to both local and cloud storage. Please see the
+    `tensorstore documentation <https://google.github.io/tensorstore/kvstore/gcs/index.html#gcs-authentication>`_
     for information on setting up authentication for writing to cloud buckets.
 
     More information about the Neuroglancer precomputed annotation format is available
-    [here](https://github.com/google/neuroglancer/blob/master/src/datasource/precomputed/annotations.md).
+    `here <https://github.com/google/neuroglancer/blob/master/src/datasource/precomputed/annotations.md>`_.
 
     The implementation of the spatial hierarchy used in this implementation currently
     assumes an approximately uniform distribution of annotations in space when deciding
@@ -717,18 +729,22 @@ class EllipsoidAnnotationWriter(_AnnotationWriter):
         Spatial index chunk size for the finest level of the spatial hierarchy.
         If set, uses uniform-grid spatial indexing.
     limit : int
-        Target max annotations per spatial chunk (default 5000).
+        Target max annotations per spatial chunk.
     write_sharded : bool
         Use sharded writes (default True).
 
     Notes
     -----
-    We leverage tensorstore for writing to cloud storage. Please see the
-    [tensorstore documentation](https://google.github.io/tensorstore/kvstore/gcs/index.html#gcs-authentication)
+    This module requires ``tensorstore``. Install it with::
+
+        pip install 'nglui[precomputed]'
+
+    We leverage tensorstore for writing to both local and cloud storage. Please see the
+    `tensorstore documentation <https://google.github.io/tensorstore/kvstore/gcs/index.html#gcs-authentication>`_
     for information on setting up authentication for writing to cloud buckets.
 
     More information about the Neuroglancer precomputed annotation format is available
-    [here](https://github.com/google/neuroglancer/blob/master/src/datasource/precomputed/annotations.md).
+    `here <https://github.com/google/neuroglancer/blob/master/src/datasource/precomputed/annotations.md>`_.
 
     The implementation of the spatial hierarchy used in this implementation currently
     assumes an approximately uniform distribution of annotations in space when deciding

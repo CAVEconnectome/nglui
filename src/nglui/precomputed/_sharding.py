@@ -41,8 +41,7 @@ def choose_output_spec(
 ) -> Optional[ShardSpec]:
     """Compute sharding parameters from annotation count and data size.
 
-    Returns None if sharding is not needed (single entry or tensorstore
-    unavailable).
+    Returns None if sharding is not needed (single entry).
 
     Parameters
     ----------

@@ -17,7 +17,6 @@ from nglui.precomputed import (
     LineAnnotationWriter,
     PointAnnotationWriter,
 )
-from nglui.precomputed._writer import _PrecomputedAnnotationWriter
 from nglui.precomputed._encoding import (
     build_dtype,
     encode_by_id_entries,
@@ -37,6 +36,7 @@ from nglui.precomputed._spatial import (
     compute_chunk_assignments,
     compute_multiscale_assignments,
 )
+from nglui.precomputed._writer import _PrecomputedAnnotationWriter
 
 
 @pytest.fixture
@@ -378,7 +378,7 @@ class TestPrecomputedAnnotationWriter:
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
-                spatial_hierarchy=_UniformHierarchy(chunk_size=1000),
+                spatial_hierarchy=_UniformHierarchy(rank=3, chunk_size=1000),
             )
             w1.set_coordinates(coords)
             w1.write(tmp_bulk)
@@ -388,7 +388,7 @@ class TestPrecomputedAnnotationWriter:
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
-                spatial_hierarchy=_UniformHierarchy(chunk_size=1000),
+                spatial_hierarchy=_UniformHierarchy(rank=3, chunk_size=1000),
             )
             w2.add_point([1, 2, 3])
             w2.add_point([4, 5, 6])
@@ -1314,7 +1314,7 @@ class TestMultiscaleWriter:
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
-                spatial_hierarchy=_IsotropicHierarchy(limit=500),
+                spatial_hierarchy=_IsotropicHierarchy(rank=3, limit=500),
             )
             writer.set_coordinates(coords)
             writer.write(tmpdir)
@@ -1341,7 +1341,7 @@ class TestMultiscaleWriter:
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
-                spatial_hierarchy=_IsotropicHierarchy(limit=500),
+                spatial_hierarchy=_IsotropicHierarchy(rank=3, limit=500),
             )
             writer.set_coordinates(coords)
             writer.write(tmpdir)
@@ -1362,7 +1362,7 @@ class TestMultiscaleWriter:
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
-                spatial_hierarchy=_IsotropicHierarchy(limit=200),
+                spatial_hierarchy=_IsotropicHierarchy(rank=3, limit=200),
             )
             writer.set_coordinates(coords)
             writer.write(tmpdir)
@@ -1389,7 +1389,7 @@ class TestMultiscaleWriter:
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
-                spatial_hierarchy=_IsotropicHierarchy(limit=100000),
+                spatial_hierarchy=_IsotropicHierarchy(rank=3, limit=100000),
             )
             writer.set_coordinates(sample_points)
             writer.write(tmpdir)
@@ -1435,7 +1435,7 @@ class TestSpatialHierarchyBase:
     """Tests for the SpatialHierarchy base class API."""
 
     def test_construction_defaults(self):
-        h = _UniformHierarchy()
+        h = _UniformHierarchy(rank=3)
         assert h.limit == 5000
         assert h.lower_bound is None
         assert h.upper_bound is None
@@ -1444,13 +1444,13 @@ class TestSpatialHierarchyBase:
         assert h.levels_ is None
 
     def test_assign_before_fit_raises(self):
-        h = _UniformHierarchy()
+        h = _UniformHierarchy(rank=3)
         coords = np.array([[1, 2, 3]], dtype=np.float32)
         with pytest.raises(RuntimeError, match="not been fitted"):
             h.assign(coords)
 
     def test_fit_returns_self(self):
-        h = _UniformHierarchy()
+        h = _UniformHierarchy(rank=3)
         coords = np.random.default_rng(0).uniform(0, 100, (50, 3)).astype(np.float32)
         result = h.fit(coords)
         assert result is h
@@ -1460,7 +1460,7 @@ class TestSpatialHierarchyBase:
 
     def test_auto_computed_bounds(self):
         coords = np.array([[10, 20, 30], [100, 200, 300]], dtype=np.float32)
-        h = _UniformHierarchy().fit(coords)
+        h = _UniformHierarchy(rank=3).fit(coords)
         np.testing.assert_array_less(h.lower_bound_, coords.min(axis=0) + 1e-6)
         np.testing.assert_array_less(coords.max(axis=0), h.upper_bound_ + 1e-6)
 
@@ -1468,15 +1468,15 @@ class TestSpatialHierarchyBase:
         lb = np.array([0, 0, 0], dtype=np.float64)
         ub = np.array([500, 500, 500], dtype=np.float64)
         coords = np.array([[10, 20, 30], [100, 200, 300]], dtype=np.float32)
-        h = _UniformHierarchy(lower_bound=lb, upper_bound=ub).fit(coords)
+        h = _UniformHierarchy(rank=3, lower_bound=lb, upper_bound=ub).fit(coords)
         np.testing.assert_array_equal(h.lower_bound_, lb)
         # upper_bound_ gets nextafter adjustment
         assert np.all(h.upper_bound_ >= ub)
 
     def test_bound_padding_auto_only(self):
         coords = np.array([[0, 0, 0], [1000, 1000, 40]], dtype=np.float32)
-        h_no_pad = _UniformHierarchy().fit(coords)
-        h_pad = _UniformHierarchy(bound_padding=0.1).fit(coords)
+        h_no_pad = _UniformHierarchy(rank=3).fit(coords)
+        h_pad = _UniformHierarchy(rank=3, bound_padding=0.1).fit(coords)
 
         # Padded bounds should be wider
         assert np.all(h_pad.lower_bound_ <= h_no_pad.lower_bound_)
@@ -1486,28 +1486,28 @@ class TestSpatialHierarchyBase:
         lb = np.array([0, 0, 0], dtype=np.float64)
         ub = np.array([500, 500, 500], dtype=np.float64)
         coords = np.array([[10, 20, 30], [100, 200, 300]], dtype=np.float32)
-        h = _UniformHierarchy(lower_bound=lb, upper_bound=ub, bound_padding=0.5).fit(
-            coords
-        )
+        h = _UniformHierarchy(
+            rank=3, lower_bound=lb, upper_bound=ub, bound_padding=0.5
+        ).fit(coords)
         np.testing.assert_array_equal(h.lower_bound_, lb)
 
     def test_oob_error_mode(self):
         coords_fit = np.array([[10, 10, 10], [20, 20, 20]], dtype=np.float32)
-        h = _UniformHierarchy(out_of_bounds="error").fit(coords_fit)
+        h = _UniformHierarchy(rank=3, out_of_bounds="error").fit(coords_fit)
         coords_oob = np.array([[100, 100, 100]], dtype=np.float32)
         with pytest.raises(ValueError, match="outside"):
             h.assign(coords_oob)
 
     def test_oob_warn_mode(self):
         coords_fit = np.array([[10, 10, 10], [20, 20, 20]], dtype=np.float32)
-        h = _UniformHierarchy(out_of_bounds="warn").fit(coords_fit)
+        h = _UniformHierarchy(rank=3, out_of_bounds="warn").fit(coords_fit)
         coords_oob = np.array([[100, 100, 100]], dtype=np.float32)
         with pytest.warns(UserWarning, match="outside"):
             h.assign(coords_oob)
 
     def test_oob_ignore_mode(self):
         coords_fit = np.array([[10, 10, 10], [20, 20, 20]], dtype=np.float32)
-        h = _UniformHierarchy(out_of_bounds="ignore").fit(coords_fit)
+        h = _UniformHierarchy(rank=3, out_of_bounds="ignore").fit(coords_fit)
         coords_oob = np.array([[100, 100, 100]], dtype=np.float32)
         # Should not raise or warn
         result = h.assign(coords_oob)
@@ -1517,10 +1517,10 @@ class TestSpatialHierarchyBase:
         rng = np.random.default_rng(42)
         coords = rng.uniform(0, 1000, (500, 3)).astype(np.float32)
 
-        h1 = _UniformHierarchy(limit=100)
+        h1 = _UniformHierarchy(rank=3, limit=100)
         a1 = h1.fit(coords).assign(coords, rng=np.random.default_rng(7))
 
-        h2 = _UniformHierarchy(limit=100)
+        h2 = _UniformHierarchy(rank=3, limit=100)
         a2 = h2.fit_assign(coords, rng=np.random.default_rng(7))
 
         assert len(a1.level_chunks) == len(a2.level_chunks)
@@ -1543,7 +1543,7 @@ class TestUniformHierarchy:
 
         old_levels = build_spatial_levels(lower, upper, len(coords), limit=500)
 
-        h = _UniformHierarchy(limit=500, lower_bound=lower, upper_bound=upper)
+        h = _UniformHierarchy(rank=3, limit=500, lower_bound=lower, upper_bound=upper)
         h.fit(coords)
 
         assert len(h.levels_) == len(old_levels)
@@ -1555,7 +1555,7 @@ class TestUniformHierarchy:
     def test_explicit_chunk_size(self):
         rng = np.random.default_rng(42)
         coords = rng.uniform(0, 1000, (1000, 3)).astype(np.float32)
-        h = _UniformHierarchy(chunk_size=200).fit(coords)
+        h = _UniformHierarchy(rank=3, chunk_size=200).fit(coords)
 
         # Finest level should have chunk_size close to 200
         finest = h.levels_[-1]
@@ -1563,19 +1563,19 @@ class TestUniformHierarchy:
 
     def test_explicit_chunk_size_scalar(self):
         coords = np.array([[0, 0, 0], [1000, 1000, 1000]], dtype=np.float32)
-        h = _UniformHierarchy(chunk_size=500.0).fit(coords)
+        h = _UniformHierarchy(rank=3, chunk_size=500.0).fit(coords)
         finest = h.levels_[-1]
         assert np.allclose(finest.chunk_size, finest.chunk_size[0])
 
     def test_coarsest_is_1_1_1(self):
         rng = np.random.default_rng(42)
         coords = rng.uniform(0, 1000, (5000, 3)).astype(np.float32)
-        h = _UniformHierarchy(limit=500).fit(coords)
+        h = _UniformHierarchy(rank=3, limit=500).fit(coords)
         np.testing.assert_array_equal(h.levels_[0].grid_shape, [1, 1, 1])
 
     def test_single_level_for_few_annotations(self):
         coords = np.array([[10, 20, 30], [40, 50, 60]], dtype=np.float32)
-        h = _UniformHierarchy(limit=5000).fit(coords)
+        h = _UniformHierarchy(rank=3, limit=5000).fit(coords)
         assert len(h.levels_) == 1
         np.testing.assert_array_equal(h.levels_[0].grid_shape, [1, 1, 1])
 
@@ -1587,7 +1587,7 @@ class TestIsotropicHierarchy:
         """Isotropic extents should halve all dimensions together."""
         rng = np.random.default_rng(42)
         coords = rng.uniform(0, 1000, (50000, 3)).astype(np.float32)
-        h = _IsotropicHierarchy(limit=500).fit(coords)
+        h = _IsotropicHierarchy(rank=3, limit=500).fit(coords)
 
         for level in h.levels_:
             gs = level.grid_shape
@@ -1607,7 +1607,7 @@ class TestIsotropicHierarchy:
                 rng.uniform(0, 40, n),
             ]
         ).astype(np.float32)
-        h = _IsotropicHierarchy(limit=500).fit(coords)
+        h = _IsotropicHierarchy(rank=3, limit=500).fit(coords)
 
         # Check that early levels (after the [1,1,1] root) don't subdivide z
         if len(h.levels_) > 2:
@@ -1621,7 +1621,7 @@ class TestIsotropicHierarchy:
         """Adjacent levels must have chunk_size that evenly divides."""
         rng = np.random.default_rng(42)
         coords = rng.uniform(0, 1000, (10000, 3)).astype(np.float32)
-        h = _IsotropicHierarchy(limit=500).fit(coords)
+        h = _IsotropicHierarchy(rank=3, limit=500).fit(coords)
 
         for i in range(len(h.levels_) - 1):
             coarser_cs = h.levels_[i].chunk_size
@@ -1637,7 +1637,7 @@ class TestIsotropicHierarchy:
         """grid_shape * chunk_size must equal extent for every level."""
         rng = np.random.default_rng(42)
         coords = rng.uniform(0, 1000, (10000, 3)).astype(np.float32)
-        h = _IsotropicHierarchy(limit=500).fit(coords)
+        h = _IsotropicHierarchy(rank=3, limit=500).fit(coords)
 
         extent = h.upper_bound_ - h.lower_bound_
         for level in h.levels_:
@@ -1646,18 +1646,72 @@ class TestIsotropicHierarchy:
 
     def test_single_level_few_annotations(self):
         coords = np.array([[10, 20, 30], [40, 50, 60]], dtype=np.float32)
-        h = _IsotropicHierarchy(limit=5000).fit(coords)
+        h = _IsotropicHierarchy(rank=3, limit=5000).fit(coords)
         assert len(h.levels_) == 1
         np.testing.assert_array_equal(h.levels_[0].grid_shape, [1, 1, 1])
 
     def test_many_annotations_multiple_levels(self):
         rng = np.random.default_rng(42)
         coords = rng.uniform(0, 1000, (100000, 3)).astype(np.float32)
-        h = _IsotropicHierarchy(limit=5000).fit(coords)
+        h = _IsotropicHierarchy(rank=3, limit=5000).fit(coords)
         assert len(h.levels_) > 1
 
     def test_coarsest_is_1_1_1(self):
         rng = np.random.default_rng(42)
         coords = rng.uniform(0, 1000, (10000, 3)).astype(np.float32)
-        h = _IsotropicHierarchy(limit=500).fit(coords)
+        h = _IsotropicHierarchy(rank=3, limit=500).fit(coords)
         np.testing.assert_array_equal(h.levels_[0].grid_shape, [1, 1, 1])
+
+
+class TestTwoPointBounds:
+    """Tests for hierarchy bounds computation with two-point (line/bbox) data."""
+
+    def test_uniform_fit_two_point_bounds_shape(self):
+        """Fitting (N, 6) line coords with rank=3 produces (3,) bounds."""
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 100, (50, 6)).astype(np.float32)
+        h = _UniformHierarchy(rank=3).fit(coords)
+        assert h.lower_bound_.shape == (3,)
+        assert h.upper_bound_.shape == (3,)
+
+    def test_isotropic_fit_two_point_bounds_shape(self):
+        """Fitting (N, 6) line coords with rank=3 produces (3,) bounds."""
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 100, (50, 6)).astype(np.float32)
+        h = _IsotropicHierarchy(rank=3).fit(coords)
+        assert h.lower_bound_.shape == (3,)
+        assert h.upper_bound_.shape == (3,)
+
+    def test_two_point_bounds_values(self):
+        """Bounds should span the min/max across both point-halves."""
+        coords = np.array(
+            [
+                [10, 20, 30, 90, 80, 70],
+                [50, 60, 5, 40, 10, 95],
+            ],
+            dtype=np.float32,
+        )
+        h = _UniformHierarchy(rank=3).fit(coords)
+        # lower should be <= component-wise min of both halves
+        expected_lower = np.array([10, 10, 5], dtype=np.float64)
+        expected_upper = np.array([90, 80, 95], dtype=np.float64)
+        np.testing.assert_array_less(h.lower_bound_, expected_lower + 1e-6)
+        np.testing.assert_array_less(expected_upper, h.upper_bound_ + 1e-6)
+
+    def test_two_point_fit_assign_round_trip(self):
+        """fit_assign on (N, 6) data with rank=3 should complete without error."""
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 100, (200, 6)).astype(np.float32)
+        h = _UniformHierarchy(rank=3)
+        result = h.fit_assign(coords, rng=rng)
+        assert len(result.row_assignments) == 200
+        assert len(result.level_chunks) > 0
+
+    def test_two_point_levels_grid_shape_is_rank_sized(self):
+        """All level grid_shapes should have length rank, not geom_size."""
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 100, (500, 6)).astype(np.float32)
+        h = _IsotropicHierarchy(rank=3).fit(coords)
+        for level in h.levels_:
+            assert len(level.grid_shape) == 3
+            assert len(level.chunk_size) == 3
