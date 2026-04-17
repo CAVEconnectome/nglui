@@ -29,9 +29,7 @@ from ._sharding import ShardSpec, choose_output_spec
 from ._source import resolve_coordinate_space
 from ._spatial import (
     SpatialLevel,
-    auto_chunk_size,
     build_spatial_levels,
-    compressed_morton_code,
     compute_multiscale_assignments,
     encode_multiscale_spatial_chunks,
 )
