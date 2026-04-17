@@ -205,7 +205,6 @@ class _AnnotationWriter:
         annotation_type: AnnotationType,
         coordinate_columns: list[tuple[str, Union[str, list[str]]]],
         segmentation_source=None,
-        *,
         coordinate_space: Optional[CoordinateSpace] = None,
         resolution: Optional[Sequence[float]] = None,
         data_resolution: Optional[Sequence[float]] = None,
@@ -213,7 +212,7 @@ class _AnnotationWriter:
         relationship_columns: Optional[list[str]] = None,
         id_column: Optional[str] = None,
         chunk_size: Optional[Union[float, Sequence[float]]] = None,
-        limit: int = 5000,
+        limit: int = 10_000,
         write_sharded: bool = True,
     ):
         self.annotation_type = annotation_type
@@ -353,19 +352,35 @@ class _AnnotationWriter:
 
 # ── Public geometry-specific writers ────────────────────────────────
 
-# Shared parameter docstring fragments
-_COMMON_PARAMS = """\
+
+class PointAnnotationWriter(_AnnotationWriter):
+    """Write a DataFrame of point annotations to precomputed format.
+
+    Parameters
+    ----------
+    point_column : str or list of str
+        Column(s) for position coordinates. Accepts:
+
+        - A single column name containing ``[x, y, z]`` arrays
+          (e.g., ``"pt_position"``).
+        - A column name prefix that expands to ``{prefix}_x``,
+          ``{prefix}_y``, ``{prefix}_z``
+          (e.g., ``"ctr_pt_position"``).
+        - An explicit list of three column names for x, y, z
+          (e.g., ``["pt_x", "pt_y", "pt_z"]``).
     segmentation_source : CAVEclient, CloudVolume, or str, optional
         Source to derive coordinate space from. Accepts a CAVEclient
         (uses its segmentation source), a CloudVolume instance, or a
         segmentation source URL. Mutually exclusive with
         ``coordinate_space`` and ``resolution``.
     coordinate_space : CoordinateSpace, optional
-        Explicit neuroglancer coordinate space. Mutually exclusive with
-        ``segmentation_source`` and ``resolution``.
+        Neuroglancer coordinate space defining the target resolution and axes.
+        Mutually exclusive with ``segmentation_source`` and ``resolution``.
     resolution : sequence of float, optional
-        Explicit resolution per axis (e.g., ``[8, 8, 40]``). Units
-        default to nm, axis names to x/y/z. Mutually exclusive with
+        Resolution of the target neuroglancer coordinate space per axis
+        (e.g., ``[8, 8, 40]``). Units default to nm, axis names to x/y/z.
+        Not to be confused with ``data_resolution``, which specifies the
+        resolution of the input data. Mutually exclusive with
         ``segmentation_source`` and ``coordinate_space``.
     data_resolution : sequence of float, optional
         Resolution of the input coordinate data (e.g., ``[4, 4, 40]``).
@@ -378,16 +393,16 @@ _COMMON_PARAMS = """\
     id_column : str, optional
         Column for annotation IDs. If None, uses DataFrame index.
     chunk_size : float or array-like, optional
-        Spatial index chunk size for the finest level of the spatial hierarchy. 
+        Spatial index chunk size for the finest level of the spatial hierarchy.
         If set, uses uniform-grid spatial indexing.
     limit : int
         Target max annotations per spatial chunk (default 5000).
     write_sharded : bool
         Use sharded writes (default True).
-        
+
     Notes
     -----
-    We leverage tensorstore for writing to cloud storage. Please see the 
+    We leverage tensorstore for writing to cloud storage. Please see the
     [tensorstore documentation](https://google.github.io/tensorstore/kvstore/gcs/index.html#gcs-authentication)
     for information on setting up authentication for writing to cloud buckets.
 
@@ -396,31 +411,9 @@ _COMMON_PARAMS = """\
 
     The implementation of the spatial hierarchy used in this implementation currently
     assumes an approximately uniform distribution of annotations in space when deciding
-    on the structure of the hierarchy. Data-adaptive hierarchy would be a welcome 
+    on the structure of the hierarchy. Data-adaptive hierarchy would be a welcome
     contribution, though it may be slower to build.
     """
-
-_COLUMN_SPEC_DOC = """\
-        Column(s) for position coordinates. Accepts:
-
-        - A single column name containing ``[x, y, z]`` arrays
-          (e.g., ``"pt_position"``).
-        - A column name prefix that expands to ``{prefix}_x``,
-          ``{prefix}_y``, ``{prefix}_z``
-          (e.g., ``"ctr_pt_position"``).
-        - An explicit list of three column names for x, y, z
-          (e.g., ``["pt_x", "pt_y", "pt_z"]``)."""
-
-
-class PointAnnotationWriter(_AnnotationWriter):
-    """Write a DataFrame of point annotations to precomputed format.
-
-    Parameters
-    ----------
-    point_column : str or list of str
-{column_spec}
-{common}
-    """.format(column_spec=_COLUMN_SPEC_DOC, common=_COMMON_PARAMS)
 
     def __init__(
         self,
@@ -434,7 +427,7 @@ class PointAnnotationWriter(_AnnotationWriter):
         relationship_columns: Optional[list[str]] = None,
         id_column: Optional[str] = None,
         chunk_size: Optional[Union[float, Sequence[float]]] = None,
-        limit: int = 5000,
+        limit: int = 10_000,
         write_sharded: bool = True,
     ):
         if point_column is None:
@@ -461,16 +454,75 @@ class LineAnnotationWriter(_AnnotationWriter):
     Parameters
     ----------
     point_a_column : str or list of str
-{column_spec}
+        Column(s) for position coordinates. Accepts:
+
+        - A single column name containing ``[x, y, z]`` arrays
+          (e.g., ``"pt_position"``).
+        - A column name prefix that expands to ``{prefix}_x``,
+          ``{prefix}_y``, ``{prefix}_z``
+          (e.g., ``"ctr_pt_position"``).
+        - An explicit list of three column names for x, y, z
+          (e.g., ``["pt_x", "pt_y", "pt_z"]``).
     point_b_column : str or list of str
-{column_spec}
-{common}
-    """.format(column_spec=_COLUMN_SPEC_DOC, common=_COMMON_PARAMS)
+        Column(s) for position coordinates. Accepts:
+
+        - A single column name containing ``[x, y, z]`` arrays
+          (e.g., ``"pt_position"``).
+        - A column name prefix that expands to ``{prefix}_x``,
+          ``{prefix}_y``, ``{prefix}_z``
+          (e.g., ``"ctr_pt_position"``).
+        - An explicit list of three column names for x, y, z
+          (e.g., ``["pt_x", "pt_y", "pt_z"]``).
+    segmentation_source : CAVEclient, CloudVolume, or str, optional
+        Source to derive coordinate space from. Accepts a CAVEclient
+        (uses its segmentation source), a CloudVolume instance, or a
+        segmentation source URL. Mutually exclusive with
+        ``coordinate_space`` and ``resolution``.
+    coordinate_space : CoordinateSpace, optional
+        Neuroglancer coordinate space defining the target resolution and axes.
+        Mutually exclusive with ``segmentation_source`` and ``resolution``.
+    resolution : sequence of float, optional
+        Resolution of the target neuroglancer coordinate space per axis
+        (e.g., ``[8, 8, 40]``). Units default to nm, axis names to x/y/z.
+        Not to be confused with ``data_resolution``, which specifies the
+        resolution of the input data. Mutually exclusive with
+        ``segmentation_source`` and ``coordinate_space``.
+    data_resolution : sequence of float, optional
+        Resolution of the input coordinate data (e.g., ``[4, 4, 40]``).
+        If provided, coordinates are rescaled from ``data_resolution``
+        into the ``coordinate_space`` resolution before writing.
+    property_columns : list of str, optional
+        Column names to include as annotation properties.
+    relationship_columns : list of str, optional
+        Column names to include as annotation relationships.
+    id_column : str, optional
+        Column for annotation IDs. If None, uses DataFrame index.
+    chunk_size : float or array-like, optional
+        Spatial index chunk size for the finest level of the spatial hierarchy.
+        If set, uses uniform-grid spatial indexing.
+    limit : int
+        Target max annotations per spatial chunk (default 5000).
+    write_sharded : bool
+        Use sharded writes (default True).
+
+    Notes
+    -----
+    We leverage tensorstore for writing to cloud storage. Please see the
+    [tensorstore documentation](https://google.github.io/tensorstore/kvstore/gcs/index.html#gcs-authentication)
+    for information on setting up authentication for writing to cloud buckets.
+
+    More information about the Neuroglancer precomputed annotation format is available
+    [here](https://github.com/google/neuroglancer/blob/master/src/datasource/precomputed/annotations.md).
+
+    The implementation of the spatial hierarchy used in this implementation currently
+    assumes an approximately uniform distribution of annotations in space when deciding
+    on the structure of the hierarchy. Data-adaptive hierarchy would be a welcome
+    contribution, though it may be slower to build.
+    """
 
     def __init__(
         self,
         segmentation_source=None,
-        *,
         coordinate_space: Optional[CoordinateSpace] = None,
         resolution: Optional[Sequence[float]] = None,
         data_resolution: Optional[Sequence[float]] = None,
@@ -480,7 +532,7 @@ class LineAnnotationWriter(_AnnotationWriter):
         relationship_columns: Optional[list[str]] = None,
         id_column: Optional[str] = None,
         chunk_size: Optional[Union[float, Sequence[float]]] = None,
-        limit: int = 5000,
+        limit: int = 10_000,
         write_sharded: bool = True,
     ):
         if point_a_column is None or point_b_column is None:
@@ -510,16 +562,75 @@ class BoundingBoxAnnotationWriter(_AnnotationWriter):
     Parameters
     ----------
     point_a_column : str or list of str
-{column_spec}
+        Column(s) for position coordinates. Accepts:
+
+        - A single column name containing ``[x, y, z]`` arrays
+          (e.g., ``"pt_position"``).
+        - A column name prefix that expands to ``{prefix}_x``,
+          ``{prefix}_y``, ``{prefix}_z``
+          (e.g., ``"ctr_pt_position"``).
+        - An explicit list of three column names for x, y, z
+          (e.g., ``["pt_x", "pt_y", "pt_z"]``).
     point_b_column : str or list of str
-{column_spec}
-{common}
-    """.format(column_spec=_COLUMN_SPEC_DOC, common=_COMMON_PARAMS)
+        Column(s) for position coordinates. Accepts:
+
+        - A single column name containing ``[x, y, z]`` arrays
+          (e.g., ``"pt_position"``).
+        - A column name prefix that expands to ``{prefix}_x``,
+          ``{prefix}_y``, ``{prefix}_z``
+          (e.g., ``"ctr_pt_position"``).
+        - An explicit list of three column names for x, y, z
+          (e.g., ``["pt_x", "pt_y", "pt_z"]``).
+    segmentation_source : CAVEclient, CloudVolume, or str, optional
+        Source to derive coordinate space from. Accepts a CAVEclient
+        (uses its segmentation source), a CloudVolume instance, or a
+        segmentation source URL. Mutually exclusive with
+        ``coordinate_space`` and ``resolution``.
+    coordinate_space : CoordinateSpace, optional
+        Neuroglancer coordinate space defining the target resolution and axes.
+        Mutually exclusive with ``segmentation_source`` and ``resolution``.
+    resolution : sequence of float, optional
+        Resolution of the target neuroglancer coordinate space per axis
+        (e.g., ``[8, 8, 40]``). Units default to nm, axis names to x/y/z.
+        Not to be confused with ``data_resolution``, which specifies the
+        resolution of the input data. Mutually exclusive with
+        ``segmentation_source`` and ``coordinate_space``.
+    data_resolution : sequence of float, optional
+        Resolution of the input coordinate data (e.g., ``[4, 4, 40]``).
+        If provided, coordinates are rescaled from ``data_resolution``
+        into the ``coordinate_space`` resolution before writing.
+    property_columns : list of str, optional
+        Column names to include as annotation properties.
+    relationship_columns : list of str, optional
+        Column names to include as annotation relationships.
+    id_column : str, optional
+        Column for annotation IDs. If None, uses DataFrame index.
+    chunk_size : float or array-like, optional
+        Spatial index chunk size for the finest level of the spatial hierarchy.
+        If set, uses uniform-grid spatial indexing.
+    limit : int
+        Target max annotations per spatial chunk (default 5000).
+    write_sharded : bool
+        Use sharded writes (default True).
+
+    Notes
+    -----
+    We leverage tensorstore for writing to cloud storage. Please see the
+    [tensorstore documentation](https://google.github.io/tensorstore/kvstore/gcs/index.html#gcs-authentication)
+    for information on setting up authentication for writing to cloud buckets.
+
+    More information about the Neuroglancer precomputed annotation format is available
+    [here](https://github.com/google/neuroglancer/blob/master/src/datasource/precomputed/annotations.md).
+
+    The implementation of the spatial hierarchy used in this implementation currently
+    assumes an approximately uniform distribution of annotations in space when deciding
+    on the structure of the hierarchy. Data-adaptive hierarchy would be a welcome
+    contribution, though it may be slower to build.
+    """
 
     def __init__(
         self,
         segmentation_source=None,
-        *,
         coordinate_space: Optional[CoordinateSpace] = None,
         resolution: Optional[Sequence[float]] = None,
         data_resolution: Optional[Sequence[float]] = None,
@@ -529,7 +640,7 @@ class BoundingBoxAnnotationWriter(_AnnotationWriter):
         relationship_columns: Optional[list[str]] = None,
         id_column: Optional[str] = None,
         chunk_size: Optional[Union[float, Sequence[float]]] = None,
-        limit: int = 5000,
+        limit: int = 10_000,
         write_sharded: bool = True,
     ):
         if point_a_column is None or point_b_column is None:
@@ -559,16 +670,75 @@ class EllipsoidAnnotationWriter(_AnnotationWriter):
     Parameters
     ----------
     center_column : str or list of str
-{column_spec}
+        Column(s) for position coordinates. Accepts:
+
+        - A single column name containing ``[x, y, z]`` arrays
+          (e.g., ``"pt_position"``).
+        - A column name prefix that expands to ``{prefix}_x``,
+          ``{prefix}_y``, ``{prefix}_z``
+          (e.g., ``"ctr_pt_position"``).
+        - An explicit list of three column names for x, y, z
+          (e.g., ``["pt_x", "pt_y", "pt_z"]``).
     radii_column : str or list of str
-{column_spec}
-{common}
-    """.format(column_spec=_COLUMN_SPEC_DOC, common=_COMMON_PARAMS)
+        Column(s) for position coordinates. Accepts:
+
+        - A single column name containing ``[x, y, z]`` arrays
+          (e.g., ``"pt_position"``).
+        - A column name prefix that expands to ``{prefix}_x``,
+          ``{prefix}_y``, ``{prefix}_z``
+          (e.g., ``"ctr_pt_position"``).
+        - An explicit list of three column names for x, y, z
+          (e.g., ``["pt_x", "pt_y", "pt_z"]``).
+    segmentation_source : CAVEclient, CloudVolume, or str, optional
+        Source to derive coordinate space from. Accepts a CAVEclient
+        (uses its segmentation source), a CloudVolume instance, or a
+        segmentation source URL. Mutually exclusive with
+        ``coordinate_space`` and ``resolution``.
+    coordinate_space : CoordinateSpace, optional
+        Neuroglancer coordinate space defining the target resolution and axes.
+        Mutually exclusive with ``segmentation_source`` and ``resolution``.
+    resolution : sequence of float, optional
+        Resolution of the target neuroglancer coordinate space per axis
+        (e.g., ``[8, 8, 40]``). Units default to nm, axis names to x/y/z.
+        Not to be confused with ``data_resolution``, which specifies the
+        resolution of the input data. Mutually exclusive with
+        ``segmentation_source`` and ``coordinate_space``.
+    data_resolution : sequence of float, optional
+        Resolution of the input coordinate data (e.g., ``[4, 4, 40]``).
+        If provided, coordinates are rescaled from ``data_resolution``
+        into the ``coordinate_space`` resolution before writing.
+    property_columns : list of str, optional
+        Column names to include as annotation properties.
+    relationship_columns : list of str, optional
+        Column names to include as annotation relationships.
+    id_column : str, optional
+        Column for annotation IDs. If None, uses DataFrame index.
+    chunk_size : float or array-like, optional
+        Spatial index chunk size for the finest level of the spatial hierarchy.
+        If set, uses uniform-grid spatial indexing.
+    limit : int
+        Target max annotations per spatial chunk (default 5000).
+    write_sharded : bool
+        Use sharded writes (default True).
+
+    Notes
+    -----
+    We leverage tensorstore for writing to cloud storage. Please see the
+    [tensorstore documentation](https://google.github.io/tensorstore/kvstore/gcs/index.html#gcs-authentication)
+    for information on setting up authentication for writing to cloud buckets.
+
+    More information about the Neuroglancer precomputed annotation format is available
+    [here](https://github.com/google/neuroglancer/blob/master/src/datasource/precomputed/annotations.md).
+
+    The implementation of the spatial hierarchy used in this implementation currently
+    assumes an approximately uniform distribution of annotations in space when deciding
+    on the structure of the hierarchy. Data-adaptive hierarchy would be a welcome
+    contribution, though it may be slower to build.
+    """
 
     def __init__(
         self,
         segmentation_source=None,
-        *,
         coordinate_space: Optional[CoordinateSpace] = None,
         resolution: Optional[Sequence[float]] = None,
         data_resolution: Optional[Sequence[float]] = None,
@@ -578,7 +748,7 @@ class EllipsoidAnnotationWriter(_AnnotationWriter):
         relationship_columns: Optional[list[str]] = None,
         id_column: Optional[str] = None,
         chunk_size: Optional[Union[float, Sequence[float]]] = None,
-        limit: int = 5000,
+        limit: int = 10_000,
         write_sharded: bool = True,
     ):
         if center_column is None or radii_column is None:

@@ -25,8 +25,7 @@ nav:
     - reference/site_utils.md
     - reference/segmentprops.md
     - reference/parser.md
-    - reference/precomputed_writer.md
-    - reference/precomputed_dataframe_writer.md
+    - reference/precomputed.md
 - Changelog: changelog.md
 
   
