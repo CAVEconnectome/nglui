@@ -15,7 +15,7 @@ from neuroglancer.coordinate_space import CoordinateSpace
 from ..statebuilder.utils import split_point_columns
 from ._encoding import AnnotationType
 from ._source import resolve_coordinate_space
-from .writer import PrecomputedAnnotationWriter
+from .writer import _PrecomputedAnnotationWriter
 
 # Pre-computed uint type info for enum encoding (sorted smallest to largest)
 _UINT_ENUM_TYPES: list[tuple[int, str, type]] = [
@@ -321,7 +321,7 @@ class _AnnotationWriter:
         rel_names, rel_data = self._extract_relationships(df)
         ids = self._extract_ids(df)
 
-        writer = PrecomputedAnnotationWriter(
+        writer = _PrecomputedAnnotationWriter(
             annotation_type=self.annotation_type,
             coordinate_space=self.coordinate_space,
             data_resolution=self.data_resolution,
@@ -464,7 +464,10 @@ class LineAnnotationWriter(_AnnotationWriter):
             raise ValueError("point_a_column and point_b_column are required.")
         super().__init__(
             annotation_type="line",
-            coordinate_columns=[("point_a", point_a_column), ("point_b", point_b_column)],
+            coordinate_columns=[
+                ("point_a", point_a_column),
+                ("point_b", point_b_column),
+            ],
             segmentation_source=segmentation_source,
             coordinate_space=coordinate_space,
             resolution=resolution,
@@ -510,7 +513,10 @@ class BoundingBoxAnnotationWriter(_AnnotationWriter):
             raise ValueError("point_a_column and point_b_column are required.")
         super().__init__(
             annotation_type="axis_aligned_bounding_box",
-            coordinate_columns=[("point_a", point_a_column), ("point_b", point_b_column)],
+            coordinate_columns=[
+                ("point_a", point_a_column),
+                ("point_b", point_b_column),
+            ],
             segmentation_source=segmentation_source,
             coordinate_space=coordinate_space,
             resolution=resolution,

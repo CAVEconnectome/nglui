@@ -23,7 +23,7 @@ from .dataframe_writer import (
     LineAnnotationWriter,
     PointAnnotationWriter,
 )
-from .writer import PrecomputedAnnotationWriter
+from .writer import _PrecomputedAnnotationWriter
 
 __all__ = [
     "BoundingBoxAnnotationWriter",

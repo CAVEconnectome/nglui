@@ -63,7 +63,7 @@ def _to_uri(path: str) -> str:
     return f"file://{os.path.abspath(path)}"
 
 
-class PrecomputedAnnotationWriter:
+class _PrecomputedAnnotationWriter:
     """Write annotations in the neuroglancer precomputed format.
 
     Supports two usage patterns:

@@ -16,7 +16,7 @@ from nglui.precomputed import (
     EllipsoidAnnotationWriter,
     LineAnnotationWriter,
     PointAnnotationWriter,
-    PrecomputedAnnotationWriter,
+    _PrecomputedAnnotationWriter,
 )
 from nglui.precomputed._encoding import (
     build_dtype,
@@ -27,7 +27,6 @@ from nglui.precomputed._encoding import (
 )
 from nglui.precomputed._sharding import ShardSpec, choose_output_spec
 from nglui.precomputed._spatial import (
-    MultiscaleAssignment,
     SpatialLevel,
     auto_chunk_size,
     build_spatial_levels,
@@ -262,7 +261,7 @@ class TestSharding:
 class TestPrecomputedAnnotationWriter:
     def test_write_points_unsharded(self, coordinate_space_3d, sample_points):
         with tempfile.TemporaryDirectory() as tmpdir:
-            writer = PrecomputedAnnotationWriter(
+            writer = _PrecomputedAnnotationWriter(
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
@@ -291,7 +290,7 @@ class TestPrecomputedAnnotationWriter:
     def test_write_points_with_properties(self, coordinate_space_3d):
         with tempfile.TemporaryDirectory() as tmpdir:
             props = [AnnotationPropertySpec(id="score", type="float32")]
-            writer = PrecomputedAnnotationWriter(
+            writer = _PrecomputedAnnotationWriter(
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 properties=props,
@@ -310,7 +309,7 @@ class TestPrecomputedAnnotationWriter:
 
     def test_write_points_with_relationships(self, coordinate_space_3d):
         with tempfile.TemporaryDirectory() as tmpdir:
-            writer = PrecomputedAnnotationWriter(
+            writer = _PrecomputedAnnotationWriter(
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 relationships=["segment"],
@@ -330,7 +329,7 @@ class TestPrecomputedAnnotationWriter:
 
     def test_write_points_variable_relationships(self, coordinate_space_3d):
         with tempfile.TemporaryDirectory() as tmpdir:
-            writer = PrecomputedAnnotationWriter(
+            writer = _PrecomputedAnnotationWriter(
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 relationships=["segments"],
@@ -350,7 +349,7 @@ class TestPrecomputedAnnotationWriter:
     def test_per_row_api(self, coordinate_space_3d):
         with tempfile.TemporaryDirectory() as tmpdir:
             props = [AnnotationPropertySpec(id="score", type="float32")]
-            writer = PrecomputedAnnotationWriter(
+            writer = _PrecomputedAnnotationWriter(
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 relationships=["segment"],
@@ -372,7 +371,7 @@ class TestPrecomputedAnnotationWriter:
             tempfile.TemporaryDirectory() as tmp_row,
         ):
             # Bulk
-            w1 = PrecomputedAnnotationWriter(
+            w1 = _PrecomputedAnnotationWriter(
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
@@ -382,7 +381,7 @@ class TestPrecomputedAnnotationWriter:
             w1.write(tmp_bulk)
 
             # Per-row
-            w2 = PrecomputedAnnotationWriter(
+            w2 = _PrecomputedAnnotationWriter(
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
@@ -967,7 +966,7 @@ class TestSourceResolution:
     def test_resolution_parameter(self):
         """Test that resolution= creates a valid writer."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            writer = PrecomputedAnnotationWriter(
+            writer = _PrecomputedAnnotationWriter(
                 annotation_type="point",
                 resolution=[8, 8, 40],
                 write_sharded=False,
@@ -1000,12 +999,12 @@ class TestSourceResolution:
     def test_no_source_raises(self):
         """Must provide at least one source of coordinate space."""
         with pytest.raises(ValueError, match="Must provide one of"):
-            PrecomputedAnnotationWriter(annotation_type="point")
+            _PrecomputedAnnotationWriter(annotation_type="point")
 
     def test_multiple_sources_raises(self, coordinate_space_3d):
         """Cannot provide both coordinate_space and resolution."""
         with pytest.raises(ValueError, match="Provide only one of"):
-            PrecomputedAnnotationWriter(
+            _PrecomputedAnnotationWriter(
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 resolution=[1, 1, 1],
@@ -1296,7 +1295,7 @@ class TestMultiscaleWriter:
         coords = rng.uniform(0, 1000, size=(10000, 3)).astype(np.float32)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            writer = PrecomputedAnnotationWriter(
+            writer = _PrecomputedAnnotationWriter(
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
@@ -1323,7 +1322,7 @@ class TestMultiscaleWriter:
         coords = rng.uniform(0, 1000, size=(5000, 3)).astype(np.float32)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            writer = PrecomputedAnnotationWriter(
+            writer = _PrecomputedAnnotationWriter(
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
@@ -1344,7 +1343,7 @@ class TestMultiscaleWriter:
         coords = rng.uniform(0, 1000, size=(n, 3)).astype(np.float32)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            writer = PrecomputedAnnotationWriter(
+            writer = _PrecomputedAnnotationWriter(
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
@@ -1371,7 +1370,7 @@ class TestMultiscaleWriter:
     def test_backward_compat_high_limit(self, coordinate_space_3d, sample_points):
         """With limit >= n_annotations, should produce a single level."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            writer = PrecomputedAnnotationWriter(
+            writer = _PrecomputedAnnotationWriter(
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
