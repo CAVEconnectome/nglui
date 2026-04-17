@@ -29,8 +29,9 @@ from ._sharding import ShardSpec, choose_output_spec
 from ._source import resolve_coordinate_space
 from ._spatial import (
     SpatialLevel,
-    build_spatial_levels,
-    compute_multiscale_assignments,
+    _IsotropicHierarchy,
+    _SpatialHierarchy,
+    _UniformHierarchy,
     encode_multiscale_spatial_chunks,
 )
 
@@ -109,23 +110,13 @@ class _PrecomputedAnnotationWriter:
         Resolution of the input coordinate data (e.g., ``[4, 4, 40]``).
         If provided, coordinates are rescaled from ``data_resolution``
         into the ``coordinate_space`` resolution before writing.
-        Use this when your point coordinates are in a different voxel
-        grid than the segmentation source (e.g., CAVE materialization
-        data at viewer resolution vs. segmentation at native resolution).
     relationships : Sequence[str], optional
         Names of relationships (e.g., segment ID links).
     properties : Sequence[AnnotationPropertySpec], optional
         Annotation property definitions.
-    chunk_size : float or array-like, optional
-        Spatial index chunk size for the finest level. If None,
-        auto-computed from data bounds.
-    limit : int
-        Target max annotations per spatial chunk (default 5000).
-        Controls both the finest grid size and the probabilistic
-        subsampling at coarser levels.
-    spatial_levels : list[SpatialLevel], optional
-        Explicit spatial level hierarchy. If provided, overrides
-        auto-computation from ``chunk_size`` and ``limit``.
+    spatial_hierarchy : SpatialHierarchy, optional
+        Spatial hierarchy for computing the multi-level spatial index.
+        Defaults to ``IsotropicHierarchy()`` if not provided.
     write_sharded : bool
         Whether to use sharded writes (default True).
     """
@@ -140,9 +131,7 @@ class _PrecomputedAnnotationWriter:
         data_resolution: Optional[Sequence[float]] = None,
         relationships: Sequence[str] = (),
         properties: Sequence[viewer_state.AnnotationPropertySpec] = (),
-        chunk_size: Optional[Union[float, Sequence[float]]] = None,
-        limit: int = 5000,
-        spatial_levels: Optional[list[SpatialLevel]] = None,
+        spatial_hierarchy: Optional[_SpatialHierarchy] = None,
         write_sharded: bool = True,
     ):
         self.coordinate_space = resolve_coordinate_space(
@@ -160,13 +149,13 @@ class _PrecomputedAnnotationWriter:
         self.relationships = list(relationships)
         self.properties = sort_properties(properties)
         self.write_sharded = write_sharded
-        self.limit = limit
-        self._spatial_levels = spatial_levels
+        self.spatial_hierarchy = (
+            spatial_hierarchy
+            if spatial_hierarchy is not None
+            else _IsotropicHierarchy()
+        )
 
         self._dtype = build_dtype(annotation_type, self.rank, self.properties)
-
-        # Chunk size: store raw user input, resolve at write time
-        self._user_chunk_size = chunk_size
 
         # Bulk data (set via set_* methods or accumulated via add_* methods)
         self._coordinates: Optional[np.ndarray] = None
@@ -425,63 +414,16 @@ class _PrecomputedAnnotationWriter:
                 np.float32
             )
 
-        # Compute bounds
-        if self.annotation_type == "point":
-            lower_bound = coords.min(axis=0)
-            upper_bound = coords.max(axis=0)
-        else:
-            coords_a = coords[:, : self.rank]
-            coords_b = coords[:, self.rank :]
-            lower_bound = np.minimum(coords_a, coords_b).min(axis=0)
-            upper_bound = np.maximum(coords_a, coords_b).max(axis=0)
-
-        # Small epsilon to avoid zero-width bounds and float32 precision issues
-        extent = upper_bound - lower_bound
-        extent = np.maximum(extent, 1.0)
-        upper_bound = lower_bound + extent
-        upper_bound = np.nextafter(upper_bound, np.inf).astype(np.float64)
-
-        # Build spatial level hierarchy
+        # Build spatial hierarchy and compute assignments
         print("Building spatial levels...")
-        if self._spatial_levels is not None:
-            levels = self._spatial_levels
-        elif self._user_chunk_size is not None:
-            # User specified chunk_size → use as finest level, coarsen from there
-            if isinstance(self._user_chunk_size, numbers.Real):
-                finest_cs = np.full(self.rank, float(self._user_chunk_size))
-            else:
-                finest_cs = np.asarray(self._user_chunk_size, dtype=np.float64)
-            finest_grid = np.maximum(np.ceil(extent / finest_cs).astype(int), 1)
-            # Snap upper_bound to grid
-            upper_bound = lower_bound + finest_grid * finest_cs
-
-            # Build coarser levels from finest
-            grids = [finest_grid]
-            while np.any(grids[-1] > 1):
-                coarser = np.maximum(np.ceil(grids[-1] / 2).astype(int), 1)
-                grids.append(coarser)
-            grids.reverse()
-
-            levels = []
-            for i, grid in enumerate(grids):
-                cs = (upper_bound - lower_bound) / grid
-                levels.append(
-                    SpatialLevel(
-                        key=f"spatial{i}",
-                        grid_shape=grid,
-                        chunk_size=cs,
-                        limit=self.limit,
-                    )
-                )
-        else:
-            levels = build_spatial_levels(lower_bound, upper_bound, n, limit=self.limit)
-            # Snap upper_bound to finest grid
-            finest = levels[-1]
-            upper_bound = lower_bound + finest.grid_shape * finest.chunk_size
+        hierarchy = self.spatial_hierarchy
+        hierarchy.fit(coords)
+        levels = hierarchy.levels_
+        lower_bound = hierarchy.lower_bound_
+        upper_bound = hierarchy.upper_bound_
 
         print("Computing assignments")
-        # Compute multi-scale assignments
-        assignment = compute_multiscale_assignments(coords, lower_bound, levels)
+        assignment = hierarchy.assign(coords)
 
         print("Encoding data")
         # Encode fixed blocks

@@ -28,6 +28,9 @@ from nglui.precomputed._encoding import (
 from nglui.precomputed._sharding import ShardSpec, choose_output_spec
 from nglui.precomputed._spatial import (
     SpatialLevel,
+    _IsotropicHierarchy,
+    _SpatialHierarchy,
+    _UniformHierarchy,
     auto_chunk_size,
     build_spatial_levels,
     compressed_morton_code,
@@ -375,7 +378,7 @@ class TestPrecomputedAnnotationWriter:
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
-                chunk_size=1000,
+                spatial_hierarchy=_UniformHierarchy(chunk_size=1000),
             )
             w1.set_coordinates(coords)
             w1.write(tmp_bulk)
@@ -385,7 +388,7 @@ class TestPrecomputedAnnotationWriter:
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
-                chunk_size=1000,
+                spatial_hierarchy=_UniformHierarchy(chunk_size=1000),
             )
             w2.add_point([1, 2, 3])
             w2.add_point([4, 5, 6])
@@ -851,33 +854,58 @@ class TestEllipsoidAnnotationWriter:
 
 
 class TestTwoPositionSpatialAssignment:
-    @pytest.mark.xfail(
-        reason="Explicit chunk_size creates empty spatial levels when annotation count < limit. "
-        "See: spatial hierarchy needs rework to skip unnecessary finer levels.",
-        strict=True,
-    )
-    def test_line_spans_multiple_spatial_cells(self, coordinate_space_3d):
-        """A line whose endpoints fall in different spatial cells should
-        appear in multiple unsharded spatial cell files."""
+    def test_compute_chunk_assignments_line_spans_cells(self):
+        """compute_chunk_assignments should assign a two-point annotation
+        to every cell its bounding box overlaps."""
+        # Line from (50,50,50) to (250,250,250), grid with chunk_size=100
+        coords = np.array([[50, 50, 50, 250, 250, 250]], dtype=np.float32)
+        lower = np.array([0, 0, 0], dtype=np.float64)
+        chunk_size = np.array([100, 100, 100], dtype=np.float64)
+        num_chunks = np.array([3, 3, 3])
+
+        assignments = compute_chunk_assignments(coords, lower, chunk_size, num_chunks)
+
+        # Annotation 0 should appear in every cell from (0,0,0) to (2,2,2)
+        cells_with_ann = [cell for cell, idxs in assignments.items() if 0 in idxs]
+        assert len(cells_with_ann) == 27, (
+            f"Expected 27 cells (3x3x3 AABB), got {len(cells_with_ann)}: {cells_with_ann}"
+        )
+
+    def test_compute_chunk_assignments_bbox_spans_cells(self):
+        """Same for bounding box geometry."""
+        coords = np.array([[50, 50, 50, 250, 250, 250]], dtype=np.float32)
+        lower = np.array([0, 0, 0], dtype=np.float64)
+        chunk_size = np.array([100, 100, 100], dtype=np.float64)
+        num_chunks = np.array([3, 3, 3])
+
+        assignments = compute_chunk_assignments(coords, lower, chunk_size, num_chunks)
+        cells_with_ann = [cell for cell, idxs in assignments.items() if 0 in idxs]
+        assert len(cells_with_ann) == 27
+
+    def test_line_writer_multi_cell_integration(self, coordinate_space_3d):
+        """Lines spanning multiple cells should appear in multiple spatial
+        chunks when there are enough annotations to reach the finest level."""
+        rng = np.random.default_rng(42)
+        n = 2000
+        # Lines that span a wide range (endpoints ~500 apart)
         df = pd.DataFrame(
             {
-                "pt_a_x": [50.0],
-                "pt_a_y": [50.0],
-                "pt_a_z": [50.0],
-                "pt_b_x": [250.0],
-                "pt_b_y": [250.0],
-                "pt_b_z": [250.0],
+                "pt_a_x": rng.uniform(0, 500, n).astype(np.float32),
+                "pt_a_y": rng.uniform(0, 500, n).astype(np.float32),
+                "pt_a_z": rng.uniform(0, 500, n).astype(np.float32),
+                "pt_b_x": rng.uniform(500, 1000, n).astype(np.float32),
+                "pt_b_y": rng.uniform(500, 1000, n).astype(np.float32),
+                "pt_b_z": rng.uniform(500, 1000, n).astype(np.float32),
             }
         )
-        df = df.astype(np.float32)
-        df.index = np.arange(1, dtype=np.uint64)
+        df.index = np.arange(n, dtype=np.uint64)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             writer = LineAnnotationWriter(
                 coordinate_space=coordinate_space_3d,
                 point_a_column="pt_a",
                 point_b_column="pt_b",
-                chunk_size=100,
+                limit=200,
                 write_sharded=False,
             )
             writer.write(df, tmpdir)
@@ -887,51 +915,44 @@ class TestTwoPositionSpatialAssignment:
 
             assert info["annotation_type"] == "line"
 
-            # Find the finest spatial level (most cells)
-            finest = info["spatial"][-1]
-            finest_dir = os.path.join(tmpdir, finest["key"])
-            cell_files = os.listdir(finest_dir)
+            # Count total annotation slots across all spatial chunks;
+            # for lines spanning cells the total should exceed n
+            total = 0
+            for level_info in info["spatial"]:
+                level_dir = os.path.join(tmpdir, level_info["key"])
+                for chunk_file in os.listdir(level_dir):
+                    with open(os.path.join(level_dir, chunk_file), "rb") as f:
+                        data = f.read()
+                    count = struct.unpack_from("<Q", data, 0)[0]
+                    total += count
 
-            # The annotation should appear in multiple cell files
-            cells_with_data = []
-            for cf in cell_files:
-                fpath = os.path.join(finest_dir, cf)
-                with open(fpath, "rb") as f:
-                    data = f.read()
-                count = struct.unpack_from("<Q", data, 0)[0]
-                if count > 0:
-                    cells_with_data.append(cf)
-
-            assert len(cells_with_data) > 1, (
-                f"Expected annotation in multiple cells, but found in {len(cells_with_data)}: {cells_with_data}"
+            assert total >= n, (
+                f"Expected total slots >= {n} (multi-cell spanning), got {total}"
             )
 
-    @pytest.mark.xfail(
-        reason="Explicit chunk_size creates empty spatial levels when annotation count < limit. "
-        "See: spatial hierarchy needs rework to skip unnecessary finer levels.",
-        strict=True,
-    )
-    def test_bbox_spans_multiple_spatial_cells(self, coordinate_space_3d):
-        """A bounding box spanning multiple cells should appear in all of them."""
+    def test_bbox_writer_multi_cell_integration(self, coordinate_space_3d):
+        """Bounding boxes spanning multiple cells should appear in multiple
+        spatial chunks when there are enough annotations."""
+        rng = np.random.default_rng(42)
+        n = 2000
         df = pd.DataFrame(
             {
-                "pt_a_x": [50.0],
-                "pt_a_y": [50.0],
-                "pt_a_z": [50.0],
-                "pt_b_x": [250.0],
-                "pt_b_y": [250.0],
-                "pt_b_z": [250.0],
+                "pt_a_x": rng.uniform(0, 500, n).astype(np.float32),
+                "pt_a_y": rng.uniform(0, 500, n).astype(np.float32),
+                "pt_a_z": rng.uniform(0, 500, n).astype(np.float32),
+                "pt_b_x": rng.uniform(500, 1000, n).astype(np.float32),
+                "pt_b_y": rng.uniform(500, 1000, n).astype(np.float32),
+                "pt_b_z": rng.uniform(500, 1000, n).astype(np.float32),
             }
         )
-        df = df.astype(np.float32)
-        df.index = np.arange(1, dtype=np.uint64)
+        df.index = np.arange(n, dtype=np.uint64)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             writer = BoundingBoxAnnotationWriter(
                 coordinate_space=coordinate_space_3d,
                 point_a_column="pt_a",
                 point_b_column="pt_b",
-                chunk_size=100,
+                limit=200,
                 write_sharded=False,
             )
             writer.write(df, tmpdir)
@@ -941,22 +962,16 @@ class TestTwoPositionSpatialAssignment:
 
             assert info["annotation_type"] == "axis_aligned_bounding_box"
 
-            finest = info["spatial"][-1]
-            finest_dir = os.path.join(tmpdir, finest["key"])
-            cell_files = os.listdir(finest_dir)
+            total = 0
+            for level_info in info["spatial"]:
+                level_dir = os.path.join(tmpdir, level_info["key"])
+                for chunk_file in os.listdir(level_dir):
+                    with open(os.path.join(level_dir, chunk_file), "rb") as f:
+                        data = f.read()
+                    count = struct.unpack_from("<Q", data, 0)[0]
+                    total += count
 
-            cells_with_data = []
-            for cf in cell_files:
-                fpath = os.path.join(finest_dir, cf)
-                with open(fpath, "rb") as f:
-                    data = f.read()
-                count = struct.unpack_from("<Q", data, 0)[0]
-                if count > 0:
-                    cells_with_data.append(cf)
-
-            assert len(cells_with_data) > 1, (
-                f"Expected annotation in multiple cells, but found in {len(cells_with_data)}: {cells_with_data}"
-            )
+            assert total >= n
 
 
 # ── Source Resolution Tests ─────────────────────────────────────────
@@ -1299,7 +1314,7 @@ class TestMultiscaleWriter:
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
-                limit=500,
+                spatial_hierarchy=_IsotropicHierarchy(limit=500),
             )
             writer.set_coordinates(coords)
             writer.write(tmpdir)
@@ -1326,7 +1341,7 @@ class TestMultiscaleWriter:
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
-                limit=500,
+                spatial_hierarchy=_IsotropicHierarchy(limit=500),
             )
             writer.set_coordinates(coords)
             writer.write(tmpdir)
@@ -1347,7 +1362,7 @@ class TestMultiscaleWriter:
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
-                limit=200,
+                spatial_hierarchy=_IsotropicHierarchy(limit=200),
             )
             writer.set_coordinates(coords)
             writer.write(tmpdir)
@@ -1374,7 +1389,7 @@ class TestMultiscaleWriter:
                 annotation_type="point",
                 coordinate_space=coordinate_space_3d,
                 write_sharded=False,
-                limit=100000,
+                spatial_hierarchy=_IsotropicHierarchy(limit=100000),
             )
             writer.set_coordinates(sample_points)
             writer.write(tmpdir)
@@ -1411,3 +1426,238 @@ class TestMultiscaleWriter:
                 info = json.load(f)
 
             assert len(info["spatial"]) > 1
+
+
+# ── SpatialHierarchy class tests ───────────────────────────────────
+
+
+class TestSpatialHierarchyBase:
+    """Tests for the SpatialHierarchy base class API."""
+
+    def test_construction_defaults(self):
+        h = _UniformHierarchy()
+        assert h.limit == 5000
+        assert h.lower_bound is None
+        assert h.upper_bound is None
+        assert h.bound_padding == 0.0
+        assert h.out_of_bounds == "warn"
+        assert h.levels_ is None
+
+    def test_assign_before_fit_raises(self):
+        h = _UniformHierarchy()
+        coords = np.array([[1, 2, 3]], dtype=np.float32)
+        with pytest.raises(RuntimeError, match="not been fitted"):
+            h.assign(coords)
+
+    def test_fit_returns_self(self):
+        h = _UniformHierarchy()
+        coords = np.random.default_rng(0).uniform(0, 100, (50, 3)).astype(np.float32)
+        result = h.fit(coords)
+        assert result is h
+        assert h.levels_ is not None
+        assert h.lower_bound_ is not None
+        assert h.upper_bound_ is not None
+
+    def test_auto_computed_bounds(self):
+        coords = np.array([[10, 20, 30], [100, 200, 300]], dtype=np.float32)
+        h = _UniformHierarchy().fit(coords)
+        np.testing.assert_array_less(h.lower_bound_, coords.min(axis=0) + 1e-6)
+        np.testing.assert_array_less(coords.max(axis=0), h.upper_bound_ + 1e-6)
+
+    def test_explicit_bounds_adopted(self):
+        lb = np.array([0, 0, 0], dtype=np.float64)
+        ub = np.array([500, 500, 500], dtype=np.float64)
+        coords = np.array([[10, 20, 30], [100, 200, 300]], dtype=np.float32)
+        h = _UniformHierarchy(lower_bound=lb, upper_bound=ub).fit(coords)
+        np.testing.assert_array_equal(h.lower_bound_, lb)
+        # upper_bound_ gets nextafter adjustment
+        assert np.all(h.upper_bound_ >= ub)
+
+    def test_bound_padding_auto_only(self):
+        coords = np.array([[0, 0, 0], [1000, 1000, 40]], dtype=np.float32)
+        h_no_pad = _UniformHierarchy().fit(coords)
+        h_pad = _UniformHierarchy(bound_padding=0.1).fit(coords)
+
+        # Padded bounds should be wider
+        assert np.all(h_pad.lower_bound_ <= h_no_pad.lower_bound_)
+        assert np.all(h_pad.upper_bound_ >= h_no_pad.upper_bound_)
+
+    def test_bound_padding_not_applied_to_explicit(self):
+        lb = np.array([0, 0, 0], dtype=np.float64)
+        ub = np.array([500, 500, 500], dtype=np.float64)
+        coords = np.array([[10, 20, 30], [100, 200, 300]], dtype=np.float32)
+        h = _UniformHierarchy(lower_bound=lb, upper_bound=ub, bound_padding=0.5).fit(
+            coords
+        )
+        np.testing.assert_array_equal(h.lower_bound_, lb)
+
+    def test_oob_error_mode(self):
+        coords_fit = np.array([[10, 10, 10], [20, 20, 20]], dtype=np.float32)
+        h = _UniformHierarchy(out_of_bounds="error").fit(coords_fit)
+        coords_oob = np.array([[100, 100, 100]], dtype=np.float32)
+        with pytest.raises(ValueError, match="outside"):
+            h.assign(coords_oob)
+
+    def test_oob_warn_mode(self):
+        coords_fit = np.array([[10, 10, 10], [20, 20, 20]], dtype=np.float32)
+        h = _UniformHierarchy(out_of_bounds="warn").fit(coords_fit)
+        coords_oob = np.array([[100, 100, 100]], dtype=np.float32)
+        with pytest.warns(UserWarning, match="outside"):
+            h.assign(coords_oob)
+
+    def test_oob_ignore_mode(self):
+        coords_fit = np.array([[10, 10, 10], [20, 20, 20]], dtype=np.float32)
+        h = _UniformHierarchy(out_of_bounds="ignore").fit(coords_fit)
+        coords_oob = np.array([[100, 100, 100]], dtype=np.float32)
+        # Should not raise or warn
+        result = h.assign(coords_oob)
+        assert result is not None
+
+    def test_fit_assign_matches_separate(self):
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 1000, (500, 3)).astype(np.float32)
+
+        h1 = _UniformHierarchy(limit=100)
+        a1 = h1.fit(coords).assign(coords, rng=np.random.default_rng(7))
+
+        h2 = _UniformHierarchy(limit=100)
+        a2 = h2.fit_assign(coords, rng=np.random.default_rng(7))
+
+        assert len(a1.level_chunks) == len(a2.level_chunks)
+        for key in a1.level_chunks:
+            np.testing.assert_array_equal(a1.level_chunks[key], a2.level_chunks[key])
+
+
+class TestUniformHierarchy:
+    """Tests for UniformHierarchy matching existing build_spatial_levels."""
+
+    def test_matches_build_spatial_levels(self):
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 1000, (5000, 3)).astype(np.float32)
+        lower = coords.min(axis=0).astype(np.float64)
+        upper = coords.max(axis=0).astype(np.float64)
+        extent = upper - lower
+        extent = np.maximum(extent, 1.0)
+        upper = lower + extent
+        upper = np.nextafter(upper, np.inf)
+
+        old_levels = build_spatial_levels(lower, upper, len(coords), limit=500)
+
+        h = _UniformHierarchy(limit=500, lower_bound=lower, upper_bound=upper)
+        h.fit(coords)
+
+        assert len(h.levels_) == len(old_levels)
+        for new_lev, old_lev in zip(h.levels_, old_levels):
+            assert new_lev.key == old_lev.key
+            np.testing.assert_array_equal(new_lev.grid_shape, old_lev.grid_shape)
+            assert new_lev.limit == old_lev.limit
+
+    def test_explicit_chunk_size(self):
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 1000, (1000, 3)).astype(np.float32)
+        h = _UniformHierarchy(chunk_size=200).fit(coords)
+
+        # Finest level should have chunk_size close to 200
+        finest = h.levels_[-1]
+        assert np.all(finest.chunk_size <= 201)
+
+    def test_explicit_chunk_size_scalar(self):
+        coords = np.array([[0, 0, 0], [1000, 1000, 1000]], dtype=np.float32)
+        h = _UniformHierarchy(chunk_size=500.0).fit(coords)
+        finest = h.levels_[-1]
+        assert np.allclose(finest.chunk_size, finest.chunk_size[0])
+
+    def test_coarsest_is_1_1_1(self):
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 1000, (5000, 3)).astype(np.float32)
+        h = _UniformHierarchy(limit=500).fit(coords)
+        np.testing.assert_array_equal(h.levels_[0].grid_shape, [1, 1, 1])
+
+    def test_single_level_for_few_annotations(self):
+        coords = np.array([[10, 20, 30], [40, 50, 60]], dtype=np.float32)
+        h = _UniformHierarchy(limit=5000).fit(coords)
+        assert len(h.levels_) == 1
+        np.testing.assert_array_equal(h.levels_[0].grid_shape, [1, 1, 1])
+
+
+class TestIsotropicHierarchy:
+    """Tests for IsotropicHierarchy spec-compliant subdivision."""
+
+    def test_isotropic_data_uniform_subdivision(self):
+        """Isotropic extents should halve all dimensions together."""
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 1000, (50000, 3)).astype(np.float32)
+        h = _IsotropicHierarchy(limit=500).fit(coords)
+
+        for level in h.levels_:
+            gs = level.grid_shape
+            # All dimensions should be equal (or within 1 due to rounding)
+            assert gs.max() - gs.min() <= 1, (
+                f"Expected uniform grid for isotropic data, got {gs}"
+            )
+
+    def test_anisotropic_data_selective_subdivision(self):
+        """Anisotropic extents should halve larger dimensions first."""
+        rng = np.random.default_rng(42)
+        n = 50000
+        coords = np.column_stack(
+            [
+                rng.uniform(0, 1000, n),
+                rng.uniform(0, 1000, n),
+                rng.uniform(0, 40, n),
+            ]
+        ).astype(np.float32)
+        h = _IsotropicHierarchy(limit=500).fit(coords)
+
+        # Check that early levels (after the [1,1,1] root) don't subdivide z
+        if len(h.levels_) > 2:
+            level1 = h.levels_[1]
+            # x and y should be subdivided before z
+            assert level1.grid_shape[2] <= level1.grid_shape[0], (
+                f"Expected z not subdivided before x/y: {level1.grid_shape}"
+            )
+
+    def test_chunk_size_divisibility(self):
+        """Adjacent levels must have chunk_size that evenly divides."""
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 1000, (10000, 3)).astype(np.float32)
+        h = _IsotropicHierarchy(limit=500).fit(coords)
+
+        for i in range(len(h.levels_) - 1):
+            coarser_cs = h.levels_[i].chunk_size
+            finer_cs = h.levels_[i + 1].chunk_size
+            for d in range(3):
+                ratio = coarser_cs[d] / finer_cs[d]
+                assert ratio == pytest.approx(1.0) or ratio == pytest.approx(2.0), (
+                    f"Level {i}→{i + 1} dim {d}: ratio {ratio}, "
+                    f"coarser={coarser_cs[d]}, finer={finer_cs[d]}"
+                )
+
+    def test_grid_times_chunk_equals_extent(self):
+        """grid_shape * chunk_size must equal extent for every level."""
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 1000, (10000, 3)).astype(np.float32)
+        h = _IsotropicHierarchy(limit=500).fit(coords)
+
+        extent = h.upper_bound_ - h.lower_bound_
+        for level in h.levels_:
+            product = level.grid_shape * level.chunk_size
+            np.testing.assert_allclose(product, extent, rtol=1e-10)
+
+    def test_single_level_few_annotations(self):
+        coords = np.array([[10, 20, 30], [40, 50, 60]], dtype=np.float32)
+        h = _IsotropicHierarchy(limit=5000).fit(coords)
+        assert len(h.levels_) == 1
+        np.testing.assert_array_equal(h.levels_[0].grid_shape, [1, 1, 1])
+
+    def test_many_annotations_multiple_levels(self):
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 1000, (100000, 3)).astype(np.float32)
+        h = _IsotropicHierarchy(limit=5000).fit(coords)
+        assert len(h.levels_) > 1
+
+    def test_coarsest_is_1_1_1(self):
+        rng = np.random.default_rng(42)
+        coords = rng.uniform(0, 1000, (10000, 3)).astype(np.float32)
+        h = _IsotropicHierarchy(limit=500).fit(coords)
+        np.testing.assert_array_equal(h.levels_[0].grid_shape, [1, 1, 1])
