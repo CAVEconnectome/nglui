@@ -161,52 +161,33 @@ def _convert_arrow_column(series: pd.Series) -> np.ndarray:
     return series.to_numpy()
 
 
-class AnnotationDataFrameWriter:
-    """Write pandas DataFrames as neuroglancer precomputed annotations.
+class _AnnotationWriter:
+    """Private base class for DataFrame-to-precomputed annotation writers.
 
-    Configures column mappings at construction time, then writes one or
-    more DataFrames via the ``write()`` method. Currently only supports
-    point annotations.
+    Handles all annotation geometry types. Public subclasses expose only
+    the coordinate column parameters relevant to their geometry.
 
     Parameters
     ----------
+    annotation_type : AnnotationType
+        The annotation geometry type.
+    coordinate_columns : list of (str, str or list of str)
+        Each entry is ``(label, column_spec)`` where *column_spec* is
+        resolved via ``split_point_columns`` to extract one position
+        vector per annotation. Results are concatenated column-wise
+        to form the full coordinate array.
     segmentation_source : CAVEclient, CloudVolume, or str, optional
-        Source to derive coordinate space from. Accepts a CAVEclient
-        (uses its segmentation source), a CloudVolume instance, or a
-        segmentation source URL. Mutually exclusive with
-        ``coordinate_space`` and ``resolution``.
+        Source to derive coordinate space from.
     coordinate_space : CoordinateSpace, optional
-        Explicit neuroglancer coordinate space. Mutually exclusive with
-        ``segmentation_source`` and ``resolution``.
+        Explicit neuroglancer coordinate space.
     resolution : sequence of float, optional
-        Explicit resolution per axis (e.g., ``[8, 8, 40]``). Units
-        default to nm, axis names to x/y/z. Mutually exclusive with
-        ``segmentation_source`` and ``coordinate_space``.
+        Explicit resolution per axis.
     data_resolution : sequence of float, optional
-        Resolution of the input coordinate data (e.g., ``[4, 4, 40]``).
-        If provided, coordinates are rescaled from ``data_resolution``
-        into the ``coordinate_space`` resolution before writing.
-        Use this when your point coordinates are in a different voxel
-        grid than the segmentation source (e.g., CAVE materialization
-        data at viewer resolution vs. segmentation at native resolution).
-    point_column : str or list of str
-        Column(s) for point coordinates. Accepts:
-
-        - A single column name containing ``[x, y, z]`` arrays
-          (e.g., ``"pt_position"``).
-        - A column name prefix that expands to ``{prefix}_x``,
-          ``{prefix}_y``, ``{prefix}_z``
-          (e.g., ``"ctr_pt_position"``).
-        - An explicit list of three column names for x, y, z
-          (e.g., ``["pt_x", "pt_y", "pt_z"]``).
+        Resolution of the input coordinate data for rescaling.
     property_columns : list of str, optional
-        Column names to include as annotation properties. Property types
-        are auto-inferred from the DataFrame column dtypes. The column
-        name is used as the property name in the output.
+        Column names to include as annotation properties.
     relationship_columns : list of str, optional
-        Column names to include as annotation relationships (linked
-        segment IDs). Columns may contain scalar IDs or lists of IDs.
-        The column name is used as the relationship name in the output.
+        Column names to include as annotation relationships.
     id_column : str, optional
         Column for annotation IDs. If None, uses DataFrame index.
     chunk_size : float or array-like, optional
@@ -215,46 +196,17 @@ class AnnotationDataFrameWriter:
         Target max annotations per spatial chunk (default 5000).
     write_sharded : bool
         Use sharded writes (default True).
-
-    Examples
-    --------
-    ::
-
-        # From a CAVEclient (most common)
-        writer = AnnotationDataFrameWriter(
-            segmentation_source=client,
-            point_column="pt_position",
-            property_columns=["confidence"],
-            relationship_columns=["pt_root_id"],
-        )
-        writer.write(df, "gs://bucket/annotations")
-
-        # With split x/y/z columns via prefix
-        writer = AnnotationDataFrameWriter(
-            segmentation_source=client,
-            point_column="ctr_pt_position",
-            property_columns=["size"],
-            relationship_columns=["pre_pt_root_id", "post_pt_root_id"],
-            id_column="synapse_id",
-        )
-        writer.write(df, "gs://bucket/annotations")
-
-        # With explicit x/y/z column names
-        writer = AnnotationDataFrameWriter(
-            resolution=[8, 8, 40],
-            point_column=["pt_x", "pt_y", "pt_z"],
-        )
-        writer.write(df, "/local/path")
     """
 
     def __init__(
         self,
+        annotation_type: AnnotationType,
+        coordinate_columns: list[tuple[str, Union[str, list[str]]]],
         segmentation_source=None,
         *,
         coordinate_space: Optional[CoordinateSpace] = None,
         resolution: Optional[Sequence[float]] = None,
         data_resolution: Optional[Sequence[float]] = None,
-        point_column: Optional[Union[str, list[str]]] = None,
         property_columns: Optional[list[str]] = None,
         relationship_columns: Optional[list[str]] = None,
         id_column: Optional[str] = None,
@@ -262,15 +214,13 @@ class AnnotationDataFrameWriter:
         limit: int = 5000,
         write_sharded: bool = True,
     ):
-        self.annotation_type = "point"
+        self.annotation_type = annotation_type
+        self._coordinate_columns = coordinate_columns
         self.coordinate_space = resolve_coordinate_space(
             segmentation_source=segmentation_source,
             coordinate_space=coordinate_space,
             resolution=resolution,
         )
-        if point_column is None:
-            raise ValueError("point_column is required.")
-        self.point_column = point_column
         self.property_columns = property_columns or []
         self.relationship_columns = relationship_columns or []
         self.id_column = id_column
@@ -279,9 +229,11 @@ class AnnotationDataFrameWriter:
         self.limit = limit
         self.write_sharded = write_sharded
 
-    def _extract_coordinates(self, df: pd.DataFrame) -> np.ndarray:
-        """Extract coordinate array from DataFrame."""
-        resolved = split_point_columns(self.point_column, list(df.columns))
+    def _extract_one_position(
+        self, df: pd.DataFrame, column_spec: Union[str, list[str]]
+    ) -> np.ndarray:
+        """Extract one (N, 3) position array from a column spec."""
+        resolved = split_point_columns(column_spec, list(df.columns))
         if isinstance(resolved, list):
             x = _convert_arrow_column(df[resolved[0]])
             y = _convert_arrow_column(df[resolved[1]])
@@ -290,6 +242,19 @@ class AnnotationDataFrameWriter:
         else:
             col = df[resolved]
             return np.stack(col.values).astype(np.float32)
+
+    def _extract_coordinates(self, df: pd.DataFrame) -> np.ndarray:
+        """Extract coordinate array from DataFrame.
+
+        Resolves each coordinate column spec and concatenates them
+        column-wise. Returns (N, rank) for point, (N, 2*rank) for
+        line/bbox/ellipsoid.
+        """
+        parts = [
+            self._extract_one_position(df, col_spec)
+            for _label, col_spec in self._coordinate_columns
+        ]
+        return np.column_stack(parts).astype(np.float32)
 
     def _resolve_properties(
         self, df: pd.DataFrame
@@ -351,13 +316,9 @@ class AnnotationDataFrameWriter:
         path : str
             Output path (local or cloud).
         """
-        print("Extracting coords...")
         coords = self._extract_coordinates(df)
-        print("Resolving properties...")
         properties, prop_arrays = self._resolve_properties(df)
-        print("Extracting relationships...")
         rel_names, rel_data = self._extract_relationships(df)
-        print("Extracting IDs...")
         ids = self._extract_ids(df)
 
         writer = PrecomputedAnnotationWriter(
@@ -371,9 +332,7 @@ class AnnotationDataFrameWriter:
             write_sharded=self.write_sharded,
         )
 
-        print("Setting coords in writer...")
         writer.set_coordinates(coords)
-        print("Setting IDs in writer...")
         writer.set_ids(ids)
 
         for prop_name, arr in prop_arrays.items():
@@ -382,5 +341,230 @@ class AnnotationDataFrameWriter:
         for rel_name, data in rel_data.items():
             writer.set_relationship(rel_name, data)
 
-        print("Writing precomputed data...")
         writer.write(path)
+
+
+# ── Public geometry-specific writers ────────────────────────────────
+
+# Shared parameter docstring fragments
+_COMMON_PARAMS = """\
+    segmentation_source : CAVEclient, CloudVolume, or str, optional
+        Source to derive coordinate space from. Accepts a CAVEclient
+        (uses its segmentation source), a CloudVolume instance, or a
+        segmentation source URL. Mutually exclusive with
+        ``coordinate_space`` and ``resolution``.
+    coordinate_space : CoordinateSpace, optional
+        Explicit neuroglancer coordinate space. Mutually exclusive with
+        ``segmentation_source`` and ``resolution``.
+    resolution : sequence of float, optional
+        Explicit resolution per axis (e.g., ``[8, 8, 40]``). Units
+        default to nm, axis names to x/y/z. Mutually exclusive with
+        ``segmentation_source`` and ``coordinate_space``.
+    data_resolution : sequence of float, optional
+        Resolution of the input coordinate data (e.g., ``[4, 4, 40]``).
+        If provided, coordinates are rescaled from ``data_resolution``
+        into the ``coordinate_space`` resolution before writing.
+    property_columns : list of str, optional
+        Column names to include as annotation properties.
+    relationship_columns : list of str, optional
+        Column names to include as annotation relationships.
+    id_column : str, optional
+        Column for annotation IDs. If None, uses DataFrame index.
+    chunk_size : float or array-like, optional
+        Spatial index chunk size. If None, auto-computed.
+    limit : int
+        Target max annotations per spatial chunk (default 5000).
+    write_sharded : bool
+        Use sharded writes (default True)."""
+
+_COLUMN_SPEC_DOC = """\
+        Column(s) for position coordinates. Accepts:
+
+        - A single column name containing ``[x, y, z]`` arrays
+          (e.g., ``"pt_position"``).
+        - A column name prefix that expands to ``{prefix}_x``,
+          ``{prefix}_y``, ``{prefix}_z``
+          (e.g., ``"ctr_pt_position"``).
+        - An explicit list of three column names for x, y, z
+          (e.g., ``["pt_x", "pt_y", "pt_z"]``)."""
+
+
+class PointAnnotationWriter(_AnnotationWriter):
+    """Write a DataFrame of point annotations to precomputed format.
+
+    Parameters
+    ----------
+    point_column : str or list of str
+{column_spec}
+{common}
+    """.format(column_spec=_COLUMN_SPEC_DOC, common=_COMMON_PARAMS)
+
+    def __init__(
+        self,
+        segmentation_source=None,
+        *,
+        coordinate_space: Optional[CoordinateSpace] = None,
+        resolution: Optional[Sequence[float]] = None,
+        data_resolution: Optional[Sequence[float]] = None,
+        point_column: Optional[Union[str, list[str]]] = None,
+        property_columns: Optional[list[str]] = None,
+        relationship_columns: Optional[list[str]] = None,
+        id_column: Optional[str] = None,
+        chunk_size: Optional[Union[float, Sequence[float]]] = None,
+        limit: int = 5000,
+        write_sharded: bool = True,
+    ):
+        if point_column is None:
+            raise ValueError("point_column is required.")
+        super().__init__(
+            annotation_type="point",
+            coordinate_columns=[("point", point_column)],
+            segmentation_source=segmentation_source,
+            coordinate_space=coordinate_space,
+            resolution=resolution,
+            data_resolution=data_resolution,
+            property_columns=property_columns,
+            relationship_columns=relationship_columns,
+            id_column=id_column,
+            chunk_size=chunk_size,
+            limit=limit,
+            write_sharded=write_sharded,
+        )
+
+
+class LineAnnotationWriter(_AnnotationWriter):
+    """Write a DataFrame of line segment annotations to precomputed format.
+
+    Parameters
+    ----------
+    point_a_column : str or list of str
+{column_spec}
+    point_b_column : str or list of str
+{column_spec}
+{common}
+    """.format(column_spec=_COLUMN_SPEC_DOC, common=_COMMON_PARAMS)
+
+    def __init__(
+        self,
+        segmentation_source=None,
+        *,
+        coordinate_space: Optional[CoordinateSpace] = None,
+        resolution: Optional[Sequence[float]] = None,
+        data_resolution: Optional[Sequence[float]] = None,
+        point_a_column: Optional[Union[str, list[str]]] = None,
+        point_b_column: Optional[Union[str, list[str]]] = None,
+        property_columns: Optional[list[str]] = None,
+        relationship_columns: Optional[list[str]] = None,
+        id_column: Optional[str] = None,
+        chunk_size: Optional[Union[float, Sequence[float]]] = None,
+        limit: int = 5000,
+        write_sharded: bool = True,
+    ):
+        if point_a_column is None or point_b_column is None:
+            raise ValueError("point_a_column and point_b_column are required.")
+        super().__init__(
+            annotation_type="line",
+            coordinate_columns=[("point_a", point_a_column), ("point_b", point_b_column)],
+            segmentation_source=segmentation_source,
+            coordinate_space=coordinate_space,
+            resolution=resolution,
+            data_resolution=data_resolution,
+            property_columns=property_columns,
+            relationship_columns=relationship_columns,
+            id_column=id_column,
+            chunk_size=chunk_size,
+            limit=limit,
+            write_sharded=write_sharded,
+        )
+
+
+class BoundingBoxAnnotationWriter(_AnnotationWriter):
+    """Write a DataFrame of axis-aligned bounding box annotations to precomputed format.
+
+    Parameters
+    ----------
+    point_a_column : str or list of str
+{column_spec}
+    point_b_column : str or list of str
+{column_spec}
+{common}
+    """.format(column_spec=_COLUMN_SPEC_DOC, common=_COMMON_PARAMS)
+
+    def __init__(
+        self,
+        segmentation_source=None,
+        *,
+        coordinate_space: Optional[CoordinateSpace] = None,
+        resolution: Optional[Sequence[float]] = None,
+        data_resolution: Optional[Sequence[float]] = None,
+        point_a_column: Optional[Union[str, list[str]]] = None,
+        point_b_column: Optional[Union[str, list[str]]] = None,
+        property_columns: Optional[list[str]] = None,
+        relationship_columns: Optional[list[str]] = None,
+        id_column: Optional[str] = None,
+        chunk_size: Optional[Union[float, Sequence[float]]] = None,
+        limit: int = 5000,
+        write_sharded: bool = True,
+    ):
+        if point_a_column is None or point_b_column is None:
+            raise ValueError("point_a_column and point_b_column are required.")
+        super().__init__(
+            annotation_type="axis_aligned_bounding_box",
+            coordinate_columns=[("point_a", point_a_column), ("point_b", point_b_column)],
+            segmentation_source=segmentation_source,
+            coordinate_space=coordinate_space,
+            resolution=resolution,
+            data_resolution=data_resolution,
+            property_columns=property_columns,
+            relationship_columns=relationship_columns,
+            id_column=id_column,
+            chunk_size=chunk_size,
+            limit=limit,
+            write_sharded=write_sharded,
+        )
+
+
+class EllipsoidAnnotationWriter(_AnnotationWriter):
+    """Write a DataFrame of ellipsoid annotations to precomputed format.
+
+    Parameters
+    ----------
+    center_column : str or list of str
+{column_spec}
+    radii_column : str or list of str
+{column_spec}
+{common}
+    """.format(column_spec=_COLUMN_SPEC_DOC, common=_COMMON_PARAMS)
+
+    def __init__(
+        self,
+        segmentation_source=None,
+        *,
+        coordinate_space: Optional[CoordinateSpace] = None,
+        resolution: Optional[Sequence[float]] = None,
+        data_resolution: Optional[Sequence[float]] = None,
+        center_column: Optional[Union[str, list[str]]] = None,
+        radii_column: Optional[Union[str, list[str]]] = None,
+        property_columns: Optional[list[str]] = None,
+        relationship_columns: Optional[list[str]] = None,
+        id_column: Optional[str] = None,
+        chunk_size: Optional[Union[float, Sequence[float]]] = None,
+        limit: int = 5000,
+        write_sharded: bool = True,
+    ):
+        if center_column is None or radii_column is None:
+            raise ValueError("center_column and radii_column are required.")
+        super().__init__(
+            annotation_type="ellipsoid",
+            coordinate_columns=[("center", center_column), ("radii", radii_column)],
+            segmentation_source=segmentation_source,
+            coordinate_space=coordinate_space,
+            resolution=resolution,
+            data_resolution=data_resolution,
+            property_columns=property_columns,
+            relationship_columns=relationship_columns,
+            id_column=id_column,
+            chunk_size=chunk_size,
+            limit=limit,
+            write_sharded=write_sharded,
+        )

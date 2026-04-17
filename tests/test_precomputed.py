@@ -11,7 +11,13 @@ import pytest
 from neuroglancer.coordinate_space import CoordinateSpace
 from neuroglancer.viewer_state import AnnotationPropertySpec
 
-from nglui.precomputed import AnnotationDataFrameWriter, PrecomputedAnnotationWriter
+from nglui.precomputed import (
+    BoundingBoxAnnotationWriter,
+    EllipsoidAnnotationWriter,
+    LineAnnotationWriter,
+    PointAnnotationWriter,
+    PrecomputedAnnotationWriter,
+)
 from nglui.precomputed._encoding import (
     build_dtype,
     encode_by_id_entries,
@@ -399,10 +405,10 @@ class TestPrecomputedAnnotationWriter:
 # ── DataFrame Writer Tests ──────────────────────────────────────────
 
 
-class TestAnnotationDataFrameWriter:
+class TestPointAnnotationWriter:
     def test_write_xyz_columns(self, coordinate_space_3d, sample_df):
         with tempfile.TemporaryDirectory() as tmpdir:
-            writer = AnnotationDataFrameWriter(
+            writer = PointAnnotationWriter(
                 coordinate_space=coordinate_space_3d,
                 point_column=["pt_x", "pt_y", "pt_z"],
                 write_sharded=False,
@@ -416,7 +422,7 @@ class TestAnnotationDataFrameWriter:
 
     def test_write_array_column(self, coordinate_space_3d, sample_df_array_col):
         with tempfile.TemporaryDirectory() as tmpdir:
-            writer = AnnotationDataFrameWriter(
+            writer = PointAnnotationWriter(
                 coordinate_space=coordinate_space_3d,
                 point_column="pt_position",
                 write_sharded=False,
@@ -430,7 +436,7 @@ class TestAnnotationDataFrameWriter:
 
     def test_write_with_properties(self, coordinate_space_3d, sample_df):
         with tempfile.TemporaryDirectory() as tmpdir:
-            writer = AnnotationDataFrameWriter(
+            writer = PointAnnotationWriter(
                 coordinate_space=coordinate_space_3d,
                 point_column=["pt_x", "pt_y", "pt_z"],
                 property_columns=["score"],
@@ -445,7 +451,7 @@ class TestAnnotationDataFrameWriter:
 
     def test_write_with_relationships(self, coordinate_space_3d, sample_df):
         with tempfile.TemporaryDirectory() as tmpdir:
-            writer = AnnotationDataFrameWriter(
+            writer = PointAnnotationWriter(
                 coordinate_space=coordinate_space_3d,
                 point_column=["pt_x", "pt_y", "pt_z"],
                 relationship_columns=["segment_id"],
@@ -485,7 +491,7 @@ class TestAnnotationDataFrameWriter:
             tempfile.TemporaryDirectory() as tmp1,
             tempfile.TemporaryDirectory() as tmp2,
         ):
-            w1 = AnnotationDataFrameWriter(
+            w1 = PointAnnotationWriter(
                 coordinate_space=coordinate_space_3d,
                 point_column=["x", "y", "z"],
                 write_sharded=False,
@@ -493,7 +499,7 @@ class TestAnnotationDataFrameWriter:
             )
             w1.write(df_xyz, tmp1)
 
-            w2 = AnnotationDataFrameWriter(
+            w2 = PointAnnotationWriter(
                 coordinate_space=coordinate_space_3d,
                 point_column="pt",
                 write_sharded=False,
@@ -510,14 +516,14 @@ class TestAnnotationDataFrameWriter:
 
     def test_validation_errors(self, coordinate_space_3d):
         with pytest.raises(ValueError, match="point_column"):
-            AnnotationDataFrameWriter(
+            PointAnnotationWriter(
                 coordinate_space=coordinate_space_3d,
             )
 
     def test_write_prefix_expansion(self, coordinate_space_3d, sample_df):
         """Test that point_column='pt' expands to pt_x, pt_y, pt_z."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            writer = AnnotationDataFrameWriter(
+            writer = PointAnnotationWriter(
                 coordinate_space=coordinate_space_3d,
                 point_column="pt",
                 write_sharded=False,
@@ -534,7 +540,7 @@ class TestAnnotationDataFrameWriter:
         df.index = np.arange(len(sample_points), dtype=np.uint64)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            w = AnnotationDataFrameWriter(
+            w = PointAnnotationWriter(
                 coordinate_space=coordinate_space_3d,
                 point_column="pt",
                 write_sharded=False,
@@ -553,6 +559,405 @@ class TestAnnotationDataFrameWriter:
             assert np.all(lb <= data_min + 1e-6)
             # Upper bound should be >= data max
             assert np.all(ub >= data_max - 1e-6)
+
+
+# ── Two-Position DataFrame Fixtures ─────────────────────────────────
+
+
+@pytest.fixture
+def sample_two_point_df():
+    """DataFrame with two sets of xyz columns for line/bbox annotations."""
+    rng = np.random.default_rng(42)
+    n = 50
+    df = pd.DataFrame(
+        {
+            "pt_a_x": rng.uniform(0, 500, size=n).astype(np.float32),
+            "pt_a_y": rng.uniform(0, 500, size=n).astype(np.float32),
+            "pt_a_z": rng.uniform(0, 500, size=n).astype(np.float32),
+            "pt_b_x": rng.uniform(500, 1000, size=n).astype(np.float32),
+            "pt_b_y": rng.uniform(500, 1000, size=n).astype(np.float32),
+            "pt_b_z": rng.uniform(500, 1000, size=n).astype(np.float32),
+            "score": rng.uniform(0, 1, size=n).astype(np.float32),
+            "segment_id": rng.integers(1, 50, size=n).astype(np.uint64),
+        }
+    )
+    df.index = np.arange(n, dtype=np.uint64)
+    return df
+
+
+@pytest.fixture
+def sample_two_point_array_df():
+    """DataFrame with two array columns for line/bbox annotations."""
+    rng = np.random.default_rng(42)
+    n = 50
+    pts_a = rng.uniform(0, 500, size=(n, 3)).astype(np.float32)
+    pts_b = rng.uniform(500, 1000, size=(n, 3)).astype(np.float32)
+    df = pd.DataFrame(
+        {
+            "point_a": list(pts_a),
+            "point_b": list(pts_b),
+        }
+    )
+    df.index = np.arange(n, dtype=np.uint64)
+    return df
+
+
+@pytest.fixture
+def sample_ellipsoid_df():
+    """DataFrame with center and radii columns for ellipsoid annotations."""
+    rng = np.random.default_rng(42)
+    n = 50
+    df = pd.DataFrame(
+        {
+            "center_x": rng.uniform(0, 1000, size=n).astype(np.float32),
+            "center_y": rng.uniform(0, 1000, size=n).astype(np.float32),
+            "center_z": rng.uniform(0, 1000, size=n).astype(np.float32),
+            "radii_x": rng.uniform(1, 50, size=n).astype(np.float32),
+            "radii_y": rng.uniform(1, 50, size=n).astype(np.float32),
+            "radii_z": rng.uniform(1, 50, size=n).astype(np.float32),
+            "score": rng.uniform(0, 1, size=n).astype(np.float32),
+        }
+    )
+    df.index = np.arange(n, dtype=np.uint64)
+    return df
+
+
+# ── Line Annotation Writer Tests ────────────────────────────────────
+
+
+class TestLineAnnotationWriter:
+    def test_write_xyz_columns(self, coordinate_space_3d, sample_two_point_df):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = LineAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                point_a_column=["pt_a_x", "pt_a_y", "pt_a_z"],
+                point_b_column=["pt_b_x", "pt_b_y", "pt_b_z"],
+                write_sharded=False,
+            )
+            writer.write(sample_two_point_df, tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+            assert info["annotation_type"] == "line"
+            assert len(os.listdir(os.path.join(tmpdir, "by_id"))) == 50
+
+    def test_write_prefix_expansion(self, coordinate_space_3d, sample_two_point_df):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = LineAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                point_a_column="pt_a",
+                point_b_column="pt_b",
+                write_sharded=False,
+            )
+            writer.write(sample_two_point_df, tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+            assert info["annotation_type"] == "line"
+            assert len(os.listdir(os.path.join(tmpdir, "by_id"))) == 50
+
+    def test_write_array_columns(self, coordinate_space_3d, sample_two_point_array_df):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = LineAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                point_a_column="point_a",
+                point_b_column="point_b",
+                write_sharded=False,
+            )
+            writer.write(sample_two_point_array_df, tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+            assert info["annotation_type"] == "line"
+            assert len(os.listdir(os.path.join(tmpdir, "by_id"))) == 50
+
+    def test_write_with_properties(self, coordinate_space_3d, sample_two_point_df):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = LineAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                point_a_column="pt_a",
+                point_b_column="pt_b",
+                property_columns=["score"],
+                write_sharded=False,
+            )
+            writer.write(sample_two_point_df, tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+            assert len(info["properties"]) == 1
+            assert info["properties"][0]["id"] == "score"
+
+    def test_write_with_relationships(self, coordinate_space_3d, sample_two_point_df):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = LineAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                point_a_column="pt_a",
+                point_b_column="pt_b",
+                relationship_columns=["segment_id"],
+                write_sharded=False,
+            )
+            writer.write(sample_two_point_df, tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+            assert len(info["relationships"]) == 1
+            assert info["relationships"][0]["id"] == "segment_id"
+
+    def test_validation_errors(self, coordinate_space_3d):
+        with pytest.raises(ValueError, match="point_a_column and point_b_column"):
+            LineAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                point_a_column="pt_a",
+            )
+
+
+# ── Bounding Box Annotation Writer Tests ────────────────────────────
+
+
+class TestBoundingBoxAnnotationWriter:
+    def test_write_xyz_columns(self, coordinate_space_3d, sample_two_point_df):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = BoundingBoxAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                point_a_column=["pt_a_x", "pt_a_y", "pt_a_z"],
+                point_b_column=["pt_b_x", "pt_b_y", "pt_b_z"],
+                write_sharded=False,
+            )
+            writer.write(sample_two_point_df, tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+            assert info["annotation_type"] == "axis_aligned_bounding_box"
+            assert len(os.listdir(os.path.join(tmpdir, "by_id"))) == 50
+
+    def test_write_array_columns(self, coordinate_space_3d, sample_two_point_array_df):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = BoundingBoxAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                point_a_column="point_a",
+                point_b_column="point_b",
+                write_sharded=False,
+            )
+            writer.write(sample_two_point_array_df, tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+            assert info["annotation_type"] == "axis_aligned_bounding_box"
+            assert len(os.listdir(os.path.join(tmpdir, "by_id"))) == 50
+
+    def test_write_with_properties(self, coordinate_space_3d, sample_two_point_df):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = BoundingBoxAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                point_a_column="pt_a",
+                point_b_column="pt_b",
+                property_columns=["score"],
+                write_sharded=False,
+            )
+            writer.write(sample_two_point_df, tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+            assert len(info["properties"]) == 1
+
+    def test_validation_errors(self, coordinate_space_3d):
+        with pytest.raises(ValueError, match="point_a_column and point_b_column"):
+            BoundingBoxAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                point_a_column="pt_a",
+            )
+
+
+# ── Ellipsoid Annotation Writer Tests ───────────────────────────────
+
+
+class TestEllipsoidAnnotationWriter:
+    def test_write_xyz_columns(self, coordinate_space_3d, sample_ellipsoid_df):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = EllipsoidAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                center_column=["center_x", "center_y", "center_z"],
+                radii_column=["radii_x", "radii_y", "radii_z"],
+                write_sharded=False,
+            )
+            writer.write(sample_ellipsoid_df, tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+            assert info["annotation_type"] == "ellipsoid"
+            assert len(os.listdir(os.path.join(tmpdir, "by_id"))) == 50
+
+    def test_write_prefix_expansion(self, coordinate_space_3d, sample_ellipsoid_df):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = EllipsoidAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                center_column="center",
+                radii_column="radii",
+                write_sharded=False,
+            )
+            writer.write(sample_ellipsoid_df, tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+            assert info["annotation_type"] == "ellipsoid"
+            assert len(os.listdir(os.path.join(tmpdir, "by_id"))) == 50
+
+    def test_write_array_columns(self, coordinate_space_3d):
+        rng = np.random.default_rng(42)
+        n = 30
+        centers = rng.uniform(0, 1000, size=(n, 3)).astype(np.float32)
+        radii = rng.uniform(1, 50, size=(n, 3)).astype(np.float32)
+        df = pd.DataFrame({"ctr": list(centers), "rad": list(radii)})
+        df.index = np.arange(n, dtype=np.uint64)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = EllipsoidAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                center_column="ctr",
+                radii_column="rad",
+                write_sharded=False,
+            )
+            writer.write(df, tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+            assert info["annotation_type"] == "ellipsoid"
+            assert len(os.listdir(os.path.join(tmpdir, "by_id"))) == 30
+
+    def test_write_with_properties(self, coordinate_space_3d, sample_ellipsoid_df):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = EllipsoidAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                center_column="center",
+                radii_column="radii",
+                property_columns=["score"],
+                write_sharded=False,
+            )
+            writer.write(sample_ellipsoid_df, tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+            assert len(info["properties"]) == 1
+            assert info["properties"][0]["id"] == "score"
+
+    def test_validation_errors(self, coordinate_space_3d):
+        with pytest.raises(ValueError, match="center_column and radii_column"):
+            EllipsoidAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                center_column="center",
+            )
+
+
+# ── Multi-Cell Spatial Assignment Test ──────────────────────────────
+
+
+class TestTwoPositionSpatialAssignment:
+    @pytest.mark.xfail(
+        reason="Explicit chunk_size creates empty spatial levels when annotation count < limit. "
+        "See: spatial hierarchy needs rework to skip unnecessary finer levels.",
+        strict=True,
+    )
+    def test_line_spans_multiple_spatial_cells(self, coordinate_space_3d):
+        """A line whose endpoints fall in different spatial cells should
+        appear in multiple unsharded spatial cell files."""
+        df = pd.DataFrame(
+            {
+                "pt_a_x": [50.0],
+                "pt_a_y": [50.0],
+                "pt_a_z": [50.0],
+                "pt_b_x": [250.0],
+                "pt_b_y": [250.0],
+                "pt_b_z": [250.0],
+            }
+        )
+        df = df.astype(np.float32)
+        df.index = np.arange(1, dtype=np.uint64)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = LineAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                point_a_column="pt_a",
+                point_b_column="pt_b",
+                chunk_size=100,
+                write_sharded=False,
+            )
+            writer.write(df, tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+
+            assert info["annotation_type"] == "line"
+
+            # Find the finest spatial level (most cells)
+            finest = info["spatial"][-1]
+            finest_dir = os.path.join(tmpdir, finest["key"])
+            cell_files = os.listdir(finest_dir)
+
+            # The annotation should appear in multiple cell files
+            cells_with_data = []
+            for cf in cell_files:
+                fpath = os.path.join(finest_dir, cf)
+                with open(fpath, "rb") as f:
+                    data = f.read()
+                count = struct.unpack_from("<Q", data, 0)[0]
+                if count > 0:
+                    cells_with_data.append(cf)
+
+            assert len(cells_with_data) > 1, (
+                f"Expected annotation in multiple cells, but found in {len(cells_with_data)}: {cells_with_data}"
+            )
+
+    @pytest.mark.xfail(
+        reason="Explicit chunk_size creates empty spatial levels when annotation count < limit. "
+        "See: spatial hierarchy needs rework to skip unnecessary finer levels.",
+        strict=True,
+    )
+    def test_bbox_spans_multiple_spatial_cells(self, coordinate_space_3d):
+        """A bounding box spanning multiple cells should appear in all of them."""
+        df = pd.DataFrame(
+            {
+                "pt_a_x": [50.0],
+                "pt_a_y": [50.0],
+                "pt_a_z": [50.0],
+                "pt_b_x": [250.0],
+                "pt_b_y": [250.0],
+                "pt_b_z": [250.0],
+            }
+        )
+        df = df.astype(np.float32)
+        df.index = np.arange(1, dtype=np.uint64)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = BoundingBoxAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                point_a_column="pt_a",
+                point_b_column="pt_b",
+                chunk_size=100,
+                write_sharded=False,
+            )
+            writer.write(df, tmpdir)
+
+            with open(os.path.join(tmpdir, "info")) as f:
+                info = json.load(f)
+
+            assert info["annotation_type"] == "axis_aligned_bounding_box"
+
+            finest = info["spatial"][-1]
+            finest_dir = os.path.join(tmpdir, finest["key"])
+            cell_files = os.listdir(finest_dir)
+
+            cells_with_data = []
+            for cf in cell_files:
+                fpath = os.path.join(finest_dir, cf)
+                with open(fpath, "rb") as f:
+                    data = f.read()
+                count = struct.unpack_from("<Q", data, 0)[0]
+                if count > 0:
+                    cells_with_data.append(cf)
+
+            assert len(cells_with_data) > 1, (
+                f"Expected annotation in multiple cells, but found in {len(cells_with_data)}: {cells_with_data}"
+            )
 
 
 # ── Source Resolution Tests ─────────────────────────────────────────
@@ -581,7 +986,7 @@ class TestSourceResolution:
     def test_resolution_dataframe_writer(self, sample_df):
         """Test AnnotationDataFrameWriter with resolution= parameter."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            writer = AnnotationDataFrameWriter(
+            writer = PointAnnotationWriter(
                 resolution=[1, 1, 1],
                 point_column=["pt_x", "pt_y", "pt_z"],
                 write_sharded=False,
@@ -693,7 +1098,7 @@ class TestEnumPropertyEncoding:
         sample_df["is_active"] = rng.integers(0, 2, size=len(sample_df)).astype(bool)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            writer = AnnotationDataFrameWriter(
+            writer = PointAnnotationWriter(
                 coordinate_space=coordinate_space_3d,
                 point_column=["pt_x", "pt_y", "pt_z"],
                 property_columns=["is_active"],
@@ -715,10 +1120,12 @@ class TestEnumPropertyEncoding:
         vals = [True, False, None] * (len(sample_df) // 3) + [True] * (
             len(sample_df) % 3
         )
-        sample_df["is_active"] = pd.array(vals[: len(sample_df)], dtype=pd.BooleanDtype())
+        sample_df["is_active"] = pd.array(
+            vals[: len(sample_df)], dtype=pd.BooleanDtype()
+        )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            writer = AnnotationDataFrameWriter(
+            writer = PointAnnotationWriter(
                 coordinate_space=coordinate_space_3d,
                 point_column=["pt_x", "pt_y", "pt_z"],
                 property_columns=["is_active"],
@@ -993,7 +1400,7 @@ class TestMultiscaleWriter:
         df.index = np.arange(n, dtype=np.uint64)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            writer = AnnotationDataFrameWriter(
+            writer = PointAnnotationWriter(
                 coordinate_space=coordinate_space_3d,
                 point_column=["x", "y", "z"],
                 write_sharded=False,
