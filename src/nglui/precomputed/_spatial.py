@@ -7,10 +7,12 @@ coarse-to-fine subsampling (per the neuroglancer spec).
 """
 
 import math
+import warnings
+from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import product
-from typing import NamedTuple, Optional
+from typing import Literal, NamedTuple, Optional
 
 import numpy as np
 
@@ -131,37 +133,6 @@ def compute_chunk_assignments(
                 assignments[cell].append(i)
 
     return {k: np.array(v, dtype=np.intp) for k, v in assignments.items()}
-
-
-def encode_spatial_chunks(
-    fixed_blocks: np.ndarray,
-    ids: np.ndarray,
-    chunk_assignments: dict[tuple[int, ...], np.ndarray],
-) -> dict[tuple[int, ...], bytes]:
-    """Encode annotations into binary spatial index chunks.
-
-    Parameters
-    ----------
-    fixed_blocks : np.ndarray
-        (N,) structured array of all annotations.
-    ids : np.ndarray
-        (N,) uint64 annotation IDs.
-    chunk_assignments : dict[tuple[int, ...], np.ndarray]
-        Maps cell coords to arrays of annotation indices.
-
-    Returns
-    -------
-    dict[tuple[int, ...], bytes]
-        Maps cell coords to encoded binary chunk data.
-    """
-    chunks = {}
-    for cell, indices in chunk_assignments.items():
-        chunk_blocks = fixed_blocks[indices]
-        chunk_ids = ids[indices]
-        # Spec says spatial index should be ordered randomly
-        perm = np.random.permutation(len(chunk_blocks))
-        chunks[cell] = encode_multiple_annotations(chunk_blocks[perm], chunk_ids[perm])
-    return chunks
 
 
 def compressed_morton_code(gridpt, grid_size):
@@ -445,3 +416,375 @@ def encode_multiscale_spatial_chunks(
             chunk_blocks[perm], chunk_ids[perm]
         )
     return chunks
+
+
+# ── Class-based Spatial Hierarchy API ───────────────────────────────
+
+
+class _SpatialHierarchy(ABC):
+    """Base class for spatial index hierarchy computation.
+
+    Implements an sklearn-style fit/assign lifecycle:
+
+    - ``fit(coordinates)`` computes bounds and delegates to
+      ``_build_levels()`` to construct the grid hierarchy.
+    - ``assign(coordinates)`` runs the shared coarse-to-fine
+      probabilistic cascade using fitted parameters.
+    - ``fit_assign(coordinates)`` is a convenience combining both.
+
+    Subclasses override ``_build_levels()`` to define how the
+    multi-level grid hierarchy is constructed.
+
+    Parameters
+    ----------
+    limit : int
+        Target maximum annotations per chunk at each level.
+    lower_bound : np.ndarray, optional
+        Explicit lower bound. If ``None``, computed from data in ``fit()``.
+    upper_bound : np.ndarray, optional
+        Explicit upper bound. If ``None``, computed from data in ``fit()``.
+    bound_padding : float
+        Fractional padding applied to auto-computed bounds (not
+        user-specified). E.g. ``0.05`` pads by 5% of extent.
+    out_of_bounds : ``"error"`` | ``"warn"`` | ``"ignore"``
+        How ``assign()`` handles coordinates outside fitted bounds.
+
+    Attributes (after fit)
+    ----------------------
+    levels_ : list[SpatialLevel]
+        The spatial levels (coarsest first).
+    lower_bound_ : np.ndarray
+        Resolved lower bound.
+    upper_bound_ : np.ndarray
+        Resolved upper bound.
+    """
+
+    def __init__(
+        self,
+        limit: int = 5000,
+        lower_bound: Optional[np.ndarray] = None,
+        upper_bound: Optional[np.ndarray] = None,
+        bound_padding: float = 0.0,
+        out_of_bounds: Literal["error", "warn", "ignore"] = "warn",
+    ) -> None:
+        self.limit = limit
+        self.lower_bound = lower_bound
+        self.upper_bound = upper_bound
+        self.bound_padding = bound_padding
+        self.out_of_bounds = out_of_bounds
+
+        # Fitted attributes (set by fit())
+        self.levels_: Optional[list[SpatialLevel]] = None
+        self.lower_bound_: Optional[np.ndarray] = None
+        self.upper_bound_: Optional[np.ndarray] = None
+
+    def _check_is_fitted(self) -> None:
+        if self.levels_ is None:
+            raise RuntimeError(
+                f"{type(self).__name__} has not been fitted. Call fit() first."
+            )
+
+    def _compute_bounds(self, coordinates: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """Compute or adopt bounds from coordinates.
+
+        Uses user-specified bounds if provided, otherwise computes from
+        data. Applies ``bound_padding`` only to auto-computed bounds.
+        Applies float32 precision adjustment to upper bound.
+        """
+        rank = coordinates.shape[1]
+        geom_size = coordinates.shape[1]
+
+        if geom_size == rank:
+            data_lower = coordinates.min(axis=0)
+            data_upper = coordinates.max(axis=0)
+        else:
+            half = rank
+            coords_a = coordinates[:, :half]
+            coords_b = coordinates[:, half:]
+            data_lower = np.minimum(coords_a, coords_b).min(axis=0)
+            data_upper = np.maximum(coords_a, coords_b).max(axis=0)
+
+        if self.lower_bound is not None:
+            lower = np.asarray(self.lower_bound, dtype=np.float64).copy()
+        else:
+            lower = data_lower.astype(np.float64)
+
+        if self.upper_bound is not None:
+            upper = np.asarray(self.upper_bound, dtype=np.float64).copy()
+        else:
+            upper = data_upper.astype(np.float64)
+
+        # Apply padding only to auto-computed bounds
+        if self.bound_padding > 0:
+            extent = upper - lower
+            extent = np.maximum(extent, 1.0)
+            pad = extent * self.bound_padding
+            if self.lower_bound is None:
+                lower -= pad
+            if self.upper_bound is None:
+                upper += pad
+
+        # Ensure non-zero extent
+        extent = upper - lower
+        extent = np.maximum(extent, 1.0)
+        upper = lower + extent
+
+        # Float32 precision adjustment
+        upper = np.nextafter(upper, np.inf)
+
+        return lower, upper
+
+    def _check_oob(self, coordinates: np.ndarray) -> None:
+        """Check for out-of-bounds coordinates and handle per policy."""
+        rank = self.lower_bound_.shape[0]
+        geom_size = coordinates.shape[1]
+
+        # Extract all coordinate columns for OOB check
+        if geom_size == rank:
+            all_coords = coordinates
+        else:
+            all_coords = np.concatenate(
+                [coordinates[:, :rank], coordinates[:, rank:]], axis=0
+            )
+
+        oob = (all_coords < self.lower_bound_) | (all_coords >= self.upper_bound_)
+        if oob.any():
+            if geom_size == rank:
+                n_oob = oob.any(axis=1).sum()
+            else:
+                # For multi-point: check per-annotation (either point OOB)
+                n_half = len(coordinates)
+                oob_a = oob[:n_half].any(axis=1)
+                oob_b = oob[n_half:].any(axis=1)
+                n_oob = (oob_a | oob_b).sum()
+
+            msg = f"{n_oob} annotation(s) have coordinates outside fitted bounds"
+            if self.out_of_bounds == "error":
+                raise ValueError(msg)
+            elif self.out_of_bounds == "warn":
+                warnings.warn(msg, stacklevel=3)
+
+    def fit(self, coordinates: np.ndarray) -> "_SpatialHierarchy":
+        """Fit the spatial hierarchy to coordinate data.
+
+        Computes bounds (or adopts user-specified ones), then delegates
+        to ``_build_levels()`` to construct the grid hierarchy.
+
+        Parameters
+        ----------
+        coordinates : np.ndarray
+            ``(N, geometry_size)`` float array.
+
+        Returns
+        -------
+        self
+        """
+        self.lower_bound_, self.upper_bound_ = self._compute_bounds(coordinates)
+        self.levels_ = self._build_levels(coordinates)
+        return self
+
+    @abstractmethod
+    def _build_levels(self, coordinates: np.ndarray) -> list[SpatialLevel]:
+        """Build the spatial level hierarchy.
+
+        Called during ``fit()`` after bounds are resolved. Access
+        ``self.lower_bound_``, ``self.upper_bound_``, ``self.limit``,
+        and the raw coordinates to construct levels.
+
+        Parameters
+        ----------
+        coordinates : np.ndarray
+            ``(N, geometry_size)`` float array.
+
+        Returns
+        -------
+        list[SpatialLevel]
+            Levels ordered coarsest-first.
+        """
+        ...
+
+    def assign(
+        self,
+        coordinates: np.ndarray,
+        rng: Optional[np.random.Generator] = None,
+    ) -> MultiscaleAssignment:
+        """Assign annotations to the fitted spatial hierarchy.
+
+        Runs the coarse-to-fine probabilistic cascade using the
+        levels computed during ``fit()``.
+
+        Parameters
+        ----------
+        coordinates : np.ndarray
+            ``(N, geometry_size)`` float array.
+        rng : np.random.Generator, optional
+            Random generator for reproducibility.
+
+        Returns
+        -------
+        MultiscaleAssignment
+        """
+        self._check_is_fitted()
+        self._check_oob(coordinates)
+        return compute_multiscale_assignments(
+            coordinates, self.lower_bound_, self.levels_, rng=rng
+        )
+
+    def fit_assign(
+        self,
+        coordinates: np.ndarray,
+        rng: Optional[np.random.Generator] = None,
+    ) -> MultiscaleAssignment:
+        """Fit the hierarchy and assign in one step.
+
+        Parameters
+        ----------
+        coordinates : np.ndarray
+            ``(N, geometry_size)`` float array.
+        rng : np.random.Generator, optional
+            Random generator for reproducibility.
+
+        Returns
+        -------
+        MultiscaleAssignment
+        """
+        return self.fit(coordinates).assign(coordinates, rng=rng)
+
+
+class _UniformHierarchy(_SpatialHierarchy):
+    """Spatial hierarchy with uniform subdivision across all dimensions.
+
+    Builds the finest grid targeting ``limit`` annotations per cell
+    (assuming uniform distribution), then coarsens by halving all
+    dimensions until ``[1, 1, ..., 1]``.
+
+    Parameters
+    ----------
+    chunk_size : float or array-like, optional
+        Explicit finest-level chunk size. If provided, overrides the
+        auto-computed chunk size.
+    **kwargs
+        Passed to :class:`SpatialHierarchy`.
+    """
+
+    def __init__(
+        self,
+        chunk_size: Optional[np.ndarray | float] = None,
+        **kwargs,
+    ) -> None:
+        super().__init__(**kwargs)
+        self.chunk_size = chunk_size
+
+    def _build_levels(self, coordinates: np.ndarray) -> list[SpatialLevel]:
+        extent = (self.upper_bound_ - self.lower_bound_).astype(np.float64)
+        extent = np.maximum(extent, 1.0)
+        n_annotations = len(coordinates)
+
+        if self.chunk_size is not None:
+            rank = len(extent)
+            if isinstance(self.chunk_size, (int, float)):
+                finest_cs = np.full(rank, float(self.chunk_size))
+            else:
+                finest_cs = np.asarray(self.chunk_size, dtype=np.float64)
+            finest_grid = np.maximum(np.ceil(extent / finest_cs).astype(int), 1)
+            # Snap upper bound to grid
+            self.upper_bound_ = self.lower_bound_ + finest_grid * finest_cs
+            extent = self.upper_bound_ - self.lower_bound_
+        else:
+            finest_chunk = auto_chunk_size(
+                self.lower_bound_, self.upper_bound_, n_annotations, self.limit
+            )
+            finest_grid = np.maximum(np.ceil(extent / finest_chunk).astype(int), 1)
+
+        # Build levels by coarsening from finest → [1,1,...,1]
+        grids: list[np.ndarray] = [finest_grid]
+        while np.any(grids[-1] > 1):
+            coarser = np.maximum(np.ceil(grids[-1] / 2).astype(int), 1)
+            grids.append(coarser)
+
+        # Reverse so coarsest is first (spatial0 = [1,1,...,1])
+        grids.reverse()
+
+        result: list[SpatialLevel] = []
+        for i, grid in enumerate(grids):
+            cs = extent / grid
+            result.append(
+                SpatialLevel(
+                    key=f"spatial{i}",
+                    grid_shape=grid,
+                    chunk_size=cs,
+                    limit=self.limit,
+                )
+            )
+        return result
+
+
+class _IsotropicHierarchy(_SpatialHierarchy):
+    """Spatial hierarchy with isotropy-aware subdivision.
+
+    Builds levels coarse-to-fine per the neuroglancer spec: at each
+    refinement step, each dimension is halved only if doing so produces
+    a more spatially isotropic chunk. Terminates when the expected
+    annotation density per cell is at or below ``limit``.
+
+    Parameters
+    ----------
+    **kwargs
+        Passed to :class:`SpatialHierarchy`.
+    """
+
+    def _build_levels(self, coordinates: np.ndarray) -> list[SpatialLevel]:
+        extent = (self.upper_bound_ - self.lower_bound_).astype(np.float64)
+        extent = np.maximum(extent, 1.0)
+        rank = len(extent)
+        n_annotations = len(coordinates)
+
+        # Start with coarsest level: [1, 1, ..., 1]
+        grid = np.ones(rank, dtype=int)
+        grids: list[np.ndarray] = [grid.copy()]
+
+        # Refine until expected density per cell <= limit
+        while True:
+            n_cells = int(np.prod(grid))
+            expected_per_cell = n_annotations / n_cells
+            if expected_per_cell <= self.limit:
+                break
+
+            # Per the spec: for each dimension, the finer chunk_size
+            # should be equal to or half of the coarser. Halve whichever
+            # results in a more isotropic chunk. Strategy: halve all
+            # dimensions whose chunk_size equals the current maximum
+            # (within tolerance), producing more cubic chunks.
+            chunk_size = extent / grid
+            cs_max = chunk_size.max()
+
+            # Halve dimensions at or near the maximum chunk_size
+            # (within 1% tolerance to handle floating point)
+            candidate = grid.copy()
+            dims_to_halve = chunk_size >= cs_max * 0.99
+            if not dims_to_halve.any():
+                # Fallback: halve the single largest
+                dims_to_halve = np.zeros(rank, dtype=bool)
+                dims_to_halve[np.argmax(chunk_size)] = True
+
+            candidate[dims_to_halve] = grid[dims_to_halve] * 2
+
+            grid = candidate
+            grids.append(grid.copy())
+
+        # Snap upper bound to finest grid
+        finest_grid = grids[-1]
+        self.upper_bound_ = self.lower_bound_ + finest_grid * (extent / finest_grid)
+
+        result: list[SpatialLevel] = []
+        for i, g in enumerate(grids):
+            cs = extent / g
+            result.append(
+                SpatialLevel(
+                    key=f"spatial{i}",
+                    grid_shape=g,
+                    chunk_size=cs,
+                    limit=self.limit,
+                )
+            )
+        return result

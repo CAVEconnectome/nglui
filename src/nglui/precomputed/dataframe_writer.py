@@ -15,6 +15,7 @@ from neuroglancer.coordinate_space import CoordinateSpace
 from ..statebuilder.utils import split_point_columns
 from ._encoding import AnnotationType
 from ._source import resolve_coordinate_space
+from ._spatial import _IsotropicHierarchy, _UniformHierarchy
 from .writer import _PrecomputedAnnotationWriter
 
 # Pre-computed uint type info for enum encoding (sorted smallest to largest)
@@ -191,9 +192,10 @@ class _AnnotationWriter:
     id_column : str, optional
         Column for annotation IDs. If None, uses DataFrame index.
     chunk_size : float or array-like, optional
-        Spatial index chunk size. If None, auto-computed.
+        Spatial index chunk size. If set, uses uniform-grid spatial indexing.
     limit : int
         Target max annotations per spatial chunk (default 5000).
+        Uses isotropic subdivision when ``chunk_size`` is not set.
     write_sharded : bool
         Use sharded writes (default True).
     """
@@ -225,9 +227,15 @@ class _AnnotationWriter:
         self.relationship_columns = relationship_columns or []
         self.id_column = id_column
         self.data_resolution = data_resolution
-        self.chunk_size = chunk_size
-        self.limit = limit
         self.write_sharded = write_sharded
+
+        # Resolve spatial hierarchy from convenience params
+        if chunk_size is not None:
+            self.spatial_hierarchy = _UniformHierarchy(
+                chunk_size=chunk_size, limit=limit
+            )
+        else:
+            self.spatial_hierarchy = _IsotropicHierarchy(limit=limit)
 
     def _extract_one_position(
         self, df: pd.DataFrame, column_spec: Union[str, list[str]]
@@ -327,8 +335,7 @@ class _AnnotationWriter:
             data_resolution=self.data_resolution,
             relationships=rel_names,
             properties=properties,
-            chunk_size=self.chunk_size,
-            limit=self.limit,
+            spatial_hierarchy=self.spatial_hierarchy,
             write_sharded=self.write_sharded,
         )
 
@@ -371,11 +378,27 @@ _COMMON_PARAMS = """\
     id_column : str, optional
         Column for annotation IDs. If None, uses DataFrame index.
     chunk_size : float or array-like, optional
-        Spatial index chunk size. If None, auto-computed.
+        Spatial index chunk size for the finest level of the spatial hierarchy. 
+        If set, uses uniform-grid spatial indexing.
     limit : int
         Target max annotations per spatial chunk (default 5000).
     write_sharded : bool
-        Use sharded writes (default True)."""
+        Use sharded writes (default True).
+        
+    Notes
+    -----
+    We leverage tensorstore for writing to cloud storage. Please see the 
+    [tensorstore documentation](https://google.github.io/tensorstore/kvstore/gcs/index.html#gcs-authentication)
+    for information on setting up authentication for writing to cloud buckets.
+
+    More information about the Neuroglancer precomputed annotation format is available
+    [here](https://github.com/google/neuroglancer/blob/master/src/datasource/precomputed/annotations.md).
+
+    The implementation of the spatial hierarchy used in this implementation currently
+    assumes an approximately uniform distribution of annotations in space when deciding
+    on the structure of the hierarchy. Data-adaptive hierarchy would be a welcome 
+    contribution, though it may be slower to build.
+    """
 
 _COLUMN_SPEC_DOC = """\
         Column(s) for position coordinates. Accepts:
