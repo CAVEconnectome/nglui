@@ -860,7 +860,6 @@ class ViewerState:
         resolution: Optional[Union[list, np.ndarray]] = None,
         tags: Optional[list] = None,
         linked_segmentation: Union[str, bool, dict] = True,
-        relationship_columns: Optional[list] = None,
         shader: str = None,
         **kwargs,
     ) -> Self:
@@ -881,12 +880,6 @@ class ViewerState:
             If True, will link to the first segmentation layer found in the viewer.
             If False, will not link to any segmentation layer.
             If a string is provided, it will be used as the name of the segmentation layer to link to.
-        relationship_columns : list, optional
-            Names of the relationship columns in the precomputed annotation source
-            (i.e. the ``"id"`` values in the ``"relationships"`` array of the info file).
-            When provided, the ``linked_segmentation_layer`` JSON will use these names
-            as keys instead of the default ``"segments"`` key, which is required for
-            neuroglancer to filter annotations by segment ID via named relationships.
         **kwargs : dict, optional
             Additional keyword arguments to pass to the annotation layer constructor.
 
@@ -903,10 +896,6 @@ class ViewerState:
                         break
                 else:
                     linked_segmentation = None
-        if relationship_columns and isinstance(linked_segmentation, str):
-            linked_segmentation = {rel: linked_segmentation for rel in relationship_columns}
-        if relationship_columns and "filter_by_segmentation" not in kwargs:
-            kwargs["filter_by_segmentation"] = True
         if resolution is None:
             resolution = self.dimensions
         anno_layer = AnnotationLayer(
@@ -959,8 +948,7 @@ class ViewerState:
         self,
         source: Union[str, list, Source],
         name: str = "annotation",
-        linked_segmentation: Union[str, bool, dict] = True,
-        relationship_columns: Optional[list] = None,
+        linked_segmentation: Union[str, bool] = True,
         shader: Optional[str] = None,
     ) -> Self:
         """Add a precomputed annotation source to the viewer.
@@ -971,15 +959,6 @@ class ViewerState:
             The source path for the annotation layer.
         name : str, optional
             The name of the annotation layer, by default "annotation".
-        linked_segmentation : Union[str, bool, dict], optional
-            Specifies the linked segmentation layer. Use ``True`` to auto-select,
-            a layer name string, or a relationship mapping dictionary.
-        relationship_columns : list, optional
-            Names of the relationship columns in the precomputed annotation source
-            (the ``"id"`` values in the ``"relationships"`` array of the info file).
-            Required for neuroglancer to filter annotations by segment ID — each
-            name becomes a key in ``linked_segmentation_layer`` pointing to the
-            segmentation layer.  Example: ``["pre_pt_root_id", "post_pt_root_id"]``.
         shader : Optional[str], optional
             The shader to use for the annotation layer, by default None.
 
@@ -992,7 +971,6 @@ class ViewerState:
             source=source,
             name=name,
             linked_segmentation=linked_segmentation,
-            relationship_columns=relationship_columns,
             shader=shader,
         )
         return self
