@@ -185,10 +185,10 @@ class _AnnotationWriter:
         Explicit resolution per axis.
     data_resolution : sequence of float, optional
         Resolution of the input coordinate data for rescaling.
-    property_columns : list of str, optional
-        Column names to include as annotation properties.
-    relationship_columns : list of str, optional
-        Column names to include as annotation relationships.
+    property_columns : str or list of str, optional
+        Column name(s) to include as annotation properties.
+    relationship_columns : str or list of str, optional
+        Column name(s) to include as annotation relationships.
     id_column : str, optional
         Column for annotation IDs. If None, uses DataFrame index.
     chunk_size : float or array-like, optional
@@ -207,8 +207,8 @@ class _AnnotationWriter:
         coordinate_space: Optional[CoordinateSpace] = None,
         resolution: Optional[Sequence[float]] = None,
         data_resolution: Optional[Sequence[float]] = None,
-        property_columns: Optional[list[str]] = None,
-        relationship_columns: Optional[list[str]] = None,
+        property_columns: Optional[Union[str, list[str]]] = None,
+        relationship_columns: Optional[Union[str, list[str]]] = None,
         id_column: Optional[str] = None,
         chunk_size: Optional[Union[float, Sequence[float]]] = None,
         limit: int = 10_000,
@@ -220,8 +220,16 @@ class _AnnotationWriter:
             coordinate_space=coordinate_space,
             resolution=resolution,
         )
-        self.property_columns = property_columns or []
-        self.relationship_columns = relationship_columns or []
+        # Normalize property_columns to always be a list
+        if isinstance(property_columns, str):
+            self.property_columns = [property_columns]
+        else:
+            self.property_columns = property_columns or []
+        # Normalize relationship_columns to always be a list
+        if isinstance(relationship_columns, str):
+            self.relationship_columns = [relationship_columns]
+        else:
+            self.relationship_columns = relationship_columns or []
         self.id_column = id_column
         self.data_resolution = data_resolution
 
@@ -384,10 +392,10 @@ class PointAnnotationWriter(_AnnotationWriter):
         Resolution of the input coordinate data (e.g., ``[4, 4, 40]``).
         If provided, coordinates are rescaled from ``data_resolution``
         into the ``coordinate_space`` resolution before writing.
-    property_columns : list of str, optional
-        Column names to include as annotation properties.
-    relationship_columns : list of str, optional
-        Column names to include as annotation relationships.
+    property_columns : str or list of str, optional
+        Column name(s) to include as annotation properties.
+    relationship_columns : str or list of str, optional
+        Column name(s) to include as annotation relationships.
     id_column : str, optional
         Column for annotation IDs. If None, uses DataFrame index.
     chunk_size : float or array-like, optional
@@ -424,8 +432,8 @@ class PointAnnotationWriter(_AnnotationWriter):
         resolution: Optional[Sequence[float]] = None,
         data_resolution: Optional[Sequence[float]] = None,
         point_column: Optional[Union[str, list[str]]] = None,
-        property_columns: Optional[list[str]] = None,
-        relationship_columns: Optional[list[str]] = None,
+        property_columns: Optional[Union[str, list[str]]] = None,
+        relationship_columns: Optional[Union[str, list[str]]] = None,
         id_column: Optional[str] = None,
         chunk_size: Optional[Union[float, Sequence[float]]] = None,
         limit: int = 10_000,
@@ -490,10 +498,10 @@ class LineAnnotationWriter(_AnnotationWriter):
         Resolution of the input coordinate data (e.g., ``[4, 4, 40]``).
         If provided, coordinates are rescaled from ``data_resolution``
         into the ``coordinate_space`` resolution before writing.
-    property_columns : list of str, optional
-        Column names to include as annotation properties.
-    relationship_columns : list of str, optional
-        Column names to include as annotation relationships.
+    property_columns : str or list of str, optional
+        Column name(s) to include as annotation properties.
+    relationship_columns : str or list of str, optional
+        Column name(s) to include as annotation relationships.
     id_column : str, optional
         Column for annotation IDs. If None, uses DataFrame index.
     chunk_size : float or array-like, optional
@@ -532,7 +540,7 @@ class LineAnnotationWriter(_AnnotationWriter):
         point_a_column: Optional[Union[str, list[str]]] = None,
         point_b_column: Optional[Union[str, list[str]]] = None,
         property_columns: Optional[list[str]] = None,
-        relationship_columns: Optional[list[str]] = None,
+        relationship_columns: Optional[Union[str, list[str]]] = None,
         id_column: Optional[str] = None,
         chunk_size: Optional[Union[float, Sequence[float]]] = None,
         limit: int = 10_000,
@@ -581,7 +589,7 @@ class BoundingBoxAnnotationWriter(_AnnotationWriter):
           ``{prefix}_y``, ``{prefix}_z``
           (e.g., ``"ctr_pt_position"``).
         - An explicit list of three column names for x, y, z
-          (e.g., ``["pt_x", "pt_y", "pt_z"]``).
+          (e.g, ``["pt_x", "pt_y", "pt_z"]``).
     segmentation_source : CAVEclient, CloudVolume, or str, optional
         Source to derive coordinate space from. Accepts a CAVEclient
         (uses its segmentation source), a CloudVolume instance, or a
@@ -600,10 +608,10 @@ class BoundingBoxAnnotationWriter(_AnnotationWriter):
         Resolution of the input coordinate data (e.g., ``[4, 4, 40]``).
         If provided, coordinates are rescaled from ``data_resolution``
         into the ``coordinate_space`` resolution before writing.
-    property_columns : list of str, optional
-        Column names to include as annotation properties.
-    relationship_columns : list of str, optional
-        Column names to include as annotation relationships.
+    property_columns : str or list of str, optional
+        Column name(s) to include as annotation properties.
+    relationship_columns : str or list of str, optional
+        Column name(s) to include as annotation relationships.
     id_column : str, optional
         Column for annotation IDs. If None, uses DataFrame index.
     chunk_size : float or array-like, optional
@@ -642,7 +650,7 @@ class BoundingBoxAnnotationWriter(_AnnotationWriter):
         point_a_column: Optional[Union[str, list[str]]] = None,
         point_b_column: Optional[Union[str, list[str]]] = None,
         property_columns: Optional[list[str]] = None,
-        relationship_columns: Optional[list[str]] = None,
+        relationship_columns: Optional[Union[str, list[str]]] = None,
         id_column: Optional[str] = None,
         chunk_size: Optional[Union[float, Sequence[float]]] = None,
         limit: int = 10_000,
@@ -710,10 +718,10 @@ class EllipsoidAnnotationWriter(_AnnotationWriter):
         Resolution of the input coordinate data (e.g., ``[4, 4, 40]``).
         If provided, coordinates are rescaled from ``data_resolution``
         into the ``coordinate_space`` resolution before writing.
-    property_columns : list of str, optional
-        Column names to include as annotation properties.
-    relationship_columns : list of str, optional
-        Column names to include as annotation relationships.
+    property_columns : str or list of str, optional
+        Column name(s) to include as annotation properties.
+    relationship_columns : str or list of str, optional
+        Column name(s) to include as annotation relationships.
     id_column : str, optional
         Column for annotation IDs. If None, uses DataFrame index.
     chunk_size : float or array-like, optional
@@ -751,8 +759,8 @@ class EllipsoidAnnotationWriter(_AnnotationWriter):
         data_resolution: Optional[Sequence[float]] = None,
         center_column: Optional[Union[str, list[str]]] = None,
         radii_column: Optional[Union[str, list[str]]] = None,
-        property_columns: Optional[list[str]] = None,
-        relationship_columns: Optional[list[str]] = None,
+        property_columns: Optional[Union[str, list[str]]] = None,
+        relationship_columns: Optional[Union[str, list[str]]] = None,
         id_column: Optional[str] = None,
         chunk_size: Optional[Union[float, Sequence[float]]] = None,
         limit: int = 10_000,
