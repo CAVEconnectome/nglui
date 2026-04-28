@@ -403,30 +403,24 @@ class _PrecomputedAnnotationWriter:
             )
 
         # Build spatial hierarchy and compute assignments
-        print("Building spatial levels...")
         hierarchy = self.spatial_hierarchy
         hierarchy.fit(coords)
         levels = hierarchy.levels_
         lower_bound = hierarchy.lower_bound_
         upper_bound = hierarchy.upper_bound_
 
-        print("Computing assignments")
         assignment = hierarchy.assign(coords)
 
-        print("Encoding data")
         # Encode fixed blocks
         fixed_blocks = encode_fixed_blocks(coords, self._properties, self._dtype)
         ids = self._ids
 
-        print("Resolving relationships...")
         # Resolve relationships
         by_id_rels, inverted_rels = self._resolve_relationships(n)
 
-        print("Encoding by_id entries...")
         # Encode by_id entries
         by_id_entries = encode_by_id_entries(fixed_blocks, by_id_rels)
 
-        print("Encoding multi-scale spatial chunks...")
         # Encode multi-scale spatial chunks
         spatial_chunks = encode_multiscale_spatial_chunks(fixed_blocks, ids, assignment)
 
@@ -467,7 +461,6 @@ class _PrecomputedAnnotationWriter:
         )
 
         # Write everything
-        print("Writing data...")
         self._write_output(
             path,
             info,
