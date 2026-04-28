@@ -1,85 +1,94 @@
 [build-system]
-build-backend = "hatchling.build"
 requires = ["hatchling>=1.26.1"]
+build-backend = "hatchling.build"
 
 [project]
+name = "nglui"
+version = "4.7.3"
+description = "Framework for data-driven generation of neuroglancer states."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "attrs>=24.7.3",
+    "caveclient>=7.0.0",
+    "ipython>=8.18.1",
+    "numpy>=1.26.4",
+    "pandas>=2.2.3",
+    "python-box>=7.2.0",
+    "requests>=2.32.3",
+    "six>=1.16.0",
+    "webcolors>=24.11.1",
+    "cachetools>=5.5.2",
+    "palettable>=3.3.3,<4.7.3",
+    "typing-extensions>=4.13.2,<5.0.0 ; python_full_version < '3.11'",
+    "pyperclip>=1.9.0",
+    "neuroglancer>=2.41.2",
+]
 authors = [
     { name = "Casey Schneider-Mizell", email = "caseysm@gmail.com" },
     { name = "Forrest Collman" },
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
     "License :: OSI Approved :: MIT License",
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-dependencies = [
-    "attrs>=24.7.2",
-    "cachetools>=5.5.2",
-    "caveclient>=7.0.0",
-    "ipython>=8.18.1",
-    "neuroglancer>=2.41.2",
-    "numpy>=1.26.4",
-    "palettable>=3.3.3,<4.7.2",
-    "pandas>=2.2.3",
-    "pyperclip>=1.9.0",
-    "python-box>=7.2.0",
-    "requests>=2.32.3",
-    "six>=1.16.0",
-    "typing-extensions>=4.13.2,<5.0.0 ; python_full_version < '3.11'",
-    "webcolors>=24.11.1",
-]
-description = "Framework for data-driven generation of neuroglancer states."
-name = "nglui"
-readme = "README.md"
-requires-python = ">=3.10"
-version = "4.7.2"
 
 [project.urls]
-Changelog = "https://caveconnectome.github.io/nglui/changelog/"
 Homepage = "https://caveconnectome.github.io/nglui/"
-Issues = "https://github.com/CAVEconnectome/nglui/issues"
 Repository = "https://github.com/CAVEconnectome/nglui.git"
+Changelog = "https://caveconnectome.github.io/nglui/changelog/"
+Issues = "https://github.com/CAVEconnectome/nglui/issues"
 
 [project.optional-dependencies]
-full = ["cloud-volume>=12.3.1", "pysimdjson>=7.0.0 ; python_version >= '3.13'"]
-precomputed = ["tensorstore>=0.1.69"]
+full = [
+    "cloud-volume>=12.3.1",
+    "pysimdjson>=7.0.0 ; python_version >= '3.13'",
+]
 
 [dependency-groups]
 dev = [
-    "bump-my-version",
-    "cloud-volume",
-    "ipykernel",
     "pytest",
     "pytest-cov",
     "pytest-mock",
     "responses",
-    "tensorstore>=0.1.69",
+    "ipykernel",
+    "bump-my-version",
+    "cloud-volume",
 ]
-docs = ["mkdocs", "mkdocs-material", "mkdocstrings[python]>=0.29"]
-lint = ["ruff"]
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocstrings[python]>=0.29",
+]
+lint = [
+    "ruff"
+]
 [tool.uv]
 default-groups = ["dev", "docs", "lint"]
 
 [tool.bumpversion]
+current_version = "4.7.3"
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
+serialize = ["{major}.{minor}.{patch}"]
+search = "{current_version}"
+replace = "{new_version}"
+regex = false
+ignore_missing_version = false
+tag = true
+sign_tags = false
+tag_name = "v{new_version}"
+tag_message = "Bump version: {current_version} → {new_version}"
 allow_dirty = false
 commit = true
-commit_args = ""
-current_version = "4.7.2"
-ignore_missing_version = false
 message = "v{new_version}"
-parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
+commit_args = ""
+pre_commit_hooks = ['uv sync', 'git add uv.lock']
 post_commit_hooks = ["./.bmv-post-commit.sh"]
-pre_commit_hooks = ['git add uv.lock', 'uv sync']
-regex = false
-replace = "{new_version}"
-search = "{current_version}"
-serialize = ["{major}.{minor}.{patch}"]
-sign_tags = false
-tag = true
-tag_message = "Bump version: {current_version} → {new_version}"
-tag_name = "v{new_version}"
 
 [[tool.bumpversion.files]]
 filename = "src/nglui/__init__.py"
@@ -91,7 +100,7 @@ filename = "pyproject.toml"
 extend-exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
-select = ["E9", "F63", "F7", "F82"]
+select=["E9","F63","F7","F82"]
 
 [tool.poe.tasks.drybump]
 cmd = "uv run bump-my-version bump --dry-run --verbose"

@@ -225,8 +225,8 @@ def make_connectivity_state_map(
     point_column: str = "ctr_pt_position",
     input_root_id_col: str = "pre_pt_root_id",
     output_root_id_col: str = "post_pt_root_id",
-    dataframe_resolution_input: Optional[list] = None,
-    dataframe_resolution_output: Optional[list] = None,
+    data_resolution_input: Optional[list] = None,
+    data_resolution_output: Optional[list] = None,
     input_layer_name: str = "syns_in",
     output_layer_name: str = "syns_out",
     input_layer_color: Union[tuple, str] = DEFAULT_POSTSYN_COLOR,
@@ -236,6 +236,7 @@ def make_connectivity_state_map(
     selected_alpha: Optional[float] = None,
     alpha_3d: Optional[float] = None,
     mesh_silhouette: Optional[float] = None,
+    **kwargs,
 ) -> ViewerState:
     """Create a Neuroglancer state with input and output synapses.
     Parameters
@@ -280,6 +281,16 @@ def make_connectivity_state_map(
     ViewerState
         A Neuroglancer ViewerState with input and output synapses configured.
     """
+    if "dataframe_resolution_input" in kwargs:
+        data_resolution_input = kwargs["dataframe_resolution_input"]
+        raise DeprecationWarning(
+            "The argument 'dataframe_resolution_input' is deprecated and will be removed in a future version. Please use 'data_resolution_input' instead."
+        )
+    if "dataframe_resolution_output" in kwargs:
+        data_resolution_output = kwargs["dataframe_resolution_output"]
+        raise DeprecationWarning(
+            "The argument 'dataframe_resolution_output' is deprecated and will be removed in a future version. Please use 'data_resolution_output' instead."
+        )
     ngl = ViewerState(infer_coordinates=True).add_layers_from_client(
         client,
         selected_alpha=selected_alpha,
@@ -299,7 +310,7 @@ def make_connectivity_state_map(
                 DataMap("inputs"),
                 point_column=point_column,
                 segment_column=input_root_id_col,
-                dataframe_resolution=dataframe_resolution_input,
+                data_resolution=data_resolution_input,
             )
         )
     if show_outputs:
@@ -315,7 +326,7 @@ def make_connectivity_state_map(
                 DataMap("outputs"),
                 point_column=point_column,
                 segment_column=output_root_id_col,
-                dataframe_resolution=dataframe_resolution_output,
+                data_resolution=data_resolution_output,
             )
         )
     return ngl
