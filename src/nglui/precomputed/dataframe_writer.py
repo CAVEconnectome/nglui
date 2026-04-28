@@ -212,7 +212,6 @@ class _AnnotationWriter:
         id_column: Optional[str] = None,
         chunk_size: Optional[Union[float, Sequence[float]]] = None,
         limit: int = 10_000,
-        write_sharded: bool = True,
     ):
         self.annotation_type = annotation_type
         self._coordinate_columns = coordinate_columns
@@ -225,7 +224,6 @@ class _AnnotationWriter:
         self.relationship_columns = relationship_columns or []
         self.id_column = id_column
         self.data_resolution = data_resolution
-        self.write_sharded = write_sharded
 
         # Resolve spatial hierarchy from convenience params
         rank = self.coordinate_space.rank
@@ -431,7 +429,6 @@ class PointAnnotationWriter(_AnnotationWriter):
         id_column: Optional[str] = None,
         chunk_size: Optional[Union[float, Sequence[float]]] = None,
         limit: int = 10_000,
-        write_sharded: bool = True,
     ):
         if point_column is None:
             raise ValueError("point_column is required.")
@@ -447,7 +444,6 @@ class PointAnnotationWriter(_AnnotationWriter):
             id_column=id_column,
             chunk_size=chunk_size,
             limit=limit,
-            write_sharded=write_sharded,
         )
 
 
@@ -540,7 +536,6 @@ class LineAnnotationWriter(_AnnotationWriter):
         id_column: Optional[str] = None,
         chunk_size: Optional[Union[float, Sequence[float]]] = None,
         limit: int = 10_000,
-        write_sharded: bool = True,
     ):
         if point_a_column is None or point_b_column is None:
             raise ValueError("point_a_column and point_b_column are required.")
@@ -559,7 +554,6 @@ class LineAnnotationWriter(_AnnotationWriter):
             id_column=id_column,
             chunk_size=chunk_size,
             limit=limit,
-            write_sharded=write_sharded,
         )
 
 
@@ -652,7 +646,6 @@ class BoundingBoxAnnotationWriter(_AnnotationWriter):
         id_column: Optional[str] = None,
         chunk_size: Optional[Union[float, Sequence[float]]] = None,
         limit: int = 10_000,
-        write_sharded: bool = True,
     ):
         if point_a_column is None or point_b_column is None:
             raise ValueError("point_a_column and point_b_column are required.")
@@ -671,7 +664,6 @@ class BoundingBoxAnnotationWriter(_AnnotationWriter):
             id_column=id_column,
             chunk_size=chunk_size,
             limit=limit,
-            write_sharded=write_sharded,
         )
 
 
@@ -764,7 +756,6 @@ class EllipsoidAnnotationWriter(_AnnotationWriter):
         id_column: Optional[str] = None,
         chunk_size: Optional[Union[float, Sequence[float]]] = None,
         limit: int = 10_000,
-        write_sharded: bool = True,
     ):
         if center_column is None or radii_column is None:
             raise ValueError("center_column and radii_column are required.")
@@ -780,5 +771,4 @@ class EllipsoidAnnotationWriter(_AnnotationWriter):
             id_column=id_column,
             chunk_size=chunk_size,
             limit=limit,
-            write_sharded=write_sharded,
         )

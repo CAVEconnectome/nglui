@@ -109,8 +109,6 @@ class _PrecomputedAnnotationWriter:
     spatial_hierarchy : SpatialHierarchy, optional
         Spatial hierarchy for computing the multi-level spatial index.
         Defaults to ``IsotropicHierarchy()`` if not provided.
-    write_sharded : bool
-        Whether to use sharded writes (default True).
     """
 
     def __init__(
@@ -124,7 +122,6 @@ class _PrecomputedAnnotationWriter:
         relationships: Sequence[str] = (),
         properties: Sequence[viewer_state.AnnotationPropertySpec] = (),
         spatial_hierarchy: Optional[_SpatialHierarchy] = None,
-        write_sharded: bool = True,
     ):
         self.coordinate_space = resolve_coordinate_space(
             segmentation_source=segmentation_source,
@@ -140,7 +137,6 @@ class _PrecomputedAnnotationWriter:
         self.rank = self.coordinate_space.rank
         self.relationships = list(relationships)
         self.properties = sort_properties(properties)
-        self.write_sharded = write_sharded
         self.spatial_hierarchy = (
             spatial_hierarchy
             if spatial_hierarchy is not None
