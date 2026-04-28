@@ -436,7 +436,7 @@ class _PrecomputedAnnotationWriter:
         by_id_sharding = None
         spatial_shardings: dict[int, ShardSpec] = {}
         relationship_shardings = {}
-        
+
         # Always use sharding when beneficial
         by_id_sharding = choose_output_spec(n, total_ann_bytes)
         for rel_name, inv in inverted_rels.items():

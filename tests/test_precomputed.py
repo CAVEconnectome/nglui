@@ -283,10 +283,10 @@ class TestPrecomputedAnnotationWriter:
             by_id_dir = os.path.join(tmpdir, "by_id")
             assert os.path.isdir(by_id_dir)
             by_id_files = os.listdir(by_id_dir)
-            # Should have at least one file (either individual files or shard files)  
+            # Should have at least one file (either individual files or shard files)
             assert len(by_id_files) >= 1
             # If sharded, should have .shard files; if unsharded, should have numbered files
-            has_shard = any(f.endswith('.shard') for f in by_id_files)
+            has_shard = any(f.endswith(".shard") for f in by_id_files)
             has_individual = any(f.isdigit() for f in by_id_files)
             assert has_shard or has_individual
 
@@ -333,8 +333,8 @@ class TestPrecomputedAnnotationWriter:
             rel_files = os.listdir(rel_dir)
             assert len(rel_files) >= 1
             # Files should exist for the segment relationships
-            has_individual = any(f in ["100", "200"] for f in rel_files) 
-            has_shard = any(f.endswith('.shard') for f in rel_files)
+            has_individual = any(f in ["100", "200"] for f in rel_files)
+            has_shard = any(f.endswith(".shard") for f in rel_files)
             assert has_individual or has_shard
 
     def test_write_points_variable_relationships(self, coordinate_space_3d):
@@ -355,7 +355,7 @@ class TestPrecomputedAnnotationWriter:
             assert len(rel_files) >= 1
             # Files should exist for the segment relationships
             has_individual = any(f in ["100", "200", "300"] for f in rel_files)
-            has_shard = any(f.endswith('.shard') for f in rel_files)
+            has_shard = any(f.endswith(".shard") for f in rel_files)
             assert has_individual or has_shard
 
     def test_per_row_api(self, coordinate_space_3d):
@@ -511,15 +511,18 @@ class TestPointAnnotationWriter:
 
             # Both should produce same metadata and structure
             # Compare info files
-            with open(os.path.join(tmp1, "info")) as f1, open(os.path.join(tmp2, "info")) as f2:
+            with (
+                open(os.path.join(tmp1, "info")) as f1,
+                open(os.path.join(tmp2, "info")) as f2,
+            ):
                 info1 = json.load(f1)
                 info2 = json.load(f2)
                 # Should have same bounds, type, etc. (excluding any randomly generated IDs)
                 assert info1["annotation_type"] == info2["annotation_type"]
-                assert info1["lower_bound"] == info2["lower_bound"] 
+                assert info1["lower_bound"] == info2["lower_bound"]
                 assert info1["upper_bound"] == info2["upper_bound"]
                 assert len(info1["spatial"]) == len(info2["spatial"])
-            
+
             # Both should have same directory structure
             assert os.path.isdir(os.path.join(tmp1, "by_id"))
             assert os.path.isdir(os.path.join(tmp2, "by_id"))
