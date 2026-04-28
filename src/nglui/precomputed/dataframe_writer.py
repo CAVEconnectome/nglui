@@ -422,7 +422,6 @@ class PointAnnotationWriter(_AnnotationWriter):
     def __init__(
         self,
         segmentation_source=None,
-        *,
         coordinate_space: Optional[CoordinateSpace] = None,
         resolution: Optional[Sequence[float]] = None,
         data_resolution: Optional[Sequence[float]] = None,
