@@ -13,7 +13,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-04-14T16:37:54.295001Z"
+exclude-newer = "2026-04-14T16:42:09.693065Z"
 exclude-newer-span = "P14D"
 
 [[package]]
@@ -1790,6 +1790,8 @@ dev = [
     { name = "pytest-cov" },
     { name = "pytest-mock" },
     { name = "responses" },
+    { name = "tensorstore", version = "0.1.78", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "tensorstore", version = "0.1.82", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
 ]
 docs = [
     { name = "mkdocs" },
@@ -1831,6 +1833,7 @@ dev = [
     { name = "pytest-cov" },
     { name = "pytest-mock" },
     { name = "responses" },
+    { name = "tensorstore", specifier = ">=0.1.78" },
 ]
 docs = [
     { name = "mkdocs" },

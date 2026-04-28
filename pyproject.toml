@@ -62,6 +62,7 @@ dev = [
     "ipykernel",
     "bump-my-version",
     "cloud-volume",
+    "tensorstore>=0.1.78",
 ]
 docs = [
     "mkdocs",
