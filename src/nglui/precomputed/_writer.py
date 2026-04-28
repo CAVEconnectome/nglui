@@ -385,7 +385,21 @@ class _PrecomputedAnnotationWriter:
         path : str
             Output path. Can be local filesystem path, or a cloud path
             (gs://, s3://) when using sharded writes with tensorstore.
+
+        Raises
+        ------
+        FileExistsError
+            If the output path already contains a precomputed annotation
+            ``info`` file, indicating a previous (possibly partial) write.
         """
+        ts_base = _to_uri(path)
+        root_store = ts.KvStore.open(f"{ts_base}/").result()
+        if "info" in root_store:
+            raise FileExistsError(
+                f"Output path already contains precomputed annotations: {path}. "
+                "Remove the existing data before writing again."
+            )
+
         coords, n = self._finalize_data()
 
         # Rescale coordinates if data_resolution differs from coordinate_space.

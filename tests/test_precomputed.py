@@ -1703,3 +1703,33 @@ class TestTwoPointBounds:
         for level in h.levels_:
             assert len(level.grid_shape) == 3
             assert len(level.chunk_size) == 3
+
+
+class TestExistenceCheck:
+    """Tests for the pre-write existence check that prevents overwriting."""
+
+    def test_double_write_raises(self, coordinate_space_3d, sample_df):
+        """Writing to a path that already has annotations should raise FileExistsError."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = PointAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                point_column=["pt_x", "pt_y", "pt_z"],
+            )
+            writer.write(sample_df, tmpdir)
+
+            with pytest.raises(FileExistsError, match="already contains"):
+                writer.write(sample_df, tmpdir)
+
+    def test_partial_write_info_only_raises(self, coordinate_space_3d, sample_df):
+        """A path with only an info file (partial write) should still raise."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            info_path = os.path.join(tmpdir, "info")
+            with open(info_path, "w") as f:
+                f.write("{}")
+
+            writer = PointAnnotationWriter(
+                coordinate_space=coordinate_space_3d,
+                point_column=["pt_x", "pt_y", "pt_z"],
+            )
+            with pytest.raises(FileExistsError, match="already contains"):
+                writer.write(sample_df, tmpdir)
