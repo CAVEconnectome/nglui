@@ -436,20 +436,21 @@ class _PrecomputedAnnotationWriter:
         by_id_sharding = None
         spatial_shardings: dict[int, ShardSpec] = {}
         relationship_shardings = {}
-        if self.write_sharded:
-            by_id_sharding = choose_output_spec(n, total_ann_bytes)
-            for rel_name, inv in inverted_rels.items():
-                rel_total = sum(
-                    len(
-                        encode_multiple_annotations(
-                            fixed_blocks[np.array(idx)], ids[np.array(idx)]
-                        )
+        
+        # Always use sharding when beneficial
+        by_id_sharding = choose_output_spec(n, total_ann_bytes)
+        for rel_name, inv in inverted_rels.items():
+            rel_total = sum(
+                len(
+                    encode_multiple_annotations(
+                        fixed_blocks[np.array(idx)], ids[np.array(idx)]
                     )
-                    for idx in inv.values()
                 )
-                rel_shard = choose_output_spec(len(inv), rel_total)
-                if rel_shard is not None:
-                    relationship_shardings[rel_name] = rel_shard
+                for idx in inv.values()
+            )
+            rel_shard = choose_output_spec(len(inv), rel_total)
+            if rel_shard is not None:
+                relationship_shardings[rel_name] = rel_shard
 
         # Build metadata
         info = build_info(
@@ -496,8 +497,8 @@ class _PrecomputedAnnotationWriter:
         """Write annotation data via tensorstore KvStore (local or cloud).
 
         Works for both sharded and unsharded output: ``by_id_sharding`` and
-        entries in ``relationship_shardings`` are ``None`` / absent when
-        ``write_sharded=False``, causing those sections to fall back to plain
+        entries in ``relationship_shardings`` are ``None`` / absent for
+        unsharded writes, causing those sections to fall back to plain
         directory-style KvStore writes.  Tensorstore's ``file://`` driver
         creates parent directories automatically, so no ``os.makedirs`` calls
         are needed here.

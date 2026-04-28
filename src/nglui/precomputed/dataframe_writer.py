@@ -195,8 +195,6 @@ class _AnnotationWriter:
         Spatial index chunk size. If set, uses uniform-grid spatial indexing.
     limit : int
         Target max annotations per spatial chunk.
-    write_sharded : bool
-        Use sharded writes (default True).
     """
 
     def __init__(
@@ -341,7 +339,6 @@ class _AnnotationWriter:
             relationships=rel_names,
             properties=properties,
             spatial_hierarchy=self.spatial_hierarchy,
-            write_sharded=self.write_sharded,
         )
 
         writer.set_coordinates(coords)
@@ -403,8 +400,6 @@ class PointAnnotationWriter(_AnnotationWriter):
         If set, uses uniform-grid spatial indexing.
     limit : int
         Target max annotations per spatial chunk.
-    write_sharded : bool
-        Use sharded writes (default True).
 
     Notes
     -----
@@ -509,8 +504,6 @@ class LineAnnotationWriter(_AnnotationWriter):
         If set, uses uniform-grid spatial indexing.
     limit : int
         Target max annotations per spatial chunk.
-    write_sharded : bool
-        Use sharded writes (default True).
 
     Notes
     -----
@@ -619,8 +612,6 @@ class BoundingBoxAnnotationWriter(_AnnotationWriter):
         If set, uses uniform-grid spatial indexing.
     limit : int
         Target max annotations per spatial chunk.
-    write_sharded : bool
-        Use sharded writes (default True).
 
     Notes
     -----
@@ -729,8 +720,6 @@ class EllipsoidAnnotationWriter(_AnnotationWriter):
         If set, uses uniform-grid spatial indexing.
     limit : int
         Target max annotations per spatial chunk.
-    write_sharded : bool
-        Use sharded writes (default True).
 
     Notes
     -----
