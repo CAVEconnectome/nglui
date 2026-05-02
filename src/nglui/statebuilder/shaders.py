@@ -1709,6 +1709,14 @@ class SkeletonShaderBuilder:
         self._continuous_config: Optional[dict] = None
         self._label_map: Optional[dict[str, int]] = None
 
+        # Multi-rule mode: each entry is a dict
+        # {"attr", "kind", "checkbox_name", **kind-specific opts}
+        # In this mode the build() output is a cascading
+        # if (color_by_a) { ... } else if (color_by_b) { ... } chain
+        # rather than the single-rule blocks. Mutually exclusive with the
+        # single-rule fields above.
+        self._color_rules: list[dict] = []
+
     # ------------------------------------------------------------------
     # Attribute declaration
     # ------------------------------------------------------------------
@@ -1744,6 +1752,29 @@ class SkeletonShaderBuilder:
             )
         return self._attributes[name]
 
+    def _guard_no_color_rules(self, method_name: str) -> None:
+        """Single-rule methods raise if multi-rule mode has been entered."""
+        if self._color_rules:
+            raise ValueError(
+                f"{method_name}() conflicts with add_color_rule(). The two "
+                "build different shader shapes — pick one mode per builder."
+            )
+
+    def _guard_no_single_rule(self, method_name: str) -> None:
+        """add_color_rule() raises if any single-rule method was already used."""
+        single = (
+            self._segment_color
+            or self._desaturate_config is not None
+            or self._categorical_config is not None
+            or self._continuous_config is not None
+        )
+        if single:
+            raise ValueError(
+                f"{method_name}() conflicts with single-rule methods "
+                "(use_segment_color/desaturate/categorical_color/continuous_color). "
+                "Pick one mode per builder."
+            )
+
     # ------------------------------------------------------------------
     # Segment-colour mode
     # ------------------------------------------------------------------
@@ -1755,6 +1786,7 @@ class SkeletonShaderBuilder:
         compartments while keeping the segment colour for the reference
         compartment.
         """
+        self._guard_no_color_rules("use_segment_color")
         self._segment_color = True
         return self
 
@@ -1780,6 +1812,7 @@ class SkeletonShaderBuilder:
             Factor applied to HSL saturation for non-reference vertices.
             0.0 = greyscale, 1.0 = no change. Default is 0.5.
         """
+        self._guard_no_color_rules("desaturate")
         if not self._segment_color:
             raise ValueError(
                 "desaturate() requires use_segment_color() to be called first."
@@ -1849,6 +1882,7 @@ class SkeletonShaderBuilder:
         ValueError
             If called alongside :meth:`continuous_color` or more than once.
         """
+        self._guard_no_color_rules("categorical_color")
         if self._categorical_config is not None:
             raise ValueError("categorical_color() can only be called once.")
         if self._continuous_config is not None:
@@ -1954,6 +1988,7 @@ class SkeletonShaderBuilder:
                 f"Unknown colormap '{colormap}'. "
                 f"Available: {list(self._COLORMAPS.keys())}"
             )
+        self._guard_no_color_rules("continuous_color")
         if self._continuous_config is not None:
             raise ValueError(
                 "continuous_color() can only be called once per "
@@ -2000,6 +2035,138 @@ class SkeletonShaderBuilder:
             )
         return self
 
+    # ------------------------------------------------------------------
+    # Multi-rule mode: pick which attribute drives colour at runtime
+    # ------------------------------------------------------------------
+
+    def add_color_rule(
+        self,
+        attr: str,
+        kind: str,
+        *,
+        # compartment_desaturate kind
+        reference_value: float = 2.0,
+        saturation_scale: float = 0.5,
+        # continuous kind
+        colormap: str = "cubehelix",
+        range_min: float = 0.0,
+        range_max: float = 1.0,
+        range_slider: bool = True,
+    ) -> Self:
+        """Add a runtime-selectable colour rule for one vertex attribute.
+
+        Builders enter "multi-rule" mode the first time this is called.
+        :meth:`build` then emits a per-rule ``color_by_<attr>`` checkbox and
+        a cascading ``if (color_by_a) { ... } else if (color_by_b) { ... }``
+        block in ``main()``. The first checked checkbox wins. The first
+        rule registered defaults to active; the rest start unchecked.
+
+        Multi-rule mode is mutually exclusive with the single-rule methods
+        (:meth:`use_segment_color`, :meth:`desaturate`, :meth:`categorical_color`,
+        :meth:`continuous_color`) — calling either side after the other raises.
+
+        Each rule registers its UI controls under the registry's normal
+        collision-detection rules. Continuous rules add per-attribute
+        ``<attr>_rangeMin`` / ``<attr>_rangeMax`` sliders so multiple
+        continuous rules can coexist without name conflicts.
+
+        Parameters
+        ----------
+        attr : str
+            Declared vertex attribute name (must be in
+            :attr:`_attributes`).
+        kind : {"compartment_desaturate", "continuous"}
+            Visualisation rule:
+
+            - ``"compartment_desaturate"``: emit the segment colour for
+              vertices where ``attr == reference_value``; HSL-desaturate
+              all others by *saturation_scale*. Matches the SWC
+              compartment shader. Each rule of this kind inlines the HSL
+              helpers (once per build).
+            - ``"continuous"``: map the attribute through *colormap*. The
+              ``rangeMin``/``rangeMax`` sliders are qualified with the
+              attribute name so multiple continuous rules can coexist.
+        reference_value, saturation_scale
+            ``compartment_desaturate`` parameters; see :meth:`desaturate`.
+        colormap, range_min, range_max, range_slider
+            ``continuous`` parameters; see :meth:`continuous_color`.
+
+        Raises
+        ------
+        ValueError
+            If a single-rule method was already used, if *attr* is
+            undeclared, if *attr* already has a rule, if *kind* is
+            unrecognised, or if a continuous rule's range is degenerate.
+        """
+        self._guard_no_single_rule("add_color_rule")
+        if kind not in ("compartment_desaturate", "continuous"):
+            raise ValueError(
+                f"add_color_rule() kind must be 'compartment_desaturate' or "
+                f"'continuous'; got {kind!r}."
+            )
+        self._require_attr(attr)
+        if any(r["attr"] == attr for r in self._color_rules):
+            raise ValueError(
+                f"add_color_rule(): attribute {attr!r} already has a colour "
+                "rule on this builder."
+            )
+        if kind == "continuous" and range_min == range_max:
+            raise ValueError(
+                f"add_color_rule(continuous) requires range_min != range_max; "
+                f"got both = {range_min!r}."
+            )
+        if kind == "continuous" and colormap not in self._COLORMAPS:
+            raise ValueError(
+                f"Unknown colormap {colormap!r}. "
+                f"Available: {list(self._COLORMAPS.keys())}"
+            )
+
+        # First rule defaults active so a 1-rule shader behaves like the
+        # single-rule output with one extra checkbox in the UI.
+        is_first = not self._color_rules
+        checkbox_name = f"color_by_{_sanitize_show_suffix(attr)}"
+        self._controls.add_checkbox(checkbox_name, default=is_first)
+
+        rule: dict = {
+            "attr": attr,
+            "kind": kind,
+            "checkbox_name": checkbox_name,
+        }
+        if kind == "compartment_desaturate":
+            rule["reference_value"] = float(reference_value)
+            rule["saturation_scale"] = float(saturation_scale)
+        else:  # continuous
+            rule["glsl_fn"] = self._COLORMAPS[colormap]
+            rule["range_min"] = range_min
+            rule["range_max"] = range_max
+            rule["range_slider"] = range_slider
+            if range_slider:
+                # Qualify slider names with the attr so multiple continuous
+                # rules can coexist.
+                lo_name = f"{attr}_rangeMin"
+                hi_name = f"{attr}_rangeMax"
+                rule["range_min_name"] = lo_name
+                rule["range_max_name"] = hi_name
+                span = abs(range_max - range_min) or 1.0
+                slider_min = range_min - span
+                slider_max = range_max + span
+                self._controls.add_slider(
+                    name=lo_name,
+                    type="float",
+                    min=slider_min,
+                    max=slider_max,
+                    default=range_min,
+                )
+                self._controls.add_slider(
+                    name=hi_name,
+                    type="float",
+                    min=slider_min,
+                    max=slider_max,
+                    default=range_max,
+                )
+        self._color_rules.append(rule)
+        return self
+
     @property
     def label_map(self) -> Optional[dict[str, int]]:
         """String label → integer mapping when string-label categories were used.
@@ -2025,6 +2192,8 @@ class SkeletonShaderBuilder:
             used.add(self._categorical_config["attr"])
         if self._continuous_config:
             used.add(self._continuous_config["attr"])
+        for rule in self._color_rules:
+            used.add(rule["attr"])
         return [
             f"  float {name} = vCustom{self._attributes[name]};"
             for name in self._attributes
@@ -2085,7 +2254,50 @@ class SkeletonShaderBuilder:
         return f"  float t = {t_expr};\n  emitRGB({cfg['glsl_fn']}(t));"
 
     def _needs_hsl(self) -> bool:
-        return self._desaturate_config is not None
+        if self._desaturate_config is not None:
+            return True
+        return any(r["kind"] == "compartment_desaturate" for r in self._color_rules)
+
+    def _color_rules_block(self) -> Optional[str]:
+        """Return the multi-rule cascade GLSL block, or None.
+
+        Emits a chain of ``if (color_by_a) { ... } else if (color_by_b) { ... }``
+        — first checked checkbox wins. The base segment-colour emit (added
+        by :meth:`build`) is the fallback when no checkbox is checked.
+        """
+        if not self._color_rules:
+            return None
+
+        lines: list[str] = []
+        for i, rule in enumerate(self._color_rules):
+            keyword = "if" if i == 0 else "} else if"
+            lines.append(f"  {keyword} ({rule['checkbox_name']}) {{")
+            if rule["kind"] == "compartment_desaturate":
+                ref = _format_float(rule["reference_value"])
+                sat = _format_float(rule["saturation_scale"])
+                attr = rule["attr"]
+                lines.append("    vec4 uColor = segmentColor();")
+                lines.append("    vec3 hsl = rgbToHsl(uColor.rgb);")
+                lines.append(f"    if ({attr} == {ref}) {{")
+                lines.append("      emitRGB(uColor.rgb);")
+                lines.append("    } else {")
+                lines.append(f"      hsl.y *= {sat};")
+                lines.append("      emitRGB(hslToRgb(hsl));")
+                lines.append("    }")
+            else:  # continuous
+                attr = rule["attr"]
+                if rule["range_slider"]:
+                    lo = rule["range_min_name"]
+                    hi = rule["range_max_name"]
+                    t_expr = f"clamp(({attr} - {lo}) / ({hi} - {lo}), 0.0, 1.0)"
+                else:
+                    mn = _format_float(rule["range_min"])
+                    mx = _format_float(rule["range_max"])
+                    t_expr = f"clamp(({attr} - {mn}) / ({mx} - {mn}), 0.0, 1.0)"
+                lines.append(f"    float t = {t_expr};")
+                lines.append(f"    emitRGB({rule['glsl_fn']}(t));")
+        lines.append("  }")
+        return "\n".join(lines)
 
     # ------------------------------------------------------------------
     # Build
@@ -2138,7 +2350,8 @@ class SkeletonShaderBuilder:
             parts.extend(decls)
 
         # Base colour: always emit something first, so vertices that don't
-        # match any categorical/continuous branch have a defined colour.
+        # match any categorical/continuous branch — or that fall through
+        # the multi-rule cascade — have a defined colour.
         seg_block = self._segment_color_block()
         if seg_block:
             parts.append(seg_block)
@@ -2153,6 +2366,10 @@ class SkeletonShaderBuilder:
         if cont_block:
             parts.append(cont_block)
 
+        rules_block = self._color_rules_block()
+        if rules_block:
+            parts.append(rules_block)
+
         parts.append("}")
         shader = "\n".join(parts)
         if to_clipboard:
@@ -2165,6 +2382,320 @@ class SkeletonShaderBuilder:
     def __repr__(self) -> str:
         attrs = list(self._attributes.keys())
         return f"SkeletonShaderBuilder(vertex_attributes={attrs!r})"
+
+    # ------------------------------------------------------------------
+    # Auto-configuration from a skeleton info file
+    # ------------------------------------------------------------------
+
+    # SWC compartment-id convention. Hard-coded because skeleton info
+    # files carry no enum metadata that could tell us this — Neuroglancer's
+    # skeleton schema documents `id` / `data_type` / `num_components` only,
+    # nothing semantic. Exposed as a class attribute so callers building
+    # categorical_color() manually can reach for it without redefining the
+    # mapping. https://swc-specification.readthedocs.io/.
+    SWC_COMPARTMENTS: dict[int, str] = {
+        1: "soma",
+        2: "axon",
+        3: "dendrite",
+        4: "apical_dendrite",
+    }
+
+    _COMPARTMENT_ATTR_NAME = "compartment"
+    _SKELETON_INTEGER_TYPES = frozenset(
+        {"uint8", "uint16", "uint32", "int8", "int16", "int32"}
+    )
+    _SKELETON_FLOAT_TYPES = frozenset({"float32"})
+
+    @classmethod
+    def from_info(
+        cls,
+        info: dict,
+        *,
+        color_attr: Union[str, list[str], None] = None,
+        compartment_reference: float = 2.0,
+        colormap: str = "cubehelix",
+    ) -> Self:
+        """Configure a builder from a precomputed skeleton ``info`` file.
+
+        Reads ``info["vertex_attributes"]`` and produces a builder with each
+        scalar attribute mapped to its ``vCustomN`` index (1-based, in info
+        order). The *color_attr* argument controls how the colour rule is
+        chosen.
+
+        Unlike :meth:`AnnotationShaderBuilder.from_info`, the skeleton info
+        schema carries no enum metadata, so the API is shaped around picking
+        *which* attribute drives colour rather than what the categories are.
+
+        Parameters
+        ----------
+        info : dict
+            Parsed precomputed skeleton info file. Must conform to the
+            ``neuroglancer_skeletons`` schema.
+        color_attr : str, list[str], or "all", optional
+            Selects which attribute(s) drive colour, and which mode the
+            shader is built in:
+
+            - ``None`` (default): auto-pick a single attribute. Prefer a
+              ``"compartment"`` attribute if present, else the first
+              ``float32``, else fall back to :meth:`use_segment_color`.
+            - ``str`` (single attribute name): single-rule shader. The
+              applied rule is chosen from name + ``data_type`` (compartment
+              → SWC desaturate; ``float32`` → continuous colormap; other
+              integer types → warn and fall back to segment colour).
+            - ``list[str]``: multi-rule shader. Each attribute gets its own
+              ``color_by_<attr>`` checkbox; the first checked one wins.
+              The first attribute in the list defaults to active.
+              Attributes that have no supported rule (integer non-compartment)
+              are skipped with a warning.
+            - ``"all"``: shorthand for *every supportable* scalar attribute
+              in info order, in multi-rule mode.
+
+        compartment_reference : float
+            Compartment value rendered with full segment-colour saturation;
+            all other compartments are desaturated. Default ``2.0`` (axon
+            in the SWC convention).
+        colormap : str
+            Colormap for the continuous-colour case. Default
+            ``"cubehelix"``.
+
+        Returns
+        -------
+        SkeletonShaderBuilder
+            Configured (but un-built) builder. Chain further calls before
+            :meth:`build`.
+
+        Notes
+        -----
+        Multi-component vertex attributes (``num_components > 1``) are
+        skipped with a warning — the builder operates on scalar floats
+        only and treats each ``vCustomN`` as a ``float``, not a vector.
+
+        See Also
+        --------
+        auto_skeleton_shader : module-level helper that fetches the info
+            file by URL and returns the built shader string in one call.
+        add_color_rule : the underlying method used to register one rule
+            per attribute when in multi-rule mode.
+        SWC_COMPARTMENTS : SWC compartment-id → label mapping, useful for
+            building :meth:`categorical_color` calls manually.
+        """
+        # Filter to scalar attributes; warn about vector-valued ones we
+        # can't represent as a single GLSL float vCustomN. Keep the dict
+        # of (name → data_type) so we can dispatch on type below.
+        names: list[str] = []
+        types: dict[str, str] = {}
+        for attr in info.get("vertex_attributes") or []:
+            if not isinstance(attr, dict) or "id" not in attr:
+                continue
+            n_components = attr.get("num_components", 1)
+            if n_components != 1:
+                warnings.warn(
+                    f"Skeleton vertex attribute {attr['id']!r} has "
+                    f"num_components={n_components}; SkeletonShaderBuilder "
+                    "only handles scalar attributes — skipping.",
+                    stacklevel=2,
+                )
+                continue
+            name = str(attr["id"])
+            names.append(name)
+            types[name] = str(attr.get("data_type", ""))
+
+        builder = cls(names)
+
+        # ---- Multi-rule mode: list[str] or the "all" sentinel --------
+        if color_attr == "all" or isinstance(color_attr, list):
+            chosen_list = names if color_attr == "all" else list(color_attr)
+            for a in chosen_list:
+                if a not in builder._attributes:
+                    raise ValueError(
+                        f"color_attr entry {a!r} not found among the scalar "
+                        f"vertex attributes in info: {names!r}."
+                    )
+            for a in chosen_list:
+                cls._add_color_rule_for_attr(
+                    builder,
+                    a,
+                    data_type=types.get(a, ""),
+                    compartment_reference=compartment_reference,
+                    colormap=colormap,
+                )
+            # If none of the listed attrs produced a rule (all skipped),
+            # the build will still emit segment colour as the base.
+            return builder
+
+        # ---- Single-rule mode: None or str ---------------------------
+        if color_attr is None:
+            chosen = cls._auto_pick_color_attr(names, types)
+        else:
+            if color_attr not in builder._attributes:
+                raise ValueError(
+                    f"color_attr={color_attr!r} not found among the scalar "
+                    f"vertex attributes in info: {names!r}."
+                )
+            chosen = color_attr
+
+        if chosen is None:
+            builder.use_segment_color()
+            return builder
+
+        cls._apply_color_for_attr(
+            builder,
+            chosen,
+            data_type=types.get(chosen, ""),
+            compartment_reference=compartment_reference,
+            colormap=colormap,
+        )
+        return builder
+
+    @classmethod
+    def _add_color_rule_for_attr(
+        cls,
+        builder: "SkeletonShaderBuilder",
+        attr: str,
+        *,
+        data_type: str,
+        compartment_reference: float,
+        colormap: str,
+    ) -> None:
+        """Register one multi-rule entry for *attr*, picking kind by name/type.
+
+        Integer-typed non-compartment attributes are skipped with a
+        warning — there's no metadata to derive a colour rule from, and
+        a no-op cascade entry would just confuse the UI.
+        """
+        if attr == cls._COMPARTMENT_ATTR_NAME:
+            builder.add_color_rule(
+                attr,
+                kind="compartment_desaturate",
+                reference_value=compartment_reference,
+            )
+            return
+
+        if data_type in cls._SKELETON_FLOAT_TYPES:
+            builder.add_color_rule(attr, kind="continuous", colormap=colormap)
+            return
+
+        if data_type in cls._SKELETON_INTEGER_TYPES:
+            warnings.warn(
+                f"Skeleton attribute {attr!r} has integer type {data_type!r} "
+                "but no enum metadata exists in the skeleton info schema; "
+                "skipping it from the multi-rule cascade.",
+                stacklevel=4,
+            )
+            return
+
+        warnings.warn(
+            f"Skeleton attribute {attr!r} has unrecognised data_type "
+            f"{data_type!r}; skipping it from the multi-rule cascade.",
+            stacklevel=4,
+        )
+
+    @classmethod
+    def _auto_pick_color_attr(
+        cls, names: list[str], types: dict[str, str]
+    ) -> Optional[str]:
+        """Choose a colour-driving attribute from the available scalars.
+
+        Priority: a "compartment"-named attribute first (SWC convention is
+        load-bearing for many neuron datasets), then the first float32 we
+        find, then nothing.
+        """
+        if cls._COMPARTMENT_ATTR_NAME in names:
+            return cls._COMPARTMENT_ATTR_NAME
+        for name in names:
+            if types.get(name) in cls._SKELETON_FLOAT_TYPES:
+                return name
+        return None
+
+    @classmethod
+    def _apply_color_for_attr(
+        cls,
+        builder: "SkeletonShaderBuilder",
+        attr: str,
+        *,
+        data_type: str,
+        compartment_reference: float,
+        colormap: str,
+    ) -> None:
+        """Dispatch the colour rule from the chosen attribute's type/name."""
+        if attr == cls._COMPARTMENT_ATTR_NAME:
+            # SWC desaturate works for either uint or int compartment ids
+            # (the GLSL comparison is a float equality once vCustomN is
+            # loaded as a float).
+            builder.use_segment_color()
+            builder.desaturate(attr=attr, reference_value=compartment_reference)
+            return
+
+        if data_type in cls._SKELETON_FLOAT_TYPES:
+            builder.continuous_color(attr=attr, colormap=colormap)
+            return
+
+        if data_type in cls._SKELETON_INTEGER_TYPES:
+            warnings.warn(
+                f"Skeleton attribute {attr!r} has integer type {data_type!r} "
+                "but no enum metadata exists in the skeleton info schema; "
+                "falling back to segment colour. Call categorical_color() "
+                "explicitly with your own labels.",
+                stacklevel=3,
+            )
+            builder.use_segment_color()
+            return
+
+        warnings.warn(
+            f"Skeleton attribute {attr!r} has unrecognised data_type "
+            f"{data_type!r}; falling back to segment colour.",
+            stacklevel=3,
+        )
+        builder.use_segment_color()
+
+
+# ---------------------------------------------------------------------------
+# auto_skeleton_shader
+# ---------------------------------------------------------------------------
+
+
+def auto_skeleton_shader(
+    info_or_url: Union[dict, str],
+    *,
+    color_attr: Union[str, list[str], None] = None,
+    compartment_reference: float = 2.0,
+    colormap: str = "cubehelix",
+) -> str:
+    """Build a default skeleton shader from an info file or its URL.
+
+    Convenience wrapper around :meth:`SkeletonShaderBuilder.from_info` that
+    also accepts a precomputed skeleton source URL — in which case the
+    info file is fetched via :func:`nglui.parser.info.get_skeleton_info`.
+
+    Parameters
+    ----------
+    info_or_url : dict or str
+        Either a parsed skeleton info dict or a string URL pointing at the
+        precomputed skeleton source (without the trailing ``/info``).
+    color_attr, compartment_reference, colormap
+        See :meth:`SkeletonShaderBuilder.from_info`. ``color_attr`` may be
+        a single attribute name, a list of names, or the sentinel ``"all"``
+        to enable multi-rule mode with one cascade entry per supportable
+        attribute.
+
+    Returns
+    -------
+    str
+        Built GLSL shader code.
+    """
+    if isinstance(info_or_url, str):
+        from ..parser.info import get_skeleton_info
+
+        info = get_skeleton_info(info_or_url)
+    else:
+        info = info_or_url
+
+    return SkeletonShaderBuilder.from_info(
+        info,
+        color_attr=color_attr,
+        compartment_reference=compartment_reference,
+        colormap=colormap,
+    ).build()
 
 
 # ---------------------------------------------------------------------------

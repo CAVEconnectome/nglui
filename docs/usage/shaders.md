@@ -87,7 +87,7 @@ builder = (
 ```
 
 A `palette` argument (any [palettable](https://jiffyclub.github.io/palettable/) colormap name) controls auto-colour assignment when using `list[str]` input.
-The default palette is `CartoCOlors Bold_10`, chosen for visibility on Neuroglancer's black background.
+The default palette is `CartoColors Bold_10`, chosen for visibility on Neuroglancer's black background.
 
 ### Continuous colour
 
@@ -157,6 +157,26 @@ AnnotationShaderBuilder().point_size(size=5.0, slider=True)
 
 # Driven by an annotation property (e.g. synapse volume)
 AnnotationShaderBuilder().point_size(prop="volume", scale=0.0002)
+
+# Property-driven size with an interactive scale slider
+AnnotationShaderBuilder().point_size(
+    prop="volume", scale=0.0002, slider=True, slider_max=0.001
+)
+# → setPointMarkerSize(float(prop_volume()) * pointScale);
+#   #uicontrol float pointScale slider(min=0.0, max=0.001, default=0.0002)
+
+# Property-driven size with Neuroglancer's invlerp control
+# (own range/window UI + histogram, output mapped to [min, max] pixels)
+AnnotationShaderBuilder().point_size(
+    prop="volume",
+    slider=True,
+    slider_mode="invlerp",
+    slider_min=2.0,    # min output pixel size
+    slider_max=30.0,   # max output pixel size
+    invlerp_range=(0.0, 1e6),  # initial property-value range
+)
+# → #uicontrol invlerp pointScale(property="volume", range=[0.0, 1000000.0], clamp=true)
+#   setPointMarkerSize(2.0 + (30.0 - 2.0) * pointScale());
 ```
 
 ### Complete example
@@ -183,6 +203,71 @@ shader = (
 )
 
 layer = AnnotationLayer("synapses", shader=shader)
+```
+
+### Auto-shader from an annotation source
+
+If you are pointing at a precomputed annotation source, its `info` file already
+declares the available properties (their `id`, `type`, and any `enum_values` /
+`enum_labels`). `auto_annotation_shader` consumes that schema and returns a
+sensible default shader without any manual configuration:
+
+```python
+from nglui.statebuilder.shaders import auto_annotation_shader
+
+shader = auto_annotation_shader("https://example.com/my-precomputed-annotations")
+```
+
+You can also pass an already-parsed info dict, or use the lower-level
+`AnnotationShaderBuilder.from_info(info)` if you want to chain additional
+methods before building:
+
+```python
+from nglui.statebuilder.shaders import AnnotationShaderBuilder
+
+shader = (
+    AnnotationShaderBuilder.from_info(info)
+    .border_width(1.0)
+    .build()
+)
+```
+
+The selection rules are: the first integer property with `enum_values` +
+`enum_labels` becomes the categorical color; otherwise the first `float32`
+becomes a continuous colormap. A property named `size` / `radius` / `diameter`
+is wired up to point size with an interactive `pointScale` slider (default
+range `[0, 20]`, default value `1.0`). Pass `color_prop=` or `size_prop=` to
+force a specific property; pass `size_scale=`, `size_slider_min=`,
+`size_slider_max=` to tune the scale slider. `rgb` / `rgba` properties and
+integer properties without enum labels are skipped (with a warning).
+
+For properties with many categories, the per-category `show_<label>`
+visibility checkboxes can clutter the side panel. Pass `show_checkboxes=False`
+to suppress them — the color pickers still update interactively, but
+visibility cannot be toggled per category.
+
+```python
+shader = auto_annotation_shader(info, show_checkboxes=False)
+```
+
+Note on naming: when generated from an info file's `enum_labels`, the
+`#uicontrol vec3 <label>` color names are lowercased to satisfy NG's
+`[a-z][a-zA-Z0-9_]*` rule (e.g. `AltBasket` → `altBasket`), but the
+`show_<label>` checkbox names preserve original casing (e.g.
+`show_AltBasket`) since the `show_` prefix already supplies the required
+leading lowercase letter.
+
+To override colors per-label, pass a `{label: color}` dict as `palette`. The
+keys match the original `enum_labels` (before any GLSL-identifier
+sanitization). Labels missing from the dict get `default_color` (medium gray
+by default):
+
+```python
+shader = auto_annotation_shader(
+    info,
+    palette={"AltBasket": "red", "ChC": "#00ff00", "PV": "orange"},
+    default_color="#444444",  # used for any label not in the dict
+)
 ```
 
 ---
@@ -249,6 +334,23 @@ builder = (
 )
 # builder.label_map == {"axon": 0, "dendrite": 1, "soma": 2}
 ```
+
+For categorical attributes with many categories, pass `with_show_checkboxes=False`
+to suppress the per-label visibility toggles (color pickers still work):
+
+```python
+shader = (
+    SkeletonShaderBuilder(["cell_type"])
+    .categorical_color(attr="cell_type", categories=many_labels,
+                       with_show_checkboxes=False)
+    .build()
+)
+```
+
+Label-name handling matches `AnnotationShaderBuilder`: color control names
+are lowercased to satisfy NG's `[a-z][a-zA-Z0-9_]*` rule (e.g. `AltBasket`
+→ `vec3 altBasket`), while `show_<label>` checkboxes preserve original
+casing (e.g. `show_AltBasket`).
 
 ### Continuous colour
 

@@ -1765,3 +1765,489 @@ class TestFromInfo:
         shader = auto_annotation_shader("https://example.com/anno-source")
         assert captured["url"] == "https://example.com/anno-source"
         assert "#uicontrol vec3 only color" in shader
+
+
+# ---------------------------------------------------------------------------
+# SkeletonShaderBuilder.from_info / auto_skeleton_shader
+# ---------------------------------------------------------------------------
+
+
+class TestSkeletonFromInfo:
+    """Auto-configure a skeleton shader from a Neuroglancer skeleton info dict.
+
+    The skeleton API differs from the annotation API: skeleton info has no
+    enum metadata, so the builder is configured around picking *which*
+    attribute drives colour, with the visualisation rule chosen from that
+    attribute's name and ``data_type``.
+    """
+
+    def _info(self, vertex_attributes):
+        return {
+            "@type": "neuroglancer_skeletons",
+            "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
+            "vertex_attributes": vertex_attributes,
+        }
+
+    # ---- auto-pick ----------------------------------------------------
+
+    def test_auto_pick_compartment_triggers_swc_desaturate(self):
+        from nglui.statebuilder.shaders import SkeletonShaderBuilder
+
+        info = self._info(
+            [{"id": "compartment", "data_type": "uint8", "num_components": 1}]
+        )
+        shader = SkeletonShaderBuilder.from_info(info).build()
+        assert "rgbToHsl" in shader
+        assert "compartment == 2.0" in shader
+        assert "emitRGB(uColor.rgb)" in shader  # axon kept saturated
+
+    def test_auto_pick_float_when_no_compartment(self):
+        from nglui.statebuilder.shaders import SkeletonShaderBuilder
+
+        info = self._info(
+            [{"id": "distance", "data_type": "float32", "num_components": 1}]
+        )
+        shader = SkeletonShaderBuilder.from_info(info).build()
+        assert "colormapCubehelix" in shader
+        assert "float distance = vCustom1;" in shader
+
+    def test_auto_pick_compartment_wins_over_float(self):
+        from nglui.statebuilder.shaders import SkeletonShaderBuilder
+
+        info = self._info(
+            [
+                {"id": "distance", "data_type": "float32", "num_components": 1},
+                {"id": "compartment", "data_type": "uint8", "num_components": 1},
+            ]
+        )
+        shader = SkeletonShaderBuilder.from_info(info).build()
+        # Compartment wins even when float comes first.
+        assert "rgbToHsl" in shader
+        assert "compartment == 2.0" in shader
+        assert "colormapCubehelix" not in shader
+
+    def test_auto_pick_no_attributes_falls_back_to_segment_color(self):
+        from nglui.statebuilder.shaders import SkeletonShaderBuilder
+
+        shader = SkeletonShaderBuilder.from_info(self._info([])).build()
+        assert "emitRGB(segmentColor().rgb);" in shader
+        assert "rgbToHsl" not in shader
+
+    def test_auto_pick_integer_only_falls_back_to_segment_color(self):
+        """Integer attribute that isn't named 'compartment' has no metadata
+        we can use — fall back to segment colour."""
+        from nglui.statebuilder.shaders import SkeletonShaderBuilder
+
+        info = self._info(
+            [{"id": "branch_id", "data_type": "uint16", "num_components": 1}]
+        )
+        shader = SkeletonShaderBuilder.from_info(info).build()
+        assert "emitRGB(segmentColor().rgb);" in shader
+        assert "colormapCubehelix" not in shader
+
+    # ---- explicit color_attr ------------------------------------------
+
+    def test_explicit_color_attr_compartment(self):
+        from nglui.statebuilder.shaders import SkeletonShaderBuilder
+
+        info = self._info(
+            [
+                {"id": "compartment", "data_type": "uint8", "num_components": 1},
+                {"id": "distance", "data_type": "float32", "num_components": 1},
+            ]
+        )
+        shader = SkeletonShaderBuilder.from_info(info, color_attr="compartment").build()
+        assert "rgbToHsl" in shader
+        assert "compartment == 2.0" in shader
+
+    def test_explicit_color_attr_float(self):
+        """Choosing the float attribute forces continuous_color even when a
+        compartment attribute is also present."""
+        from nglui.statebuilder.shaders import SkeletonShaderBuilder
+
+        info = self._info(
+            [
+                {"id": "compartment", "data_type": "uint8", "num_components": 1},
+                {"id": "distance", "data_type": "float32", "num_components": 1},
+            ]
+        )
+        shader = SkeletonShaderBuilder.from_info(info, color_attr="distance").build()
+        assert "colormapCubehelix" in shader
+        assert "float distance = vCustom2;" in shader
+        assert "rgbToHsl" not in shader
+
+    def test_explicit_color_attr_custom_reference_compartment(self):
+        from nglui.statebuilder.shaders import SkeletonShaderBuilder
+
+        info = self._info(
+            [{"id": "compartment", "data_type": "uint8", "num_components": 1}]
+        )
+        shader = SkeletonShaderBuilder.from_info(
+            info, color_attr="compartment", compartment_reference=1.0
+        ).build()
+        assert "compartment == 1.0" in shader
+
+    def test_explicit_color_attr_integer_warns_and_falls_back(self):
+        import warnings
+
+        from nglui.statebuilder.shaders import SkeletonShaderBuilder
+
+        info = self._info(
+            [{"id": "branch_id", "data_type": "uint16", "num_components": 1}]
+        )
+        with warnings.catch_warnings(record=True) as captured:
+            warnings.simplefilter("always")
+            shader = SkeletonShaderBuilder.from_info(
+                info, color_attr="branch_id"
+            ).build()
+        messages = [str(w.message) for w in captured]
+        assert any("branch_id" in m and "no enum metadata" in m for m in messages)
+        assert "emitRGB(segmentColor().rgb);" in shader
+
+    def test_explicit_color_attr_unknown_raises(self):
+        from nglui.statebuilder.shaders import SkeletonShaderBuilder
+
+        info = self._info(
+            [{"id": "compartment", "data_type": "uint8", "num_components": 1}]
+        )
+        with pytest.raises(ValueError, match="not found"):
+            SkeletonShaderBuilder.from_info(info, color_attr="nope")
+
+    # ---- multi-component / indexing ----------------------------------
+
+    def test_multi_component_attribute_is_skipped_with_warning(self):
+        import warnings
+
+        from nglui.statebuilder.shaders import SkeletonShaderBuilder
+
+        info = self._info(
+            [
+                {"id": "compartment", "data_type": "uint8", "num_components": 1},
+                {"id": "orientation", "data_type": "float32", "num_components": 3},
+            ]
+        )
+        with warnings.catch_warnings(record=True) as captured:
+            warnings.simplefilter("always")
+            builder = SkeletonShaderBuilder.from_info(info)
+        messages = [str(w.message) for w in captured]
+        assert any("orientation" in m and "num_components" in m for m in messages)
+        assert "orientation" not in builder._attributes
+        assert "compartment" in builder._attributes
+
+    def test_attribute_index_is_one_based(self):
+        from nglui.statebuilder.shaders import SkeletonShaderBuilder
+
+        info = self._info(
+            [
+                {"id": "first", "data_type": "float32", "num_components": 1},
+                {"id": "second", "data_type": "float32", "num_components": 1},
+            ]
+        )
+        # Pick second explicitly so the GLSL clearly references vCustom2.
+        shader = SkeletonShaderBuilder.from_info(info, color_attr="second").build()
+        assert "float second = vCustom2;" in shader
+
+    # ---- SWC compartment constant ------------------------------------
+
+    def test_swc_compartments_constant(self):
+        """Documented SWC mapping is exposed for callers building a
+        categorical_color() manually with named labels."""
+        from nglui.statebuilder.shaders import SkeletonShaderBuilder
+
+        assert SkeletonShaderBuilder.SWC_COMPARTMENTS == {
+            1: "soma",
+            2: "axon",
+            3: "dendrite",
+            4: "apical_dendrite",
+        }
+
+
+class TestAutoSkeletonShader:
+    def _info(self, vertex_attributes):
+        return {
+            "@type": "neuroglancer_skeletons",
+            "vertex_attributes": vertex_attributes,
+        }
+
+    def test_dict_input(self):
+        from nglui.statebuilder.shaders import auto_skeleton_shader
+
+        info = self._info(
+            [{"id": "compartment", "data_type": "uint8", "num_components": 1}]
+        )
+        shader = auto_skeleton_shader(info)
+        assert "compartment == 2.0" in shader
+
+    def test_url_input_calls_get_skeleton_info(self, monkeypatch):
+        from nglui.parser import info as info_module
+        from nglui.statebuilder.shaders import auto_skeleton_shader
+
+        captured = {}
+        sample_info = self._info(
+            [{"id": "compartment", "data_type": "uint8", "num_components": 1}]
+        )
+
+        def fake_get(url):
+            captured["url"] = url
+            return sample_info
+
+        monkeypatch.setattr(info_module, "get_skeleton_info", fake_get)
+        shader = auto_skeleton_shader("https://example.com/skel-source")
+        assert captured["url"] == "https://example.com/skel-source"
+        assert "compartment == 2.0" in shader
+
+    def test_url_input_forwards_color_attr(self, monkeypatch):
+        from nglui.parser import info as info_module
+        from nglui.statebuilder.shaders import auto_skeleton_shader
+
+        sample_info = self._info(
+            [
+                {"id": "compartment", "data_type": "uint8", "num_components": 1},
+                {"id": "distance", "data_type": "float32", "num_components": 1},
+            ]
+        )
+        monkeypatch.setattr(info_module, "get_skeleton_info", lambda url: sample_info)
+        shader = auto_skeleton_shader(
+            "https://example.com/skel-source", color_attr="distance"
+        )
+        assert "colormapCubehelix" in shader
+        assert "rgbToHsl" not in shader
+
+
+# ---------------------------------------------------------------------------
+# Multi-rule skeleton shader: add_color_rule + cascade emitter
+# ---------------------------------------------------------------------------
+
+
+class TestAddColorRule:
+    """Multi-rule mode: each colour rule is gated by a per-attribute
+    checkbox; the first checked rule wins via an if/else-if cascade."""
+
+    def test_compartment_rule_emits_desaturate_in_cascade(self):
+        b = SkeletonShaderBuilder(["compartment"]).add_color_rule(
+            "compartment", "compartment_desaturate"
+        )
+        code = b.build()
+        assert "#uicontrol bool color_by_compartment checkbox(default=true)" in code
+        assert "if (color_by_compartment) {" in code
+        assert "compartment == 2.0" in code
+        # HSL helpers are inlined when desaturate is in the cascade.
+        assert "rgbToHsl" in code
+
+    def test_continuous_rule_uses_qualified_slider_names(self):
+        b = SkeletonShaderBuilder(["distance"]).add_color_rule(
+            "distance", "continuous", colormap="cubehelix"
+        )
+        code = b.build()
+        assert "#uicontrol float distance_rangeMin slider" in code
+        assert "#uicontrol float distance_rangeMax slider" in code
+        assert "if (color_by_distance) {" in code
+        assert (
+            "(distance - distance_rangeMin) / (distance_rangeMax - distance_rangeMin)"
+            in code
+        )
+
+    def test_two_continuous_rules_dont_collide_on_slider_names(self):
+        """Each continuous rule's range sliders are qualified by attribute,
+        so two of them coexist without registry collision."""
+        b = (
+            SkeletonShaderBuilder(["a", "b"])
+            .add_color_rule("a", "continuous")
+            .add_color_rule("b", "continuous")
+        )
+        code = b.build()
+        for name in ("a_rangeMin", "a_rangeMax", "b_rangeMin", "b_rangeMax"):
+            assert f"#uicontrol float {name} slider" in code
+
+    def test_first_rule_defaults_active_others_inactive(self):
+        b = (
+            SkeletonShaderBuilder(["compartment", "distance"])
+            .add_color_rule("compartment", "compartment_desaturate")
+            .add_color_rule("distance", "continuous")
+        )
+        code = b.build()
+        assert "color_by_compartment checkbox(default=true)" in code
+        assert "color_by_distance checkbox(default=false)" in code
+
+    def test_cascade_uses_else_if_after_first(self):
+        b = (
+            SkeletonShaderBuilder(["compartment", "distance"])
+            .add_color_rule("compartment", "compartment_desaturate")
+            .add_color_rule("distance", "continuous")
+        )
+        code = b.build()
+        # First rule is `if`, second is `} else if`.
+        assert "if (color_by_compartment) {" in code
+        assert "} else if (color_by_distance) {" in code
+
+    def test_base_segment_color_emit_precedes_cascade(self):
+        """The base emitRGB(segmentColor().rgb) must come before the cascade
+        so all-checkboxes-off renders as segment colour."""
+        b = SkeletonShaderBuilder(["compartment"]).add_color_rule(
+            "compartment", "compartment_desaturate"
+        )
+        code = b.build()
+        base_idx = code.index("emitRGB(segmentColor().rgb);")
+        cascade_idx = code.index("if (color_by_compartment) {")
+        assert base_idx < cascade_idx
+
+    def test_unknown_kind_raises(self):
+        b = SkeletonShaderBuilder(["a"])
+        with pytest.raises(ValueError, match="kind must be"):
+            b.add_color_rule("a", "categorical")
+
+    def test_unknown_attribute_raises(self):
+        b = SkeletonShaderBuilder(["a"])
+        with pytest.raises(ValueError, match="not declared"):
+            b.add_color_rule("nope", "continuous")
+
+    def test_duplicate_rule_for_attr_raises(self):
+        b = SkeletonShaderBuilder(["compartment"]).add_color_rule(
+            "compartment", "compartment_desaturate"
+        )
+        with pytest.raises(ValueError, match="already has a colour rule"):
+            b.add_color_rule("compartment", "continuous")
+
+    def test_continuous_rule_zero_range_raises(self):
+        b = SkeletonShaderBuilder(["a"])
+        with pytest.raises(ValueError, match="range_min != range_max"):
+            b.add_color_rule("a", "continuous", range_min=5.0, range_max=5.0)
+
+    def test_continuous_rule_unknown_colormap_raises(self):
+        b = SkeletonShaderBuilder(["a"])
+        with pytest.raises(ValueError, match="Unknown colormap"):
+            b.add_color_rule("a", "continuous", colormap="viridis")
+
+    def test_mutual_exclusion_with_use_segment_color(self):
+        b = SkeletonShaderBuilder(["a"]).add_color_rule("a", "continuous")
+        with pytest.raises(ValueError, match="conflicts with add_color_rule"):
+            b.use_segment_color()
+
+        b2 = SkeletonShaderBuilder(["a"]).use_segment_color()
+        with pytest.raises(ValueError, match="conflicts with single-rule"):
+            b2.add_color_rule("a", "continuous")
+
+    def test_mutual_exclusion_with_categorical(self):
+        b = SkeletonShaderBuilder(["a"]).add_color_rule("a", "continuous")
+        with pytest.raises(ValueError, match="conflicts with add_color_rule"):
+            b.categorical_color(attr="a", categories={1.0: ("x", "red")})
+
+    def test_mutual_exclusion_with_continuous(self):
+        b = SkeletonShaderBuilder(["a", "b"]).add_color_rule("a", "continuous")
+        with pytest.raises(ValueError, match="conflicts with add_color_rule"):
+            b.continuous_color(attr="b")
+
+
+class TestSkeletonFromInfoMultiRule:
+    """from_info() in multi-rule mode: color_attr=list[str] or 'all'."""
+
+    def _info(self, vertex_attributes):
+        return {
+            "@type": "neuroglancer_skeletons",
+            "vertex_attributes": vertex_attributes,
+        }
+
+    def test_list_color_attr_emits_one_rule_per_entry(self):
+        info = self._info(
+            [
+                {"id": "compartment", "data_type": "uint8", "num_components": 1},
+                {"id": "distance", "data_type": "float32", "num_components": 1},
+            ]
+        )
+        code = SkeletonShaderBuilder.from_info(
+            info, color_attr=["compartment", "distance"]
+        ).build()
+        assert "color_by_compartment" in code
+        assert "color_by_distance" in code
+        # Cascade order matches the list.
+        assert code.index("color_by_compartment") < code.index("color_by_distance")
+        # First entry defaults active.
+        assert "color_by_compartment checkbox(default=true)" in code
+        assert "color_by_distance checkbox(default=false)" in code
+
+    def test_list_order_controls_default_active(self):
+        info = self._info(
+            [
+                {"id": "compartment", "data_type": "uint8", "num_components": 1},
+                {"id": "distance", "data_type": "float32", "num_components": 1},
+            ]
+        )
+        # Reverse the list: distance becomes the default-active rule.
+        code = SkeletonShaderBuilder.from_info(
+            info, color_attr=["distance", "compartment"]
+        ).build()
+        assert "color_by_distance checkbox(default=true)" in code
+        assert "color_by_compartment checkbox(default=false)" in code
+
+    def test_all_sentinel_includes_every_supportable_attr(self):
+        info = self._info(
+            [
+                {"id": "compartment", "data_type": "uint8", "num_components": 1},
+                {"id": "distance", "data_type": "float32", "num_components": 1},
+            ]
+        )
+        code = SkeletonShaderBuilder.from_info(info, color_attr="all").build()
+        assert "color_by_compartment" in code
+        assert "color_by_distance" in code
+
+    def test_all_sentinel_skips_integer_non_compartment_with_warning(self):
+        import warnings
+
+        info = self._info(
+            [
+                {"id": "compartment", "data_type": "uint8", "num_components": 1},
+                {"id": "distance", "data_type": "float32", "num_components": 1},
+                {"id": "branch_id", "data_type": "uint16", "num_components": 1},
+            ]
+        )
+        with warnings.catch_warnings(record=True) as captured:
+            warnings.simplefilter("always")
+            code = SkeletonShaderBuilder.from_info(info, color_attr="all").build()
+        messages = [str(w.message) for w in captured]
+        assert any("branch_id" in m and "no enum metadata" in m for m in messages)
+        # No checkbox emitted for the skipped attribute.
+        assert "color_by_branch_id" not in code
+
+    def test_list_with_unknown_attr_raises(self):
+        info = self._info(
+            [{"id": "compartment", "data_type": "uint8", "num_components": 1}]
+        )
+        with pytest.raises(ValueError, match="not found"):
+            SkeletonShaderBuilder.from_info(info, color_attr=["nope"])
+
+    def test_all_with_no_supportable_attrs_falls_back_to_segment_color(self):
+        """If 'all' resolves to zero supportable rules, the build still
+        produces a valid shader (just the base segment-colour emit)."""
+        import warnings
+
+        info = self._info(
+            [{"id": "branch_id", "data_type": "uint16", "num_components": 1}]
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            code = SkeletonShaderBuilder.from_info(info, color_attr="all").build()
+        assert "emitRGB(segmentColor().rgb);" in code
+        # No cascade — no checkboxes.
+        assert "color_by_" not in code
+
+
+class TestAutoSkeletonShaderMultiRule:
+    def test_passthrough_list_color_attr(self, monkeypatch):
+        from nglui.parser import info as info_module
+
+        sample_info = {
+            "@type": "neuroglancer_skeletons",
+            "vertex_attributes": [
+                {"id": "compartment", "data_type": "uint8", "num_components": 1},
+                {"id": "distance", "data_type": "float32", "num_components": 1},
+            ],
+        }
+        monkeypatch.setattr(info_module, "get_skeleton_info", lambda url: sample_info)
+        from nglui.statebuilder.shaders import auto_skeleton_shader
+
+        code = auto_skeleton_shader(
+            "https://example.com/skel-source",
+            color_attr=["distance", "compartment"],
+        )
+        assert "color_by_distance checkbox(default=true)" in code
+        assert "color_by_compartment checkbox(default=false)" in code

@@ -61,9 +61,11 @@ dev = [
     "cloud-volume",
 ]
 docs = [
+    "griffe>=1.7,<2.0",
     "mkdocs",
     "mkdocs-material",
     "mkdocstrings[python]>=0.29",
+    "pymdown-extensions>=10.17",
 ]
 lint = [
     "ruff"
