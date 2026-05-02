@@ -28,6 +28,29 @@ class TestFormatFloat:
         assert _format_float(0.0002) == "0.0002"
         assert _format_float(1.5) == "1.5"
 
+    def test_no_scientific_notation_small(self):
+        """GLSL ES 1.0 rejects scientific-notation literals — repr(1e-7)
+        returns '1e-07' but _format_float must give a fixed-point form."""
+        s = _format_float(1e-7)
+        assert "e" not in s.lower()
+        assert float(s) == 1e-7
+
+    def test_no_scientific_notation_large(self):
+        s = _format_float(1e20)
+        assert "e" not in s.lower()
+        assert float(s) == 1e20
+
+    def test_no_scientific_notation_negative(self):
+        s = _format_float(-1e-9)
+        assert "e" not in s.lower()
+        assert float(s) == -1e-9
+
+    def test_non_finite_raises(self):
+        with pytest.raises(ValueError):
+            _format_float(float("nan"))
+        with pytest.raises(ValueError):
+            _format_float(float("inf"))
+
 
 class TestNormalizeColorStr:
     def test_string_passthrough(self):
@@ -81,9 +104,18 @@ class TestSimplePointShader:
 
 class TestAnnotationShaderBuilderBasic:
     def test_empty_build_produces_minimal_shader(self):
+        """An unconfigured annotation builder must produce a valid default
+        shader that uses the layer's defaultColor()."""
         code = AnnotationShaderBuilder().build()
         assert "void main() {" in code
         assert "setColor(defaultColor());" in code
+
+    def test_empty_build_has_no_leading_blank_line(self):
+        """When no UI controls are declared, no separator blank line should
+        precede void main()."""
+        code = AnnotationShaderBuilder().build()
+        assert not code.startswith("\n")
+        assert code.startswith("void main() {")
 
     def test_build_returns_string(self):
         code = AnnotationShaderBuilder().build()
@@ -111,6 +143,172 @@ class TestOpacity:
     def test_adds_alpha_variable(self):
         code = AnnotationShaderBuilder().opacity().build()
         assert "float alpha = opacity;" in code
+
+    def test_alpha_applied_to_default_color_fallthrough(self):
+        """Regression: opacity must apply to the fallthrough setColor too,
+        otherwise points whose property doesn't match any categorical branch
+        are drawn full-alpha."""
+        code = (
+            AnnotationShaderBuilder()
+            .opacity(default=0.3)
+            .categorical_color(prop="x", categories={0: ("a", "red")})
+            .build()
+        )
+        assert "setColor(vec4(defaultColor().rgb, alpha));" in code
+        # Alpha must be declared before the first setColor that uses it.
+        alpha_idx = code.index("float alpha = opacity;")
+        first_use_idx = code.index("vec4(defaultColor().rgb, alpha)")
+        assert alpha_idx < first_use_idx
+
+    def test_no_alpha_keeps_plain_default_color(self):
+        """When no opacity/highlight is set, the cheap defaultColor() form
+        should still be used."""
+        code = AnnotationShaderBuilder().build()
+        assert "setColor(defaultColor());" in code
+        assert "vec4(defaultColor()" not in code
+
+
+class TestNameCollision:
+    """Across-kind collision detection — NG puts every #uicontrol name into
+    one namespace, so e.g. an opacity slider named 'rangeMin' must conflict
+    with the rangeMin slider that continuous_color creates."""
+
+    def test_opacity_called_twice_raises(self):
+        with pytest.raises(ValueError, match="collides"):
+            AnnotationShaderBuilder().opacity().opacity()
+
+    def test_opacity_named_rangeMin_then_continuous_color_raises(self):
+        with pytest.raises(ValueError, match="collides"):
+            (
+                AnnotationShaderBuilder()
+                .opacity(name="rangeMin")
+                .continuous_color(prop="v")
+            )
+
+    def test_label_sanitisation_collision_raises(self):
+        """Labels 'a-b' and 'a_b' both sanitize to 'a_b'."""
+        with pytest.raises(ValueError, match="duplicate control names"):
+            AnnotationShaderBuilder().categorical_color(
+                prop="x", categories={0: ("a-b", "red"), 1: ("a_b", "blue")}
+            )
+
+    def test_failed_categorical_leaves_builder_usable(self):
+        """A failed categorical_color call must not partially mutate the
+        builder — the user should be able to retry."""
+        b = AnnotationShaderBuilder().opacity()
+        with pytest.raises(ValueError):
+            b.categorical_color(
+                prop="x", categories={0: ("a-b", "red"), 1: ("a_b", "blue")}
+            )
+        # Retry with non-colliding labels — must succeed.
+        b.categorical_color(
+            prop="x", categories={0: ("foo", "red"), 1: ("bar", "blue")}
+        )
+        code = b.build()
+        assert "#uicontrol vec3 foo" in code
+        assert "#uicontrol vec3 bar" in code
+
+    def test_skeleton_label_sanitisation_collision_raises(self):
+        with pytest.raises(ValueError, match="duplicate control names"):
+            SkeletonShaderBuilder(["c"]).categorical_color(
+                attr="c",
+                categories={0.0: ("a-b", "red"), 1.0: ("a_b", "blue")},
+            )
+
+
+class TestInputValidation:
+    """Bug-fix regression tests for #7-#11."""
+
+    def test_categorical_dict_value_must_be_two_tuple(self):
+        with pytest.raises(ValueError, match="2-tuple"):
+            AnnotationShaderBuilder().categorical_color(
+                prop="x", categories={0: ("a", "red", "extra")}
+            )
+
+    def test_categorical_dict_value_not_a_tuple(self):
+        with pytest.raises(ValueError, match="2-tuple"):
+            AnnotationShaderBuilder().categorical_color(
+                prop="x",
+                categories={0: "red"},  # missing label
+            )
+
+    def test_categorical_list_entry_must_be_three_tuple(self):
+        with pytest.raises(ValueError, match="3-tuple"):
+            AnnotationShaderBuilder().categorical_color(
+                prop="x", categories=[(0, "label_only")]
+            )
+
+    def test_categorical_negative_value_raises(self):
+        with pytest.raises(ValueError, match="non-negative"):
+            AnnotationShaderBuilder().categorical_color(
+                prop="x", categories={-1: ("a", "red")}
+            )
+
+    def test_highlight_negative_value_raises(self):
+        with pytest.raises(ValueError, match="non-negative"):
+            AnnotationShaderBuilder().highlight(prop="sel", value=-1)
+
+    def test_continuous_color_zero_width_range_raises(self):
+        with pytest.raises(ValueError, match="range_min != range_max"):
+            AnnotationShaderBuilder().continuous_color(
+                prop="x", range_min=5.0, range_max=5.0
+            )
+
+    def test_skeleton_continuous_color_zero_width_range_raises(self):
+        with pytest.raises(ValueError, match="range_min != range_max"):
+            SkeletonShaderBuilder(["d"]).continuous_color(
+                attr="d", range_min=0.0, range_max=0.0
+            )
+
+    def test_skeleton_categorical_dict_value_must_be_two_tuple(self):
+        with pytest.raises(ValueError, match="2-tuple"):
+            SkeletonShaderBuilder(["c"]).categorical_color(
+                attr="c", categories={1.0: ("a", "red", "extra")}
+            )
+
+    def test_skeleton_vertex_attribute_index_zero_raises(self):
+        with pytest.raises(ValueError, match=">= 1"):
+            SkeletonShaderBuilder().vertex_attribute("x", 0)
+
+    def test_skeleton_vertex_attribute_negative_index_raises(self):
+        with pytest.raises(ValueError, match=">= 1"):
+            SkeletonShaderBuilder().vertex_attribute("x", -1)
+
+    def test_skeleton_categorical_negative_value_allowed(self):
+        """Skeleton attrs are floats; negative values are valid (unlike for
+        annotations which compare against uint)."""
+        code = (
+            SkeletonShaderBuilder(["c"])
+            .categorical_color(attr="c", categories={-1.0: ("a", "red")})
+            .build()
+        )
+        assert "c == -1.0" in code
+
+    def test_continuous_color_call_once(self):
+        with pytest.raises(ValueError, match="only be called once"):
+            (
+                AnnotationShaderBuilder()
+                .continuous_color(prop="a")
+                .continuous_color(prop="b")
+            )
+
+    def test_continuous_color_call_once_even_without_sliders(self):
+        """range_slider=False registers no sliders, so this case slips past
+        the slider name-collision check — must be guarded explicitly."""
+        with pytest.raises(ValueError, match="only be called once"):
+            (
+                AnnotationShaderBuilder()
+                .continuous_color(prop="a", range_slider=False)
+                .continuous_color(prop="b", range_slider=False)
+            )
+
+    def test_skeleton_continuous_color_call_once(self):
+        with pytest.raises(ValueError, match="only be called once"):
+            (
+                SkeletonShaderBuilder(["a", "b"])
+                .continuous_color(attr="a")
+                .continuous_color(attr="b")
+            )
 
     def test_custom_name(self):
         code = AnnotationShaderBuilder().opacity(name="transp").build()
@@ -337,6 +535,14 @@ class TestBorderWidth:
 
 
 class TestCategoricalColor:
+    def test_empty_dict_raises(self):
+        with pytest.raises(ValueError, match="non-empty"):
+            AnnotationShaderBuilder().categorical_color(prop="x", categories={})
+
+    def test_empty_list_raises(self):
+        with pytest.raises(ValueError, match="non-empty"):
+            AnnotationShaderBuilder().categorical_color(prop="x", categories=[])
+
     def test_dict_input(self):
         code = (
             AnnotationShaderBuilder()
@@ -509,9 +715,20 @@ class TestCategoricalColor:
 
 
 class TestSkeletonShaderBuilderBasic:
-    def test_empty_build(self):
+    def test_empty_build_emits_segment_color_default(self):
+        """An unconfigured skeleton builder must still produce a valid shader
+        that emits a colour, otherwise Neuroglancer renders nothing."""
         code = SkeletonShaderBuilder().build()
         assert "void main() {" in code
+        assert "emitRGB(segmentColor().rgb);" in code
+
+    def test_empty_build_with_attrs_still_defaults_to_segment_color(self):
+        """Declaring vertex attributes alone is not a colour rule — the
+        fallback default still applies."""
+        code = SkeletonShaderBuilder(["compartment"]).build()
+        assert "emitRGB(segmentColor().rgb);" in code
+        # No attribute decls should be emitted since nothing references them.
+        assert "vCustom" not in code
 
     def test_repr(self):
         b = SkeletonShaderBuilder(["compartment"])
@@ -591,6 +808,35 @@ class TestSkeletonSegmentColor:
 
 
 class TestSkeletonCategoricalColor:
+    def test_empty_dict_raises(self):
+        with pytest.raises(ValueError, match="non-empty"):
+            SkeletonShaderBuilder(["c"]).categorical_color(attr="c", categories={})
+
+    def test_empty_list_raises(self):
+        with pytest.raises(ValueError, match="non-empty"):
+            SkeletonShaderBuilder(["c"]).categorical_color(attr="c", categories=[])
+
+    def test_categorical_emits_segment_color_fallback(self):
+        """Regression: vertices that don't match any category must still
+        receive a defined colour. Without the base emit, GLSL output is
+        undefined."""
+        code = (
+            SkeletonShaderBuilder(["c"])
+            .categorical_color(attr="c", categories={1.0: ("a", "red")})
+            .build()
+        )
+        # Base emit must come before the if/else chain.
+        base_idx = code.index("emitRGB(segmentColor().rgb);")
+        cat_idx = code.index("if (c == 1.0)")
+        assert base_idx < cat_idx
+
+    def test_continuous_emits_segment_color_fallback(self):
+        """Continuous colormaps clamp to [0,1] so all vertices receive a
+        colour, but the base emit before the colormap is still required so
+        output is defined when range_min == range_max etc."""
+        code = SkeletonShaderBuilder(["d"]).continuous_color(attr="d").build()
+        assert "emitRGB(segmentColor().rgb);" in code
+
     def test_generates_color_controls(self):
         code = (
             SkeletonShaderBuilder(["c"])
@@ -656,6 +902,46 @@ class TestSkeletonCategoricalColor:
                 .categorical_color(attr="c", categories={1.0: ("a", "red")})
                 .continuous_color(attr="c")
             )
+
+    def test_with_show_checkboxes_false_omits_checkbox_controls(self):
+        code = (
+            SkeletonShaderBuilder(["c"])
+            .categorical_color(
+                attr="c",
+                categories={1.0: ("axon", "white"), 2.0: ("dendrite", "cyan")},
+                with_show_checkboxes=False,
+            )
+            .build()
+        )
+        assert "#uicontrol bool show_" not in code
+        assert "discard" not in code
+        # Colors and dispatch still emitted.
+        assert "#uicontrol vec3 axon color" in code
+        assert "#uicontrol vec3 dendrite color" in code
+        assert "emitRGB(axon);" in code
+
+    def test_uppercase_label_sanitized_for_color_preserved_for_show(self):
+        code = (
+            SkeletonShaderBuilder(["c"])
+            .categorical_color(attr="c", categories={1.0: ("PV", "red")})
+            .build()
+        )
+        # color id is lowercased-first, show id preserves casing.
+        assert "#uicontrol vec3 pV color" in code
+        assert "#uicontrol bool show_PV checkbox" in code
+        assert "if (!show_PV) { discard; }" in code
+        assert "emitRGB(pV);" in code
+
+    def test_special_chars_sanitized(self):
+        code = (
+            SkeletonShaderBuilder(["c"])
+            .categorical_color(attr="c", categories={1.0: ("L2/3-int", "red")})
+            .build()
+        )
+        # color id: lowercase-first + non-alnum→_
+        assert "#uicontrol vec3 l2_3_int color" in code
+        # show id: original casing + non-alnum→_
+        assert "#uicontrol bool show_L2_3_int checkbox" in code
 
 
 class TestSkeletonContinuousColor:
@@ -1046,7 +1332,7 @@ class TestFromInfo:
         assert "#uicontrol vec3 a color" in shader
         assert "#uicontrol vec3 b color" in shader
 
-    def test_size_property_picked_by_name(self):
+    def test_size_property_picked_by_name_default_invlerp(self):
         info = self._info(
             [
                 {"id": "score", "type": "float32"},
@@ -1054,50 +1340,71 @@ class TestFromInfo:
             ]
         )
         shader = auto_annotation_shader(info)
-        # Property-driven size with an interactive scale slider.
+        # Default size_slider_mode is invlerp.
+        assert '#uicontrol invlerp pointScale(property="radius"' in shader
+        assert "pointScale()" in shader
+
+    def test_size_property_picked_by_name_linear_mode(self):
+        info = self._info(
+            [
+                {"id": "score", "type": "float32"},
+                {"id": "radius", "type": "float32"},
+            ]
+        )
+        shader = auto_annotation_shader(info, size_slider_mode="linear")
         assert "setPointMarkerSize(float(prop_radius())*pointScale);" in shader
         assert "#uicontrol float pointScale slider" in shader
 
-    def test_explicit_size_prop(self):
+    def test_explicit_size_prop_linear(self):
         info = self._info(
             [
                 {"id": "score", "type": "float32"},
                 {"id": "weight", "type": "float32"},
             ]
         )
-        shader = auto_annotation_shader(info, size_prop="weight")
+        shader = auto_annotation_shader(
+            info, size_prop="weight", size_slider_mode="linear"
+        )
         assert "setPointMarkerSize(float(prop_weight())*pointScale);" in shader
 
-    def test_size_scale_slider_defaults(self):
+    def test_size_scale_slider_defaults_linear(self):
         info = self._info([{"id": "size", "type": "float32"}])
-        shader = auto_annotation_shader(info)
-        # Default slider: range [0, 20], default 1.0
+        shader = auto_annotation_shader(info, size_slider_mode="linear")
+        # Linear default slider: range [0, 20], default 1.0
         assert (
             "#uicontrol float pointScale slider(min=0.0, max=20.0, default=1.0)"
             in shader
         )
 
-    def test_size_slider_narrow_range_auto_picks_midpoint(self):
+    def test_size_slider_narrow_range_auto_picks_midpoint_linear(self):
         """When size_scale isn't passed and 1.0 is outside the slider range,
-        the default auto-picks the midpoint."""
+        the default auto-picks the midpoint (linear mode)."""
         info = self._info([{"id": "size", "type": "float32"}])
-        shader = auto_annotation_shader(info, size_slider_max=0.001)
+        shader = auto_annotation_shader(
+            info, size_slider_mode="linear", size_slider_max=0.001
+        )
         # Midpoint of [0.0, 0.001] = 0.0005
         assert (
             "#uicontrol float pointScale slider(min=0.0, max=0.001, default=0.0005)"
             in shader
         )
 
-    def test_explicit_size_scale_outside_range_still_raises(self):
+    def test_explicit_size_scale_outside_range_still_raises_linear(self):
         """An explicitly-passed size_scale must satisfy the slider range."""
         info = self._info([{"id": "size", "type": "float32"}])
         with pytest.raises(ValueError, match="default .* outside"):
-            auto_annotation_shader(info, size_scale=5.0, size_slider_max=1.0)
+            auto_annotation_shader(
+                info,
+                size_slider_mode="linear",
+                size_scale=5.0,
+                size_slider_max=1.0,
+            )
 
-    def test_size_scale_slider_custom_range(self):
+    def test_size_scale_slider_custom_range_linear(self):
         info = self._info([{"id": "size", "type": "float32"}])
         shader = auto_annotation_shader(
             info,
+            size_slider_mode="linear",
             size_scale=0.0002,
             size_slider_min=0.0,
             size_slider_max=0.001,

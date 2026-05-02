@@ -53,10 +53,27 @@ def _normalize_color_str(color: Union[str, tuple, list]) -> str:
 
 
 def _format_float(f: float) -> str:
-    """Format a float for GLSL: no scientific notation, always has a decimal point."""
+    """Format a float for GLSL: no scientific notation, always has a decimal point.
+
+    GLSL ES 1.0 (used by WebGL 1) does not accept scientific notation in
+    float literals, and even strict GLSL ES 3.0 parsers in some browsers
+    reject it. ``str(1e-7)`` would normally return ``'1e-07'``, so we
+    explicitly avoid that.
+    """
+    import math
+
+    if not math.isfinite(f):
+        raise ValueError(f"Cannot format non-finite float {f!r} as a GLSL literal.")
     if f == int(f):
         return f"{int(f)}.0"
-    return str(f)
+    s = repr(f)
+    if "e" not in s and "E" not in s:
+        return s
+    # Fall back to a wide fixed-point representation, then trim padding zeros.
+    s = f"{f:.20f}".rstrip("0")
+    if s.endswith("."):
+        s += "0"
+    return s
 
 
 def _palette_colors(n: int, palette: Optional[str] = None) -> list[str]:
@@ -325,6 +342,12 @@ class AnnotationShaderBuilder:
         self._invlerp_configs: list[dict] = []  # invlerp control dicts
         self._checkbox_configs: list[tuple[str, bool]] = []  # [(name, default)]
 
+        # Tracks every #uicontrol identifier the builder has emitted. NG's
+        # shader parser puts all control kinds (slider, color, checkbox,
+        # invlerp) into a single namespace, so we have to detect collisions
+        # across kinds — not just within kind.
+        self._used_names: set[str] = set()
+
         # Main body configuration
         self._point_size_config: Optional[dict] = None
         self._border_width: Optional[float] = None
@@ -337,6 +360,22 @@ class AnnotationShaderBuilder:
 
         # Continuous colormap configuration
         self._continuous_config: Optional[dict] = None
+
+    def _claim_name(self, name: str, *, kind: str) -> None:
+        """Register a control identifier or raise if it's already in use.
+
+        *kind* is purely for the error message ("slider", "color", etc).
+        """
+        if name in self._used_names:
+            raise ValueError(
+                f"Control name {name!r} ({kind}) collides with an existing "
+                "#uicontrol declaration on this builder."
+            )
+        self._used_names.add(name)
+
+    def _release_name(self, name: str) -> None:
+        """Drop a name from the used-set (for replace-style methods)."""
+        self._used_names.discard(name)
 
     # ------------------------------------------------------------------
     # Fluent configuration methods
@@ -388,13 +427,23 @@ class AnnotationShaderBuilder:
         prop : str
             Annotation property name (accessed as ``prop_<prop>()`` in GLSL).
         value : int
-            Property value that triggers the highlight.
+            Property value that triggers the highlight. Must be non-negative
+            because annotation properties are compared as ``uint`` in the
+            generated GLSL.
         highlighted_alpha : float
             Alpha assigned to highlighted points. Default is 1.0.
         """
+        ivalue = int(value)
+        if ivalue < 0:
+            raise ValueError(
+                f"highlight() value must be non-negative; got {value!r}. "
+                "Annotation properties are compared as GLSL uint, where "
+                "negative literals wrap to large positive numbers and won't "
+                "match what you expect."
+            )
         self._highlight_config = {
             "prop": prop,
-            "value": int(value),
+            "value": ivalue,
             "highlighted_alpha": float(highlighted_alpha),
         }
         return self
@@ -493,6 +542,8 @@ class AnnotationShaderBuilder:
             self._invlerp_configs = [
                 s for s in self._invlerp_configs if s.get("name") != prev_name
             ]
+            if prev_name is not None:
+                self._release_name(prev_name)
 
         self._point_size_config = {
             "size": size,
@@ -506,6 +557,7 @@ class AnnotationShaderBuilder:
         }
         if slider:
             if slider_mode == "invlerp":
+                self._claim_name(slider_name, kind="invlerp")
                 self._invlerp_configs.append(
                     {
                         "name": slider_name,
@@ -590,10 +642,22 @@ class AnnotationShaderBuilder:
                 f"Unknown colormap '{colormap}'. "
                 f"Available: {list(self._COLORMAPS.keys())}"
             )
+        if self._continuous_config is not None:
+            raise ValueError(
+                "continuous_color() can only be called once per "
+                "AnnotationShaderBuilder. Create a new builder for a "
+                "different continuous-color rule."
+            )
         if self._categorical_config is not None:
             raise ValueError(
                 "continuous_color() and categorical_color() cannot both be set "
                 "on the same AnnotationShaderBuilder."
+            )
+        if range_min == range_max:
+            raise ValueError(
+                f"continuous_color() requires range_min != range_max; got both "
+                f"= {range_min!r}. The colormap-domain transform would divide "
+                "by zero."
             )
 
         self._continuous_config = {
@@ -718,6 +782,11 @@ class AnnotationShaderBuilder:
         if not isinstance(categories, (dict, list)):
             categories = list(categories)
 
+        if not categories:
+            raise ValueError(
+                "categorical_color() requires a non-empty `categories` argument."
+            )
+
         cat_list: list[tuple[int, str, str]]  # (int_value, label, color)
         label_map: Optional[dict[str, int]] = None
 
@@ -732,10 +801,17 @@ class AnnotationShaderBuilder:
                     for i, label in enumerate(unique_labels)
                 ]
             else:
-                # {int: (label, color)} format — existing behaviour
-                cat_list = [
-                    (int(v), str(info[0]), info[1]) for v, info in categories.items()
-                ]
+                # {int: (label, color)} format. Validate the value-tuple shape
+                # before extracting — silently dropping a 3rd element used to
+                # mask user errors like passing (label, color, metadata).
+                cat_list = []
+                for v, info in categories.items():
+                    if not isinstance(info, tuple) or len(info) != 2:
+                        raise ValueError(
+                            f"categorical_color() dict value for key {v!r} must "
+                            f"be a 2-tuple of (label, color); got {info!r}."
+                        )
+                    cat_list.append((int(v), str(info[0]), info[1]))
         else:
             # list branch
             first = categories[0] if categories else None
@@ -749,10 +825,27 @@ class AnnotationShaderBuilder:
                     for i, (label, color) in enumerate(zip(unique_labels, colors))
                 ]
             else:
-                # list[tuple[int, str, str]] — existing behaviour
-                cat_list = [
-                    (int(v), str(label), color) for v, label, color in categories
-                ]
+                # list[tuple[int, str, str]] — validate triple shape.
+                cat_list = []
+                for entry in categories:
+                    if not isinstance(entry, tuple) or len(entry) != 3:
+                        raise ValueError(
+                            "categorical_color() list entries must be 3-tuples "
+                            f"of (value, label, color); got {entry!r}."
+                        )
+                    v, label, color = entry
+                    cat_list.append((int(v), str(label), color))
+
+        # Reject negative integer values: annotation properties are compared
+        # as uint in the generated GLSL, so negative literals would silently
+        # wrap to 0xFFFFFFFF-ish and fail to match anything sensible.
+        for value, _, _ in cat_list:
+            if value < 0:
+                raise ValueError(
+                    f"categorical_color() value must be non-negative; got "
+                    f"{value!r}. Annotation properties are compared as GLSL "
+                    "uint and negative literals wrap to large positive numbers."
+                )
 
         self._label_map = label_map
 
@@ -783,6 +876,24 @@ class AnnotationShaderBuilder:
 
         # Register UI controls: colors first, then checkboxes (appended after
         # any sliders at build time because sliders are output between them).
+        # Detect collisions before mutating any state so the builder isn't
+        # left half-configured if two distinct labels sanitize to the same id.
+        color_names = [color_id_for[label] for label in label_order]
+        checkbox_names = (
+            [f"show_{show_id_for[label]}" for label in label_order]
+            if with_show_checkboxes
+            else []
+        )
+        new_names = color_names + checkbox_names
+        if len(set(new_names)) != len(new_names):
+            dupes = sorted({n for n in new_names if new_names.count(n) > 1})
+            raise ValueError(
+                "categorical_color() produced duplicate control names "
+                f"{dupes!r} — distinct labels sanitized to the same identifier. "
+                "Rename one of the colliding labels."
+            )
+        for name in new_names:
+            self._claim_name(name, kind="categorical")
         for label in label_order:
             self._color_controls.append((color_id_for[label], label_color[label]))
         if with_show_checkboxes:
@@ -844,7 +955,8 @@ class AnnotationShaderBuilder:
         Raises
         ------
         ValueError
-            If *min > max*, or if *default* is outside ``[min, max]``.
+            If *min > max*, or if *default* is outside ``[min, max]``,
+            or if *name* collides with another control on this builder.
         """
         if min > max:
             raise ValueError(f"Slider {name!r}: min ({min}) cannot exceed max ({max}).")
@@ -853,6 +965,7 @@ class AnnotationShaderBuilder:
                 f"Slider {name!r}: default ({default}) is outside "
                 f"[min, max] = [{min}, {max}]."
             )
+        self._claim_name(name, kind="slider")
         self._slider_configs.append(
             {"name": name, "type": type, "min": min, "max": max, "default": default}
         )
@@ -953,6 +1066,10 @@ class AnnotationShaderBuilder:
     def build(self, to_clipboard: bool = False) -> str:
         """Generate the complete GLSL annotation shader string.
 
+        Calling ``build()`` on a freshly constructed builder produces a minimal
+        but valid Neuroglancer annotation shader (``setColor(defaultColor())``)
+        so the layer renders sensibly without any explicit configuration.
+
         UI controls are emitted in this order: color pickers, sliders,
         checkboxes. Within the ``void main()`` body: default color, point size,
         alpha expression, categorical color block, border width.
@@ -996,19 +1113,29 @@ class AnnotationShaderBuilder:
                 f"#uicontrol bool {name} checkbox(default={str(default).lower()})"
             )
 
-        # void main()
-        parts.append("")
+        # void main() — separate UI controls from body with a blank line
+        # only when there are any controls to separate.
+        if parts:
+            parts.append("")
         parts.append("void main() {")
-        parts.append("  setColor(defaultColor());")
 
-        size_line = self._point_size_line()
-        if size_line:
-            parts.append(size_line)
-
+        # Alpha is declared first so the fallthrough setColor below can apply
+        # it to defaultColor() — otherwise points whose property doesn't match
+        # any categorical branch would be drawn at full opacity, ignoring the
+        # configured opacity slider.
         has_alpha = self._opacity_name is not None or self._highlight_config is not None
         alpha_line = self._alpha_line()
         if alpha_line:
             parts.append(alpha_line)
+
+        if has_alpha:
+            parts.append("  setColor(vec4(defaultColor().rgb, alpha));")
+        else:
+            parts.append("  setColor(defaultColor());")
+
+        size_line = self._point_size_line()
+        if size_line:
+            parts.append(size_line)
 
         cat_block = self._categorical_block(has_alpha)
         if cat_block:
@@ -1356,7 +1483,7 @@ def auto_annotation_shader(
     size_scale: Optional[float] = None,
     size_slider_min: float = 0.0,
     size_slider_max: float = 20.0,
-    size_slider_mode: str = "linear",
+    size_slider_mode: str = "invlerp",
     size_invlerp_range: tuple[float, float] = (0.0, 1.0),
     opacity: float = 0.8,
     palette: Union[str, dict[str, str]] = "Tableau_10",
@@ -1490,6 +1617,10 @@ class SkeletonShaderBuilder:
         self._slider_configs: list[dict] = []
         self._checkbox_configs: list[tuple[str, bool]] = []
 
+        # Single namespace for all #uicontrol identifiers — see
+        # AnnotationShaderBuilder._claim_name.
+        self._used_names: set[str] = set()
+
         self._segment_color: bool = False
         self._desaturate_config: Optional[dict] = None
         self._categorical_config: Optional[dict] = None
@@ -1510,9 +1641,15 @@ class SkeletonShaderBuilder:
         name : str
             Attribute name used in the rest of the builder.
         index : int
-            The ``vCustomN`` index (1-based) as defined in the precomputed
-            skeleton info.
+            The ``vCustomN`` index — must be ``>= 1`` because Neuroglancer's
+            vertex-attribute slots are 1-based (``vCustom1``, ``vCustom2``,
+            …; ``vCustom0`` does not exist).
         """
+        if index < 1:
+            raise ValueError(
+                f"vertex_attribute index must be >= 1 (vCustomN is 1-based in "
+                f"Neuroglancer); got index={index}."
+            )
         self._attributes[name] = index
         return self
 
@@ -1588,6 +1725,7 @@ class SkeletonShaderBuilder:
         ],
         palette: Optional[str] = None,
         default_visible: bool = True,
+        with_show_checkboxes: bool = True,
     ) -> Self:
         """Colour skeleton vertices by discrete float attribute values.
 
@@ -1596,6 +1734,12 @@ class SkeletonShaderBuilder:
 
         String-label inputs (``list[str]`` or ``dict[str, str]``) auto-assign
         float values 0.0, 1.0, 2.0, … and populate :attr:`label_map`.
+
+        Labels are sanitized for use as Neuroglancer ``#uicontrol`` identifiers:
+        the color control uses a strict-mode name (lowercase first letter,
+        non-alphanumerics → underscore), while the ``show_<label>`` checkbox
+        preserves the original casing of the label (since the ``show_`` prefix
+        already supplies the leading lowercase letter NG requires).
 
         Parameters
         ----------
@@ -1613,6 +1757,10 @@ class SkeletonShaderBuilder:
             palettable colormap for auto-color assignment. Defaults to Bold_10.
         default_visible : bool
             Default for show/hide checkboxes. Default is ``True``.
+        with_show_checkboxes : bool
+            If ``True`` (default), per-label ``show_<label>`` visibility
+            checkboxes are emitted. Set to ``False`` for properties with
+            many categories where the toggles would clutter the side panel.
 
         Raises
         ------
@@ -1630,6 +1778,11 @@ class SkeletonShaderBuilder:
         if not isinstance(categories, (dict, list)):
             categories = list(categories)
 
+        if not categories:
+            raise ValueError(
+                "categorical_color() requires a non-empty `categories` argument."
+            )
+
         cat_list: list[tuple[float, str, str]]
         label_map: Optional[dict[str, int]] = None
 
@@ -1643,9 +1796,14 @@ class SkeletonShaderBuilder:
                     for i, label in enumerate(unique_labels)
                 ]
             else:
-                cat_list = [
-                    (float(v), str(info[0]), info[1]) for v, info in categories.items()
-                ]
+                cat_list = []
+                for v, info in categories.items():
+                    if not isinstance(info, tuple) or len(info) != 2:
+                        raise ValueError(
+                            f"categorical_color() dict value for key {v!r} must "
+                            f"be a 2-tuple of (label, color); got {info!r}."
+                        )
+                    cat_list.append((float(v), str(info[0]), info[1]))
         else:
             first = categories[0] if categories else None
             if first is None or isinstance(first, str):
@@ -1657,9 +1815,15 @@ class SkeletonShaderBuilder:
                     for i, (label, color) in enumerate(zip(unique_labels, colors))
                 ]
             else:
-                cat_list = [
-                    (float(v), str(label), color) for v, label, color in categories
-                ]
+                cat_list = []
+                for entry in categories:
+                    if not isinstance(entry, tuple) or len(entry) != 3:
+                        raise ValueError(
+                            "categorical_color() list entries must be 3-tuples "
+                            f"of (value, label, color); got {entry!r}."
+                        )
+                    v, label, color = entry
+                    cat_list.append((float(v), str(label), color))
 
         self._label_map = label_map
 
@@ -1674,17 +1838,53 @@ class SkeletonShaderBuilder:
                 label_order.append(label)
             label_values[label].append(value)
 
+        # Sanitize each label twice (see AnnotationShaderBuilder.categorical_color):
+        #   color_id — strict NG name for the vec3 control and emitRGB().
+        #   show_id  — preserves casing; safe after the literal `show_` prefix.
+        color_id_for: dict[str, str] = {}
+        show_id_for: dict[str, str] = {}
         for label in label_order:
-            self._color_controls.append((label, label_color[label]))
+            color_id_for[label] = AnnotationShaderBuilder._sanitize_label(label)
+            show_id_for[label] = AnnotationShaderBuilder._sanitize_show_label(label)
+
+        # Detect collisions before mutating any state — see the matching
+        # block in AnnotationShaderBuilder.categorical_color.
+        color_names = [color_id_for[label] for label in label_order]
+        checkbox_names = (
+            [f"show_{show_id_for[label]}" for label in label_order]
+            if with_show_checkboxes
+            else []
+        )
+        new_names = color_names + checkbox_names
+        if len(set(new_names)) != len(new_names):
+            dupes = sorted({n for n in new_names if new_names.count(n) > 1})
+            raise ValueError(
+                "categorical_color() produced duplicate control names "
+                f"{dupes!r} — distinct labels sanitized to the same identifier. "
+                "Rename one of the colliding labels."
+            )
+        for name in new_names:
+            self._claim_name(name, kind="categorical")
         for label in label_order:
-            self._checkbox_configs.append((f"show_{label}", default_visible))
+            self._color_controls.append((color_id_for[label], label_color[label]))
+        if with_show_checkboxes:
+            for label in label_order:
+                self._checkbox_configs.append(
+                    (f"show_{show_id_for[label]}", default_visible)
+                )
 
         self._categorical_config = {
             "attr": attr,
             "groups": [
-                (label, label_color[label], label_values[label])
+                (
+                    color_id_for[label],
+                    show_id_for[label],
+                    label_color[label],
+                    label_values[label],
+                )
                 for label in label_order
             ],
+            "with_show_checkboxes": with_show_checkboxes,
         }
         return self
 
@@ -1725,9 +1925,21 @@ class SkeletonShaderBuilder:
                 f"Unknown colormap '{colormap}'. "
                 f"Available: {list(self._COLORMAPS.keys())}"
             )
+        if self._continuous_config is not None:
+            raise ValueError(
+                "continuous_color() can only be called once per "
+                "SkeletonShaderBuilder. Create a new builder for a different "
+                "continuous-color rule."
+            )
         if self._categorical_config is not None:
             raise ValueError(
                 "continuous_color() and categorical_color() cannot both be set."
+            )
+        if range_min == range_max:
+            raise ValueError(
+                f"continuous_color() requires range_min != range_max; got both "
+                f"= {range_min!r}. The colormap-domain transform would divide "
+                "by zero."
             )
         self._require_attr(attr)
 
@@ -1759,6 +1971,19 @@ class SkeletonShaderBuilder:
             )
         return self
 
+    def _claim_name(self, name: str, *, kind: str) -> None:
+        """Register a control identifier or raise if it's already in use."""
+        if name in self._used_names:
+            raise ValueError(
+                f"Control name {name!r} ({kind}) collides with an existing "
+                "#uicontrol declaration on this builder."
+            )
+        self._used_names.add(name)
+
+    def _release_name(self, name: str) -> None:
+        """Drop a name from the used-set."""
+        self._used_names.discard(name)
+
     def _register_slider(
         self, *, name: str, type: str, min: float, max: float, default: float
     ) -> None:
@@ -1770,6 +1995,7 @@ class SkeletonShaderBuilder:
                 f"Slider {name!r}: default ({default}) is outside "
                 f"[min, max] = [{min}, {max}]."
             )
+        self._claim_name(name, kind="slider")
         self._slider_configs.append(
             {"name": name, "type": type, "min": min, "max": max, "default": default}
         )
@@ -1830,15 +2056,17 @@ class SkeletonShaderBuilder:
             return None
         attr = self._categorical_config["attr"]
         groups = self._categorical_config["groups"]
+        with_checkboxes = self._categorical_config.get("with_show_checkboxes", True)
 
         lines: list[str] = []
-        for i, (label, _color, values) in enumerate(groups):
+        for i, (color_id, show_id, _color, values) in enumerate(groups):
             conds = [f"{attr} == {_format_float(v)}" for v in sorted(values)]
             condition = " || ".join(conds)
             keyword = "if" if i == 0 else "} else if"
             lines.append(f"  {keyword} ({condition}) {{")
-            lines.append(f"    if (!show_{label}) {{ discard; }}")
-            lines.append(f"    emitRGB({label});")
+            if with_checkboxes:
+                lines.append(f"    if (!show_{show_id}) {{ discard; }}")
+            lines.append(f"    emitRGB({color_id});")
         lines.append("  }")
         return "\n".join(lines)
 
@@ -1848,14 +2076,13 @@ class SkeletonShaderBuilder:
         cfg = self._continuous_config
         if cfg["range_slider"]:
             t_expr = (
-                f"clamp(({cfg['attr']} - rangeMin) "
-                f"/ (rangeMax - rangeMin), 0.0, 1.0)"
+                f"clamp(({cfg['attr']} - rangeMin) / (rangeMax - rangeMin), 0.0, 1.0)"
             )
         else:
             mn = _format_float(cfg["range_min"])
             mx = _format_float(cfg["range_max"])
             t_expr = f"clamp(({cfg['attr']} - {mn}) / ({mx} - {mn}), 0.0, 1.0)"
-        return f"  float t = {t_expr};\n" f"  emitRGB({cfg['glsl_fn']}(t));"
+        return f"  float t = {t_expr};\n  emitRGB({cfg['glsl_fn']}(t));"
 
     def _needs_hsl(self) -> bool:
         return self._desaturate_config is not None
@@ -1866,6 +2093,17 @@ class SkeletonShaderBuilder:
 
     def build(self, to_clipboard: bool = False) -> str:
         """Generate the complete GLSL skeleton shader string.
+
+        Every shader emits a base colour first — either the segment-colour
+        block (when :meth:`use_segment_color` was called, optionally with
+        :meth:`desaturate`) or a plain ``emitRGB(segmentColor().rgb)``. This
+        guarantees every vertex receives a defined colour: vertices that don't
+        match any branch in the categorical or continuous block fall back to
+        the base, rather than producing undefined output.
+
+        Calling ``build()`` on a freshly constructed builder — or one with
+        only vertex attributes declared but no colour rule — produces the
+        minimal valid shader: just the base segment-colour emit.
 
         Parameters
         ----------
@@ -1913,9 +2151,13 @@ class SkeletonShaderBuilder:
         if decls:
             parts.extend(decls)
 
+        # Base colour: always emit something first, so vertices that don't
+        # match any categorical/continuous branch have a defined colour.
         seg_block = self._segment_color_block()
         if seg_block:
             parts.append(seg_block)
+        else:
+            parts.append("  emitRGB(segmentColor().rgb);")
 
         cat_block = self._categorical_block()
         if cat_block:
