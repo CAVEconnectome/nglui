@@ -144,6 +144,257 @@ def _palette_colors(n: int, palette: Optional[str] = None) -> list[str]:
     return list(islice(cycle(colors), n))
 
 
+def _sanitize_uicontrol_name(label: str) -> str:
+    """Make an enum label safe for a Neuroglancer ``#uicontrol`` variable name.
+
+    Neuroglancer's parser requires control names to match
+    ``[a-z][a-zA-Z0-9_]*`` — must start with a lowercase ASCII letter.
+    Non-alphanumeric characters are mapped to underscores; an uppercase
+    leading letter is lowercased; anything else invalid is prefixed
+    with ``c_``.
+    """
+    cleaned = re.sub(r"[^A-Za-z0-9_]", "_", str(label))
+    if not cleaned:
+        return "c_"
+    first = cleaned[0]
+    if first.isascii() and first.isupper():
+        cleaned = first.lower() + cleaned[1:]
+    elif not (first.isascii() and first.islower()):
+        cleaned = "c_" + cleaned
+    return cleaned
+
+
+def _sanitize_show_suffix(label: str) -> str:
+    """Make a label safe to use after a ``show_`` prefix.
+
+    Less aggressive than :func:`_sanitize_uicontrol_name`: since ``show_``
+    already supplies the leading lowercase letter required by NG, the rest
+    of the identifier may keep its original casing. Only non-alphanumeric
+    characters are replaced with underscores.
+    """
+    cleaned = re.sub(r"[^A-Za-z0-9_]", "_", str(label))
+    return cleaned or "_"
+
+
+class _ControlRegistry:
+    """Holds the four kinds of Neuroglancer ``#uicontrol`` declarations
+    a shader builder accumulates, and detects name collisions across them.
+
+    NG's shader parser puts every ``#uicontrol`` name into one namespace,
+    so a slider named ``foo`` collides with a checkbox named ``foo``. This
+    registry centralises that bookkeeping so each builder doesn't have to
+    repeat it.
+
+    UI controls are emitted in this canonical order: colors → sliders →
+    invlerps → checkboxes. Within each kind, insertion order is preserved.
+
+    Attributes
+    ----------
+    colors : list[tuple[str, str]]
+        ``[(name, default_color), ...]``.
+    sliders : list[dict]
+        Slider configs with keys ``name``/``type``/``min``/``max``/``default``.
+    invlerps : list[dict]
+        Invlerp configs with keys ``name``/``property``/``range``/``clamp``.
+    checkboxes : list[tuple[str, bool]]
+        ``[(name, default), ...]``.
+    """
+
+    def __init__(self) -> None:
+        self.colors: list[tuple[str, str]] = []
+        self.sliders: list[dict] = []
+        self.invlerps: list[dict] = []
+        self.checkboxes: list[tuple[str, bool]] = []
+        self._used_names: set[str] = set()
+
+    def claim(self, name: str, *, kind: str) -> None:
+        """Reserve a name; raise if it's already in use across any kind."""
+        if name in self._used_names:
+            raise ValueError(
+                f"Control name {name!r} ({kind}) collides with an existing "
+                "#uicontrol declaration on this builder."
+            )
+        self._used_names.add(name)
+
+    def release(self, name: str) -> None:
+        """Drop a name from the used-set (for replace-style methods like
+        ``point_size`` that want to swap one slider for another)."""
+        self._used_names.discard(name)
+
+    def add_slider(
+        self, *, name: str, type: str, min: float, max: float, default: float
+    ) -> None:
+        """Validate and register a slider control."""
+        if min > max:
+            raise ValueError(f"Slider {name!r}: min ({min}) cannot exceed max ({max}).")
+        if not (min <= default <= max):
+            raise ValueError(
+                f"Slider {name!r}: default ({default}) is outside "
+                f"[min, max] = [{min}, {max}]."
+            )
+        self.claim(name, kind="slider")
+        self.sliders.append(
+            {"name": name, "type": type, "min": min, "max": max, "default": default}
+        )
+
+    def add_invlerp(
+        self,
+        *,
+        name: str,
+        property: str,
+        range: tuple[float, float],
+        clamp: bool,
+    ) -> None:
+        """Register an invlerp control."""
+        self.claim(name, kind="invlerp")
+        self.invlerps.append(
+            {
+                "name": name,
+                "property": property,
+                "range": tuple(range),
+                "clamp": bool(clamp),
+            }
+        )
+
+    def add_color(self, name: str, default_color: str) -> None:
+        """Register a vec3 color control."""
+        self.claim(name, kind="color")
+        self.colors.append((name, default_color))
+
+    def add_checkbox(self, name: str, default: bool) -> None:
+        """Register a bool checkbox control."""
+        self.claim(name, kind="checkbox")
+        self.checkboxes.append((name, default))
+
+    def drop_slider(self, name: str) -> None:
+        """Remove a slider by name (no-op if not present) and release its name.
+
+        Used by ``point_size`` so calling it twice swaps one slider for
+        another instead of accumulating.
+        """
+        self.sliders = [s for s in self.sliders if s.get("name") != name]
+        self.invlerps = [s for s in self.invlerps if s.get("name") != name]
+        self.release(name)
+
+    def emit_lines(self) -> list[str]:
+        """Return the ``#uicontrol`` declaration lines in canonical order."""
+        lines: list[str] = []
+        for label, color in self.colors:
+            lines.append(f'#uicontrol vec3 {label} color(default="{color}")')
+        for cfg in self.sliders:
+            mn = _format_float(cfg["min"])
+            mx = _format_float(cfg["max"])
+            df = _format_float(cfg["default"])
+            lines.append(
+                f"#uicontrol {cfg['type']} {cfg['name']} "
+                f"slider(min={mn}, max={mx}, default={df})"
+            )
+        for cfg in self.invlerps:
+            lo = _format_float(cfg["range"][0])
+            hi = _format_float(cfg["range"][1])
+            clamp_str = "true" if cfg["clamp"] else "false"
+            lines.append(
+                f"#uicontrol invlerp {cfg['name']}("
+                f'property="{cfg["property"]}", '
+                f"range=[{lo}, {hi}], clamp={clamp_str})"
+            )
+        for name, default in self.checkboxes:
+            lines.append(
+                f"#uicontrol bool {name} checkbox(default={str(default).lower()})"
+            )
+        return lines
+
+
+def _normalize_categories(
+    categories,
+    *,
+    palette: Optional[str],
+    value_caster,
+) -> tuple[list, Optional[dict[str, int]]]:
+    """Resolve a categorical-color ``categories`` argument into a flat list.
+
+    Accepts the four shapes documented on
+    :meth:`AnnotationShaderBuilder.categorical_color` /
+    :meth:`SkeletonShaderBuilder.categorical_color`:
+
+    - ``list[str]``                        — auto values + auto colors
+    - ``dict[str, str]``                   — auto values, explicit colors
+    - ``dict[V, tuple[str, str]]``         — explicit values + colors
+    - ``list[tuple[V, str, str]]``         — explicit values + colors
+
+    Parameters
+    ----------
+    categories
+        The user-supplied input. May be any iterable of those shapes.
+    palette
+        Palette name, only used to auto-assign colors for ``list[str]`` input.
+    value_caster
+        Callable that coerces the value type (``int`` for annotation properties,
+        ``float`` for skeleton vertex attributes).
+
+    Returns
+    -------
+    cat_list
+        ``[(value, label, color), ...]`` with values coerced via *value_caster*.
+    label_map
+        ``{label: i}`` populated for string-label inputs (so callers can
+        encode a DataFrame column), or ``None`` for explicit-value inputs.
+    """
+    if not isinstance(categories, (dict, list)):
+        categories = list(categories)
+    if not categories:
+        raise ValueError(
+            "categorical_color() requires a non-empty `categories` argument."
+        )
+
+    label_map: Optional[dict[str, int]] = None
+
+    if isinstance(categories, dict):
+        first_key = next(iter(categories))
+        if isinstance(first_key, str):
+            # {label: color} — auto-assign integer IDs
+            unique_labels = list(categories.keys())
+            label_map = {label: i for i, label in enumerate(unique_labels)}
+            cat_list = [
+                (value_caster(i), label, categories[label])
+                for i, label in enumerate(unique_labels)
+            ]
+        else:
+            # {value: (label, color)} — validate the 2-tuple shape
+            cat_list = []
+            for v, info in categories.items():
+                if not isinstance(info, tuple) or len(info) != 2:
+                    raise ValueError(
+                        f"categorical_color() dict value for key {v!r} must "
+                        f"be a 2-tuple of (label, color); got {info!r}."
+                    )
+                cat_list.append((value_caster(v), str(info[0]), info[1]))
+    else:
+        first = categories[0]
+        if isinstance(first, str):
+            # list[str] — dedupe (preserving order), auto colors + IDs
+            unique_labels = list(dict.fromkeys(categories))
+            colors = _palette_colors(len(unique_labels), palette)
+            label_map = {label: i for i, label in enumerate(unique_labels)}
+            cat_list = [
+                (value_caster(i), label, color)
+                for i, (label, color) in enumerate(zip(unique_labels, colors))
+            ]
+        else:
+            # list[tuple[V, label, color]] — validate the 3-tuple shape
+            cat_list = []
+            for entry in categories:
+                if not isinstance(entry, tuple) or len(entry) != 3:
+                    raise ValueError(
+                        "categorical_color() list entries must be 3-tuples "
+                        f"of (value, label, color); got {entry!r}."
+                    )
+                v, label, color = entry
+                cat_list.append((value_caster(v), str(label), color))
+
+    return cat_list, label_map
+
+
 # ---------------------------------------------------------------------------
 # Reusable GLSL helper functions (for skeleton shaders)
 # ---------------------------------------------------------------------------
@@ -336,17 +587,9 @@ class AnnotationShaderBuilder:
     """
 
     def __init__(self) -> None:
-        # UI control lists — order within each group is insertion order
-        self._color_controls: list[tuple[str, str]] = []  # [(label, color_str)]
-        self._slider_configs: list[dict] = []  # slider param dicts
-        self._invlerp_configs: list[dict] = []  # invlerp control dicts
-        self._checkbox_configs: list[tuple[str, bool]] = []  # [(name, default)]
-
-        # Tracks every #uicontrol identifier the builder has emitted. NG's
-        # shader parser puts all control kinds (slider, color, checkbox,
-        # invlerp) into a single namespace, so we have to detect collisions
-        # across kinds — not just within kind.
-        self._used_names: set[str] = set()
+        # All UI controls (color/slider/invlerp/checkbox) plus the
+        # cross-kind name registry live here.
+        self._controls = _ControlRegistry()
 
         # Main body configuration
         self._point_size_config: Optional[dict] = None
@@ -360,22 +603,6 @@ class AnnotationShaderBuilder:
 
         # Continuous colormap configuration
         self._continuous_config: Optional[dict] = None
-
-    def _claim_name(self, name: str, *, kind: str) -> None:
-        """Register a control identifier or raise if it's already in use.
-
-        *kind* is purely for the error message ("slider", "color", etc).
-        """
-        if name in self._used_names:
-            raise ValueError(
-                f"Control name {name!r} ({kind}) collides with an existing "
-                "#uicontrol declaration on this builder."
-            )
-        self._used_names.add(name)
-
-    def _release_name(self, name: str) -> None:
-        """Drop a name from the used-set (for replace-style methods)."""
-        self._used_names.discard(name)
 
     # ------------------------------------------------------------------
     # Fluent configuration methods
@@ -402,7 +629,7 @@ class AnnotationShaderBuilder:
             Maximum slider value. Default is 1.0.
         """
         self._opacity_name = name
-        self._register_slider(
+        self._controls.add_slider(
             name=name, type="float", min=min, max=max, default=default
         )
         return self
@@ -536,14 +763,8 @@ class AnnotationShaderBuilder:
         prev = self._point_size_config
         if prev is not None and prev.get("slider"):
             prev_name = prev.get("slider_name")
-            self._slider_configs = [
-                s for s in self._slider_configs if s.get("name") != prev_name
-            ]
-            self._invlerp_configs = [
-                s for s in self._invlerp_configs if s.get("name") != prev_name
-            ]
             if prev_name is not None:
-                self._release_name(prev_name)
+                self._controls.drop_slider(prev_name)
 
         self._point_size_config = {
             "size": size,
@@ -557,17 +778,14 @@ class AnnotationShaderBuilder:
         }
         if slider:
             if slider_mode == "invlerp":
-                self._claim_name(slider_name, kind="invlerp")
-                self._invlerp_configs.append(
-                    {
-                        "name": slider_name,
-                        "property": prop,
-                        "range": tuple(invlerp_range),
-                        "clamp": bool(invlerp_clamp),
-                    }
+                self._controls.add_invlerp(
+                    name=slider_name,
+                    property=prop,
+                    range=tuple(invlerp_range),
+                    clamp=bool(invlerp_clamp),
                 )
             else:
-                self._register_slider(
+                self._controls.add_slider(
                     name=slider_name,
                     type="float",
                     min=slider_min,
@@ -674,14 +892,14 @@ class AnnotationShaderBuilder:
             span = abs(range_max - range_min) or 1.0
             slider_min = range_min - span
             slider_max = range_max + span
-            self._register_slider(
+            self._controls.add_slider(
                 name="rangeMin",
                 type="float",
                 min=slider_min,
                 max=slider_max,
                 default=range_min,
             )
-            self._register_slider(
+            self._controls.add_slider(
                 name="rangeMax",
                 type="float",
                 min=slider_min,
@@ -778,63 +996,9 @@ class AnnotationShaderBuilder:
                 "on the same AnnotationShaderBuilder."
             )
 
-        # Accept any iterable (e.g. pandas Series) by converting to list first
-        if not isinstance(categories, (dict, list)):
-            categories = list(categories)
-
-        if not categories:
-            raise ValueError(
-                "categorical_color() requires a non-empty `categories` argument."
-            )
-
-        cat_list: list[tuple[int, str, str]]  # (int_value, label, color)
-        label_map: Optional[dict[str, int]] = None
-
-        if isinstance(categories, dict):
-            first_key = next(iter(categories)) if categories else None
-            if first_key is None or isinstance(first_key, str):
-                # {label: color} format — auto-assign integer IDs
-                unique_labels = list(categories.keys())
-                label_map = {label: i for i, label in enumerate(unique_labels)}
-                cat_list = [
-                    (i, label, categories[label])
-                    for i, label in enumerate(unique_labels)
-                ]
-            else:
-                # {int: (label, color)} format. Validate the value-tuple shape
-                # before extracting — silently dropping a 3rd element used to
-                # mask user errors like passing (label, color, metadata).
-                cat_list = []
-                for v, info in categories.items():
-                    if not isinstance(info, tuple) or len(info) != 2:
-                        raise ValueError(
-                            f"categorical_color() dict value for key {v!r} must "
-                            f"be a 2-tuple of (label, color); got {info!r}."
-                        )
-                    cat_list.append((int(v), str(info[0]), info[1]))
-        else:
-            # list branch
-            first = categories[0] if categories else None
-            if first is None or isinstance(first, str):
-                # list[str] — deduplicate preserving order, auto colors + IDs
-                unique_labels: list[str] = list(dict.fromkeys(categories))
-                colors = _palette_colors(len(unique_labels), palette)
-                label_map = {label: i for i, label in enumerate(unique_labels)}
-                cat_list = [
-                    (i, label, color)
-                    for i, (label, color) in enumerate(zip(unique_labels, colors))
-                ]
-            else:
-                # list[tuple[int, str, str]] — validate triple shape.
-                cat_list = []
-                for entry in categories:
-                    if not isinstance(entry, tuple) or len(entry) != 3:
-                        raise ValueError(
-                            "categorical_color() list entries must be 3-tuples "
-                            f"of (value, label, color); got {entry!r}."
-                        )
-                    v, label, color = entry
-                    cat_list.append((int(v), str(label), color))
+        cat_list, label_map = _normalize_categories(
+            categories, palette=palette, value_caster=int
+        )
 
         # Reject negative integer values: annotation properties are compared
         # as uint in the generated GLSL, so negative literals would silently
@@ -871,13 +1035,14 @@ class AnnotationShaderBuilder:
         color_id_for: dict[str, str] = {}
         show_id_for: dict[str, str] = {}
         for label in label_order:
-            color_id_for[label] = self._sanitize_label(label)
-            show_id_for[label] = self._sanitize_show_label(label)
+            color_id_for[label] = _sanitize_uicontrol_name(label)
+            show_id_for[label] = _sanitize_show_suffix(label)
 
-        # Register UI controls: colors first, then checkboxes (appended after
-        # any sliders at build time because sliders are output between them).
-        # Detect collisions before mutating any state so the builder isn't
-        # left half-configured if two distinct labels sanitize to the same id.
+        # Detect intra-call sanitization collisions (e.g. labels 'a-b' and
+        # 'a_b' both sanitizing to 'a_b') BEFORE any registration, so the
+        # builder isn't left half-configured on failure. The cross-call
+        # check (against names already registered) happens inside the
+        # registry's claim().
         color_names = [color_id_for[label] for label in label_order]
         checkbox_names = (
             [f"show_{show_id_for[label]}" for label in label_order]
@@ -892,25 +1057,18 @@ class AnnotationShaderBuilder:
                 f"{dupes!r} — distinct labels sanitized to the same identifier. "
                 "Rename one of the colliding labels."
             )
-        for name in new_names:
-            self._claim_name(name, kind="categorical")
         for label in label_order:
-            self._color_controls.append((color_id_for[label], label_color[label]))
+            self._controls.add_color(color_id_for[label], label_color[label])
         if with_show_checkboxes:
             for label in label_order:
-                self._checkbox_configs.append(
-                    (f"show_{show_id_for[label]}", default_visible)
+                self._controls.add_checkbox(
+                    f"show_{show_id_for[label]}", default_visible
                 )
 
         self._categorical_config = {
             "prop": prop,
             "groups": [
-                (
-                    color_id_for[label],
-                    show_id_for[label],
-                    label_color[label],
-                    label_values[label],
-                )
+                (color_id_for[label], show_id_for[label], label_values[label])
                 for label in label_order
             ],
             "with_show_checkboxes": with_show_checkboxes,
@@ -946,29 +1104,6 @@ class AnnotationShaderBuilder:
     # ------------------------------------------------------------------
     # Internal GLSL generation helpers
     # ------------------------------------------------------------------
-
-    def _register_slider(
-        self, *, name: str, type: str, min: float, max: float, default: float
-    ) -> None:
-        """Validate and append a slider config.
-
-        Raises
-        ------
-        ValueError
-            If *min > max*, or if *default* is outside ``[min, max]``,
-            or if *name* collides with another control on this builder.
-        """
-        if min > max:
-            raise ValueError(f"Slider {name!r}: min ({min}) cannot exceed max ({max}).")
-        if not (min <= default <= max):
-            raise ValueError(
-                f"Slider {name!r}: default ({default}) is outside "
-                f"[min, max] = [{min}, {max}]."
-            )
-        self._claim_name(name, kind="slider")
-        self._slider_configs.append(
-            {"name": name, "type": type, "min": min, "max": max, "default": default}
-        )
 
     def _alpha_line(self) -> Optional[str]:
         """Return the ``float alpha = ...;`` line, or None if no alpha control."""
@@ -1048,7 +1183,7 @@ class AnnotationShaderBuilder:
         alpha_val = "alpha" if has_alpha else "1.0"
 
         lines: list[str] = []
-        for i, (color_id, show_id, _color, values) in enumerate(groups):
+        for i, (color_id, show_id, values) in enumerate(groups):
             conds = [f"prop_{prop}() == uint({v})" for v in sorted(values)]
             condition = " || ".join(conds)
             keyword = "if" if i == 0 else "} else if"
@@ -1089,29 +1224,7 @@ class AnnotationShaderBuilder:
         parts: list[str] = []
 
         # UI controls: colors → sliders → invlerps → checkboxes
-        for label, color in self._color_controls:
-            parts.append(f'#uicontrol vec3 {label} color(default="{color}")')
-        for cfg in self._slider_configs:
-            mn = _format_float(cfg["min"])
-            mx = _format_float(cfg["max"])
-            df = _format_float(cfg["default"])
-            parts.append(
-                f"#uicontrol {cfg['type']} {cfg['name']} "
-                f"slider(min={mn}, max={mx}, default={df})"
-            )
-        for cfg in self._invlerp_configs:
-            lo = _format_float(cfg["range"][0])
-            hi = _format_float(cfg["range"][1])
-            clamp_str = "true" if cfg["clamp"] else "false"
-            parts.append(
-                f"#uicontrol invlerp {cfg['name']}("
-                f'property="{cfg["property"]}", '
-                f"range=[{lo}, {hi}], clamp={clamp_str})"
-            )
-        for name, default in self._checkbox_configs:
-            parts.append(
-                f"#uicontrol bool {name} checkbox(default={str(default).lower()})"
-            )
+        parts.extend(self._controls.emit_lines())
 
         # void main() — separate UI controls from body with a blank line
         # only when there are any controls to separate.
@@ -1442,37 +1555,11 @@ class AnnotationShaderBuilder:
             return [palette.get(label, default_color) for label in labels]
         return _palette_colors(len(labels), palette)
 
-    @staticmethod
-    def _sanitize_label(label: str) -> str:
-        """Make an enum label safe for a Neuroglancer #uicontrol variable name.
-
-        Neuroglancer's parser requires control names to match
-        ``[a-z][a-zA-Z0-9_]*`` — must start with a lowercase ASCII letter.
-        Non-alphanumeric characters are mapped to underscores; an uppercase
-        leading letter is lowercased; anything else invalid is prefixed
-        with ``c_``.
-        """
-        cleaned = re.sub(r"[^A-Za-z0-9_]", "_", str(label))
-        if not cleaned:
-            return "c_"
-        first = cleaned[0]
-        if first.isascii() and first.isupper():
-            cleaned = first.lower() + cleaned[1:]
-        elif not (first.isascii() and first.islower()):
-            cleaned = "c_" + cleaned
-        return cleaned
-
-    @staticmethod
-    def _sanitize_show_label(label: str) -> str:
-        """Make a label safe to use after a ``show_`` prefix.
-
-        Less aggressive than :meth:`_sanitize_label`: since ``show_`` already
-        supplies the leading lowercase letter required by NG, the rest of
-        the identifier may keep its original casing. Only non-alphanumeric
-        characters are replaced with underscores.
-        """
-        cleaned = re.sub(r"[^A-Za-z0-9_]", "_", str(label))
-        return cleaned or "_"
+    # Thin static-method shims for backwards compatibility with anything
+    # that used to call AnnotationShaderBuilder._sanitize_label /
+    # _sanitize_show_label. New code should call the module-level functions.
+    _sanitize_label = staticmethod(_sanitize_uicontrol_name)
+    _sanitize_show_label = staticmethod(_sanitize_show_suffix)
 
 
 def auto_annotation_shader(
@@ -1613,13 +1700,8 @@ class SkeletonShaderBuilder:
             for i, name in enumerate(vertex_attributes, start=1):
                 self._attributes[name] = i
 
-        self._color_controls: list[tuple[str, str]] = []
-        self._slider_configs: list[dict] = []
-        self._checkbox_configs: list[tuple[str, bool]] = []
-
-        # Single namespace for all #uicontrol identifiers — see
-        # AnnotationShaderBuilder._claim_name.
-        self._used_names: set[str] = set()
+        # All UI controls plus cross-kind name registry.
+        self._controls = _ControlRegistry()
 
         self._segment_color: bool = False
         self._desaturate_config: Optional[dict] = None
@@ -1775,55 +1857,9 @@ class SkeletonShaderBuilder:
             )
         self._require_attr(attr)
 
-        if not isinstance(categories, (dict, list)):
-            categories = list(categories)
-
-        if not categories:
-            raise ValueError(
-                "categorical_color() requires a non-empty `categories` argument."
-            )
-
-        cat_list: list[tuple[float, str, str]]
-        label_map: Optional[dict[str, int]] = None
-
-        if isinstance(categories, dict):
-            first_key = next(iter(categories)) if categories else None
-            if first_key is None or isinstance(first_key, str):
-                unique_labels = list(categories.keys())
-                label_map = {label: i for i, label in enumerate(unique_labels)}
-                cat_list = [
-                    (float(i), label, categories[label])
-                    for i, label in enumerate(unique_labels)
-                ]
-            else:
-                cat_list = []
-                for v, info in categories.items():
-                    if not isinstance(info, tuple) or len(info) != 2:
-                        raise ValueError(
-                            f"categorical_color() dict value for key {v!r} must "
-                            f"be a 2-tuple of (label, color); got {info!r}."
-                        )
-                    cat_list.append((float(v), str(info[0]), info[1]))
-        else:
-            first = categories[0] if categories else None
-            if first is None or isinstance(first, str):
-                unique_labels = list(dict.fromkeys(categories))
-                colors = _palette_colors(len(unique_labels), palette)
-                label_map = {label: i for i, label in enumerate(unique_labels)}
-                cat_list = [
-                    (float(i), label, color)
-                    for i, (label, color) in enumerate(zip(unique_labels, colors))
-                ]
-            else:
-                cat_list = []
-                for entry in categories:
-                    if not isinstance(entry, tuple) or len(entry) != 3:
-                        raise ValueError(
-                            "categorical_color() list entries must be 3-tuples "
-                            f"of (value, label, color); got {entry!r}."
-                        )
-                    v, label, color = entry
-                    cat_list.append((float(v), str(label), color))
+        cat_list, label_map = _normalize_categories(
+            categories, palette=palette, value_caster=float
+        )
 
         self._label_map = label_map
 
@@ -1844,11 +1880,11 @@ class SkeletonShaderBuilder:
         color_id_for: dict[str, str] = {}
         show_id_for: dict[str, str] = {}
         for label in label_order:
-            color_id_for[label] = AnnotationShaderBuilder._sanitize_label(label)
-            show_id_for[label] = AnnotationShaderBuilder._sanitize_show_label(label)
+            color_id_for[label] = _sanitize_uicontrol_name(label)
+            show_id_for[label] = _sanitize_show_suffix(label)
 
-        # Detect collisions before mutating any state — see the matching
-        # block in AnnotationShaderBuilder.categorical_color.
+        # Detect intra-call sanitization collisions before any registration —
+        # see the matching block in AnnotationShaderBuilder.categorical_color.
         color_names = [color_id_for[label] for label in label_order]
         checkbox_names = (
             [f"show_{show_id_for[label]}" for label in label_order]
@@ -1863,25 +1899,18 @@ class SkeletonShaderBuilder:
                 f"{dupes!r} — distinct labels sanitized to the same identifier. "
                 "Rename one of the colliding labels."
             )
-        for name in new_names:
-            self._claim_name(name, kind="categorical")
         for label in label_order:
-            self._color_controls.append((color_id_for[label], label_color[label]))
+            self._controls.add_color(color_id_for[label], label_color[label])
         if with_show_checkboxes:
             for label in label_order:
-                self._checkbox_configs.append(
-                    (f"show_{show_id_for[label]}", default_visible)
+                self._controls.add_checkbox(
+                    f"show_{show_id_for[label]}", default_visible
                 )
 
         self._categorical_config = {
             "attr": attr,
             "groups": [
-                (
-                    color_id_for[label],
-                    show_id_for[label],
-                    label_color[label],
-                    label_values[label],
-                )
+                (color_id_for[label], show_id_for[label], label_values[label])
                 for label in label_order
             ],
             "with_show_checkboxes": with_show_checkboxes,
@@ -1955,14 +1984,14 @@ class SkeletonShaderBuilder:
             span = abs(range_max - range_min) or 1.0
             slider_min = range_min - span
             slider_max = range_max + span
-            self._register_slider(
+            self._controls.add_slider(
                 name="rangeMin",
                 type="float",
                 min=slider_min,
                 max=slider_max,
                 default=range_min,
             )
-            self._register_slider(
+            self._controls.add_slider(
                 name="rangeMax",
                 type="float",
                 min=slider_min,
@@ -1970,35 +1999,6 @@ class SkeletonShaderBuilder:
                 default=range_max,
             )
         return self
-
-    def _claim_name(self, name: str, *, kind: str) -> None:
-        """Register a control identifier or raise if it's already in use."""
-        if name in self._used_names:
-            raise ValueError(
-                f"Control name {name!r} ({kind}) collides with an existing "
-                "#uicontrol declaration on this builder."
-            )
-        self._used_names.add(name)
-
-    def _release_name(self, name: str) -> None:
-        """Drop a name from the used-set."""
-        self._used_names.discard(name)
-
-    def _register_slider(
-        self, *, name: str, type: str, min: float, max: float, default: float
-    ) -> None:
-        """Validate and append a slider config (see AnnotationShaderBuilder)."""
-        if min > max:
-            raise ValueError(f"Slider {name!r}: min ({min}) cannot exceed max ({max}).")
-        if not (min <= default <= max):
-            raise ValueError(
-                f"Slider {name!r}: default ({default}) is outside "
-                f"[min, max] = [{min}, {max}]."
-            )
-        self._claim_name(name, kind="slider")
-        self._slider_configs.append(
-            {"name": name, "type": type, "min": min, "max": max, "default": default}
-        )
 
     @property
     def label_map(self) -> Optional[dict[str, int]]:
@@ -2059,7 +2059,7 @@ class SkeletonShaderBuilder:
         with_checkboxes = self._categorical_config.get("with_show_checkboxes", True)
 
         lines: list[str] = []
-        for i, (color_id, show_id, _color, values) in enumerate(groups):
+        for i, (color_id, show_id, values) in enumerate(groups):
             conds = [f"{attr} == {_format_float(v)}" for v in sorted(values)]
             condition = " || ".join(conds)
             keyword = "if" if i == 0 else "} else if"
@@ -2126,21 +2126,7 @@ class SkeletonShaderBuilder:
             parts.append(hsl_to_rgb.code.strip())
             parts.append("")
 
-        # UI controls: colors → sliders → checkboxes
-        for label, color in self._color_controls:
-            parts.append(f'#uicontrol vec3 {label} color(default="{color}")')
-        for cfg in self._slider_configs:
-            mn = _format_float(cfg["min"])
-            mx = _format_float(cfg["max"])
-            df = _format_float(cfg["default"])
-            parts.append(
-                f"#uicontrol {cfg['type']} {cfg['name']} "
-                f"slider(min={mn}, max={mx}, default={df})"
-            )
-        for name, default in self._checkbox_configs:
-            parts.append(
-                f"#uicontrol bool {name} checkbox(default={str(default).lower()})"
-            )
+        parts.extend(self._controls.emit_lines())
 
         # void main()
         if parts:
