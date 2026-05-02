@@ -7,6 +7,7 @@ from nglui.statebuilder.shaders import (
     SkeletonShaderBuilder,
     _format_float,
     _normalize_color_str,
+    auto_annotation_shader,
     parse_color_rgb,
     simple_point_shader,
 )
@@ -175,6 +176,155 @@ class TestPointSize:
         assert "#uicontrol float sz slider" in code
         assert "setPointMarkerSize(sz);" in code
 
+    def test_property_with_scale_slider(self):
+        """slider=True alongside prop= emits a multiplier slider."""
+        code = AnnotationShaderBuilder().point_size(prop="size", slider=True).build()
+        # Default slider name in scale mode is 'pointScale'.
+        assert "#uicontrol float pointScale slider" in code
+        # default=scale (1.0), range=[slider_min, slider_max] (0..20).
+        assert "min=0.0, max=20.0, default=1.0" in code
+        assert "setPointMarkerSize(float(prop_size())*pointScale);" in code
+
+    def test_property_with_scale_slider_custom(self):
+        code = (
+            AnnotationShaderBuilder()
+            .point_size(
+                prop="vol",
+                scale=0.0002,
+                slider=True,
+                slider_min=0.0,
+                slider_max=0.001,
+                slider_name="volScale",
+            )
+            .build()
+        )
+        assert (
+            "#uicontrol float volScale slider(min=0.0, max=0.001, default=0.0002)"
+            in code
+        )
+        assert "setPointMarkerSize(float(prop_vol())*volScale);" in code
+
+    def test_slider_default_must_be_within_range(self):
+        """A slider's default must satisfy min <= default <= max."""
+        b = AnnotationShaderBuilder()
+        with pytest.raises(ValueError, match="default .* outside"):
+            b.opacity(default=2.0, min=0.0, max=1.0)
+        with pytest.raises(ValueError, match="default .* outside"):
+            AnnotationShaderBuilder().point_size(
+                size=50.0, slider=True, slider_min=0.0, slider_max=20.0
+            )
+        with pytest.raises(ValueError, match="default .* outside"):
+            AnnotationShaderBuilder().point_size(
+                prop="vol", scale=1.0, slider=True, slider_min=0.0, slider_max=0.001
+            )
+
+    def test_slider_min_cannot_exceed_max(self):
+        with pytest.raises(ValueError, match="cannot exceed max"):
+            AnnotationShaderBuilder().opacity(default=0.5, min=1.0, max=0.5)
+
+    def test_calling_point_size_twice_replaces_slider(self):
+        """Second call shouldn't accumulate stale slider entries."""
+        code = (
+            AnnotationShaderBuilder()
+            .point_size(prop="size", slider=True)
+            .point_size(prop="size", slider=True, slider_max=100.0)
+            .build()
+        )
+        # Only one pointScale slider line should be present.
+        assert code.count("#uicontrol float pointScale slider") == 1
+        assert "max=100.0" in code
+
+    def test_invlerp_mode_emits_uicontrol_invlerp(self):
+        code = (
+            AnnotationShaderBuilder()
+            .point_size(
+                prop="vol",
+                slider=True,
+                slider_mode="invlerp",
+                slider_min=2.0,
+                slider_max=30.0,
+                invlerp_range=(0.0, 1000.0),
+            )
+            .build()
+        )
+        # One invlerp uicontrol, no plain slider for pointScale.
+        assert (
+            '#uicontrol invlerp pointScale(property="vol", '
+            "range=[0.0, 1000.0], clamp=true)"
+        ) in code
+        assert "#uicontrol float pointScale slider" not in code
+        # GLSL maps invlerp output [0,1] to [slider_min, slider_max].
+        assert "setPointMarkerSize(2.0 + (30.0 - 2.0) * pointScale());" in code
+
+    def test_invlerp_mode_zero_min_simplifies(self):
+        code = (
+            AnnotationShaderBuilder()
+            .point_size(
+                prop="vol",
+                slider=True,
+                slider_mode="invlerp",
+                slider_min=0.0,
+                slider_max=20.0,
+            )
+            .build()
+        )
+        # When min=0 the GLSL collapses to a simple multiply.
+        assert "setPointMarkerSize(pointScale()*20.0);" in code
+
+    def test_invlerp_mode_clamp_false(self):
+        code = (
+            AnnotationShaderBuilder()
+            .point_size(
+                prop="vol",
+                slider=True,
+                slider_mode="invlerp",
+                invlerp_clamp=False,
+            )
+            .build()
+        )
+        assert "clamp=false" in code
+
+    def test_invlerp_mode_requires_slider_and_prop(self):
+        with pytest.raises(ValueError, match="invlerp"):
+            AnnotationShaderBuilder().point_size(slider_mode="invlerp")
+        with pytest.raises(ValueError, match="invlerp"):
+            AnnotationShaderBuilder().point_size(
+                prop="x", slider=False, slider_mode="invlerp"
+            )
+
+    def test_invlerp_mode_unknown_value_raises(self):
+        with pytest.raises(ValueError, match="must be 'linear' or 'invlerp'"):
+            AnnotationShaderBuilder().point_size(slider_mode="log")
+
+    def test_from_info_invlerp_mode(self):
+        info = {
+            "@type": "neuroglancer_annotations_v1",
+            "annotation_type": "point",
+            "properties": [{"id": "size", "type": "float32"}],
+        }
+        shader = auto_annotation_shader(
+            info,
+            size_slider_mode="invlerp",
+            size_slider_min=1.0,
+            size_slider_max=30.0,
+            size_invlerp_range=(0.0, 1e6),
+        )
+        assert (
+            '#uicontrol invlerp pointScale(property="size", '
+            "range=[0.0, 1000000.0], clamp=true)"
+        ) in shader
+        assert "1.0 + (30.0 - 1.0) * pointScale()" in shader
+
+    def test_from_info_invlerp_replacing_slider_after_double_call(self):
+        """Switching modes via a second call cleans up the prior control."""
+        b = AnnotationShaderBuilder()
+        b.point_size(prop="vol", slider=True)  # linear
+        b.point_size(prop="vol", slider=True, slider_mode="invlerp")  # invlerp
+        code = b.build()
+        # Only the invlerp control survives.
+        assert "#uicontrol invlerp pointScale" in code
+        assert "#uicontrol float pointScale slider" not in code
+
 
 class TestBorderWidth:
     def test_border_width_line(self):
@@ -290,6 +440,36 @@ class TestCategoricalColor:
         )
         with pytest.raises(ValueError, match="categorical_color"):
             builder.categorical_color(prop="u", categories={0: ("b", "blue")})
+
+    def test_with_show_checkboxes_false_omits_checkbox_controls(self):
+        code = (
+            AnnotationShaderBuilder()
+            .categorical_color(
+                prop="t",
+                categories={0: ("a", "red"), 1: ("b", "blue")},
+                with_show_checkboxes=False,
+            )
+            .build()
+        )
+        assert "#uicontrol bool show_" not in code
+        assert "discard" not in code
+        # Colors and dispatch still emitted.
+        assert "#uicontrol vec3 a color" in code
+        assert "#uicontrol vec3 b color" in code
+        assert "setColor(vec4(a, 1.0));" in code
+
+    def test_uppercase_label_sanitized_for_color_preserved_for_show(self):
+        """categorical_color sanitizes labels per-purpose."""
+        code = (
+            AnnotationShaderBuilder()
+            .categorical_color(prop="t", categories={0: ("PV", "red")})
+            .build()
+        )
+        # color id is lowercased-first, show id preserves casing.
+        assert "#uicontrol vec3 pV color" in code
+        assert "#uicontrol bool show_PV checkbox" in code
+        assert "if (!show_PV) { discard; }" in code
+        assert "setColor(vec4(pV, 1.0));" in code
 
     def test_label_order_follows_first_appearance(self):
         code = (
@@ -806,3 +986,475 @@ class TestFullExample:
         uicontrol_end = self.shader.rindex("#uicontrol")
         main_start = self.shader.index("void main()")
         assert uicontrol_end < main_start
+
+
+# ---------------------------------------------------------------------------
+# AnnotationShaderBuilder.from_info / auto_annotation_shader
+# ---------------------------------------------------------------------------
+
+
+class TestFromInfo:
+    """Auto-configure a shader from a Neuroglancer annotation `info` dict."""
+
+    def _info(self, properties):
+        return {
+            "@type": "neuroglancer_annotations_v1",
+            "annotation_type": "point",
+            "properties": properties,
+        }
+
+    def test_categorical_uint_with_enum(self):
+        info = self._info(
+            [
+                {
+                    "id": "cell_type",
+                    "type": "uint8",
+                    "enum_values": [0, 1, 2],
+                    "enum_labels": ["exc", "inh", "unknown"],
+                }
+            ]
+        )
+        shader = auto_annotation_shader(info)
+        for label in ("exc", "inh", "unknown"):
+            assert f"#uicontrol vec3 {label} color" in shader
+            assert f"show_{label}" in shader
+        assert "prop_cell_type() == uint(0)" in shader
+        assert "#uicontrol float opacity slider" in shader
+
+    def test_continuous_float_only(self):
+        info = self._info([{"id": "score", "type": "float32"}])
+        shader = auto_annotation_shader(info)
+        assert "colormapCubehelix" in shader
+        assert "prop_score()" in shader
+        assert "#uicontrol float rangeMin slider" in shader
+        assert "#uicontrol float rangeMax slider" in shader
+
+    def test_categorical_wins_over_float(self):
+        info = self._info(
+            [
+                {"id": "score", "type": "float32"},
+                {
+                    "id": "cell_type",
+                    "type": "uint8",
+                    "enum_values": [0, 1],
+                    "enum_labels": ["a", "b"],
+                },
+            ]
+        )
+        shader = auto_annotation_shader(info)
+        assert "colormapCubehelix" not in shader
+        assert "#uicontrol vec3 a color" in shader
+        assert "#uicontrol vec3 b color" in shader
+
+    def test_size_property_picked_by_name(self):
+        info = self._info(
+            [
+                {"id": "score", "type": "float32"},
+                {"id": "radius", "type": "float32"},
+            ]
+        )
+        shader = auto_annotation_shader(info)
+        # Property-driven size with an interactive scale slider.
+        assert "setPointMarkerSize(float(prop_radius())*pointScale);" in shader
+        assert "#uicontrol float pointScale slider" in shader
+
+    def test_explicit_size_prop(self):
+        info = self._info(
+            [
+                {"id": "score", "type": "float32"},
+                {"id": "weight", "type": "float32"},
+            ]
+        )
+        shader = auto_annotation_shader(info, size_prop="weight")
+        assert "setPointMarkerSize(float(prop_weight())*pointScale);" in shader
+
+    def test_size_scale_slider_defaults(self):
+        info = self._info([{"id": "size", "type": "float32"}])
+        shader = auto_annotation_shader(info)
+        # Default slider: range [0, 20], default 1.0
+        assert (
+            "#uicontrol float pointScale slider(min=0.0, max=20.0, default=1.0)"
+            in shader
+        )
+
+    def test_size_slider_narrow_range_auto_picks_midpoint(self):
+        """When size_scale isn't passed and 1.0 is outside the slider range,
+        the default auto-picks the midpoint."""
+        info = self._info([{"id": "size", "type": "float32"}])
+        shader = auto_annotation_shader(info, size_slider_max=0.001)
+        # Midpoint of [0.0, 0.001] = 0.0005
+        assert (
+            "#uicontrol float pointScale slider(min=0.0, max=0.001, default=0.0005)"
+            in shader
+        )
+
+    def test_explicit_size_scale_outside_range_still_raises(self):
+        """An explicitly-passed size_scale must satisfy the slider range."""
+        info = self._info([{"id": "size", "type": "float32"}])
+        with pytest.raises(ValueError, match="default .* outside"):
+            auto_annotation_shader(info, size_scale=5.0, size_slider_max=1.0)
+
+    def test_size_scale_slider_custom_range(self):
+        info = self._info([{"id": "size", "type": "float32"}])
+        shader = auto_annotation_shader(
+            info,
+            size_scale=0.0002,
+            size_slider_min=0.0,
+            size_slider_max=0.001,
+        )
+        assert (
+            "#uicontrol float pointScale slider(min=0.0, max=0.001, default=0.0002)"
+            in shader
+        )
+        assert "setPointMarkerSize(float(prop_size())*pointScale);" in shader
+
+    def test_explicit_color_prop(self):
+        info = self._info(
+            [
+                {
+                    "id": "primary",
+                    "type": "uint8",
+                    "enum_values": [0, 1],
+                    "enum_labels": ["a", "b"],
+                },
+                {
+                    "id": "secondary",
+                    "type": "uint8",
+                    "enum_values": [0, 1],
+                    "enum_labels": ["x", "y"],
+                },
+            ]
+        )
+        shader = auto_annotation_shader(info, color_prop="secondary")
+        assert "#uicontrol vec3 x color" in shader
+        assert "#uicontrol vec3 y color" in shader
+        assert "#uicontrol vec3 a color" not in shader
+
+    def test_unknown_color_prop_raises(self):
+        info = self._info([{"id": "score", "type": "float32"}])
+        with pytest.raises(ValueError, match="not found"):
+            AnnotationShaderBuilder.from_info(info, color_prop="missing")
+
+    def test_unknown_size_prop_raises(self):
+        info = self._info([{"id": "score", "type": "float32"}])
+        with pytest.raises(ValueError, match="not found"):
+            AnnotationShaderBuilder.from_info(info, size_prop="missing")
+
+    def test_rgb_property_is_skipped_with_warning(self):
+        info = self._info(
+            [
+                {"id": "marker_color", "type": "rgb"},
+                {"id": "score", "type": "float32"},
+            ]
+        )
+        with pytest.warns(UserWarning, match="rgb/rgba"):
+            shader = auto_annotation_shader(info)
+        # Float still drives color; rgb prop produces no GLSL.
+        assert "colormapCubehelix" in shader
+        assert "marker_color" not in shader
+
+    def test_uncategorized_integer_warns(self):
+        info = self._info([{"id": "raw_id", "type": "uint32"}])
+        with pytest.warns(UserWarning, match="enum_values"):
+            shader = auto_annotation_shader(info)
+        # No color encoding possible; only opacity slider remains.
+        assert "#uicontrol float opacity slider" in shader
+        assert "prop_raw_id" not in shader
+
+    def test_empty_properties(self):
+        shader = auto_annotation_shader(self._info([]))
+        assert "#uicontrol float opacity slider" in shader
+        assert "void main()" in shader
+
+    def test_enum_length_mismatch_raises(self):
+        info = self._info(
+            [
+                {
+                    "id": "cell_type",
+                    "type": "uint8",
+                    "enum_values": [0, 1, 2],
+                    "enum_labels": ["a", "b"],
+                }
+            ]
+        )
+        with pytest.raises(ValueError, match="mismatched"):
+            AnnotationShaderBuilder.from_info(info)
+
+    def test_enum_labels_with_special_chars_are_sanitized(self):
+        # GLSL identifiers can't have spaces or hyphens
+        info = self._info(
+            [
+                {
+                    "id": "cell_type",
+                    "type": "uint8",
+                    "enum_values": [0, 1],
+                    "enum_labels": ["pyramidal cell", "L2/3-int"],
+                }
+            ]
+        )
+        shader = auto_annotation_shader(info)
+        # Sanitized labels are valid Neuroglancer #uicontrol names: special
+        # chars become underscores and the first letter is lowercased.
+        assert "pyramidal_cell" in shader
+        assert "l2_3_int" in shader
+
+    def test_show_checkboxes_preserve_original_casing(self):
+        """show_<X> uses original label casing; only color names are lowercased."""
+        info = self._info(
+            [
+                {
+                    "id": "cell_type",
+                    "type": "uint32",
+                    "enum_values": [0, 1, 2],
+                    "enum_labels": ["AltBasket", "ChC", "PV"],
+                }
+            ]
+        )
+        shader = auto_annotation_shader(info, color_prop="cell_type")
+        # Color controls use the lowercased-first form …
+        assert "#uicontrol vec3 altBasket color" in shader
+        assert "#uicontrol vec3 chC color" in shader
+        assert "#uicontrol vec3 pV color" in shader
+        # … while show_<X> preserves the original casing.
+        assert "#uicontrol bool show_AltBasket checkbox" in shader
+        assert "#uicontrol bool show_ChC checkbox" in shader
+        assert "#uicontrol bool show_PV checkbox" in shader
+        # And the GLSL body references both names correctly.
+        assert "if (!show_AltBasket) { discard; }" in shader
+        assert "setColor(vec4(altBasket," in shader
+
+    def test_show_checkboxes_disabled_omits_controls_and_discard(self):
+        info = self._info(
+            [
+                {
+                    "id": "ct",
+                    "type": "uint8",
+                    "enum_values": [0, 1],
+                    "enum_labels": ["a", "b"],
+                }
+            ]
+        )
+        shader = auto_annotation_shader(info, show_checkboxes=False)
+        assert "#uicontrol bool show_" not in shader
+        assert "discard" not in shader
+        # Color setting still works.
+        assert "setColor(vec4(a," in shader
+        assert "setColor(vec4(b," in shader
+
+    def test_show_checkboxes_special_chars_sanitized(self):
+        """Non-alphanumeric chars become underscores; casing preserved."""
+        info = self._info(
+            [
+                {
+                    "id": "ct",
+                    "type": "uint8",
+                    "enum_values": [0],
+                    "enum_labels": ["L2/3-int"],
+                }
+            ]
+        )
+        shader = auto_annotation_shader(info)
+        # show_<X> preserves capital L
+        assert "show_L2_3_int" in shader
+        # color id uses lowercase-first
+        assert "#uicontrol vec3 l2_3_int" in shader
+
+    def test_uppercase_labels_lowercased_for_ng_uicontrol_regex(self):
+        """Regression test: NG's #uicontrol parser requires names to match
+        [a-z][a-zA-Z0-9_]* — labels with uppercase first letters used to
+        produce shader source NG rejected as invalid syntax."""
+        info = self._info(
+            [
+                {
+                    "id": "cell_type",
+                    "type": "uint32",
+                    "enum_values": list(range(4)),
+                    "enum_labels": ["AltBasket", "ChC", "L1", "PV"],
+                }
+            ]
+        )
+        shader = auto_annotation_shader(info, color_prop="cell_type")
+        # Validate every #uicontrol line against the exact regex NG uses.
+        import re as _re
+
+        ng_inner = _re.compile(
+            r"^([_a-zA-Z][_a-zA-Z0-9]*)[ \t]+([a-z][a-zA-Z0-9_]*)(?:[ \t]+([a-z]+))?"
+        )
+        for line in shader.splitlines():
+            if line.startswith("#uicontrol"):
+                inner = line[len("#uicontrol") :].strip()
+                assert ng_inner.match(inner), f"NG would reject: {line!r}"
+        # Spot-check the lowercased forms
+        assert "altBasket" in shader
+        assert "chC" in shader
+        assert "l1" in shader
+        assert "pV" in shader
+
+    def test_palette_dict_full_override(self):
+        info = self._info(
+            [
+                {
+                    "id": "ct",
+                    "type": "uint8",
+                    "enum_values": [0, 1, 2],
+                    "enum_labels": ["AltBasket", "ChC", "PV"],
+                }
+            ]
+        )
+        shader = auto_annotation_shader(
+            info,
+            palette={"AltBasket": "red", "ChC": "#00ff00", "PV": "orange"},
+        )
+        # Dict keys match the ORIGINAL labels, not the sanitized identifiers.
+        assert '#uicontrol vec3 altBasket color(default="red")' in shader
+        assert '#uicontrol vec3 chC color(default="#00ff00")' in shader
+        assert '#uicontrol vec3 pV color(default="orange")' in shader
+
+    def test_palette_dict_partial_uses_default_color(self):
+        info = self._info(
+            [
+                {
+                    "id": "ct",
+                    "type": "uint8",
+                    "enum_values": [0, 1, 2],
+                    "enum_labels": ["a", "b", "c"],
+                }
+            ]
+        )
+        shader = auto_annotation_shader(info, palette={"b": "red"})
+        # Default fallback is medium gray (#808080)
+        assert '#uicontrol vec3 a color(default="#808080")' in shader
+        assert '#uicontrol vec3 b color(default="red")' in shader
+        assert '#uicontrol vec3 c color(default="#808080")' in shader
+
+    def test_palette_dict_with_custom_default_color(self):
+        info = self._info(
+            [
+                {
+                    "id": "ct",
+                    "type": "uint8",
+                    "enum_values": [0, 1],
+                    "enum_labels": ["a", "b"],
+                }
+            ]
+        )
+        shader = auto_annotation_shader(
+            info, palette={"a": "red"}, default_color="#444444"
+        )
+        assert '#uicontrol vec3 a color(default="red")' in shader
+        assert '#uicontrol vec3 b color(default="#444444")' in shader
+
+    def test_palette_string_ignores_default_color(self):
+        """default_color is only consulted for dict palettes."""
+        info = self._info(
+            [
+                {
+                    "id": "ct",
+                    "type": "uint8",
+                    "enum_values": [0],
+                    "enum_labels": ["only"],
+                }
+            ]
+        )
+        shader = auto_annotation_shader(info, default_color="#abcdef")
+        # Color comes from the palette (Tableau_10), not from default_color.
+        assert "#abcdef" not in shader.lower()
+
+    def test_palette_dict_extra_keys_ignored(self):
+        info = self._info(
+            [
+                {
+                    "id": "ct",
+                    "type": "uint8",
+                    "enum_values": [0, 1],
+                    "enum_labels": ["a", "b"],
+                }
+            ]
+        )
+        # 'unused' is not in enum_labels — silently ignored.
+        shader = auto_annotation_shader(
+            info, palette={"a": "red", "b": "blue", "unused": "magenta"}
+        )
+        assert "magenta" not in shader
+
+    def test_leading_digit_label_is_prefixed(self):
+        """A label that starts with something not in [a-z] gets a 'c_' prefix."""
+        info = self._info(
+            [
+                {
+                    "id": "stage",
+                    "type": "uint8",
+                    "enum_values": [0, 1],
+                    "enum_labels": ["1st-pass", "2nd-pass"],
+                }
+            ]
+        )
+        shader = auto_annotation_shader(info)
+        assert "c_1st_pass" in shader
+        assert "c_2nd_pass" in shader
+
+    def test_returns_unbuilt_builder(self):
+        """from_info returns a builder so the caller can override."""
+        info = self._info([{"id": "score", "type": "float32"}])
+        builder = AnnotationShaderBuilder.from_info(info)
+        assert isinstance(builder, AnnotationShaderBuilder)
+        # Caller can chain more methods:
+        builder.border_width(2.0)
+        shader = builder.build()
+        assert "setPointMarkerBorderWidth(2.0)" in shader
+
+    def test_build_to_clipboard(self, monkeypatch):
+        captured = {}
+
+        def fake_copy(text):
+            captured["text"] = text
+
+        monkeypatch.setattr("nglui.statebuilder.shaders.pyperclip.copy", fake_copy)
+        shader = AnnotationShaderBuilder().opacity(default=0.5).build(to_clipboard=True)
+        assert captured["text"] == shader
+        assert "#uicontrol float opacity slider" in shader
+
+    def test_build_default_does_not_touch_clipboard(self, monkeypatch):
+        called = {"n": 0}
+
+        def fake_copy(text):
+            called["n"] += 1
+
+        monkeypatch.setattr("nglui.statebuilder.shaders.pyperclip.copy", fake_copy)
+        AnnotationShaderBuilder().opacity().build()
+        assert called["n"] == 0
+
+    def test_skeleton_build_to_clipboard(self, monkeypatch):
+        captured = {}
+
+        def fake_copy(text):
+            captured["text"] = text
+
+        monkeypatch.setattr("nglui.statebuilder.shaders.pyperclip.copy", fake_copy)
+        shader = SkeletonShaderBuilder().use_segment_color().build(to_clipboard=True)
+        assert captured["text"] == shader
+
+    def test_url_input_calls_get_annotation_info(self, monkeypatch):
+        captured = {}
+        sample_info = self._info(
+            [
+                {
+                    "id": "ct",
+                    "type": "uint8",
+                    "enum_values": [0],
+                    "enum_labels": ["only"],
+                }
+            ]
+        )
+
+        def fake_get(url):
+            captured["url"] = url
+            return sample_info
+
+        # Patch where the helper looks it up.
+        from nglui.parser import info as info_module
+
+        monkeypatch.setattr(info_module, "get_annotation_info", fake_get)
+        shader = auto_annotation_shader("https://example.com/anno-source")
+        assert captured["url"] == "https://example.com/anno-source"
+        assert "#uicontrol vec3 only color" in shader
