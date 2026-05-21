@@ -699,7 +699,7 @@ class SegmentationLayer(LayerWithSource):
         if self.shader is None:
             return viewer_state.SegmentationLayer(
                 source=source_to_neuroglancer(self.source, resolution=self.resolution),
-                visible_segments=segments_to_neuroglancer(self.segments),
+                starred_segments=dict(segments_to_neuroglancer(self.segments)),
                 annotation_color=self.color,
                 selected_alpha=self.selected_alpha,
                 not_selected_alpha=self.not_selected_alpha,
@@ -711,7 +711,7 @@ class SegmentationLayer(LayerWithSource):
         else:
             return viewer_state.SegmentationLayer(
                 source=source_to_neuroglancer(self.source, resolution=self.resolution),
-                visible_segments=segments_to_neuroglancer(self.segments),
+                starred_segments=dict(segments_to_neuroglancer(self.segments)),
                 annotation_color=self.color,
                 selected_alpha=self.selected_alpha,
                 not_selected_alpha=self.not_selected_alpha,
