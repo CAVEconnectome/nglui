@@ -285,6 +285,29 @@ class TestSegmentationLayer:
         mock_segments_to_ng.assert_called_once()
         mock_seg_layer.assert_called_once()
 
+    def test_to_neuroglancer_layer_preserves_visibility(self):
+        # Regression: visibility=False segments must remain starred-but-hidden,
+        # not be silently flipped to visible by the converter.
+        layer = SegmentationLayer(name="test_seg", source="precomputed://example")
+        layer.add_segments([123, 456, 789], visible=[True, False, True])
+        ng_layer = layer.to_neuroglancer_layer()
+
+        starred = dict(ng_layer.starred_segments)
+        assert starred[123] is True
+        assert starred[456] is False
+        assert starred[789] is True
+        assert 456 not in list(ng_layer.segments)
+
+    def test_to_neuroglancer_layer_preserves_visibility_with_shader(self):
+        layer = SegmentationLayer(name="test_seg", source="precomputed://example")
+        layer.add_shader("void main() {}")
+        layer.add_segments([123, 456], visible=[True, False])
+        ng_layer = layer.to_neuroglancer_layer()
+
+        starred = dict(ng_layer.starred_segments)
+        assert starred[123] is True
+        assert starred[456] is False
+
 
 class TestAnnotationLayer:
     def test_annotationlayer_creation_default(self):
