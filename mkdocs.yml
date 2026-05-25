@@ -25,6 +25,7 @@ nav:
     - reference/site_utils.md
     - reference/segmentprops.md
     - reference/parser.md
+    - reference/precomputed.md
 - Changelog: changelog.md
 
   
