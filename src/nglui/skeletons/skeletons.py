@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from ..statebuilder.ngl_components import SegmentationLayer
-from ..statebuilder.shaders import shader_base
+from ..statebuilder.shaders import SkeletonShaderBuilder
 
 try:
     import cloudvolume
@@ -241,53 +241,45 @@ class SkeletonManager:
         """
         return "precomputed://" + self.cv.cloudpath
 
-    def make_shader(
-        self,
-        checkbox_controls: Optional[Union[dict, list]] = None,
-        sliders: Optional[Union[dict, list]] = None,
-        defined_colors: Optional[Union[dict, list]] = None,
-        body: Optional[str] = None,
-    ) -> None:
-        """
-        Create a shader for the skeletons based on the vertex attributes and other parameters.
-        The value will be stored in the shader property of the SkeletonManager instance.
+    def make_shader_builder(self) -> SkeletonShaderBuilder:
+        """Return a :class:`~nglui.statebuilder.shaders.SkeletonShaderBuilder` pre-configured with this manager's vertex attributes.
 
-        Parameters
-        ----------
-        checkbox_controls : Optional[dict], optional
-            A dictionary of checkbox controls for the shader, by default None.
-            Keys are the control names and values are booleans indicating whether the control is enabled by default.
-            A pure list can also be provided, in which case all controls will be enabled by default.
-        sliders : Optional[dict], optional
-            A dictionary or list of slider controls for the shader, by default None.
-            Keys are the control names and values are tuples with the type (float or int), min, max, and default value.
-            If provided as al list, all sliders will be set to float type with default range of 0 to 1 and value of 0.5.
-        defined_colors : Optional[dict], optional
-            A dictionary of defined colors for the shader, by default None.
-            Keys are the color variable names and values are tuples with hex or web color names.
-            If provided as a list, sequential colors from the Tableau 10 colormap will be used.
-        body : Optional[str], optional
-            Additional body code for the shader, by default None.
-            This can be used to add custom shader logic or functions and should contain the emitRGB function.
-            If None, a default body will be generated.
+        Use the builder to declare the coloring scheme, then assign the result
+        to :attr:`shader`::
+
+            manager.shader = (
+                manager.make_shader_builder()
+                .categorical_color(
+                    attr="compartment",
+                    categories={1: ("axon", "white"), 2: ("dendrite", "cyan")},
+                )
+                .build()
+            )
+
+        Returns
+        -------
+        SkeletonShaderBuilder
         """
-        self._shader = shader_base(
-            vertex_attributes=self.vertex_attribute_names,
-            checkbox_controls=checkbox_controls,
-            sliders=sliders,
-            defined_colors=defined_colors,
-            body=body,
-        )
+        return SkeletonShaderBuilder(self.vertex_attribute_names)
 
     @property
     def shader(self) -> str:
-        """
-        Return a skeleton shader with appropriate vertex properties and other attributes as set in `make_shader`.
-        If no shader is set, return a default shader that uses the vertex attributes defined in the SkeletonManager.
+        """Skeleton shader GLSL string.
+
+        If not explicitly set, returns a minimal default shader that emits each
+        segment's assigned colour.
         """
         if self._shader is None:
-            return shader_base(vertex_attributes=self.vertex_attribute_names)
+            return (
+                SkeletonShaderBuilder(self.vertex_attribute_names)
+                .use_segment_color()
+                .build()
+            )
         return self._shader
+
+    @shader.setter
+    def shader(self, value: str) -> None:
+        self._shader = value
 
     def to_segmentation_layer(
         self,

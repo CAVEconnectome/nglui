@@ -178,3 +178,84 @@ def test_polyline_annotation_parsing():
 
     # pointB column is dropped (as before for non-polyline types)
     assert "pointB" not in df_split.columns
+
+
+# ---------------------------------------------------------------------------
+# get_annotation_info
+# ---------------------------------------------------------------------------
+
+
+class _FakeResponse:
+    def __init__(self, payload, status_code=200):
+        self._payload = payload
+        self.status_code = status_code
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            import requests
+
+            raise requests.HTTPError(f"status {self.status_code}")
+
+    def json(self):
+        return self._payload
+
+
+def test_get_annotation_info_happy_path(monkeypatch):
+    from nglui.parser.info import get_annotation_info
+
+    payload = {
+        "@type": "neuroglancer_annotations_v1",
+        "annotation_type": "point",
+        "properties": [{"id": "score", "type": "float32"}],
+    }
+    captured = {}
+
+    def fake_get(url):
+        captured["url"] = url
+        return _FakeResponse(payload)
+
+    monkeypatch.setattr("nglui.parser.info.requests.get", fake_get)
+    info = get_annotation_info("https://example.com/anno")
+    assert info == payload
+    assert captured["url"] == "https://example.com/anno/info"
+
+
+def test_get_annotation_info_strips_trailing_slash(monkeypatch):
+    from nglui.parser.info import get_annotation_info
+
+    captured = {}
+
+    def fake_get(url):
+        captured["url"] = url
+        return _FakeResponse(
+            {
+                "@type": "neuroglancer_annotations_v1",
+                "properties": [],
+            }
+        )
+
+    monkeypatch.setattr("nglui.parser.info.requests.get", fake_get)
+    get_annotation_info("https://example.com/anno/")
+    assert captured["url"] == "https://example.com/anno/info"
+
+
+def test_get_annotation_info_wrong_type_raises(monkeypatch):
+    from nglui.parser.info import get_annotation_info
+
+    monkeypatch.setattr(
+        "nglui.parser.info.requests.get",
+        lambda url: _FakeResponse({"@type": "neuroglancer_segment_properties_v1"}),
+    )
+    with pytest.raises(ValueError, match="@type"):
+        get_annotation_info("https://example.com/anno")
+
+
+def test_get_annotation_info_missing_properties_raises(monkeypatch):
+    from nglui.parser.info import get_annotation_info
+
+    monkeypatch.setattr(
+        "nglui.parser.info.requests.get",
+        lambda url: _FakeResponse({"@type": "neuroglancer_annotations_v1"}),
+    )
+    with pytest.raises(ValueError, match="properties"):
+        get_annotation_info("https://example.com/anno")

@@ -12,6 +12,7 @@ nav:
       - usage/statebuilder.md
       - usage/config.md
     - Other Features:
+      - usage/shaders.md
       - usage/skeletons.md
       - usage/segmentprops.md
       - usage/parser.md

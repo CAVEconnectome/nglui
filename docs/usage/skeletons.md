@@ -63,3 +63,44 @@ For example, to visualize the skeletons we just uploaded in a complete Neuroglan
     .add_layer(skm.to_segmentation_layer())
 ).to_link()
 ```
+
+## Skeleton shaders
+
+The appearance of skeletons in Neuroglancer is controlled by a GLSL shader attached to the segmentation layer.
+`SkeletonManager` exposes a `make_shader_builder()` method that returns a `SkeletonShaderBuilder` pre-configured with the manager's vertex attributes, which can then be used to define the shader programmatically.
+
+For example, to colour skeletons using each segment's assigned colour and desaturate non-axon compartments (assuming `compartment` is a declared vertex attribute):
+
+``` py
+skm.shader = (
+    skm.make_shader_builder()
+    .use_segment_color()
+    .desaturate(attr="compartment", reference_value=2.0)
+    .build()
+)
+```
+
+Or to assign fixed colours per compartment:
+
+``` py
+skm.shader = (
+    skm.make_shader_builder()
+    .categorical_color(
+        attr="compartment",
+        categories={
+            1: ("axon",     "white"),
+            2: ("dendrite", "cyan"),
+            3: ("soma",     "yellow"),
+        },
+    )
+    .build()
+)
+```
+
+Once the shader is set, pass it through `to_segmentation_layer()`:
+
+``` py
+layer = skm.to_segmentation_layer()
+```
+
+See the [Shaders guide](shaders.md) for the full `SkeletonShaderBuilder` API, including continuous colormaps and string-label categories.
