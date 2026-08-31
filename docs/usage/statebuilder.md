@@ -521,6 +521,41 @@ This will use the info in the CAVEclient to find any relevent information (inclu
 There are a variety of parameters to control layer properties here, as well.
 In all cases, the image layer will be added first (if used) and then the segmentation layer.
 
+### Quick links from root ids
+
+If all you want is a link showing one or more root ids, `helpers.make_segment_link` does the whole thing in one line:
+
+``` pycon
+from nglui import statebuilder
+
+statebuilder.helpers.make_segment_link(client, root_ids=[864691135474648896])
+```
+
+By default this returns an HTML link that renders in a notebook.
+Use `return_as` to get something else: `"url"` for the URL string, `"clipboard"` to copy the URL to your system clipboard, `"browser"` to open it, `"dict"` or `"json"` for the raw state, or `"viewer"` for the `ViewerState` itself so you can keep building on it.
+
+``` pycon
+url = statebuilder.helpers.make_segment_link(
+    client,
+    root_ids=[864691135474648896],
+    return_as="url",
+    shorten="if_long",
+)
+```
+
+You can also attach [segment properties](../usage/segmentprops.md) at the same time.
+Pass either a `SegmentProperties` object or the property JSON it produces, and it will be uploaded via the client's state service and added as a source on the segmentation layer:
+
+``` pycon
+statebuilder.helpers.make_segment_link(
+    client,
+    root_ids=root_ids,
+    segment_properties=seg_prop,
+)
+```
+
+If you want the `ViewerState` rather than a rendered link, `helpers.make_segment_state` takes the same state-building arguments and returns the viewer directly.
+
 ## Mapping Data
 
 In some situations, it can make sense to separate data from the Neuroglancer state creation rules.

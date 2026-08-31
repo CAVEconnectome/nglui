@@ -784,9 +784,9 @@ class ViewerState:
             else:
                 raise ValueError("No segmentation layer found in the viewer.")
 
-        if client is None and self._client is not None:
+        if client is None:
             client = self._client
-        else:
+        if client is None:
             raise ValueError("Client must be specified.")
 
         self.layers[name].add_segment_properties(

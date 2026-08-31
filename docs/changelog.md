@@ -2,6 +2,20 @@
 
 This project attempts to follow [Semantic Versioning](https://semver.org) and uses [Keep-a-Changelog formatting](https://keepachangelog.com/en/1.0.0/). But I make mistakes sometimes.
 
+## [Unreleased]
+
+### Added
+
+- **StateBuilder**: New helpers `statebuilder.helpers.make_segment_state` and `statebuilder.helpers.make_segment_link` turn a CAVEclient plus root ids (and, optionally, segment properties) into a viewer state or a link in one line. Segment properties can be passed as a `SegmentProperties` object or as property JSON, and are uploaded and attached to the segmentation layer automatically.
+- **StateBuilder**: `statebuilder.helpers.add_segment_properties_source` adds an already-built segment property to a segmentation layer of an existing viewer state.
+- **StateBuilder**: Link-producing helpers now accept `return_as="clipboard"`, `"browser"`, and `"viewer"` in addition to `"link"`, `"url"`, `"dict"`, and `"json"`.
+- **StateBuilder**: `statebuilder.helpers.make_neuron_neuroglancer_link` gained `segment_properties`, `segmentation_layer_name`, and `link_text` arguments.
+
+### Fixed
+
+- **StateBuilder**: `ViewerState.add_segment_properties` raised "Client must be specified" whenever a client *was* specified.
+- **StateBuilder**: `statebuilder.helpers.make_neuron_neuroglancer_link` failed when shortening a URL because the client was not passed through to the link shortener, and its documented `shorten` values of `"never"` and `"always"` did not work.
+
 ## [4.7.1] - 2026-02-10
 
 ### Changed
