@@ -67,15 +67,30 @@ class TestAdditionalNglComponents:
         assert len(layer.annotations) == 1
         assert layer.annotations[0] is point_anno
 
-    def test_annotationlayer_too_many_tags(self):
-        layer = AnnotationLayer(name="test_anno", resolution=[4, 4, 40])
-        # MAX_TAG_COUNT is imported, let's create too many tags
+    def test_annotationlayer_too_many_tags_legacy(self):
+        """The limit belongs to the legacy encoding, which has only ten tag tools."""
         from nglui.statebuilder.ngl_annotations import MAX_TAG_COUNT
 
+        layer = AnnotationLayer(
+            name="test_anno", resolution=[4, 4, 40], capabilities="legacy"
+        )
         layer.tags = [f"tag_{i}" for i in range(MAX_TAG_COUNT + 1)]
 
         with pytest.raises(ValueError, match="Too many tags"):
             layer._to_neuroglancer_layer_local()
+
+    def test_annotationlayer_many_tags_allowed_with_bool_properties(self):
+        """Bool properties have no such limit; only keybindings run out."""
+        from nglui.statebuilder.ngl_annotations import MAX_TAG_COUNT
+
+        layer = AnnotationLayer(
+            name="test_anno", resolution=[4, 4, 40], capabilities="modern"
+        )
+        layer.tags = [f"tag_{i}" for i in range(MAX_TAG_COUNT + 1)]
+
+        with pytest.warns(UserWarning, match="keyboard shortcuts"):
+            ngl_layer = layer._to_neuroglancer_layer_local()
+        assert len(ngl_layer.to_json()["annotationProperties"]) == MAX_TAG_COUNT + 1
 
     def test_coordspace_edge_cases(self):
         # Test with different units per dimension - use "um" instead of "μm"

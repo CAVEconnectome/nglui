@@ -824,18 +824,13 @@ class TestAnnotationLayerEdgeCases:
         assert len(layer.tags) == MAX_TAG_COUNT
 
     def test_annotationlayer_too_many_tags(self):
-        # This tests the problematic area mentioned in ngl_components.py:1054-1057
+        """Assigning tags is always allowed; only the legacy encoding rejects them."""
         from nglui.statebuilder.ngl_annotations import MAX_TAG_COUNT
 
         layer = AnnotationLayer(name="test")
-
-        # Try to add more than MAX_TAG_COUNT tags
         too_many_tags = [f"tag_{i}" for i in range(MAX_TAG_COUNT + 5)]
-
-        # The behavior when exceeding MAX_TAG_COUNT depends on implementation
-        # This test documents current behavior
         layer.tags = too_many_tags
-        # May truncate, raise error, or handle differently
+        assert len(layer.tags) == MAX_TAG_COUNT + 5
 
     def test_annotationlayer_conflicting_linked_segmentation(self):
         layer = AnnotationLayer(name="test_anno")
