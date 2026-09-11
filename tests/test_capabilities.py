@@ -87,9 +87,9 @@ class TestCapabilitiesObject:
         with pytest.raises(ValueError, match="Unknown capability"):
             caps.MAIN_CAPABILITIES.supports("teleportation")
 
-    def test_default_is_conservative(self):
-        """A bool property breaks an old viewer outright; legacy only degrades."""
-        assert caps.get_default_capabilities().annotation_bool_properties is False
+    def test_default_tracks_main(self):
+        """Deployments overwhelmingly descend from main; the ones that do not are probed."""
+        assert caps.get_default_capabilities() == caps.MAIN_CAPABILITIES
 
     def test_set_default_round_trip(self):
         original = caps.get_default_capabilities()
@@ -479,9 +479,10 @@ class TestDeploymentWithoutVersionJson:
     """Many deployments do not serve version.json at all.
 
     Detection is a convenience layered over state building, so every one of these
-    has to degrade to the conservative default rather than fail. The asymmetry is
-    why the fallback is legacy: wrongly claiming a viewer understands bool
-    properties costs the whole annotation layer.
+    has to fall back rather than fail. The fallback is the module default, which
+    tracks main; what matters here is that nothing raises and a warning names the
+    argument to set, since an unidentified deployment predating bool properties
+    would drop the annotation layer.
     """
 
     def _get(self, mocker, body, status=200):
@@ -498,7 +499,7 @@ class TestDeploymentWithoutVersionJson:
         with pytest.warns(UserWarning, match="Could not determine"):
             assert (
                 caps.capabilities_for_url("https://example.org/")
-                == caps.LEGACY_CAPABILITIES
+                == caps.get_default_capabilities()
             )
 
     def test_static_host_serves_index_html_with_200(self, mocker):
@@ -507,7 +508,7 @@ class TestDeploymentWithoutVersionJson:
         with pytest.warns(UserWarning, match="Could not determine"):
             assert (
                 caps.capabilities_for_url("https://example.org/")
-                == caps.LEGACY_CAPABILITIES
+                == caps.get_default_capabilities()
             )
 
     def test_index_html_larger_than_the_read_cap(self, mocker):
@@ -517,7 +518,7 @@ class TestDeploymentWithoutVersionJson:
         with pytest.warns(UserWarning):
             assert (
                 caps.capabilities_for_url("https://example.org/")
-                == caps.LEGACY_CAPABILITIES
+                == caps.get_default_capabilities()
             )
 
     def test_json_that_is_not_version_info(self, mocker):
@@ -525,7 +526,7 @@ class TestDeploymentWithoutVersionJson:
         with pytest.warns(UserWarning):
             assert (
                 caps.capabilities_for_url("https://example.org/")
-                == caps.LEGACY_CAPABILITIES
+                == caps.get_default_capabilities()
             )
 
     def test_version_json_without_a_tag_falls_back(self, mocker):
@@ -543,7 +544,7 @@ class TestDeploymentWithoutVersionJson:
         with pytest.warns(UserWarning):
             assert (
                 caps.capabilities_for_url("https://example.org/")
-                == caps.LEGACY_CAPABILITIES
+                == caps.get_default_capabilities()
             )
 
     def test_a_tagged_state_still_builds_offline(self, mocker):
@@ -564,6 +565,4 @@ class TestDeploymentWithoutVersionJson:
                 linked_segmentation=None,
             )
             layer = vs.to_dict()["layers"][0]
-        assert layer["annotationProperties"] == [
-            {"id": "tag0", "type": "uint8", "tag": "axon"}
-        ]
+        assert layer["annotationProperties"] == [{"id": "axon", "type": "bool"}]

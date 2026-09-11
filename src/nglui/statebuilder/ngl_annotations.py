@@ -555,6 +555,10 @@ def strategy_for_capabilities(capabilities) -> TagStrategy:
         `BOOL_PROPERTY_TAG_STRATEGY` if bool annotation properties are supported,
         otherwise `LEGACY_TAG_STRATEGY`.
     """
-    if capabilities is not None and capabilities.annotation_bool_properties:
+    if capabilities is None:
+        from .capabilities import get_default_capabilities
+
+        capabilities = get_default_capabilities()
+    if capabilities.annotation_bool_properties:
         return BOOL_PROPERTY_TAG_STRATEGY
     return LEGACY_TAG_STRATEGY

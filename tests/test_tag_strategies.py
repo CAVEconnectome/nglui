@@ -185,9 +185,18 @@ class TestStrategySelection:
             strategy_for_capabilities(LEGACY_CAPABILITIES), LegacyTagStrategy
         )
 
-    def test_unknown_capabilities_are_conservative(self):
-        """The safe choice when nothing is known: bool properties break old viewers."""
-        assert isinstance(strategy_for_capabilities(None), LegacyTagStrategy)
+    def test_unset_capabilities_follow_the_module_default(self):
+        from nglui.statebuilder.capabilities import get_default_capabilities
+
+        expected = (
+            BoolPropertyStrategy
+            if get_default_capabilities().annotation_bool_properties
+            else LegacyTagStrategy
+        )
+        assert isinstance(strategy_for_capabilities(None), expected)
+
+    def test_explicitly_empty_capabilities_use_the_legacy_encoding(self):
+        """A deployment known to support nothing is not the same as an unknown one."""
         assert isinstance(strategy_for_capabilities(Capabilities()), LegacyTagStrategy)
 
 

@@ -12,13 +12,22 @@ The capability that currently matters is how annotation tags are encoded:
 - Spelunker instead uses ``uint8`` properties carrying a non-standard
   ``tag`` key, bound to ``tagTool_tagN`` tool types.
 
-These encodings fail asymmetrically, which is why the conservative default is the older
-one. A ``type: "bool"`` property sent to a viewer that predates bool properties makes
-``parseAnnotationPropertyType`` throw, and the **entire layer** fails to load. The
-reverse is merely lossy: a modern viewer parses a legacy tag property fine, ignoring
-the unknown ``tag`` key, so the state still opens -- just without tag labels or
-bindings. When nglui does not know what the target supports, it must pick the encoding
-that degrades rather than the one that breaks.
+The default when a deployment cannot be identified is ``main``, because deployments
+overwhelmingly descend from it and the ones that do not -- Spelunker in particular --
+are identified by probing rather than left to the default.
+
+Be aware of what that costs when it is wrong, because the two encodings fail very
+differently. A ``type: "bool"`` property sent to a viewer predating bool properties
+makes ``parseAnnotationPropertyType`` throw, and Neuroglancer drops the whole
+annotation layer from the state and rewrites its URL without it -- so the annotations
+are gone, not merely unrendered. The reverse is only lossy: a current viewer parses a
+Spelunker tag property fine, ignoring the unknown ``tag`` key, so the state still opens
+without tag labels or bindings.
+
+Detection covers the deployments that need the older encoding, so the default is
+reached only for a deployment nglui cannot identify at all. That case warns, naming the
+argument to set. Pin `capabilities` or call `set_default_capabilities` when targeting a
+deployment that does not serve a usable ``version.json``.
 """
 
 from __future__ import annotations
@@ -219,8 +228,10 @@ _CAPABILITY_ALIASES = {
     "google": MAIN_CAPABILITIES,
 }
 
-# Conservative on purpose -- see the module docstring on asymmetric failure.
-_DEFAULT_CAPABILITIES = LEGACY_CAPABILITIES
+# Deployments overwhelmingly descend from main, and the ones that do not are
+# identified by probing rather than left to this. See the module docstring for what
+# being wrong costs in each direction.
+_DEFAULT_CAPABILITIES = MAIN_CAPABILITIES
 
 
 def parse_capabilities(
@@ -565,9 +576,11 @@ def capabilities_for_url(
         default = get_default_capabilities()
         warnings.warn(
             f"Could not determine Neuroglancer capabilities for {url}; assuming "
-            f"'{default.source}' annotation tags. Pass capabilities='main' or "
-            f"capabilities='legacy' to choose explicitly, or call "
-            f"set_default_capabilities() to change the fallback.",
+            f"'{default.source}' annotation tags. If that deployment is older than "
+            "bool annotation properties, it will drop the annotation layer rather "
+            "than render it. Pass capabilities='legacy' for a Spelunker-style "
+            "deployment, capabilities='main' to silence this, or call "
+            "set_default_capabilities() to change the fallback.",
             stacklevel=2,
         )
     return get_default_capabilities()

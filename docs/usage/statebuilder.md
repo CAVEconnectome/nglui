@@ -505,11 +505,11 @@ That lookup is only attempted when a local annotation layer actually has tags, i
 is cached, and a failure never raises -- so building states offline works, it just falls
 back to the default.
 
-**If your deployment does not serve `version.json`**, nothing breaks. A 404, an
+**If your deployment does not serve `version.json`**, nothing raises. A 404, an
 unreachable host, a static host that answers every path with `index.html`, or a
 `version.json` with no `tag` field all resolve the same way: nglui falls back to the
-legacy encoding, warns once naming the argument to set, and builds the state. The cost
-is one failed request per deployment per process, because failures are cached too.
+default, warns once naming the argument to set, and builds the state. The cost is one
+failed request per deployment per process, because failures are cached too.
 
 For a deployment nglui cannot identify, say so once and skip the lookup entirely:
 
@@ -526,13 +526,24 @@ carries a repository and a build date. The date records when a build was cut rat
 what is in it, so a fresh rebuild of an old branch would look capable when it is not --
 and claiming capability wrongly is the direction that costs the whole annotation layer.
 
-**The fallback is the legacy encoding, deliberately.** The two formats fail very
-differently: a `bool` property sent to a viewer that predates the feature makes the whole
-annotation layer fail to load, while a legacy tag property in a modern viewer merely
-loses its label and shortcut. When nglui cannot tell what the target supports, it picks
-the encoding that degrades rather than the one that breaks. To change that, use
-`set_default_capabilities("main")`, or set `NGLUI_DISABLE_CAPABILITY_PROBE=1` to
-suppress the lookup entirely.
+**When nglui cannot identify a deployment it assumes `main`**, since deployments
+overwhelmingly descend from it and the ones that do not — Spelunker among them — are
+identified by the lookup rather than left to the default.
+
+Know what that costs if it is wrong, because the two formats fail very differently. A
+`bool` property sent to a viewer predating the feature makes Neuroglancer **drop the
+annotation layer from the state entirely** and rewrite its URL without it, so the
+annotations are gone rather than merely unrendered. The reverse is only lossy: a Spelunker
+tag property in a current viewer still loads, just without its label or shortcut.
+
+So if you target a deployment that serves no usable `version.json` and predates bool
+annotation properties, say so once:
+
+```python
+set_default_capabilities("legacy")   # or capabilities="legacy" per state
+```
+
+`NGLUI_DISABLE_CAPABILITY_PROBE=1` suppresses the lookup entirely and uses the default.
 
 ###### Tag names as property ids
 
