@@ -5,6 +5,9 @@ as much about *not* failing -- offline, on garbage, on an unknown fork -- as it 
 about correctly identifying known deployments.
 """
 
+import warnings
+
+import pandas as pd
 import pytest
 import requests
 
@@ -504,3 +507,86 @@ class TestBundleProbe:
         monkeypatch.setenv(caps.DISABLE_PROBE_ENV_VAR, "1")
         assert caps.probe_capabilities("https://example.org/") is None
         assert get.call_count == 0
+
+
+class TestOfflineStateBuilding:
+    """Building a state must not depend on reaching the network.
+
+    The probe is a convenience; every way it can fail has to leave a usable state.
+    """
+
+    @pytest.fixture
+    def tagged_df(self):
+        return pd.DataFrame({"x": [1, 2], "y": [1, 2], "z": [1, 2], "ct": ["a", "b"]})
+
+    def _build(self, tagged_df, n=1):
+        from nglui.statebuilder import ViewerState
+
+        layers = []
+        for _ in range(n):
+            vs = ViewerState(dimensions=[1, 1, 1])
+            vs.add_points(
+                tagged_df,
+                point_column=["x", "y", "z"],
+                tag_column="ct",
+                linked_segmentation=None,
+            )
+            layers.append(vs.to_dict()["layers"][0])
+        return layers
+
+    def test_offline_still_produces_a_valid_state(self, mocker, tagged_df):
+        mocker.patch("requests.get", side_effect=requests.ConnectionError("offline"))
+        with pytest.warns(UserWarning, match="Could not determine"):
+            layers = self._build(tagged_df)
+        assert len(layers[0]["annotationProperties"]) == 2
+        assert all(len(a["props"]) == 2 for a in layers[0]["annotations"])
+
+    def test_offline_costs_one_attempt_per_process(self, mocker, tagged_df):
+        get = mocker.patch(
+            "requests.get", side_effect=requests.ConnectionError("offline")
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self._build(tagged_df, n=5)
+        assert get.call_count == 1
+
+    def test_a_tagless_state_never_reaches_the_network(self, mocker):
+        from nglui.statebuilder import ViewerState
+
+        get = mocker.patch("requests.get", side_effect=AssertionError("probed!"))
+        vs = ViewerState(dimensions=[1, 1, 1])
+        vs.add_points(
+            pd.DataFrame({"x": [1], "y": [1], "z": [1]}),
+            point_column=["x", "y", "z"],
+            linked_segmentation=None,
+        )
+        vs.to_dict()
+        assert get.call_count == 0
+
+    def test_opting_out_is_silent(self, mocker, monkeypatch, tagged_df):
+        """Disabling the probe is a choice, not a failure to determine anything."""
+        monkeypatch.setenv(caps.DISABLE_PROBE_ENV_VAR, "1")
+        get = mocker.patch("requests.get", side_effect=AssertionError("probed!"))
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            self._build(tagged_df)
+        assert get.call_count == 0
+
+    def test_pinned_capabilities_never_reach_the_network(self, mocker, tagged_df):
+        from nglui.statebuilder import ViewerState
+
+        get = mocker.patch("requests.get", side_effect=AssertionError("probed!"))
+        vs = ViewerState(dimensions=[1, 1, 1], capabilities="legacy")
+        vs.add_points(
+            tagged_df,
+            point_column=["x", "y", "z"],
+            tag_column="ct",
+            linked_segmentation=None,
+        )
+        vs.to_dict()
+        assert get.call_count == 0
+
+    def test_the_bundle_read_is_bounded(self):
+        """A misbehaving deployment must not stall a state build indefinitely."""
+        assert caps.BUNDLE_TIMEOUT[1] <= 5.0
+        assert caps.PROBE_TIMEOUT[1] <= 2.0

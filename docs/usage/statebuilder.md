@@ -506,8 +506,10 @@ back to the default.
 **If the bundle cannot be read**, nothing raises. An unreachable host, a page with no
 recognizable bundle, or anything that is not a Neuroglancer deployment all resolve the
 same way: nglui falls back to the default, warns once naming the argument to set, and
-builds the state. The lookup costs about 0.4s per deployment per process and is cached,
-failures included.
+builds the state. The lookup costs about 0.4s per deployment per process and is cached, failures
+included — building states offline pays one failed connection and then nothing. A
+deployment that accepts a connection and then stalls is bounded by the read timeouts
+rather than hanging indefinitely.
 
 For a deployment nglui cannot identify, say so once and skip the lookup entirely:
 

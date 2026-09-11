@@ -406,8 +406,14 @@ def get_version_info(url: str) -> Optional[dict]:
         return None
 
 
-BUNDLE_TIMEOUT = (2.0, 10.0)
-"""(connect, read) for the client bundle, which is larger than version.json."""
+BUNDLE_TIMEOUT = (2.0, 5.0)
+"""(connect, read) for the client bundle.
+
+Bundles measured 0.4-1.3 MB and fetched in under half a second, so five seconds
+leaves generous headroom while bounding how long a misbehaving deployment can stall a
+state build -- the worst case is this plus the index fetch. Raise it for a very slow
+link, or pin `capabilities` to skip the lookup entirely.
+"""
 
 MAX_BUNDLE_BYTES = 32 * 1024 * 1024
 
@@ -509,7 +515,8 @@ def capabilities_for_url(
         resolved = probe_capabilities(url)
         if resolved is not None:
             return resolved
-    if warn_on_fallback and url and url not in _warned_urls:
+    opted_out = bool(os.environ.get(DISABLE_PROBE_ENV_VAR))
+    if warn_on_fallback and url and not opted_out and url not in _warned_urls:
         _warned_urls.add(url)
         default = get_default_capabilities()
         warnings.warn(
