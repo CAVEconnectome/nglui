@@ -47,7 +47,6 @@ class TestParseCapabilities:
             ("bool_properties", True),
             ("legacy", False),
             ("spelunker", False),
-            ("seung-lab", False),
         ],
     )
     def test_string_aliases(self, alias, bool_props):
@@ -78,7 +77,7 @@ class TestCapabilitiesObject:
     def test_supports_named_capability(self):
         assert caps.MODERN_CAPABILITIES.supports(caps.ANNOTATION_BOOL_PROPERTIES)
         assert not caps.LEGACY_CAPABILITIES.supports(caps.ANNOTATION_BOOL_PROPERTIES)
-        assert caps.LEGACY_CAPABILITIES.supports(caps.SEUNG_LAB_TAG_TOOLS)
+        assert caps.LEGACY_CAPABILITIES.supports(caps.SPELUNKER_TAG_TOOLS)
 
     def test_unknown_capability_raises(self):
         with pytest.raises(ValueError, match="Unknown capability"):
@@ -118,7 +117,7 @@ class TestCapabilitiesFromVersionInfo:
     def test_spelunker_is_tag_tools(self):
         info = caps._parse_version_payload(SPELUNKER_PAYLOAD)
         resolved = caps.capabilities_from_version_info(info)
-        assert resolved.seung_lab_tag_tools
+        assert resolved.spelunker_tag_tools
         assert not resolved.annotation_bool_properties
 
     def test_recent_google_supports_bool_properties(self):
@@ -148,11 +147,32 @@ class TestCapabilitiesFromVersionInfo:
         info = {
             "url": "https://github.com/seung-lab/neuroglancer/commit/abc",
             "tag": "v2.37-347-gabc1234",
+            "branch": "seung-lab/neuroglancer/spelunker",
             "timestamp": "Sat Sep 5 09:21:38 UTC 2026",
         }
         resolved = caps.capabilities_from_version_info(info)
         assert not resolved.annotation_bool_properties
-        assert resolved.seung_lab_tag_tools
+        assert resolved.spelunker_tag_tools
+
+    def test_tag_tools_come_from_the_branch_not_the_repository(self):
+        """base-cave and spelunker share a repository but are different deployments."""
+        base = {
+            "url": "https://github.com/seung-lab/neuroglancer/commit/383b1cfe",
+            "tag": "v2.37-32-g383b1cfe",
+            "branch": "seung-lab/neuroglancer/base-cave",
+        }
+        spelunker = dict(base, branch="seung-lab/neuroglancer/spelunker")
+        assert not caps.capabilities_from_version_info(base).spelunker_tag_tools
+        assert caps.capabilities_from_version_info(spelunker).spelunker_tag_tools
+
+    def test_missing_branch_is_not_tag_tooled(self):
+        """The Google demo serves no branch field."""
+        info = {
+            "url": "https://github.com/google/neuroglancer/commit/3598da30",
+            "tag": "v2.41.2-110-g3598da30",
+            "timestamp": "Sat Sep 5 09:21:38 UTC 2026",
+        }
+        assert not caps.capabilities_from_version_info(info).spelunker_tag_tools
 
     def test_rebased_fork_is_recognized_without_an_allowlist(self):
         """A fork that rebases past the feature release gains it automatically.
@@ -163,13 +183,14 @@ class TestCapabilitiesFromVersionInfo:
         info = {
             "url": "https://github.com/seung-lab/neuroglancer/commit/ffff",
             "tag": "v2.41.2-400-gffffaaa",
+            "branch": "seung-lab/neuroglancer/spelunker",
             "timestamp": "Wed Sep 9 00:00:00 UTC 2026",
         }
         resolved = caps.capabilities_from_version_info(info)
         assert resolved.annotation_bool_properties
         assert resolved.annotation_property_tools
         # Tag tooling is an independent axis -- a rebased fork keeps both.
-        assert resolved.seung_lab_tag_tools
+        assert resolved.spelunker_tag_tools
 
     def test_unknown_fork_is_classified_by_its_release(self):
         info = {
@@ -179,7 +200,7 @@ class TestCapabilitiesFromVersionInfo:
         }
         resolved = caps.capabilities_from_version_info(info)
         assert resolved.annotation_bool_properties
-        assert not resolved.seung_lab_tag_tools
+        assert not resolved.spelunker_tag_tools
 
     def test_later_release_needs_no_timestamp(self):
         info = {

@@ -47,7 +47,7 @@ class TestTagDictionary:
             1: "soma",
         }
 
-    def test_reads_seung_lab_tag_property_dialect(self):
+    def test_reads_spelunker_tag_property_dialect(self):
         state = _build_state("legacy")
         assert parser.tag_dictionary(state, "annos") == {0: "axon", 1: "soma"}
 

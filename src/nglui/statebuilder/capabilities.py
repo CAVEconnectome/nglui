@@ -9,7 +9,7 @@ The capability that currently matters is how annotation tags are encoded:
 - Main Neuroglancer has no "tag" concept. A tag is an annotation property of
   ``type: "bool"``, and hotkeys bind to generic property tools such as
   ``toggleBoolProperty``.
-- seung-lab forks (Spelunker) instead use ``uint8`` properties carrying a non-standard
+- Spelunker instead uses ``uint8`` properties carrying a non-standard
   ``tag`` key, bound to ``tagTool_tagN`` tool types.
 
 These encodings fail asymmetrically, which is why the conservative default is the older
@@ -39,7 +39,7 @@ from cachetools import TTLCache, cached
 __all__ = [
     "ANNOTATION_BOOL_PROPERTIES",
     "ANNOTATION_PROPERTY_TOOLS",
-    "SEUNG_LAB_TAG_TOOLS",
+    "SPELUNKER_TAG_TOOLS",
     "Capabilities",
     "LEGACY_CAPABILITIES",
     "MODERN_CAPABILITIES",
@@ -60,12 +60,12 @@ ANNOTATION_BOOL_PROPERTIES = "annotation_bool_properties"
 ANNOTATION_PROPERTY_TOOLS = "annotation_property_tools"
 """Understands object-form ``toolBindings`` such as ``toggleBoolProperty``."""
 
-SEUNG_LAB_TAG_TOOLS = "seung_lab_tag_tools"
+SPELUNKER_TAG_TOOLS = "spelunker_tag_tools"
 """Implements ``tagTool_tagN`` *and* renders a property's ``tag`` key as its label.
 
 Deliberately not named "legacy tag properties": every viewer happily parses a uint8
 property with an unknown ``tag`` key. What is actually separable is whether the
-deployment gives that key any meaning, which only seung-lab forks do.
+deployment gives that key any meaning, which is a Spelunker behavior.
 """
 
 
@@ -79,7 +79,7 @@ class Capabilities:
         Whether ``type: "bool"`` annotation properties are understood.
     annotation_property_tools : bool
         Whether object-form property tool bindings are understood.
-    seung_lab_tag_tools : bool
+    spelunker_tag_tools : bool
         Whether ``tagTool_tagN`` bindings and the ``tag`` property key are rendered.
     source : str
         Human-readable note on where this determination came from, for diagnostics.
@@ -87,7 +87,7 @@ class Capabilities:
 
     annotation_bool_properties: bool = False
     annotation_property_tools: bool = False
-    seung_lab_tag_tools: bool = False
+    spelunker_tag_tools: bool = False
     source: str = "unspecified"
 
     def supports(self, capability: str) -> bool:
@@ -112,7 +112,7 @@ class Capabilities:
             raise ValueError(
                 f"Unknown capability {capability!r}. Known capabilities: "
                 f"{ANNOTATION_BOOL_PROPERTIES}, {ANNOTATION_PROPERTY_TOOLS}, "
-                f"{SEUNG_LAB_TAG_TOOLS}."
+                f"{SPELUNKER_TAG_TOOLS}."
             )
         return bool(getattr(self, capability))
 
@@ -123,10 +123,10 @@ class Capabilities:
 
 
 LEGACY_CAPABILITIES = Capabilities(
-    seung_lab_tag_tools=True,
+    spelunker_tag_tools=True,
     source="legacy",
 )
-"""seung-lab / Spelunker style: uint8 tag properties and ``tagTool_*`` bindings."""
+"""Spelunker style: uint8 tag properties and ``tagTool_*`` bindings."""
 
 MODERN_CAPABILITIES = Capabilities(
     annotation_bool_properties=True,
@@ -138,7 +138,6 @@ MODERN_CAPABILITIES = Capabilities(
 _CAPABILITY_ALIASES = {
     "legacy": LEGACY_CAPABILITIES,
     "spelunker": LEGACY_CAPABILITIES,
-    "seung-lab": LEGACY_CAPABILITIES,
     "modern": MODERN_CAPABILITIES,
     "bool_properties": MODERN_CAPABILITIES,
     "google": MODERN_CAPABILITIES,
@@ -157,7 +156,7 @@ def parse_capabilities(
     ----------
     capabilities : str or Capabilities or None
         A `Capabilities` instance, a string alias (``"legacy"``, ``"modern"``,
-        ``"spelunker"``, ``"google"``, ``"bool_properties"``, ``"seung-lab"``), or
+        ``"spelunker"``, ``"google"``, ``"bool_properties"``), or
         None to defer the decision to the caller.
 
     Returns
@@ -259,9 +258,12 @@ _PROPERTY_TOOLS_LANDED = datetime(2026, 8, 13, tzinfo=timezone.utc)
 # need the timestamp to disambiguate.
 _FEATURE_BASE_RELEASE = (2, 41, 2)
 
-# Forks that implement `tagTool_*` bindings and render a property's `tag` key. This is
-# an independent axis from bool property support -- a rebased fork can have both.
-_TAG_TOOL_REPOS = ("seung-lab/neuroglancer",)
+# Deployments that implement `tagTool_*` bindings and render a property's `tag` key.
+# Matched on version.json's `branch`, e.g. "seung-lab/neuroglancer/spelunker", because
+# sibling branches in the same repository are different deployments -- base-cave does
+# not carry this tooling. Independent of bool property support: a rebased Spelunker
+# can have both.
+_TAG_TOOL_BRANCH_SUFFIX = "spelunker"
 
 _DESCRIBE_RE = re.compile(
     r"^v?(?P<version>\d+(?:\.\d+)*)"  # the release this build descends from
@@ -416,9 +418,10 @@ def capabilities_from_version_info(info: Optional[dict]) -> Optional[Capabilitie
 
     commit_url = str(info.get("url", "")).lower()
     repo = "/".join(urlparse(commit_url).path.strip("/").split("/")[:2])
-    # Whether tags render as `tagTool_*` bindings is a fork property, independent of
-    # which upstream release the build descends from.
-    tag_tools = repo in _TAG_TOOL_REPOS
+    # Whether tags render as `tagTool_*` bindings is a property of the deployment's
+    # branch, independent of which upstream release it descends from.
+    branch = str(info.get("branch", "")).strip().lower()
+    tag_tools = branch.rsplit("/", 1)[-1] == _TAG_TOOL_BRANCH_SUFFIX
 
     described = parse_describe_tag(info.get("tag", ""))
     if described is None:
@@ -447,7 +450,7 @@ def capabilities_from_version_info(info: Optional[dict]) -> Optional[Capabilitie
     return Capabilities(
         annotation_bool_properties=bool_properties,
         annotation_property_tools=property_tools,
-        seung_lab_tag_tools=tag_tools,
+        spelunker_tag_tools=tag_tools,
         source=f"probe:{repo or 'unknown'}@{basis}",
     )
 
@@ -474,7 +477,7 @@ def capabilities_for_url(
     Examples
     --------
     >>> caps = capabilities_for_url("https://spelunker.cave-explorer.org")  # doctest: +SKIP
-    >>> caps.seung_lab_tag_tools  # doctest: +SKIP
+    >>> caps.spelunker_tag_tools  # doctest: +SKIP
     True
     """
     if url:
