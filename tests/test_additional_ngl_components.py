@@ -76,7 +76,7 @@ class TestAdditionalNglComponents:
         )
         layer.tags = [f"tag_{i}" for i in range(MAX_TAG_COUNT + 1)]
 
-        with pytest.raises(ValueError, match="Too many tags"):
+        with pytest.raises(ValueError, match="Spelunker tag encoding"):
             layer._to_neuroglancer_layer_local()
 
     def test_annotationlayer_many_tags_allowed_with_bool_properties(self):

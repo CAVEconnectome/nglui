@@ -34,6 +34,7 @@ from .ngl_annotations import (
     PolylineAnnotation,
     strategy_for_capabilities,
     strip_numpy_types,
+    unique_tags,
 )
 from .shaders import DEFAULT_SHADER_MAP
 from .utils import (
@@ -1107,8 +1108,19 @@ class AnnotationLayer(LayerWithSource):
     ) -> viewer_state.LocalAnnotationLayer:
         resolved = self._resolve_capabilities(capabilities)
         strategy = strategy_for_capabilities(resolved)
+        # A repeated tag cannot be represented under either encoding: it would mean two
+        # properties sharing an identifier, and the per-annotation value vector has one
+        # slot per distinct tag either way.
+        tags = unique_tags(self.tags)
+        if len(tags) != len(self.tags):
+            dropped = sorted({t for t in self.tags if list(self.tags).count(t) > 1})
+            warnings.warn(
+                f"Annotation layer '{self.name}' lists repeated tags {dropped}; "
+                "each is emitted once.",
+                stacklevel=2,
+            )
         props = strategy.property_specs(
-            self.tags,
+            tags,
             tag_ids=self.tag_ids,
             strict_property_ids=self.strict_property_ids,
         )
@@ -1125,7 +1137,7 @@ class AnnotationLayer(LayerWithSource):
             dimensions=self.resolution.to_neuroglancer(),
             annotation_color=self.color,
             annotations=_handle_annotations(
-                self.annotations, self.tags, self.resolution.resolution, strategy
+                self.annotations, tags, self.resolution.resolution, strategy
             ),
             linked_segmentation_layer=_handle_linked_segmentation(
                 self.linked_segmentation

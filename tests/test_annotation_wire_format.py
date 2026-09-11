@@ -278,3 +278,70 @@ class TestToolBindingsFollowCapabilities:
     def test_legacy_binds_tag_tools(self):
         layer = self._layer("legacy")
         assert layer["toolBindings"] == {"Q": "tagTool_tag0"}
+
+
+class TestRepeatedTags:
+    """A repeated tag cannot be represented on the wire under either encoding.
+
+    Tags discovered from a dataframe are already distinct, but `tags=` is a public
+    argument that accepts whatever it is given. Left alone, the bool encoding emitted
+    two properties sharing an identifier (which Neuroglancer rejects outright) and the
+    legacy encoding emitted a props vector shorter than its property list.
+    """
+
+    def _layer(self, capabilities):
+        vs = ViewerState(dimensions=[1, 1, 1], capabilities=capabilities)
+        with pytest.warns(UserWarning, match="repeated tags"):
+            vs.add_annotation_layer(
+                name="annos",
+                resolution=[1, 1, 1],
+                tags=["axon", "axon", "soma"],
+                linked_segmentation=None,
+            )
+            vs.add_points(
+                pd.DataFrame({"x": [1], "y": [1], "z": [1]}),
+                name="annos",
+                point_column=["x", "y", "z"],
+            )
+            return vs.to_dict()["layers"][0]
+
+    @pytest.mark.parametrize("capabilities", ["main", "legacy"])
+    def test_ids_stay_unique(self, capabilities):
+        ids = [p["id"] for p in self._layer(capabilities)["annotationProperties"]]
+        assert len(ids) == len(set(ids)) == 2
+
+    @pytest.mark.parametrize("capabilities", ["main", "legacy"])
+    def test_props_still_match_the_property_count(self, capabilities):
+        layer = self._layer(capabilities)
+        n = len(layer["annotationProperties"])
+        assert all(len(a["props"]) == n for a in layer["annotations"])
+
+    def test_order_of_first_appearance_is_kept(self):
+        from nglui.statebuilder.ngl_annotations import unique_tags
+
+        assert unique_tags(["soma", "axon", "soma", "glia"]) == ["soma", "axon", "glia"]
+        assert unique_tags([]) == []
+        assert unique_tags(None) == []
+
+
+class TestTagLimitMessage:
+    def test_names_the_encoding_and_the_way_out(self):
+        """The ten-tag ceiling belongs to the Spelunker encoding, not to nglui."""
+        vs = ViewerState(dimensions=[1, 1, 1], capabilities="legacy")
+        n = 15
+        vs.add_points(
+            pd.DataFrame(
+                {
+                    "x": range(n),
+                    "y": range(n),
+                    "z": range(n),
+                    "ct": [f"t{i}" for i in range(n)],
+                }
+            ),
+            point_column=["x", "y", "z"],
+            tag_column="ct",
+            linked_segmentation=None,
+        )
+        with pytest.raises(ValueError, match="Spelunker tag encoding") as excinfo:
+            vs.to_dict()
+        assert "capabilities='main'" in str(excinfo.value)

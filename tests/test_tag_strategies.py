@@ -114,7 +114,7 @@ class TestLegacyStrategy:
         assert specs[0]["tag"] == "Cell Body!"
 
     def test_tag_limit_is_enforced(self):
-        with pytest.raises(ValueError, match="Too many tags"):
+        with pytest.raises(ValueError, match="Spelunker tag encoding"):
             LEGACY_TAG_STRATEGY.property_specs(
                 [f"tag{i}" for i in range(MAX_TAG_COUNT + 1)]
             )

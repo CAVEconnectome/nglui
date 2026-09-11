@@ -357,6 +357,36 @@ def sanitize_property_id(label: str, fallback_index: int = 0) -> str:
     return cleaned
 
 
+def unique_tags(tags: list) -> list:
+    """Drop repeated tags, keeping first-seen order.
+
+    A repeated tag cannot be represented on the wire under either encoding: it would
+    mean two properties with the same identifier, which Neuroglancer rejects outright,
+    and the per-annotation value vector has one slot per distinct tag regardless.
+    Tags discovered from a dataframe are already distinct; this guards the case where
+    a caller supplies `tags` directly.
+
+    Parameters
+    ----------
+    tags : list
+        Tag labels, possibly with repeats.
+
+    Returns
+    -------
+    list
+        The same labels, first occurrence only.
+
+    Examples
+    --------
+    >>> unique_tags(["axon", "axon", "soma"])
+    ['axon', 'soma']
+    """
+    seen = {}
+    for tag in tags or []:
+        seen.setdefault(tag, None)
+    return list(seen)
+
+
 def build_property_ids(
     tags: list,
     tag_ids: dict = None,
@@ -477,8 +507,11 @@ class LegacyTagStrategy(TagStrategy):
     def property_specs(self, tags: list, **kwargs) -> list:
         if len(tags) > MAX_TAG_COUNT:
             raise ValueError(
-                f"Too many tags. Only {MAX_TAG_COUNT} distinct tags are allowed and "
-                f"{len(tags)} have been provided."
+                f"The Spelunker tag encoding supports at most {MAX_TAG_COUNT} tags per "
+                f"layer and {len(tags)} were provided, because it binds each tag to one "
+                f"of {MAX_TAG_COUNT} dedicated tools. Deployments tracking Neuroglancer "
+                "main encode tags as boolean annotation properties and have no such "
+                "limit; pass capabilities='main' if the target supports them."
             )
         return make_annotation_properties(tags, tag_base_number=0)
 
