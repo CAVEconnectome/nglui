@@ -461,15 +461,71 @@ There are also direct class to produce annotations in `statebuilder.ngl_annotati
 
 Local annotations can have **tags**, which is a way to categorize annotations with shortcuts in Neuroglancer.
 When you make an annotation layer, you can specify a list of tags that will be used to categorize the annotations.
-The shortcuts for adding these tags will be ++shift+q++, ++shift+w++, ++shift+e++, and so on.
-The tags run ++q++ to ++t++ for the first five tags, then ++a++ to ++g++ for the next five tags.
-A max of ten tags can be used in a single annotation layer in nglui to avoid overloading the interface.
+The shortcuts for adding these tags run ++q++ to ++t++ for the first five tags, then ++a++ to ++g++ for the next five.
 
-You can specify which tags the annotations already in two ways.
+You can specify which tags the annotations have in two ways.
 A `tag_column` specifies one or more column names, where each column has a single string per row that will be used as the tag for the annotation.
 With this approach, you can only use one tag per annotation per tag column.
 Alternatively, you can use `tag_bools`, which is a list of columns where each column name is taken to be a tag and the value in the column is a boolean indicating if the tag is applied to the annotation.
 In both cases, the layer will automatically generate the list of required tags based on the columns in the dataframe, added alphabetically if not already present in the specified tag list.
+
+###### Choosing a tag encoding
+
+Neuroglancer deployments encode tags in one of two incompatible ways, and nglui has to
+pick the one your target understands.
+
+* **Main Neuroglancer** has no tag concept at all. A tag is an annotation property of
+  `type: "bool"`, and hotkeys bind to a generic `toggleBoolProperty` tool.
+* **seung-lab forks**, including Spelunker, use `uint8` properties carrying the label in
+  a non-standard `tag` key, bound to `tagTool_*` tool types. These are limited to ten
+  tags per layer, because there are only ten such tools.
+
+The `capabilities` argument chooses between them, on the viewer state or on an
+individual layer:
+
+```python
+# Let nglui work it out from the target site (the default).
+vs = ViewerState(target_site="google")
+
+# Or say so explicitly, and skip the lookup.
+vs = ViewerState(capabilities="modern")   # bool annotation properties
+vs = ViewerState(capabilities="legacy")   # seung-lab tag properties
+```
+
+Left unset, nglui reads `version.json` from the target deployment to see which it
+supports. That lookup is only attempted when a local annotation layer actually has tags,
+its result is cached, and a failure never raises -- so building states offline works, it
+just falls back to the default.
+
+**The fallback is the legacy encoding, deliberately.** The two formats fail very
+differently: a `bool` property sent to a viewer that predates the feature makes the whole
+annotation layer fail to load, while a legacy tag property in a modern viewer merely
+loses its label and shortcut. When nglui cannot tell what the target supports, it picks
+the encoding that degrades rather than the one that breaks. To change that, use
+`set_default_capabilities("modern")`, or set `NGLUI_DISABLE_CAPABILITY_PROBE=1` to
+suppress the lookup entirely.
+
+###### Tag names as property ids
+
+Under the modern encoding a tag becomes a property whose **identifier is what the viewer
+displays**, and Neuroglancer requires identifiers to match `^[a-z][a-zA-Z0-9_]*$`. Since
+tags usually come from dataframe column names, nglui sanitizes them the same way
+Neuroglancer's own annotation tab does -- `"Cell Body"` becomes `cell_body` -- keeping the
+original as the property's description, and warns once per layer listing everything it
+renamed.
+
+If you want exact control, name the ids yourself, or make renaming an error:
+
+```python
+vs.add_annotation_layer(
+    name="annos",
+    tags=["Cell Body", "post-synaptic"],
+    tag_ids={"Cell Body": "soma", "post-synaptic": "post_syn"},
+)
+
+# Or refuse to guess:
+vs.add_annotation_layer(name="annos", tags=[...], strict_property_ids=True)
+```
 
 
 #### Cloud Annotations
