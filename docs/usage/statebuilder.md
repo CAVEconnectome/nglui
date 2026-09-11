@@ -493,9 +493,17 @@ vs = ViewerState(capabilities="legacy")   # seung-lab tag properties
 ```
 
 Left unset, nglui reads `version.json` from the target deployment to see which it
-supports. That lookup is only attempted when a local annotation layer actually has tags,
-its result is cached, and a failure never raises -- so building states offline works, it
-just falls back to the default.
+supports. Every Neuroglancer build stamps a `git describe` string there, such as
+`v2.41.2-110-g3598da30`, naming the release the build descends from. That release bounds
+which upstream features the build can contain, and it works for forks as well as for
+upstream -- a fork that rebases onto a newer release is recognized automatically, with no
+list of known deployments to maintain. The build date is only consulted for builds cut
+from the one release the features came after, since a timestamp records when a build was
+made rather than what is in it.
+
+That lookup is only attempted when a local annotation layer actually has tags, its result
+is cached, and a failure never raises -- so building states offline works, it just falls
+back to the default.
 
 **The fallback is the legacy encoding, deliberately.** The two formats fail very
 differently: a `bool` property sent to a viewer that predates the feature makes the whole

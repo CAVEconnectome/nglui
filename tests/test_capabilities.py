@@ -136,32 +136,83 @@ class TestCapabilitiesFromVersionInfo:
         """Between the two landing dates, properties work but the tools do not."""
         info = {
             "url": "https://github.com/google/neuroglancer/commit/abc",
+            "tag": "v2.41.2-40-gabc1234",
             "timestamp": "Wed Jul 1 00:00:00 UTC 2026",
         }
         resolved = caps.capabilities_from_version_info(info)
         assert resolved.annotation_bool_properties
         assert not resolved.annotation_property_tools
 
-    def test_seung_lab_timestamp_is_ignored(self):
-        """A fresh seung-lab build is still a seung-lab build."""
+    def test_old_release_is_legacy_whatever_the_build_date(self):
+        """A fresh rebuild of an old branch is still an old branch."""
         info = {
             "url": "https://github.com/seung-lab/neuroglancer/commit/abc",
+            "tag": "v2.37-347-gabc1234",
             "timestamp": "Sat Sep 5 09:21:38 UTC 2026",
         }
         resolved = caps.capabilities_from_version_info(info)
         assert not resolved.annotation_bool_properties
         assert resolved.seung_lab_tag_tools
 
-    def test_unknown_fork_is_undeterminable(self):
+    def test_rebased_fork_is_recognized_without_an_allowlist(self):
+        """A fork that rebases past the feature release gains it automatically.
+
+        This is the point of reading the describe tag: no table of known deployments
+        has to be edited when Spelunker moves onto newer Neuroglancer.
+        """
+        info = {
+            "url": "https://github.com/seung-lab/neuroglancer/commit/ffff",
+            "tag": "v2.41.2-400-gffffaaa",
+            "timestamp": "Wed Sep 9 00:00:00 UTC 2026",
+        }
+        resolved = caps.capabilities_from_version_info(info)
+        assert resolved.annotation_bool_properties
+        assert resolved.annotation_property_tools
+        # Tag tooling is an independent axis -- a rebased fork keeps both.
+        assert resolved.seung_lab_tag_tools
+
+    def test_unknown_fork_is_classified_by_its_release(self):
         info = {
             "url": "https://github.com/someone/neuroglancer-fork/commit/abc",
+            "tag": "v2.41.2-200-gabc1234",
+            "timestamp": "Sat Sep 5 09:21:38 UTC 2026",
+        }
+        resolved = caps.capabilities_from_version_info(info)
+        assert resolved.annotation_bool_properties
+        assert not resolved.seung_lab_tag_tools
+
+    def test_later_release_needs_no_timestamp(self):
+        info = {
+            "url": "https://github.com/google/neuroglancer/commit/zzz",
+            "tag": "v2.42.0",
+        }
+        resolved = caps.capabilities_from_version_info(info)
+        assert resolved.annotation_bool_properties
+        assert resolved.annotation_property_tools
+
+    def test_exactly_the_feature_base_release_predates_the_features(self):
+        """v2.41.2 was tagged before either feature landed."""
+        info = {
+            "url": "https://github.com/google/neuroglancer/commit/yyy",
+            "tag": "v2.41.2",
+            "timestamp": "Tue Sep 23 12:00:00 UTC 2025",
+        }
+        resolved = caps.capabilities_from_version_info(info)
+        assert not resolved.annotation_bool_properties
+
+    def test_unparseable_tag_is_undeterminable(self):
+        info = {
+            "url": "https://github.com/google/neuroglancer/commit/abc",
+            "tag": "some-custom-build",
             "timestamp": "Sat Sep 5 09:21:38 UTC 2026",
         }
         assert caps.capabilities_from_version_info(info) is None
 
-    def test_unparseable_timestamp_is_undeterminable(self):
+    def test_unparseable_timestamp_is_undeterminable_at_the_boundary(self):
+        """Only builds cut from the feature release need the timestamp at all."""
         info = {
             "url": "https://github.com/google/neuroglancer/commit/abc",
+            "tag": "v2.41.2-40-gabc1234",
             "timestamp": "yesterday",
         }
         assert caps.capabilities_from_version_info(info) is None
@@ -299,3 +350,31 @@ class TestParserInfoShim:
 
         mocker.patch("requests.get", side_effect=requests.Timeout("offline"))
         assert get_ngl_info("https://unreachable.example/") is None
+
+
+class TestParseDescribeTag:
+    """version.json carries `git describe` output: release, commits since, sha."""
+
+    @pytest.mark.parametrize(
+        "tag,expected",
+        [
+            ("v2.37-347-g78c701ed", ((2, 37), 347)),
+            ("v2.41.2-110-g3598da30", ((2, 41, 2), 110)),
+            ("v2.41.2", ((2, 41, 2), 0)),
+            ("2.41.2-1-gdeadbee", ((2, 41, 2), 1)),
+            ("v3.0-5-gabc1234", ((3, 0), 5)),
+            ("v2.41.2-110-g3598da30-dirty", ((2, 41, 2), 110)),
+        ],
+    )
+    def test_parses_real_forms(self, tag, expected):
+        assert caps.parse_describe_tag(tag) == expected
+
+    @pytest.mark.parametrize("tag", ["", "garbage", "release-7", "v", None])
+    def test_unparseable_returns_none(self, tag):
+        assert caps.parse_describe_tag(tag) is None
+
+    def test_release_ordering_is_numeric_not_lexical(self):
+        """(2, 37) must sort below (2, 41, 2); '2.37' > '2.41' as strings."""
+        older, _ = caps.parse_describe_tag("v2.37-347-gabc1234")
+        newer, _ = caps.parse_describe_tag("v2.41.2-1-gabc1234")
+        assert older < newer

@@ -26,6 +26,7 @@ from __future__ import annotations
 import ast
 import json
 import os
+import re
 import warnings
 from datetime import datetime, timezone
 from typing import Optional, Union
@@ -245,17 +246,62 @@ PROBE_TIMEOUT = (1.0, 2.0)
 MAX_VERSION_INFO_BYTES = 64 * 1024
 DISABLE_PROBE_ENV_VAR = "NGLUI_DISABLE_CAPABILITY_PROBE"
 
-# Dates the relevant features landed upstream, used to interpret a build timestamp.
+# Dates the relevant features landed upstream, used only to disambiguate builds cut
+# from the release the features came after.
 # Bool annotation properties: google/neuroglancer PR #809, 2026-05-11.
 # Annotation property tools:  google/neuroglancer PR #1063, 2026-08-13.
 _BOOL_PROPERTIES_LANDED = datetime(2026, 5, 11, tzinfo=timezone.utc)
 _PROPERTY_TOOLS_LANDED = datetime(2026, 8, 13, tzinfo=timezone.utc)
 
-# Repositories whose history the landing dates above actually describe. seung-lab
-# forks are deliberately absent: their branches carry the tag tooling instead, and a
-# recent build timestamp there says nothing about bool property support.
-_LINEAR_HISTORY_REPOS = ("google/neuroglancer", "alleninstitute/neuroglancer")
+# Both features landed after this release was tagged and before any later one, so the
+# release a build descends from is the primary signal: anything older cannot contain
+# them, anything newer necessarily does, and only builds cut from this exact release
+# need the timestamp to disambiguate.
+_FEATURE_BASE_RELEASE = (2, 41, 2)
+
+# Forks that implement `tagTool_*` bindings and render a property's `tag` key. This is
+# an independent axis from bool property support -- a rebased fork can have both.
 _TAG_TOOL_REPOS = ("seung-lab/neuroglancer",)
+
+_DESCRIBE_RE = re.compile(
+    r"^v?(?P<version>\d+(?:\.\d+)*)"  # the release this build descends from
+    r"(?:-(?P<ahead>\d+)-g[0-9a-f]+)?"  # commits since it, if not exactly on it
+    r"(?:-dirty)?$"
+)
+
+
+def parse_describe_tag(tag: str) -> Optional[tuple]:
+    """Parse the ``git describe`` string in version.json's ``tag`` field.
+
+    Every Neuroglancer deployment stamps a describe string such as
+    ``v2.41.2-110-g3598da30``: the most recent release reachable from the build, how
+    many commits have landed since, and the commit itself. For a fork the release
+    component is the upstream release its branch descends from, which is exactly what
+    bounds the upstream features it can contain.
+
+    Parameters
+    ----------
+    tag : str
+        The ``tag`` field of a version.json payload.
+
+    Returns
+    -------
+    tuple or None
+        ``(version_tuple, commits_ahead)``, or None if unparseable.
+
+    Examples
+    --------
+    >>> parse_describe_tag("v2.37-347-g78c701ed")
+    ((2, 37), 347)
+    >>> parse_describe_tag("v2.41.2")
+    ((2, 41, 2), 0)
+    """
+    match = _DESCRIBE_RE.match(str(tag).strip())
+    if match is None:
+        return None
+    version = tuple(int(part) for part in match.group("version").split("."))
+    return version, int(match.group("ahead") or 0)
+
 
 # Cached including failures: an offline user should pay the timeout once per process,
 # not once per layer per call.
@@ -344,10 +390,16 @@ def _parse_build_timestamp(timestamp: str) -> Optional[datetime]:
 def capabilities_from_version_info(info: Optional[dict]) -> Optional[Capabilities]:
     """Infer capabilities from a parsed ``version.json`` payload.
 
-    Keyed primarily on the repository, only secondarily on the build timestamp. A
-    timestamp records when a build was cut, not which features it contains -- a fresh
-    rebuild of an old branch carries a recent stamp -- so it is only trusted for
-    repositories whose history the known landing dates actually describe.
+    The primary signal is the release the build descends from, taken from the
+    ``git describe`` string in ``tag``. That bounds which upstream features the build
+    can possibly contain, works for forks as well as upstream, and needs no allowlist
+    of known deployments -- a fork that rebases onto a newer release is recognized
+    automatically.
+
+    The build timestamp is only consulted for builds cut from the exact release the
+    features came after, where the release alone cannot distinguish them. A timestamp
+    records when a build was cut rather than what is in it, so a fresh rebuild of an
+    old branch would otherwise look modern.
 
     Parameters
     ----------
@@ -357,27 +409,47 @@ def capabilities_from_version_info(info: Optional[dict]) -> Optional[Capabilitie
     Returns
     -------
     Capabilities or None
-        Inferred capabilities, or None if the payload is unrecognizable.
+        Inferred capabilities, or None if the payload carries nothing usable.
     """
     if not info:
         return None
+
     commit_url = str(info.get("url", "")).lower()
     repo = "/".join(urlparse(commit_url).path.strip("/").split("/")[:2])
+    # Whether tags render as `tagTool_*` bindings is a fork property, independent of
+    # which upstream release the build descends from.
+    tag_tools = repo in _TAG_TOOL_REPOS
 
-    if any(repo == known for known in _TAG_TOOL_REPOS):
-        return attrs.evolve(LEGACY_CAPABILITIES, source=f"probe:{repo}")
+    described = parse_describe_tag(info.get("tag", ""))
+    if described is None:
+        return None
+    release, commits_ahead = described
 
-    if any(repo == known for known in _LINEAR_HISTORY_REPOS):
+    if release > _FEATURE_BASE_RELEASE:
+        bool_properties = property_tools = True
+        basis = f"release {'.'.join(map(str, release))}"
+    elif release < _FEATURE_BASE_RELEASE:
+        bool_properties = property_tools = False
+        basis = f"release {'.'.join(map(str, release))}"
+    elif commits_ahead == 0:
+        bool_properties = property_tools = False
+        basis = f"release {'.'.join(map(str, release))} exactly"
+    else:
+        # Cut from the release the features came after: only the build date separates
+        # a build that predates them from one that includes them.
         built = _parse_build_timestamp(str(info.get("timestamp", "")))
         if built is None:
             return None
-        return Capabilities(
-            annotation_bool_properties=built >= _BOOL_PROPERTIES_LANDED,
-            annotation_property_tools=built >= _PROPERTY_TOOLS_LANDED,
-            seung_lab_tag_tools=False,
-            source=f"probe:{repo}@{built.date()}",
-        )
-    return None
+        bool_properties = built >= _BOOL_PROPERTIES_LANDED
+        property_tools = built >= _PROPERTY_TOOLS_LANDED
+        basis = f"built {built.date()}"
+
+    return Capabilities(
+        annotation_bool_properties=bool_properties,
+        annotation_property_tools=property_tools,
+        seung_lab_tag_tools=tag_tools,
+        source=f"probe:{repo or 'unknown'}@{basis}",
+    )
 
 
 def capabilities_for_url(
