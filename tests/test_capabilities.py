@@ -42,9 +42,8 @@ class TestParseCapabilities:
     @pytest.mark.parametrize(
         "alias,bool_props",
         [
-            ("modern", True),
+            ("main", True),
             ("google", True),
-            ("bool_properties", True),
             ("legacy", False),
             ("spelunker", False),
         ],
@@ -53,7 +52,7 @@ class TestParseCapabilities:
         assert caps.parse_capabilities(alias).annotation_bool_properties is bool_props
 
     def test_alias_is_case_insensitive(self):
-        assert caps.parse_capabilities("Modern") == caps.MODERN_CAPABILITIES
+        assert caps.parse_capabilities("Main") == caps.MAIN_CAPABILITIES
 
     def test_none_passes_through(self):
         assert caps.parse_capabilities(None) is None
@@ -68,6 +67,11 @@ class TestParseCapabilities:
         with pytest.raises(ValueError, match="Unknown capability alias"):
             caps.parse_capabilities("spelunkr")
 
+    def test_bool_properties_is_not_an_alias(self):
+        """It named one capability but enabled two; `from_names` is the precise way."""
+        with pytest.raises(ValueError, match="Unknown capability alias"):
+            caps.parse_capabilities("bool_properties")
+
     def test_wrong_type_raises(self):
         with pytest.raises(TypeError):
             caps.parse_capabilities(42)
@@ -75,13 +79,13 @@ class TestParseCapabilities:
 
 class TestCapabilitiesObject:
     def test_supports_named_capability(self):
-        assert caps.MODERN_CAPABILITIES.supports(caps.ANNOTATION_BOOL_PROPERTIES)
+        assert caps.MAIN_CAPABILITIES.supports(caps.ANNOTATION_BOOL_PROPERTIES)
         assert not caps.LEGACY_CAPABILITIES.supports(caps.ANNOTATION_BOOL_PROPERTIES)
         assert caps.LEGACY_CAPABILITIES.supports(caps.SPELUNKER_TAG_TOOLS)
 
     def test_unknown_capability_raises(self):
         with pytest.raises(ValueError, match="Unknown capability"):
-            caps.MODERN_CAPABILITIES.supports("teleportation")
+            caps.MAIN_CAPABILITIES.supports("teleportation")
 
     def test_default_is_conservative(self):
         """A bool property breaks an old viewer outright; legacy only degrades."""
@@ -90,7 +94,7 @@ class TestCapabilitiesObject:
     def test_set_default_round_trip(self):
         original = caps.get_default_capabilities()
         try:
-            caps.set_default_capabilities("modern")
+            caps.set_default_capabilities("main")
             assert caps.get_default_capabilities().annotation_bool_properties
         finally:
             caps.set_default_capabilities(original)
@@ -413,8 +417,8 @@ class TestCapabilityEncoding:
                 "timestamp": "Sat Sep 5 09:21:38 UTC 2026",
             }
         )
-        assert probed == caps.parse_capabilities("modern")
-        assert probed.source != caps.parse_capabilities("modern").source
+        assert probed == caps.parse_capabilities("main")
+        assert probed.source != caps.parse_capabilities("main").source
 
     def test_equal_capabilities_hash_alike(self):
         probed = caps.Capabilities(
@@ -422,33 +426,33 @@ class TestCapabilityEncoding:
             annotation_property_tools=True,
             source="probe:somewhere",
         )
-        assert hash(probed) == hash(caps.MODERN_CAPABILITIES)
-        assert len({probed, caps.MODERN_CAPABILITIES}) == 1
+        assert hash(probed) == hash(caps.MAIN_CAPABILITIES)
+        assert len({probed, caps.MAIN_CAPABILITIES}) == 1
 
     @pytest.mark.parametrize("not_a_capability", ["source", "uses_bool_tags", "names"])
     def test_supports_rejects_non_capability_attributes(self, not_a_capability):
         """`hasattr` would wave these through; they are not capabilities."""
         with pytest.raises(ValueError, match="Unknown capability"):
-            caps.MODERN_CAPABILITIES.supports(not_a_capability)
+            caps.MAIN_CAPABILITIES.supports(not_a_capability)
 
     def test_membership_reads_as_a_set(self):
-        assert caps.ANNOTATION_BOOL_PROPERTIES in caps.MODERN_CAPABILITIES
+        assert caps.ANNOTATION_BOOL_PROPERTIES in caps.MAIN_CAPABILITIES
         assert caps.ANNOTATION_BOOL_PROPERTIES not in caps.LEGACY_CAPABILITIES
         assert caps.SPELUNKER_TAG_TOOLS in caps.LEGACY_CAPABILITIES
 
     def test_enabled_reports_only_capabilities(self):
-        assert caps.MODERN_CAPABILITIES.enabled == frozenset(
+        assert caps.MAIN_CAPABILITIES.enabled == frozenset(
             {"annotation_bool_properties", "annotation_property_tools"}
         )
-        assert "source" not in caps.MODERN_CAPABILITIES.enabled
+        assert "source" not in caps.MAIN_CAPABILITIES.enabled
 
     def test_names_excludes_metadata_fields(self):
         assert "source" not in caps.Capabilities.names()
         assert caps.ANNOTATION_BOOL_PROPERTIES in caps.Capabilities.names()
 
     def test_from_names_round_trips(self):
-        built = caps.Capabilities.from_names(caps.MODERN_CAPABILITIES.enabled)
-        assert built == caps.MODERN_CAPABILITIES
+        built = caps.Capabilities.from_names(caps.MAIN_CAPABILITIES.enabled)
+        assert built == caps.MAIN_CAPABILITIES
 
     def test_from_names_reaches_sets_no_alias_covers(self):
         """A real build between the two landing dates has properties but not tools."""

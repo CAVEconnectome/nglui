@@ -52,13 +52,13 @@ class TestTagDictionary:
         assert parser.tag_dictionary(state, "annos") == {0: "axon", 1: "soma"}
 
     def test_reads_bool_property_dialect(self):
-        state = _build_state("modern")
+        state = _build_state("main")
         assert parser.tag_dictionary(state, "annos") == {0: "axon", 1: "soma"}
 
     def test_bool_property_label_prefers_description(self):
         """A sanitized id keeps its original label in `description`."""
         df = pd.DataFrame({"x": [1], "y": [2], "z": [3], "Cell Body": [True]})
-        vs = ViewerState(dimensions=[1, 1, 1], capabilities="modern")
+        vs = ViewerState(dimensions=[1, 1, 1], capabilities="main")
         with pytest.warns(UserWarning):
             vs.add_points(
                 df,
@@ -72,7 +72,7 @@ class TestTagDictionary:
 
 
 class TestAnnotationTagRoundTrip:
-    @pytest.mark.parametrize("capabilities", ["legacy", "modern"])
+    @pytest.mark.parametrize("capabilities", ["legacy", "main"])
     def test_tags_survive_a_round_trip(self, capabilities):
         state = _build_state(capabilities)
         _, tag_ids = parser.point_annotations(state, "annos", tags=True)
@@ -85,7 +85,7 @@ class TestAnnotationTagRoundTrip:
         )
         assert tag_ids == [[0], [0, 1]]
 
-    @pytest.mark.parametrize("capabilities", ["legacy", "modern"])
+    @pytest.mark.parametrize("capabilities", ["legacy", "main"])
     def test_expand_tags_dataframe(self, capabilities):
         state = _build_state(capabilities)
         df = parser.annotation_dataframe(state, expand_tags=True)
@@ -96,7 +96,7 @@ class TestAnnotationTagRoundTrip:
 class TestNonTagProperties:
     def test_numeric_properties_are_not_read_as_tags(self):
         """A numeric value of 1 is data, not a set tag."""
-        state = _build_state("modern")
+        state = _build_state("main")
         layer = state["layers"][0]
         layer["annotationProperties"].append({"id": "score", "type": "float32"})
         for anno in layer["annotations"]:
@@ -105,7 +105,7 @@ class TestNonTagProperties:
         assert tag_ids == [[0], [1]]
 
     def test_property_dictionary_reports_every_property(self):
-        state = _build_state("modern")
+        state = _build_state("main")
         state["layers"][0]["annotationProperties"].append(
             {"id": "score", "type": "float32"}
         )

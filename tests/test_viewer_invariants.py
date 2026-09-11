@@ -85,22 +85,22 @@ def _build(tags, capabilities):
 
 
 class TestEmittedStatesAreLoadable:
-    @pytest.mark.parametrize("capabilities", ["modern", "legacy"])
+    @pytest.mark.parametrize("capabilities", ["main", "legacy"])
     def test_simple_tags(self, capabilities):
         assert_layer_is_loadable(_build(["axon", "soma"], capabilities))
 
     @pytest.mark.parametrize("label", AWKWARD_LABELS)
     def test_awkward_labels_still_produce_a_loadable_layer(self, label):
         """Tag labels come from dataframe columns and are entirely uncontrolled."""
-        assert_layer_is_loadable(_build([label], "modern"))
+        assert_layer_is_loadable(_build([label], "main"))
 
     def test_all_awkward_labels_together(self):
         """Sanitizing many odd labels at once must not collide them."""
-        assert_layer_is_loadable(_build(AWKWARD_LABELS, "modern"))
+        assert_layer_is_loadable(_build(AWKWARD_LABELS, "main"))
 
     def test_labels_that_sanitize_to_the_same_id(self):
         assert_layer_is_loadable(
-            _build(["Cell Body", "cell body", "CELL-BODY"], "modern")
+            _build(["Cell Body", "cell body", "CELL-BODY"], "main")
         )
 
     def test_legacy_ids_are_also_valid(self):
@@ -109,7 +109,7 @@ class TestEmittedStatesAreLoadable:
 
     def test_no_tags(self):
         df = pd.DataFrame({"x": [1], "y": [2], "z": [3]})
-        vs = ViewerState(dimensions=[1, 1, 1], capabilities="modern")
+        vs = ViewerState(dimensions=[1, 1, 1], capabilities="main")
         vs.add_points(df, point_column=["x", "y", "z"], linked_segmentation=None)
         assert_layer_is_loadable(vs.to_dict()["layers"][0])
 
@@ -117,13 +117,13 @@ class TestEmittedStatesAreLoadable:
 class TestToolBindingsAreLoadable:
     def test_binding_keys_are_single_capitals(self):
         """Neuroglancer's ToolBindings validates keys against ^[A-Z]$."""
-        for capabilities in ("modern", "legacy"):
+        for capabilities in ("main", "legacy"):
             layer = _build(["axon", "soma"], capabilities)
             for key in layer.get("toolBindings", {}):
                 assert re.match(r"^[A-Z]$", key), f"invalid binding key {key!r}"
 
     def test_bindings_reference_declared_properties(self):
-        layer = _build(["axon", "soma"], "modern")
+        layer = _build(["axon", "soma"], "main")
         declared = {spec["id"] for spec in layer["annotationProperties"]}
         for binding in layer["toolBindings"].values():
             assert binding["property"] in declared

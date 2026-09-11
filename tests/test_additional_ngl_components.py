@@ -84,7 +84,7 @@ class TestAdditionalNglComponents:
         from nglui.statebuilder.ngl_annotations import MAX_TAG_COUNT
 
         layer = AnnotationLayer(
-            name="test_anno", resolution=[4, 4, 40], capabilities="modern"
+            name="test_anno", resolution=[4, 4, 40], capabilities="main"
         )
         layer.tags = [f"tag_{i}" for i in range(MAX_TAG_COUNT + 1)]
 

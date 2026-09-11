@@ -143,7 +143,7 @@ class ViewerState:
         capabilities : str or Capabilities, optional
             What the target Neuroglancer deployment supports, which determines how
             annotation tags are encoded. Either a `Capabilities` or an alias such as
-            ``"modern"`` or ``"legacy"``. If None, nglui probes the target site and
+            ``"main"`` or ``"legacy"``. If None, nglui probes the target site and
             falls back to the conservative default when it cannot tell.
         """
 

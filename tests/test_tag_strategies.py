@@ -4,7 +4,7 @@ import pytest
 
 from nglui.statebuilder.capabilities import (
     LEGACY_CAPABILITIES,
-    MODERN_CAPABILITIES,
+    MAIN_CAPABILITIES,
     Capabilities,
 )
 from nglui.statebuilder.ngl_annotations import (
@@ -177,7 +177,7 @@ class TestBoolPropertyStrategy:
 class TestStrategySelection:
     def test_modern_capabilities_use_bool_properties(self):
         assert isinstance(
-            strategy_for_capabilities(MODERN_CAPABILITIES), BoolPropertyStrategy
+            strategy_for_capabilities(MAIN_CAPABILITIES), BoolPropertyStrategy
         )
 
     def test_legacy_capabilities_use_tag_properties(self):

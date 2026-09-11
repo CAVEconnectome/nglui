@@ -42,7 +42,7 @@ __all__ = [
     "SPELUNKER_TAG_TOOLS",
     "Capabilities",
     "LEGACY_CAPABILITIES",
-    "MODERN_CAPABILITIES",
+    "MAIN_CAPABILITIES",
     "get_default_capabilities",
     "set_default_capabilities",
     "parse_capabilities",
@@ -98,7 +98,7 @@ class Capabilities:
 
     Examples
     --------
-    >>> MODERN_CAPABILITIES.enabled == frozenset(
+    >>> MAIN_CAPABILITIES.enabled == frozenset(
     ...     {"annotation_bool_properties", "annotation_property_tools"}
     ... )
     True
@@ -176,7 +176,7 @@ class Capabilities:
 
         Examples
         --------
-        >>> MODERN_CAPABILITIES.supports(ANNOTATION_BOOL_PROPERTIES)
+        >>> MAIN_CAPABILITIES.supports(ANNOTATION_BOOL_PROPERTIES)
         True
         """
         if capability not in self.names():
@@ -196,24 +196,27 @@ LEGACY_CAPABILITIES = Capabilities(
 )
 """Spelunker style: uint8 tag properties and ``tagTool_*`` bindings."""
 
-MODERN_CAPABILITIES = Capabilities(
+MAIN_CAPABILITIES = Capabilities(
     annotation_bool_properties=True,
     annotation_property_tools=True,
-    source="modern",
+    source="main",
 )
-"""Main Neuroglancer style: boolean annotation properties and property tools."""
+"""Everything on google/neuroglancer's main branch: bool properties and property tools.
 
-# Shorthand for the two sets that matter in practice. These are conveniences, not the
-# encoding: `Capabilities` is the encoding, and `Capabilities.from_names` builds any
-# other set. Note that "modern" means "everything nglui currently knows about", so its
-# meaning widens as capabilities are added -- pin an explicit `Capabilities` if you need
-# a set that will not move.
+Tracks main rather than naming a fixed set, so it widens as capabilities are added.
+Build an explicit `Capabilities` if you need a set that will not move.
+"""
+
+# Shorthand for the two sets that matter in practice, each naming the deployment it
+# tracks rather than a fixed list of abilities: "main" follows google/neuroglancer's
+# main branch and widens as capabilities land there, "spelunker" follows the
+# seung-lab deployment. These are conveniences, not the encoding -- `Capabilities` is
+# the encoding, and `Capabilities.from_names` builds any set an alias does not cover.
 _CAPABILITY_ALIASES = {
     "legacy": LEGACY_CAPABILITIES,
     "spelunker": LEGACY_CAPABILITIES,
-    "modern": MODERN_CAPABILITIES,
-    "bool_properties": MODERN_CAPABILITIES,
-    "google": MODERN_CAPABILITIES,
+    "main": MAIN_CAPABILITIES,
+    "google": MAIN_CAPABILITIES,
 }
 
 # Conservative on purpose -- see the module docstring on asymmetric failure.
@@ -228,8 +231,8 @@ def parse_capabilities(
     Parameters
     ----------
     capabilities : str or Capabilities or None
-        A `Capabilities` instance, a string alias (``"legacy"``, ``"modern"``,
-        ``"spelunker"``, ``"google"``, ``"bool_properties"``), or
+        A `Capabilities` instance, a string alias (``"main"``, ``"google"``,
+        ``"legacy"``, ``"spelunker"``), or
         None to defer the decision to the caller.
 
     Returns
@@ -244,7 +247,7 @@ def parse_capabilities(
 
     Examples
     --------
-    >>> parse_capabilities("modern").annotation_bool_properties
+    >>> parse_capabilities("main").annotation_bool_properties
     True
     """
     if capabilities is None:
@@ -296,7 +299,7 @@ def set_default_capabilities(
 
     Examples
     --------
-    >>> _ = set_default_capabilities("modern")
+    >>> _ = set_default_capabilities("main")
     >>> get_default_capabilities().annotation_bool_properties
     True
     >>> _ = set_default_capabilities("legacy")
@@ -562,7 +565,7 @@ def capabilities_for_url(
         default = get_default_capabilities()
         warnings.warn(
             f"Could not determine Neuroglancer capabilities for {url}; assuming "
-            f"'{default.source}' annotation tags. Pass capabilities='modern' or "
+            f"'{default.source}' annotation tags. Pass capabilities='main' or "
             f"capabilities='legacy' to choose explicitly, or call "
             f"set_default_capabilities() to change the fallback.",
             stacklevel=2,

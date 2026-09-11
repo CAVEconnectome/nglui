@@ -488,7 +488,7 @@ individual layer:
 vs = ViewerState(target_site="google")
 
 # Or say so explicitly, and skip the lookup.
-vs = ViewerState(capabilities="modern")   # bool annotation properties
+vs = ViewerState(capabilities="main")     # bool annotation properties
 vs = ViewerState(capabilities="legacy")   # seung-lab tag properties
 ```
 
@@ -510,7 +510,7 @@ differently: a `bool` property sent to a viewer that predates the feature makes 
 annotation layer fail to load, while a legacy tag property in a modern viewer merely
 loses its label and shortcut. When nglui cannot tell what the target supports, it picks
 the encoding that degrades rather than the one that breaks. To change that, use
-`set_default_capabilities("modern")`, or set `NGLUI_DISABLE_CAPABILITY_PROBE=1` to
+`set_default_capabilities("main")`, or set `NGLUI_DISABLE_CAPABILITY_PROBE=1` to
 suppress the lookup entirely.
 
 ###### Tag names as property ids

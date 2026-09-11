@@ -109,7 +109,7 @@ class TestBoolPropertyWireFormat:
     """The encoding used by main Neuroglancer, where a tag is a bool property."""
 
     def test_annotation_properties(self, tagged_df):
-        layer = _anno_layer(tagged_df, capabilities="modern")
+        layer = _anno_layer(tagged_df, capabilities="main")
         assert layer["annotationProperties"] == [
             {"id": "a", "type": "bool"},
             {"id": "b", "type": "bool"},
@@ -117,7 +117,7 @@ class TestBoolPropertyWireFormat:
         ]
 
     def test_tool_bindings_are_object_form(self, tagged_df):
-        layer = _anno_layer(tagged_df, capabilities="modern")
+        layer = _anno_layer(tagged_df, capabilities="main")
         assert layer["toolBindings"] == {
             "Q": {"type": "toggleBoolProperty", "property": "a"},
             "W": {"type": "toggleBoolProperty", "property": "b"},
@@ -125,18 +125,18 @@ class TestBoolPropertyWireFormat:
         }
 
     def test_props_are_booleans(self, tagged_df):
-        layer = _anno_layer(tagged_df, capabilities="modern")
+        layer = _anno_layer(tagged_df, capabilities="main")
         props = [a["props"] for a in layer["annotations"]]
         assert props == [[True, False, True], [False, True, False]]
 
     def test_props_length_matches_property_count(self, tagged_df):
-        layer = _anno_layer(tagged_df, capabilities="modern")
+        layer = _anno_layer(tagged_df, capabilities="main")
         n_props = len(layer["annotationProperties"])
         assert all(len(a["props"]) == n_props for a in layer["annotations"])
 
     def test_invalid_label_is_sanitized_and_described(self):
         df = pd.DataFrame({"x": [1], "y": [2], "z": [3], "Cell Body": [True]})
-        vs = ViewerState(dimensions=[1, 1, 1], capabilities="modern")
+        vs = ViewerState(dimensions=[1, 1, 1], capabilities="main")
         with pytest.warns(UserWarning, match="were renamed"):
             vs.add_points(
                 df,
@@ -158,7 +158,7 @@ class TestCapabilityResolution:
 
     def test_layer_capabilities_override_state(self, tagged_df):
         vs = ViewerState(dimensions=[1, 1, 1], capabilities="legacy")
-        vs.add_annotation_layer(name="anno", capabilities="modern")
+        vs.add_annotation_layer(name="anno", capabilities="main")
         vs.add_points(
             tagged_df,
             name="anno",
@@ -180,7 +180,7 @@ class TestCapabilityResolution:
 
     def test_pinned_capabilities_never_probe(self, mocker, tagged_df):
         get = mocker.patch("requests.get")
-        _anno_layer(tagged_df, capabilities="modern")
+        _anno_layer(tagged_df, capabilities="main")
         assert get.call_count == 0
 
     def test_cloud_layer_warns_that_tags_are_dropped(self):
@@ -270,7 +270,7 @@ class TestToolBindingsFollowCapabilities:
         assert layer.get("toolBindings", {}) == {}
 
     def test_full_modern_binds_the_property_tools(self):
-        layer = self._layer("modern")
+        layer = self._layer("main")
         assert layer["toolBindings"] == {
             "Q": {"type": "toggleBoolProperty", "property": "axon"}
         }
