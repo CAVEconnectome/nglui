@@ -279,3 +279,23 @@ def warnings_as_errors():
             return self._ctx.__exit__(*exc)
 
     return _NoWarnings()
+
+
+class TestParserInfoShim:
+    """`parser.info.get_ngl_info` predates this module and is kept working."""
+
+    def test_delegates_to_get_version_info(self, mocker):
+        from nglui.parser.info import get_ngl_info
+
+        response = mocker.Mock()
+        response.text = SPELUNKER_PAYLOAD
+        response.content = SPELUNKER_PAYLOAD.encode()
+        response.raise_for_status = mocker.Mock()
+        mocker.patch("requests.get", return_value=response)
+        assert get_ngl_info("https://example.org/")["branch"].endswith("spelunker")
+
+    def test_returns_none_on_failure_rather_than_raising(self, mocker):
+        from nglui.parser.info import get_ngl_info
+
+        mocker.patch("requests.get", side_effect=requests.Timeout("offline"))
+        assert get_ngl_info("https://unreachable.example/") is None
