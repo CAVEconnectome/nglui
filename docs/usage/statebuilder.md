@@ -554,6 +554,13 @@ Neuroglancer's own annotation tab does -- `"Cell Body"` becomes `cell_body` -- k
 original as the property's description, and warns once per layer listing everything it
 renamed.
 
+Non-ASCII labels are folded toward ASCII first, so accents survive (`café` → `cafe`)
+and Greek letters become their names (`β-cell` → `beta_cell`) rather than being dropped —
+without which `α-cell` and `β-cell` would both reduce to `cell`. Scripts with no Latin
+reading, such as CJK or Cyrillic, cannot be rendered into a legal identifier and fall
+back to a generated one like `tag_0`; the original is kept in the property description,
+and `tag_ids` gives exact control.
+
 If you want exact control, name the ids yourself, or make renaming an error:
 
 ```python

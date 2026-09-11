@@ -237,3 +237,49 @@ class TestToolRegistration:
             "type": "toggleBoolProperty",
             "property": "axon",
         }
+
+
+class TestNonAsciiLabels:
+    """Tag labels come from dataframe columns and are not always ASCII."""
+
+    @pytest.mark.parametrize(
+        "label,expected",
+        [
+            # Accented Latin: dropping the mark leaves a plausible but wrong id.
+            ("café", "cafe"),
+            ("Müller", "muller"),
+            ("naïve", "naive"),
+            ("Ångström", "angstrom"),
+            # Greek reads as a symbol in scientific labels, so its name substitutes.
+            ("β-cell", "beta_cell"),
+            ("α7 receptor", "alpha_7_receptor"),
+            ("αβγ", "alpha_beta_gamma"),
+            # Compatibility forms decompose.
+            ("type-Ⅳ", "type_iv"),
+            # Unchanged.
+            ("axon", "axon"),
+            ("Cell Body", "cell_body"),
+        ],
+    )
+    def test_meaning_survives(self, label, expected):
+        assert sanitize_property_id(label) == expected
+
+    def test_greek_cell_types_stay_distinct(self):
+        """The case this exists for: these all sanitized to `cell` and collided."""
+        with pytest.warns(UserWarning):
+            ids = build_property_ids(["α-cell", "β-cell", "γ-cell"])
+        assert sorted(ids.values()) == ["alpha_cell", "beta_cell", "gamma_cell"]
+
+    @pytest.mark.parametrize("label", ["日本", "нейрон", "עצב"])
+    def test_scripts_without_a_latin_reading_fall_back(self, label):
+        """Substituting letter names here would produce nonsense, so it is not done.
+
+        The original is preserved in the property description, and `tag_ids` gives
+        exact control.
+        """
+        assert PROPERTY_ID_PATTERN.match(sanitize_property_id(label))
+        assert sanitize_property_id(label).startswith("tag_")
+
+    def test_underscores_do_not_pile_up(self):
+        assert sanitize_property_id("Cell  Body") == "cell_body"
+        assert sanitize_property_id("a--b") == "a_b"

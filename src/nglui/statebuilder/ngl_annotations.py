@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import re
+import unicodedata
 import warnings
 
 import attrs
@@ -314,6 +315,42 @@ enforce this even though the Python library does not.
 """
 
 
+_GREEK_LETTER = re.compile(r"^GREEK (?:SMALL|CAPITAL) LETTER ([A-Z]+)$")
+
+
+def _latinize(label: str) -> str:
+    """Fold a label toward ASCII so that sanitizing it keeps its meaning.
+
+    Two transformations, both from the standard library:
+
+    Accented Latin is decomposed and its combining marks dropped, so ``café`` reaches
+    the sanitizer as ``cafe`` rather than losing the ``é`` outright and arriving as the
+    plausible-looking but wrong ``caf``.
+
+    Greek letters are replaced by their names -- ``β-cell`` becomes ``beta-cell``.
+    Greek appears in scientific labels as symbols rather than as a script words are
+    written in, so a letter-name substitution reads correctly there; the same treatment
+    of Cyrillic or Hebrew would produce nonsense, and those are left alone to fall back
+    on a generated id.
+
+    Without this, ``α-cell``, ``β-cell`` and ``γ-cell`` all sanitize to ``cell`` and are
+    then disambiguated to ``cell``, ``cell_2``, ``cell_3`` -- distinct cell types made
+    indistinguishable, in output that looks correct.
+    """
+    out = []
+    for char in unicodedata.normalize("NFKD", str(label)):
+        if unicodedata.combining(char):
+            continue
+        if char.isascii():
+            out.append(char)
+            continue
+        greek = _GREEK_LETTER.match(unicodedata.name(char, ""))
+        if greek:
+            out.append(f"_{greek.group(1).lower()}_")
+        # Anything else is dropped, and an empty result falls back to a generated id.
+    return "".join(out)
+
+
 def sanitize_property_id(label: str, fallback_index: int = 0) -> str:
     """Convert a tag label into a valid Neuroglancer annotation property identifier.
 
@@ -346,10 +383,14 @@ def sanitize_property_id(label: str, fallback_index: int = 0) -> str:
     'post_synaptic'
     >>> sanitize_property_id("1st pass")
     'tag_1st_pass'
+    >>> sanitize_property_id("β-cell")
+    'beta_cell'
+    >>> sanitize_property_id("café")
+    'cafe'
     """
-    cleaned = re.sub(r"[-\s]+", "_", str(label)).lower()
+    cleaned = re.sub(r"[-\s]+", "_", _latinize(label)).lower()
     cleaned = re.sub(r"[^a-z0-9_]", "", cleaned)
-    cleaned = cleaned.strip("_")
+    cleaned = re.sub(r"_+", "_", cleaned).strip("_")
     if not cleaned:
         return f"tag_{fallback_index}"
     if not cleaned[0].isalpha():
