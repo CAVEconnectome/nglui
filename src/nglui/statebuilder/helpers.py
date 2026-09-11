@@ -89,6 +89,13 @@ def add_segment_properties_source(
             "segment_properties must be a SegmentProperties object or a property JSON dictionary, "
             f"not {type(segment_properties)}."
         )
+    # Resolve the target layer before uploading: the upload is a side effect on the
+    # state service, and failing after it would leave an orphaned property behind.
+    if name not in viewer.layer_names:
+        raise ValueError(
+            f"No layer named {name!r} in the viewer. Available layers: "
+            f"{viewer.layer_names}."
+        )
     property_id = client.state.upload_property_json(property_json)
     property_url = client.state.build_neuroglancer_url(
         property_id, format_properties=True

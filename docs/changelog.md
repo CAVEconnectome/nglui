@@ -19,6 +19,7 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 
 - **StateBuilder**: Naming a different target late, as in `to_url(target_site=...)`, `to_link`, `to_clipboard`, `to_browser` and `to_link_shortener`, reused a viewer state that had already been built for the original target. With tag encoding now depending on the target, that would have shipped the wrong format, so the state is rebuilt when the target changes.
 - **StateBuilder**: Annotation layers with a cloud source silently discarded any tags set on them, and now warn.
+- **StateBuilder**: `statebuilder.helpers.add_segment_properties_source` uploaded the property JSON before checking that the target layer existed, so a mistyped layer name left an orphaned property on the state service and then failed with a bare `KeyError`. It now validates the layer first and names the available ones.
 - **Parser**: Reading tags from a state scanned every entry of each annotation's `props` array, so a non-tag property whose value happened to equal 1 was reported as a set tag. Only tag-like properties are considered now.
 - **StateBuilder**: `AnnotationLayer.tag_map` returned `tagTool_{i}`, which is not a real tool type -- bindings use `tagTool_tag{i}` -- where the name and every other use in the codebase mean `{tag: index}`. It now returns that.
 - **StateBuilder**: `ViewerState.add_segment_properties` raised "Client must be specified" whenever a client *was* specified.

@@ -195,6 +195,20 @@ class TestSegmentProperties:
         )
         assert PROPERTY_URL in source_urls(vs, "seg")
 
+    def test_missing_layer_reports_clearly_and_uploads_nothing(
+        self, client_full, mock_property_upload, segment_properties
+    ):
+        """The upload is a side effect on the state service, so validate first."""
+        upload, _ = mock_property_upload
+        vs = statebuilder.helpers.make_segment_state(
+            client_full, root_ids=ROOT_IDS, infer_coordinates=False
+        )
+        with pytest.raises(ValueError, match="No layer named 'typo'"):
+            statebuilder.helpers.add_segment_properties_source(
+                vs, segment_properties, client=client_full, name="typo"
+            )
+        upload.assert_not_called()
+
     def test_segment_properties_bad_type(self, client_full, mock_property_upload):
         with pytest.raises(TypeError):
             statebuilder.helpers.make_segment_state(
@@ -222,6 +236,39 @@ class TestSegmentProperties:
         )
         upload.assert_called_once()
         assert PROPERTY_URL in source_urls(vs)
+
+
+class TestNeuronLinkShortening:
+    """The shortener bug was in make_neuron_neuroglancer_link specifically.
+
+    Its sibling make_segment_link covers the shared rendering path, but nothing
+    pinned that the neuron helper passes its own client through to the shortener --
+    which is exactly what it failed to do.
+    """
+
+    def test_shorten_always_passes_the_client(self, client_full, mocker):
+        client_full.materialize.synapse_query = mocker.Mock(
+            side_effect=query_sideeffect
+        )
+        upload = mocker.patch.object(
+            client_full.state, "upload_state_json", return_value=999
+        )
+        mocker.patch.object(
+            client_full.state,
+            "build_neuroglancer_url",
+            return_value="https://short.url/999",
+        )
+        url = statebuilder.helpers.make_neuron_neuroglancer_link(
+            client_full,
+            ROOT_IDS[0],
+            return_as="url",
+            shorten="always",
+            show_inputs=False,
+            show_outputs=False,
+            infer_coordinates=False,
+        )
+        upload.assert_called_once()
+        assert url == "https://short.url/999"
 
 
 class TestMakeSegmentLink:
