@@ -505,6 +505,27 @@ That lookup is only attempted when a local annotation layer actually has tags, i
 is cached, and a failure never raises -- so building states offline works, it just falls
 back to the default.
 
+**If your deployment does not serve `version.json`**, nothing breaks. A 404, an
+unreachable host, a static host that answers every path with `index.html`, or a
+`version.json` with no `tag` field all resolve the same way: nglui falls back to the
+legacy encoding, warns once naming the argument to set, and builds the state. The cost
+is one failed request per deployment per process, because failures are cached too.
+
+For a deployment nglui cannot identify, say so once and skip the lookup entirely:
+
+```python
+vs = ViewerState(capabilities="main", target_url="https://my-lab-neuroglancer.org")
+
+# or, if every state you build targets it:
+from nglui.statebuilder import set_default_capabilities
+set_default_capabilities("main")
+```
+
+Note that a `version.json` missing its `tag` is treated as unidentifiable even when it
+carries a repository and a build date. The date records when a build was cut rather than
+what is in it, so a fresh rebuild of an old branch would look capable when it is not --
+and claiming capability wrongly is the direction that costs the whole annotation layer.
+
 **The fallback is the legacy encoding, deliberately.** The two formats fail very
 differently: a `bool` property sent to a viewer that predates the feature makes the whole
 annotation layer fail to load, while a legacy tag property in a modern viewer merely

@@ -473,3 +473,97 @@ class TestCapabilityEncoding:
     def test_a_capabilities_instance_passes_through_parse(self):
         built = caps.Capabilities.from_names([caps.ANNOTATION_BOOL_PROPERTIES])
         assert caps.parse_capabilities(built) is built
+
+
+class TestDeploymentWithoutVersionJson:
+    """Many deployments do not serve version.json at all.
+
+    Detection is a convenience layered over state building, so every one of these
+    has to degrade to the conservative default rather than fail. The asymmetry is
+    why the fallback is legacy: wrongly claiming a viewer understands bool
+    properties costs the whole annotation layer.
+    """
+
+    def _get(self, mocker, body, status=200):
+        response = mocker.Mock()
+        response.text = body
+        response.content = body.encode()
+        response.raise_for_status = mocker.Mock(
+            side_effect=requests.HTTPError(str(status)) if status >= 400 else None
+        )
+        return mocker.patch("requests.get", return_value=response)
+
+    def test_404(self, mocker):
+        self._get(mocker, "Not Found", status=404)
+        with pytest.warns(UserWarning, match="Could not determine"):
+            assert (
+                caps.capabilities_for_url("https://example.org/")
+                == caps.LEGACY_CAPABILITIES
+            )
+
+    def test_static_host_serves_index_html_with_200(self, mocker):
+        """A single-page host answers any path with the app, not a 404."""
+        self._get(mocker, "<!doctype html><html><body>neuroglancer</body></html>")
+        with pytest.warns(UserWarning, match="Could not determine"):
+            assert (
+                caps.capabilities_for_url("https://example.org/")
+                == caps.LEGACY_CAPABILITIES
+            )
+
+    def test_index_html_larger_than_the_read_cap(self, mocker):
+        self._get(
+            mocker, "<html>" + "x" * (caps.MAX_VERSION_INFO_BYTES + 1) + "</html>"
+        )
+        with pytest.warns(UserWarning):
+            assert (
+                caps.capabilities_for_url("https://example.org/")
+                == caps.LEGACY_CAPABILITIES
+            )
+
+    def test_json_that_is_not_version_info(self, mocker):
+        self._get(mocker, '{"hello": "world"}')
+        with pytest.warns(UserWarning):
+            assert (
+                caps.capabilities_for_url("https://example.org/")
+                == caps.LEGACY_CAPABILITIES
+            )
+
+    def test_version_json_without_a_tag_falls_back(self, mocker):
+        """Without a describe string there is no trustworthy signal.
+
+        The build timestamp is deliberately not used as a substitute: it records when
+        a build was cut, not what is in it, so a fresh rebuild of an old branch would
+        look capable. Claiming capability wrongly is the expensive direction.
+        """
+        self._get(
+            mocker,
+            '{"url": "https://github.com/google/neuroglancer/commit/abc",'
+            ' "timestamp": "Sat Sep 5 09:21:38 UTC 2026"}',
+        )
+        with pytest.warns(UserWarning):
+            assert (
+                caps.capabilities_for_url("https://example.org/")
+                == caps.LEGACY_CAPABILITIES
+            )
+
+    def test_a_tagged_state_still_builds_offline(self, mocker):
+        """The point of all of the above: state building must not fail."""
+        import pandas as pd
+
+        from nglui.statebuilder import ViewerState
+
+        mocker.patch("requests.get", side_effect=requests.ConnectionError("refused"))
+        vs = ViewerState(
+            dimensions=[1, 1, 1], target_url="https://unreachable.example/"
+        )
+        with pytest.warns(UserWarning):
+            vs.add_points(
+                pd.DataFrame({"x": [1], "y": [2], "z": [3], "ct": ["axon"]}),
+                point_column=["x", "y", "z"],
+                tag_column="ct",
+                linked_segmentation=None,
+            )
+            layer = vs.to_dict()["layers"][0]
+        assert layer["annotationProperties"] == [
+            {"id": "tag0", "type": "uint8", "tag": "axon"}
+        ]
