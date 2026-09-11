@@ -433,6 +433,39 @@ def _supports_tool_bindings(capabilities) -> bool:
     return True
 
 
+def _is_missing_tag(value) -> bool:
+    """Whether a tag cell means "no tag here" rather than a tag.
+
+    Covers None, NaN and pandas NA, plus blank strings: a tag whose label is empty
+    cannot be rendered or referenced, and in a column of cell types a blank almost
+    always means the value is absent rather than that the label is "".
+    """
+    if value is None:
+        return True
+    try:
+        if pd.isna(value):
+            return True
+    except (TypeError, ValueError):
+        # pd.isna raises or returns an array for some container types; those are
+        # not missing values.
+        pass
+    return isinstance(value, str) and not value.strip()
+
+
+def _truthy_mask(column, n_points: int) -> np.ndarray:
+    """Boolean mask from a tag_bools column, tolerating missing values.
+
+    Indexing with the raw column fails outright for anything that is not already a
+    boolean array -- a column holding NaN, or a nullable Int64 -- which is ordinary
+    for real data. Missing means not tagged.
+    """
+    values = list(column)[:n_points]
+    values += [False] * (n_points - len(values))
+    return np.array(
+        [False if _is_missing_tag(v) else bool(v) for v in values], dtype=bool
+    )
+
+
 def _handle_annotations(annos, tags=None, resolution=None, strategy=None) -> list:
     """Convert nglui annotations to neuroglancer annotations.
 
@@ -1318,31 +1351,34 @@ class AnnotationLayer(LayerWithSource):
         else:
             descriptions = [None] * n_points
 
-        # Handle tags for annotations
+        # Handle tags for annotations. Missing values are skipped rather than becoming
+        # a tag: a column of cell types with gaps is ordinary, not an error.
         tag_list = [[] for _ in range(n_points)]
-        if tag_column is not None:
-            if isinstance(tag_column, str):
-                for ii, t in enumerate(df[tag_column].values):
-                    tag_list[ii].extend([t])
-            else:
-                for ii, t in enumerate(tag_column):
-                    tag_list[ii].extend([t])
-        if tag_bools is not None:
-            for tag_ in tag_bools:
-                row_to_add = np.arange(n_points)[df[tag_]]
-                for i in row_to_add:
-                    tag_list[i].extend([tag_])
-
-        # Update annotation layer tag list with new unique values
         all_tags = []
         if tag_column is not None:
-            if isinstance(tag_column, str):
-                all_tags.extend(df[tag_column].unique().tolist())
-            else:
-                all_tags.extend(np.unique(tag_column).tolist())
+            values = (
+                df[tag_column].values
+                if isinstance(tag_column, str)
+                else list(tag_column)
+            )
+            for ii, t in enumerate(values):
+                if ii >= n_points or _is_missing_tag(t):
+                    continue
+                # Annotations coerce their own tags to str (`list_of_strings`), so the
+                # layer vocabulary has to match or a non-string tag never matches the
+                # annotation carrying it, and every value silently reads as unset.
+                tag_list[ii].append(str(t))
+                all_tags.append(str(t))
         if tag_bools is not None:
+            for tag_ in tag_bools:
+                for i in np.flatnonzero(_truthy_mask(df[tag_], n_points)):
+                    tag_list[i].append(tag_)
             all_tags.extend(tag_bools)
-        self.tags.extend(sorted(set([t for t in all_tags if t not in self.tags])))
+
+        # Grow the layer's ordered tag vocabulary with any newly seen values. Sorting
+        # by str keeps a mixed-type column (say ints beside strings) from raising.
+        new_tags = {t for t in all_tags if t not in self.tags}
+        self.tags.extend(sorted(new_tags, key=str))
 
         return segments, descriptions, tag_list
 
