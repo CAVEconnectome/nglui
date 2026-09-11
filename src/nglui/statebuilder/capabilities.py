@@ -59,6 +59,8 @@ __all__ = [
     "parse_capabilities",
     "get_version_info",
     "probe_capabilities",
+    "declare_capabilities",
+    "declared_capabilities",
     "capabilities_for_url",
     "prefetch",
     "clear_capability_cache",
@@ -325,6 +327,64 @@ def set_default_capabilities(
     return _DEFAULT_CAPABILITIES
 
 
+# --- Known deployments ---------------------------------------------------------
+
+# What the deployments nglui ships with support. Declared rather than probed: these
+# are known quantities, and the common case should not pay a network round trip.
+#
+# Declared capabilities can go stale -- Spelunker gained bool annotation properties in
+# September 2026 without changing the release it describes against -- so treat this as
+# something to update alongside those deployments, and use `declare_capabilities` or
+# an explicit `capabilities` argument to correct it without waiting for a release.
+_DECLARED_CAPABILITIES = {
+    "https://spelunker.cave-explorer.org/": Capabilities(
+        annotation_bool_properties=True,
+        annotation_property_tools=True,
+        spelunker_tag_tools=True,
+        source="declared:spelunker",
+    ),
+    "https://neuroglancer-demo.appspot.com/": Capabilities(
+        annotation_bool_properties=True,
+        annotation_property_tools=True,
+        source="declared:google",
+    ),
+}
+
+
+def declare_capabilities(
+    url: str, capabilities: Union[str, Capabilities, None]
+) -> None:
+    """Record what a deployment supports, so it is never probed.
+
+    Use this for a deployment nglui does not ship with, or to correct a declaration
+    that has gone stale. Passing None removes the declaration and lets the probe
+    decide again.
+
+    Parameters
+    ----------
+    url : str
+        Any URL on the deployment; only its origin is used.
+    capabilities : str or Capabilities or None
+        Capabilities or a string alias, as accepted by `parse_capabilities`.
+
+    Examples
+    --------
+    >>> declare_capabilities("https://ngl.example.org", "legacy")
+    >>> declare_capabilities("https://ngl.example.org", None)
+    """
+    origin = _origin(url)
+    resolved = parse_capabilities(capabilities)
+    if resolved is None:
+        _DECLARED_CAPABILITIES.pop(origin, None)
+    else:
+        _DECLARED_CAPABILITIES[origin] = resolved
+
+
+def declared_capabilities(url: str) -> Optional[Capabilities]:
+    """Return the recorded capabilities for a deployment, if any."""
+    return _DECLARED_CAPABILITIES.get(_origin(url))
+
+
 # --- Probing a live deployment -------------------------------------------------
 
 VERSION_INFO_PATH = "version.json"
@@ -524,6 +584,9 @@ def capabilities_for_url(
     True
     """
     if url:
+        declared = declared_capabilities(url)
+        if declared is not None:
+            return declared
         resolved = probe_capabilities(url)
         if resolved is not None:
             return resolved

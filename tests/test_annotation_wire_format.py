@@ -225,7 +225,7 @@ class TestLateTargetOverride:
             if url.endswith("/"):
                 response.text = '<script src="main.abc.js"></script>'
             else:
-                response.text = modern if "google" in url or "demo" in url else legacy
+                response.text = modern if "modern" in url else legacy
             response.content = response.text.encode()
             response.raise_for_status = mocker.Mock()
             return response
@@ -236,7 +236,7 @@ class TestLateTargetOverride:
 
     @pytest.fixture
     def tagged_state(self, tagged_df, two_targets):
-        vs = ViewerState(dimensions=[1, 1, 1], target_site="spelunker")
+        vs = ViewerState(dimensions=[1, 1, 1], target_url="https://legacy.example/")
         vs.add_points(
             tagged_df,
             point_column=["x", "y", "z"],
@@ -248,12 +248,14 @@ class TestLateTargetOverride:
     def test_target_site_changes_the_encoding(self, tagged_state):
         """Reusing the cached state here would silently ship the wrong encoding."""
         default = self._properties_from_url(tagged_state.to_url())
-        google = self._properties_from_url(tagged_state.to_url(target_site="google"))
+        google = self._properties_from_url(
+            tagged_state.to_url(target_url="https://modern.example/")
+        )
         assert default[0]["type"] == "uint8"
         assert google[0]["type"] == "bool"
 
     def test_original_target_is_restored(self, tagged_state):
-        tagged_state.to_url(target_site="google")
+        tagged_state.to_url(target_url="https://modern.example/")
         after = self._properties_from_url(tagged_state.to_url())
         assert after[0]["type"] == "uint8"
 

@@ -520,11 +520,14 @@ class TestOfflineStateBuilding:
         return pd.DataFrame({"x": [1, 2], "y": [1, 2], "z": [1, 2], "ct": ["a", "b"]})
 
     def _build(self, tagged_df, n=1):
+        """Targets an undeclared deployment: the shipped sites never probe."""
         from nglui.statebuilder import ViewerState
 
         layers = []
         for _ in range(n):
-            vs = ViewerState(dimensions=[1, 1, 1])
+            vs = ViewerState(
+                dimensions=[1, 1, 1], target_url="https://unknown.example/"
+            )
             vs.add_points(
                 tagged_df,
                 point_column=["x", "y", "z"],
@@ -554,7 +557,7 @@ class TestOfflineStateBuilding:
         from nglui.statebuilder import ViewerState
 
         get = mocker.patch("requests.get", side_effect=AssertionError("probed!"))
-        vs = ViewerState(dimensions=[1, 1, 1])
+        vs = ViewerState(dimensions=[1, 1, 1], target_url="https://unknown.example/")
         vs.add_points(
             pd.DataFrame({"x": [1], "y": [1], "z": [1]}),
             point_column=["x", "y", "z"],
@@ -576,7 +579,11 @@ class TestOfflineStateBuilding:
         from nglui.statebuilder import ViewerState
 
         get = mocker.patch("requests.get", side_effect=AssertionError("probed!"))
-        vs = ViewerState(dimensions=[1, 1, 1], capabilities="legacy")
+        vs = ViewerState(
+            dimensions=[1, 1, 1],
+            capabilities="legacy",
+            target_url="https://unknown.example/",
+        )
         vs.add_points(
             tagged_df,
             point_column=["x", "y", "z"],
@@ -666,3 +673,67 @@ class TestCacheKeying:
         """A long-lived session must eventually see a redeployment."""
         assert caps._capability_cache.ttl == caps.CACHE_TTL_SECONDS
         assert caps.CACHE_TTL_SECONDS <= 3600
+
+
+class TestDeclaredDeployments:
+    """The deployments nglui ships with are declared rather than probed.
+
+    They are known quantities and the common case should not pay a round trip. The
+    cost is that a declaration can go stale, which is not hypothetical -- Spelunker
+    gained bool annotation properties without changing the release it describes
+    against. `test_declarations_match_reality` re-checks them against the live
+    deployments; it is skipped unless explicitly selected.
+    """
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "https://spelunker.cave-explorer.org/",
+            "https://neuroglancer-demo.appspot.com",
+        ],
+    )
+    def test_shipped_sites_never_probe(self, mocker, url):
+        mocker.patch("requests.get", side_effect=AssertionError("probed a known site"))
+        resolved = caps.capabilities_for_url(url)
+        assert resolved.annotation_bool_properties
+        assert resolved.source.startswith("declared:")
+
+    def test_a_state_url_on_a_known_site_still_matches(self, mocker):
+        mocker.patch("requests.get", side_effect=AssertionError("probed a known site"))
+        resolved = caps.capabilities_for_url(
+            "https://spelunker.cave-explorer.org/#!%7B%22layers%22:%5B%5D%7D"
+        )
+        assert resolved.spelunker_tag_tools
+
+    def test_declaring_a_deployment_skips_the_probe(self, mocker):
+        mocker.patch("requests.get", side_effect=AssertionError("probed"))
+        try:
+            caps.declare_capabilities("https://lab.example/ngl", "legacy")
+            resolved = caps.capabilities_for_url("https://lab.example/other/path")
+            assert resolved == caps.LEGACY_CAPABILITIES
+        finally:
+            caps.declare_capabilities("https://lab.example/ngl", None)
+
+    def test_removing_a_declaration_restores_probing(self, mocker):
+        get = mocker.patch("requests.get", side_effect=requests.ConnectionError("x"))
+        caps.declare_capabilities("https://lab.example/", "legacy")
+        caps.declare_capabilities("https://lab.example/", None)
+        with pytest.warns(UserWarning):
+            caps.capabilities_for_url("https://lab.example/")
+        assert get.call_count == 1
+
+    def test_an_explicit_argument_still_wins(self):
+        """A declaration is a default for a deployment, not an override of the caller."""
+        assert caps.parse_capabilities("legacy") == caps.LEGACY_CAPABILITIES
+
+    @pytest.mark.network
+    def test_declarations_match_reality(self):
+        """Run with `-m network` to re-validate the shipped declarations."""
+        caps.clear_capability_cache()
+        for origin, declared in caps._DECLARED_CAPABILITIES.items():
+            probed = caps.probe_capabilities(origin)
+            assert probed is not None, f"{origin} unreachable"
+            assert probed == declared, (
+                f"{origin} declares {sorted(declared.enabled)} "
+                f"but serves {sorted(probed.enabled)}"
+            )

@@ -492,7 +492,10 @@ vs = ViewerState(capabilities="main")     # bool annotation properties
 vs = ViewerState(capabilities="legacy")   # seung-lab tag properties
 ```
 
-Left unset, nglui asks the deployment directly: it fetches the viewer's own client
+The two deployments nglui ships with — `spelunker` and `google` — have their
+capabilities declared in code, so targeting either costs no network request at all.
+
+For anything else, nglui asks the deployment directly: it fetches the viewer's own client
 bundle and looks for the features in it. That is the only answer that survives a fork.
 A fork's `git describe` string names the last tag in *its own* repository, so Spelunker
 reported `v2.37` both before and after gaining the entire bool-property system, and a
@@ -521,6 +524,17 @@ from nglui.statebuilder.capabilities import clear_capability_cache, prefetch
 clear_capability_cache()
 prefetch("https://spelunker.cave-explorer.org")   # optional: warm it deliberately
 ```
+
+If you target one deployment regularly, declare it once and skip the lookup entirely:
+
+```python
+from nglui.statebuilder.capabilities import declare_capabilities
+declare_capabilities("https://ngl.my-lab.org", "main")
+declare_capabilities("https://ngl.my-lab.org", None)   # undo, go back to probing
+```
+
+The same call corrects a shipped declaration that has gone stale, without waiting for
+an nglui release.
 
 For a deployment nglui cannot identify, say so once and skip the lookup entirely:
 
