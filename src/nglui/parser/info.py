@@ -1,16 +1,26 @@
-import requests
+"""Deployment version lookup.
 
-ngl_info_endpoint = "{neuroglancer_endpoint}/version.json"
+Retained for backward compatibility. The implementation now lives in
+`nglui.statebuilder.capabilities`, which parses payloads that are not strictly JSON
+(the Neuroglancer demo serves a Python repr) and caches results, including failures.
+"""
+
+from ..statebuilder.capabilities import get_version_info
+
+__all__ = ["get_ngl_info", "get_version_info"]
 
 
-def get_ngl_info(ngl_url):
+def get_ngl_info(ngl_url: str) -> dict | None:
+    """Get the version information of the Neuroglancer deployment at an endpoint.
+
+    Parameters
+    ----------
+    ngl_url : str
+        URL of the Neuroglancer deployment.
+
+    Returns
+    -------
+    dict or None
+        Parsed ``version.json`` contents, or None if it could not be read.
     """
-    Get the version of neuroglancer running at a given endpoint.
-    """
-    try:
-        r = requests.get(ngl_info_endpoint.format(neuroglancer_endpoint=ngl_url))
-        r.raise_for_status()
-        return r.json()
-    except Exception as e:
-        print(f"Error getting neuroglancer version: {e}")
-        return None
+    return get_version_info(ngl_url)
