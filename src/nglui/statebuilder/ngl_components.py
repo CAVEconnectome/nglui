@@ -22,7 +22,7 @@ from neuroglancer.coordinate_space import CoordinateSpace
 from neuroglancer.json_wrappers import optional, wrapped_property
 
 from ..segmentprops import SegmentProperties
-from ..utils import convert_arrow_to_numpy
+from ..utils import convert_arrow_to_numpy, is_missing_value, truthy_mask
 from .capabilities import get_default_capabilities, parse_capabilities
 from .ngl_annotations import (
     MAX_TAG_COUNT,
@@ -431,39 +431,6 @@ def _supports_tool_bindings(capabilities) -> bool:
     if capabilities.annotation_bool_properties:
         return capabilities.annotation_property_tools
     return True
-
-
-def _is_missing_tag(value) -> bool:
-    """Whether a tag cell means "no tag here" rather than a tag.
-
-    Covers None, NaN and pandas NA, plus blank strings: a tag whose label is empty
-    cannot be rendered or referenced, and in a column of cell types a blank almost
-    always means the value is absent rather than that the label is "".
-    """
-    if value is None:
-        return True
-    try:
-        if pd.isna(value):
-            return True
-    except (TypeError, ValueError):
-        # pd.isna raises or returns an array for some container types; those are
-        # not missing values.
-        pass
-    return isinstance(value, str) and not value.strip()
-
-
-def _truthy_mask(column, n_points: int) -> np.ndarray:
-    """Boolean mask from a tag_bools column, tolerating missing values.
-
-    Indexing with the raw column fails outright for anything that is not already a
-    boolean array -- a column holding NaN, or a nullable Int64 -- which is ordinary
-    for real data. Missing means not tagged.
-    """
-    values = list(column)[:n_points]
-    values += [False] * (n_points - len(values))
-    return np.array(
-        [False if _is_missing_tag(v) else bool(v) for v in values], dtype=bool
-    )
 
 
 def _handle_annotations(annos, tags=None, resolution=None, strategy=None) -> list:
@@ -1362,7 +1329,7 @@ class AnnotationLayer(LayerWithSource):
                 else list(tag_column)
             )
             for ii, t in enumerate(values):
-                if ii >= n_points or _is_missing_tag(t):
+                if ii >= n_points or is_missing_value(t):
                     continue
                 # Annotations coerce their own tags to str (`list_of_strings`), so the
                 # layer vocabulary has to match or a non-string tag never matches the
@@ -1371,7 +1338,7 @@ class AnnotationLayer(LayerWithSource):
                 all_tags.append(str(t))
         if tag_bools is not None:
             for tag_ in tag_bools:
-                for i in np.flatnonzero(_truthy_mask(df[tag_], n_points)):
+                for i in np.flatnonzero(truthy_mask(df[tag_], n_points)):
                     tag_list[i].append(tag_)
             all_tags.extend(tag_bools)
 

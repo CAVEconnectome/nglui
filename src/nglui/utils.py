@@ -2,7 +2,69 @@
 
 from typing import Union
 
+import numpy as np
 import pandas as pd
+
+
+def is_missing_value(value) -> bool:
+    """Whether a cell means "absent" rather than a value.
+
+    Covers None, NaN and pandas NA, plus blank strings: a tag whose label is empty
+    cannot be rendered or referenced, and in a column of categories a blank almost
+    always means the value is absent rather than that the label is "".
+
+    Parameters
+    ----------
+    value : Any
+        A single cell value.
+
+    Returns
+    -------
+    bool
+        True if the value should be treated as absent.
+    """
+    if value is None:
+        return True
+    try:
+        if pd.isna(value):
+            return True
+    except (TypeError, ValueError):
+        # pd.isna raises or returns an array for some container types; those are
+        # not missing values.
+        pass
+    return isinstance(value, str) and not value.strip()
+
+
+def truthy_mask(column, length: Union[int, None] = None) -> np.ndarray:
+    """Boolean mask from a column of flags, treating missing as not set.
+
+    A flag column containing a single null comes back as float or a nullable dtype
+    and is no longer a boolean array, so using it directly as a mask either raises or
+    counts the null as set. Both are wrong: an absent flag is not a set flag.
+
+    Parameters
+    ----------
+    column : iterable
+        Column of flag values.
+    length : int, optional
+        Length to pad or truncate to. Defaults to the length of ``column``.
+
+    Returns
+    -------
+    np.ndarray
+        Boolean array of the requested length.
+
+    Examples
+    --------
+    >>> truthy_mask([True, float("nan"), False]).tolist()
+    [True, False, False]
+    """
+    values = list(column)
+    if length is not None:
+        values = values[:length] + [False] * max(0, length - len(values))
+    return np.array(
+        [False if is_missing_value(v) else bool(v) for v in values], dtype=bool
+    )
 
 
 def convert_arrow_to_numpy(
