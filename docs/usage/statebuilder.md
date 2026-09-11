@@ -511,6 +511,17 @@ included — building states offline pays one failed connection and then nothing
 deployment that accepts a connection and then stalls is bounded by the read timeouts
 rather than hanging indefinitely.
 
+Results are cached per deployment origin for an hour, so every URL pointing at the same
+viewer shares one entry, and a long-running session eventually notices a redeployment —
+which is not hypothetical, since Spelunker gained bool properties mid-session while this
+was being written. To pick up a change immediately:
+
+```python
+from nglui.statebuilder.capabilities import clear_capability_cache, prefetch
+clear_capability_cache()
+prefetch("https://spelunker.cave-explorer.org")   # optional: warm it deliberately
+```
+
 For a deployment nglui cannot identify, say so once and skip the lookup entirely:
 
 ```python

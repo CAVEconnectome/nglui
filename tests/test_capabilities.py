@@ -590,3 +590,79 @@ class TestOfflineStateBuilding:
         """A misbehaving deployment must not stall a state build indefinitely."""
         assert caps.BUNDLE_TIMEOUT[1] <= 5.0
         assert caps.PROBE_TIMEOUT[1] <= 2.0
+
+
+class TestCacheKeying:
+    """One deployment is one cache entry, however its URL is spelled.
+
+    Keying on the raw argument meant `https://x.org/`, `https://x.org` and a URL with
+    a state fragment were three separate probes of the same deployment -- and with a
+    64-entry cache, a session working with many links could evict real answers.
+    """
+
+    BUNDLE = 'x={int8:e.INT8,bool:e.UINT8};d="toggleBoolProperty";'
+
+    def _serve(self, mocker):
+        def get(url, **kwargs):
+            response = mocker.Mock()
+            response.text = (
+                '<script src="main.a.js"></script>'
+                if url.endswith("/")
+                else self.BUNDLE
+            )
+            response.content = response.text.encode()
+            response.raise_for_status = mocker.Mock()
+            return response
+
+        return mocker.patch("requests.get", side_effect=get)
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "https://x.org",
+            "https://x.org/",
+            "https://x.org/ngl",
+            "https://x.org/ngl?query=1",
+            "https://x.org/#!%7B%22layers%22:%5B%5D%7D",
+        ],
+    )
+    def test_every_spelling_is_one_entry(self, mocker, url):
+        get = self._serve(mocker)
+        caps.probe_capabilities("https://x.org/")
+        before = get.call_count
+        caps.probe_capabilities(url)
+        assert get.call_count == before
+        assert len(caps._capability_cache) == 1
+
+    def test_distinct_origins_are_distinct_entries(self, mocker):
+        self._serve(mocker)
+        caps.probe_capabilities("https://a.example/")
+        caps.probe_capabilities("https://b.example/")
+        assert len(caps._capability_cache) == 2
+
+    def test_a_state_url_does_not_evict_the_plain_one(self, mocker):
+        """State URLs are long and varied; they must not each take a cache slot."""
+        self._serve(mocker)
+        for i in range(100):
+            caps.probe_capabilities(f"https://x.org/#!%7B%22n%22:{i}%7D")
+        assert len(caps._capability_cache) == 1
+
+    def test_warnings_are_also_keyed_on_origin(self, mocker):
+        mocker.patch("requests.get", side_effect=requests.ConnectionError("offline"))
+        with pytest.warns(UserWarning, match="Could not determine"):
+            caps.capabilities_for_url("https://x.org/")
+        with warnings_as_errors():
+            caps.capabilities_for_url("https://x.org/some/other/path")
+
+    def test_clear_resets_everything(self, mocker):
+        self._serve(mocker)
+        caps.probe_capabilities("https://x.org/")
+        caps._warned_origins.add("https://x.org/")
+        caps.clear_capability_cache()
+        assert len(caps._capability_cache) == 0
+        assert len(caps._warned_origins) == 0
+
+    def test_entries_expire(self):
+        """A long-lived session must eventually see a redeployment."""
+        assert caps._capability_cache.ttl == caps.CACHE_TTL_SECONDS
+        assert caps.CACHE_TTL_SECONDS <= 3600

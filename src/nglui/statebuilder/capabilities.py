@@ -36,6 +36,7 @@ import ast
 import json
 import os
 import re
+import threading
 import warnings
 from datetime import datetime, timezone
 from typing import Iterable, Optional, Union
@@ -44,6 +45,7 @@ from urllib.parse import urljoin, urlparse
 import attrs
 import requests
 from cachetools import TTLCache, cached
+from cachetools.keys import hashkey
 
 __all__ = [
     "ANNOTATION_BOOL_PROPERTIES",
@@ -333,10 +335,20 @@ MAX_VERSION_INFO_BYTES = 64 * 1024
 DISABLE_PROBE_ENV_VAR = "NGLUI_DISABLE_CAPABILITY_PROBE"
 
 # Cached including failures: an offline user should pay the timeout once per process,
-# not once per layer per call.
-_version_info_cache = TTLCache(maxsize=64, ttl=3600)
-_capability_cache = TTLCache(maxsize=64, ttl=3600)
-_warned_urls = set()
+# not once per layer per call. Entries expire after an hour so that a long-lived
+# session picks up a deployment that is redeployed under it -- which does happen, and
+# is exactly how Spelunker gained bool properties mid-flight.
+CACHE_TTL_SECONDS = 3600
+CACHE_MAX_ENTRIES = 64
+
+# Keyed on the origin rather than the argument, since every URL on one deployment
+# describes the same deployment. Locked because `cachetools` caches are not thread
+# safe, and a shared process can probe from more than one thread.
+_origin_key = lambda url: hashkey(_origin(url))  # noqa: E731
+_cache_lock = threading.Lock()
+_version_info_cache = TTLCache(maxsize=CACHE_MAX_ENTRIES, ttl=CACHE_TTL_SECONDS)
+_capability_cache = TTLCache(maxsize=CACHE_MAX_ENTRIES, ttl=CACHE_TTL_SECONDS)
+_warned_origins = set()
 
 
 def _origin(url: str) -> str:
@@ -366,7 +378,7 @@ def _parse_version_payload(text: str) -> Optional[dict]:
     return parsed if isinstance(parsed, dict) else None
 
 
-@cached(cache=_version_info_cache)
+@cached(cache=_version_info_cache, key=_origin_key, lock=_cache_lock)
 def get_version_info(url: str) -> Optional[dict]:
     """Fetch a deployment's ``version.json``, or None if it cannot be read.
 
@@ -442,7 +454,7 @@ def _fetch_client_bundle(url: str) -> Optional[str]:
     return bundle.text
 
 
-@cached(cache=_capability_cache)
+@cached(cache=_capability_cache, key=_origin_key, lock=_cache_lock)
 def probe_capabilities(url: str) -> Optional[Capabilities]:
     """Determine what a deployment supports by reading its client bundle.
 
@@ -516,8 +528,9 @@ def capabilities_for_url(
         if resolved is not None:
             return resolved
     opted_out = bool(os.environ.get(DISABLE_PROBE_ENV_VAR))
-    if warn_on_fallback and url and not opted_out and url not in _warned_urls:
-        _warned_urls.add(url)
+    origin = _origin(url) if url else None
+    if warn_on_fallback and origin and not opted_out and origin not in _warned_origins:
+        _warned_origins.add(origin)
         default = get_default_capabilities()
         warnings.warn(
             f"Could not determine Neuroglancer capabilities for {url}; assuming "
@@ -552,6 +565,7 @@ def prefetch(url: str) -> Optional[Capabilities]:
 
 def clear_capability_cache() -> None:
     """Forget all probed capabilities and fallback warnings."""
-    _version_info_cache.clear()
-    _capability_cache.clear()
-    _warned_urls.clear()
+    with _cache_lock:
+        _version_info_cache.clear()
+        _capability_cache.clear()
+    _warned_origins.clear()
