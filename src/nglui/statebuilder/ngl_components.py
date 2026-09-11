@@ -430,7 +430,7 @@ def _supports_tool_bindings(capabilities) -> bool:
         return True
     if capabilities.annotation_bool_properties:
         return capabilities.annotation_property_tools
-    return True
+    return capabilities.spelunker_tag_tools
 
 
 def _handle_annotations(annos, tags=None, resolution=None, strategy=None) -> list:

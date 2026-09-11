@@ -189,6 +189,16 @@ Neuroglancer is not semantically versioned and is deployed by many groups from m
 commits, so nglui picks its output from **what the target deployment can do**, not from
 a version. `statebuilder/capabilities.py` holds that model.
 
+Capabilities are read from the deployment's **client bundle**, not inferred from
+`version.json`. Inference was tried and does not hold: a fork's `git describe` string
+names the last tag *in its own repository*, so Spelunker reported `v2.37` both before
+and after gaining the entire bool-property system, and its commits-ahead count is in
+its own numbering rather than upstream's. Backports defeat any version ordering. The
+probe greps for markers that survive minification -- tool type names travel in state
+JSON, and `bool` is a key in the annotation property type table. It costs ~0.4s per
+origin, is cached including failures, and only runs when a local annotation layer has
+tags and capabilities are not pinned.
+
 Tags have two mutually incompatible encodings, and **neither is hardcoded** — pick one
 via `strategy_for_capabilities()` and never assume:
 

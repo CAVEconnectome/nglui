@@ -42,9 +42,15 @@ def _anno_layer(df, capabilities=None, **kwargs):
 
 
 class TestLegacyTagWireFormat:
+    """Pinned explicitly: this describes the encoding, not any live deployment.
+
+    These once relied on the default target resolving to legacy, which made them a
+    live probe of Spelunker -- and they broke the day it gained bool properties.
+    """
+
     def test_annotation_properties(self, tagged_df):
         """Legacy tags are uint8 properties carrying a non-standard `tag` key."""
-        layer = _anno_layer(tagged_df)
+        layer = _anno_layer(tagged_df, capabilities="legacy")
         assert layer["annotationProperties"] == [
             {"id": "tag0", "type": "uint8", "tag": "a"},
             {"id": "tag1", "type": "uint8", "tag": "b"},
@@ -53,7 +59,7 @@ class TestLegacyTagWireFormat:
 
     def test_tool_bindings(self, tagged_df):
         """Bindings point at the tagTool_* types nglui registers with neuroglancer."""
-        layer = _anno_layer(tagged_df)
+        layer = _anno_layer(tagged_df, capabilities="legacy")
         assert layer["toolBindings"] == {
             "Q": "tagTool_tag0",
             "W": "tagTool_tag1",
@@ -79,7 +85,7 @@ class TestLegacyTagWireFormat:
         df = pd.DataFrame(
             {"x": [1], "y": [2], "z": [3], "ct": ["zebra"], "apple": [True]}
         )
-        vs = ViewerState(dimensions=[1, 1, 1])
+        vs = ViewerState(dimensions=[1, 1, 1], capabilities="legacy")
         vs.add_points(
             df,
             point_column=["x", "y", "z"],
@@ -206,8 +212,31 @@ class TestLateTargetOverride:
         return json.loads(fragment)["layers"][0]["annotationProperties"]
 
     @pytest.fixture
-    def tagged_state(self, tagged_df):
-        vs = ViewerState(dimensions=[1, 1, 1])
+    def two_targets(self, mocker):
+        """One target supporting bool properties, one not."""
+        from nglui.statebuilder import capabilities as caps
+
+        caps.clear_capability_cache()
+        modern = 'x={int8:e.INT8,bool:e.UINT8};d="toggleBoolProperty";'
+        legacy = 'x={int8:e.INT8};class a{static TOOL_ID="tagTool";}'
+
+        def get(url, **kwargs):
+            response = mocker.Mock()
+            if url.endswith("/"):
+                response.text = '<script src="main.abc.js"></script>'
+            else:
+                response.text = modern if "google" in url or "demo" in url else legacy
+            response.content = response.text.encode()
+            response.raise_for_status = mocker.Mock()
+            return response
+
+        mocker.patch("requests.get", side_effect=get)
+        yield
+        caps.clear_capability_cache()
+
+    @pytest.fixture
+    def tagged_state(self, tagged_df, two_targets):
+        vs = ViewerState(dimensions=[1, 1, 1], target_site="spelunker")
         vs.add_points(
             tagged_df,
             point_column=["x", "y", "z"],

@@ -117,136 +117,6 @@ class TestVersionPayloadParsing:
         assert caps._parse_version_payload(body) is None
 
 
-class TestCapabilitiesFromVersionInfo:
-    def test_spelunker_is_tag_tools(self):
-        info = caps._parse_version_payload(SPELUNKER_PAYLOAD)
-        resolved = caps.capabilities_from_version_info(info)
-        assert resolved.spelunker_tag_tools
-        assert not resolved.annotation_bool_properties
-
-    def test_recent_google_supports_bool_properties(self):
-        info = caps._parse_version_payload(GOOGLE_DEMO_PAYLOAD)
-        resolved = caps.capabilities_from_version_info(info)
-        assert resolved.annotation_bool_properties
-        assert resolved.annotation_property_tools
-
-    def test_old_google_does_not(self):
-        info = caps._parse_version_payload(OLD_GOOGLE_PAYLOAD)
-        resolved = caps.capabilities_from_version_info(info)
-        assert not resolved.annotation_bool_properties
-
-    def test_bool_properties_precede_property_tools(self):
-        """Between the two landing dates, properties work but the tools do not."""
-        info = {
-            "url": "https://github.com/google/neuroglancer/commit/abc",
-            "tag": "v2.41.2-40-gabc1234",
-            "timestamp": "Wed Jul 1 00:00:00 UTC 2026",
-        }
-        resolved = caps.capabilities_from_version_info(info)
-        assert resolved.annotation_bool_properties
-        assert not resolved.annotation_property_tools
-
-    def test_old_release_is_legacy_whatever_the_build_date(self):
-        """A fresh rebuild of an old branch is still an old branch."""
-        info = {
-            "url": "https://github.com/seung-lab/neuroglancer/commit/abc",
-            "tag": "v2.37-347-gabc1234",
-            "branch": "seung-lab/neuroglancer/spelunker",
-            "timestamp": "Sat Sep 5 09:21:38 UTC 2026",
-        }
-        resolved = caps.capabilities_from_version_info(info)
-        assert not resolved.annotation_bool_properties
-        assert resolved.spelunker_tag_tools
-
-    def test_tag_tools_come_from_the_branch_not_the_repository(self):
-        """base-cave and spelunker share a repository but are different deployments."""
-        base = {
-            "url": "https://github.com/seung-lab/neuroglancer/commit/383b1cfe",
-            "tag": "v2.37-32-g383b1cfe",
-            "branch": "seung-lab/neuroglancer/base-cave",
-        }
-        spelunker = dict(base, branch="seung-lab/neuroglancer/spelunker")
-        assert not caps.capabilities_from_version_info(base).spelunker_tag_tools
-        assert caps.capabilities_from_version_info(spelunker).spelunker_tag_tools
-
-    def test_missing_branch_is_not_tag_tooled(self):
-        """The Google demo serves no branch field."""
-        info = {
-            "url": "https://github.com/google/neuroglancer/commit/3598da30",
-            "tag": "v2.41.2-110-g3598da30",
-            "timestamp": "Sat Sep 5 09:21:38 UTC 2026",
-        }
-        assert not caps.capabilities_from_version_info(info).spelunker_tag_tools
-
-    def test_rebased_fork_is_recognized_without_an_allowlist(self):
-        """A fork that rebases past the feature release gains it automatically.
-
-        This is the point of reading the describe tag: no table of known deployments
-        has to be edited when Spelunker moves onto newer Neuroglancer.
-        """
-        info = {
-            "url": "https://github.com/seung-lab/neuroglancer/commit/ffff",
-            "tag": "v2.41.2-400-gffffaaa",
-            "branch": "seung-lab/neuroglancer/spelunker",
-            "timestamp": "Wed Sep 9 00:00:00 UTC 2026",
-        }
-        resolved = caps.capabilities_from_version_info(info)
-        assert resolved.annotation_bool_properties
-        assert resolved.annotation_property_tools
-        # Tag tooling is an independent axis -- a rebased fork keeps both.
-        assert resolved.spelunker_tag_tools
-
-    def test_unknown_fork_is_classified_by_its_release(self):
-        info = {
-            "url": "https://github.com/someone/neuroglancer-fork/commit/abc",
-            "tag": "v2.41.2-200-gabc1234",
-            "timestamp": "Sat Sep 5 09:21:38 UTC 2026",
-        }
-        resolved = caps.capabilities_from_version_info(info)
-        assert resolved.annotation_bool_properties
-        assert not resolved.spelunker_tag_tools
-
-    def test_later_release_needs_no_timestamp(self):
-        info = {
-            "url": "https://github.com/google/neuroglancer/commit/zzz",
-            "tag": "v2.42.0",
-        }
-        resolved = caps.capabilities_from_version_info(info)
-        assert resolved.annotation_bool_properties
-        assert resolved.annotation_property_tools
-
-    def test_exactly_the_feature_base_release_predates_the_features(self):
-        """v2.41.2 was tagged before either feature landed."""
-        info = {
-            "url": "https://github.com/google/neuroglancer/commit/yyy",
-            "tag": "v2.41.2",
-            "timestamp": "Tue Sep 23 12:00:00 UTC 2025",
-        }
-        resolved = caps.capabilities_from_version_info(info)
-        assert not resolved.annotation_bool_properties
-
-    def test_unparseable_tag_is_undeterminable(self):
-        info = {
-            "url": "https://github.com/google/neuroglancer/commit/abc",
-            "tag": "some-custom-build",
-            "timestamp": "Sat Sep 5 09:21:38 UTC 2026",
-        }
-        assert caps.capabilities_from_version_info(info) is None
-
-    def test_unparseable_timestamp_is_undeterminable_at_the_boundary(self):
-        """Only builds cut from the feature release need the timestamp at all."""
-        info = {
-            "url": "https://github.com/google/neuroglancer/commit/abc",
-            "tag": "v2.41.2-40-gabc1234",
-            "timestamp": "yesterday",
-        }
-        assert caps.capabilities_from_version_info(info) is None
-
-    def test_empty_info_is_undeterminable(self):
-        assert caps.capabilities_from_version_info(None) is None
-        assert caps.capabilities_from_version_info({}) is None
-
-
 class TestProbe:
     def _mock_response(self, mocker, body, status=200):
         response = mocker.Mock()
@@ -306,11 +176,16 @@ class TestProbe:
 
 class TestCapabilitiesForUrl:
     def test_identified_deployment_needs_no_warning(self, mocker):
-        response = mocker.Mock()
-        response.text = GOOGLE_DEMO_PAYLOAD
-        response.content = GOOGLE_DEMO_PAYLOAD.encode()
-        response.raise_for_status = mocker.Mock()
-        mocker.patch("requests.get", return_value=response)
+        def get(url, **kwargs):
+            response = mocker.Mock()
+            response.text = (
+                TestBundleProbe.INDEX if url.endswith("/") else TestBundleProbe.MODERN
+            )
+            response.content = response.text.encode()
+            response.raise_for_status = mocker.Mock()
+            return response
+
+        mocker.patch("requests.get", side_effect=get)
         with warnings_as_errors():
             resolved = caps.capabilities_for_url("https://example.org/")
         assert resolved.annotation_bool_properties
@@ -377,45 +252,15 @@ class TestParserInfoShim:
         assert get_ngl_info("https://unreachable.example/") is None
 
 
-class TestParseDescribeTag:
-    """version.json carries `git describe` output: release, commits since, sha."""
-
-    @pytest.mark.parametrize(
-        "tag,expected",
-        [
-            ("v2.37-347-g78c701ed", ((2, 37), 347)),
-            ("v2.41.2-110-g3598da30", ((2, 41, 2), 110)),
-            ("v2.41.2", ((2, 41, 2), 0)),
-            ("2.41.2-1-gdeadbee", ((2, 41, 2), 1)),
-            ("v3.0-5-gabc1234", ((3, 0), 5)),
-            ("v2.41.2-110-g3598da30-dirty", ((2, 41, 2), 110)),
-        ],
-    )
-    def test_parses_real_forms(self, tag, expected):
-        assert caps.parse_describe_tag(tag) == expected
-
-    @pytest.mark.parametrize("tag", ["", "garbage", "release-7", "v", None])
-    def test_unparseable_returns_none(self, tag):
-        assert caps.parse_describe_tag(tag) is None
-
-    def test_release_ordering_is_numeric_not_lexical(self):
-        """(2, 37) must sort below (2, 41, 2); '2.37' > '2.41' as strings."""
-        older, _ = caps.parse_describe_tag("v2.37-347-gabc1234")
-        newer, _ = caps.parse_describe_tag("v2.41.2-1-gabc1234")
-        assert older < newer
-
-
 class TestCapabilityEncoding:
     """Capabilities are a named set, not a label; strings are one way in, not the model."""
 
     def test_provenance_does_not_affect_equality(self):
         """Two deployments with the same abilities are equivalent however each was learned."""
-        probed = caps.capabilities_from_version_info(
-            {
-                "url": "https://github.com/google/neuroglancer/commit/abc",
-                "tag": "v2.41.2-110-gabc1234",
-                "timestamp": "Sat Sep 5 09:21:38 UTC 2026",
-            }
+        probed = caps.Capabilities(
+            annotation_bool_properties=True,
+            annotation_property_tools=True,
+            source="probe:https://example.org/",
         )
         assert probed == caps.parse_capabilities("main")
         assert probed.source != caps.parse_capabilities("main").source
@@ -454,17 +299,21 @@ class TestCapabilityEncoding:
         built = caps.Capabilities.from_names(caps.MAIN_CAPABILITIES.enabled)
         assert built == caps.MAIN_CAPABILITIES
 
-    def test_from_names_reaches_sets_no_alias_covers(self):
+    def test_from_names_reaches_sets_no_alias_covers(self, mocker):
         """A real build between the two landing dates has properties but not tools."""
-        partial = caps.Capabilities.from_names([caps.ANNOTATION_BOOL_PROPERTIES])
-        probed = caps.capabilities_from_version_info(
-            {
-                "url": "https://github.com/google/neuroglancer/commit/abc",
-                "tag": "v2.41.2-40-gabc1234",
-                "timestamp": "Wed Jul 1 00:00:00 UTC 2026",
-            }
-        )
-        assert partial == probed
+        bundle = "x={rgb:void 0,int8:e.INT8,bool:e.UINT8};// no property tools yet"
+
+        def get(url, **kwargs):
+            response = mocker.Mock()
+            response.text = TestBundleProbe.INDEX if url.endswith("/") else bundle
+            response.content = response.text.encode()
+            response.raise_for_status = mocker.Mock()
+            return response
+
+        mocker.patch("requests.get", side_effect=get)
+        assert caps.Capabilities.from_names(
+            [caps.ANNOTATION_BOOL_PROPERTIES]
+        ) == caps.probe_capabilities("https://example.org/")
 
     def test_from_names_rejects_unknown(self):
         with pytest.raises(ValueError, match="Unknown capabilities"):
@@ -566,3 +415,92 @@ class TestDeploymentWithoutVersionJson:
             )
             layer = vs.to_dict()["layers"][0]
         assert layer["annotationProperties"] == [{"id": "axon", "type": "bool"}]
+
+
+class TestBundleProbe:
+    """Capabilities are read from the deployed client rather than inferred.
+
+    A fork describes against the last tag in its own repository, so its release says
+    nothing about which upstream features it merged -- Spelunker reported `v2.37` both
+    before and after gaining the whole bool-property system. Asking the bundle is the
+    only answer that survives a backport.
+    """
+
+    INDEX = '<html><body><script src="main.abc123.js"></script></body></html>'
+    # Shapes taken from real bundles: the property type table lists `bool` beside the
+    # numeric types, and tool type names travel in state JSON so they survive minifying.
+    MODERN = 'x={rgb:void 0,int8:e.INT8,bool:e.UINT8};let d="toggleBoolProperty";'
+    SPELUNKER_OLD = 'x={rgb:void 0,int8:e.INT8};class a{static TOOL_ID="tagTool";}'
+    SPELUNKER_NEW = MODERN + 'class a{static TOOL_ID="tagTool";}'
+    ANCIENT = "x={rgb:void 0,int8:e.INT8};// no tags at all"
+
+    def _serve(self, mocker, bundle):
+        def get(url, **kwargs):
+            response = mocker.Mock()
+            response.text = self.INDEX if url.endswith("/") else bundle
+            response.content = response.text.encode()
+            response.raise_for_status = mocker.Mock()
+            return response
+
+        return mocker.patch("requests.get", side_effect=get)
+
+    def test_modern_deployment(self, mocker):
+        self._serve(mocker, self.MODERN)
+        probed = caps.probe_capabilities("https://example.org/")
+        assert probed.enabled == frozenset(
+            {"annotation_bool_properties", "annotation_property_tools"}
+        )
+
+    def test_spelunker_before_the_backport(self, mocker):
+        """v2.37-347: tag tools only."""
+        self._serve(mocker, self.SPELUNKER_OLD)
+        probed = caps.probe_capabilities("https://example.org/")
+        assert probed.enabled == frozenset({"spelunker_tag_tools"})
+
+    def test_spelunker_after_the_backport(self, mocker):
+        """v2.37-398: the same release, now carrying everything."""
+        self._serve(mocker, self.SPELUNKER_NEW)
+        probed = caps.probe_capabilities("https://example.org/")
+        assert probed.enabled == frozenset(
+            {
+                "annotation_bool_properties",
+                "annotation_property_tools",
+                "spelunker_tag_tools",
+            }
+        )
+
+    def test_deployment_with_neither_system(self, mocker):
+        self._serve(mocker, self.ANCIENT)
+        assert caps.probe_capabilities("https://example.org/").enabled == frozenset()
+
+    def test_probe_is_cached(self, mocker):
+        get = self._serve(mocker, self.MODERN)
+        caps.probe_capabilities("https://example.org/")
+        caps.probe_capabilities("https://example.org/")
+        assert get.call_count == 2  # index + bundle, once
+
+    def test_index_without_a_bundle_is_a_non_answer(self, mocker):
+        response = mocker.Mock()
+        response.text = "<html><body>no script here</body></html>"
+        response.content = response.text.encode()
+        response.raise_for_status = mocker.Mock()
+        mocker.patch("requests.get", return_value=response)
+        assert caps.probe_capabilities("https://example.org/") is None
+
+    @pytest.mark.parametrize(
+        "failure",
+        [
+            requests.Timeout("t"),
+            requests.ConnectionError("c"),
+            requests.HTTPError("404"),
+        ],
+    )
+    def test_failures_are_non_answers(self, mocker, failure):
+        mocker.patch("requests.get", side_effect=failure)
+        assert caps.probe_capabilities("https://example.org/") is None
+
+    def test_env_var_disables_the_probe(self, mocker, monkeypatch):
+        get = self._serve(mocker, self.MODERN)
+        monkeypatch.setenv(caps.DISABLE_PROBE_ENV_VAR, "1")
+        assert caps.probe_capabilities("https://example.org/") is None
+        assert get.call_count == 0

@@ -56,7 +56,7 @@ __all__ = [
     "set_default_capabilities",
     "parse_capabilities",
     "get_version_info",
-    "capabilities_from_version_info",
+    "probe_capabilities",
     "capabilities_for_url",
     "prefetch",
     "clear_capability_cache",
@@ -332,69 +332,10 @@ PROBE_TIMEOUT = (1.0, 2.0)
 MAX_VERSION_INFO_BYTES = 64 * 1024
 DISABLE_PROBE_ENV_VAR = "NGLUI_DISABLE_CAPABILITY_PROBE"
 
-# Dates the relevant features landed upstream, used only to disambiguate builds cut
-# from the release the features came after.
-# Bool annotation properties: google/neuroglancer PR #809, 2026-05-11.
-# Annotation property tools:  google/neuroglancer PR #1063, 2026-08-13.
-_BOOL_PROPERTIES_LANDED = datetime(2026, 5, 11, tzinfo=timezone.utc)
-_PROPERTY_TOOLS_LANDED = datetime(2026, 8, 13, tzinfo=timezone.utc)
-
-# Both features landed after this release was tagged and before any later one, so the
-# release a build descends from is the primary signal: anything older cannot contain
-# them, anything newer necessarily does, and only builds cut from this exact release
-# need the timestamp to disambiguate.
-_FEATURE_BASE_RELEASE = (2, 41, 2)
-
-# Deployments that implement `tagTool_*` bindings and render a property's `tag` key.
-# Matched on version.json's `branch`, e.g. "seung-lab/neuroglancer/spelunker", because
-# sibling branches in the same repository are different deployments -- base-cave does
-# not carry this tooling. Independent of bool property support: a rebased Spelunker
-# can have both.
-_TAG_TOOL_BRANCH_SUFFIX = "spelunker"
-
-_DESCRIBE_RE = re.compile(
-    r"^v?(?P<version>\d+(?:\.\d+)*)"  # the release this build descends from
-    r"(?:-(?P<ahead>\d+)-g[0-9a-f]+)?"  # commits since it, if not exactly on it
-    r"(?:-dirty)?$"
-)
-
-
-def parse_describe_tag(tag: str) -> Optional[tuple]:
-    """Parse the ``git describe`` string in version.json's ``tag`` field.
-
-    Every Neuroglancer deployment stamps a describe string such as
-    ``v2.41.2-110-g3598da30``: the most recent release reachable from the build, how
-    many commits have landed since, and the commit itself. For a fork the release
-    component is the upstream release its branch descends from, which is exactly what
-    bounds the upstream features it can contain.
-
-    Parameters
-    ----------
-    tag : str
-        The ``tag`` field of a version.json payload.
-
-    Returns
-    -------
-    tuple or None
-        ``(version_tuple, commits_ahead)``, or None if unparseable.
-
-    Examples
-    --------
-    >>> parse_describe_tag("v2.37-347-g78c701ed")
-    ((2, 37), 347)
-    >>> parse_describe_tag("v2.41.2")
-    ((2, 41, 2), 0)
-    """
-    match = _DESCRIBE_RE.match(str(tag).strip())
-    if match is None:
-        return None
-    version = tuple(int(part) for part in match.group("version").split("."))
-    return version, int(match.group("ahead") or 0)
-
-
 # Cached including failures: an offline user should pay the timeout once per process,
 # not once per layer per call.
 _version_info_cache = TTLCache(maxsize=64, ttl=3600)
+_capability_cache = TTLCache(maxsize=64, ttl=3600)
 _warned_urls = set()
 
 
@@ -465,80 +406,77 @@ def get_version_info(url: str) -> Optional[dict]:
         return None
 
 
-def _parse_build_timestamp(timestamp: str) -> Optional[datetime]:
-    """Parse the git-style timestamp in version.json, e.g. 'Sat Sep 5 09:21:38 UTC 2026'."""
-    for fmt in ("%a %b %d %H:%M:%S %Z %Y", "%a %b %d %H:%M:%S %Y"):
-        try:
-            parsed = datetime.strptime(" ".join(timestamp.split()), fmt)
-        except (ValueError, TypeError):
-            continue
-        return parsed.replace(tzinfo=timezone.utc)
-    return None
+BUNDLE_TIMEOUT = (2.0, 10.0)
+"""(connect, read) for the client bundle, which is larger than version.json."""
+
+MAX_BUNDLE_BYTES = 32 * 1024 * 1024
+
+_MAIN_BUNDLE_RE = re.compile(r"""src=["'](main[.\w-]*\.js)["']""")
+
+# Markers read out of the deployed client. Each is a string the viewer must keep
+# verbatim -- tool type names travel in state JSON, and `bool` is a key in the
+# annotation property type table -- so minification does not rename them.
+_BOOL_PROPERTY_MARKER = re.compile(r"(?:int16|uint8|int8|float32):[^{}]{0,80}?bool:")
+_PROPERTY_TOOLS_MARKER = "toggleBoolProperty"
+_TAG_TOOLS_MARKER = "tagTool"
 
 
-def capabilities_from_version_info(info: Optional[dict]) -> Optional[Capabilities]:
-    """Infer capabilities from a parsed ``version.json`` payload.
+def _fetch_client_bundle(url: str) -> Optional[str]:
+    """Fetch a deployment's main client bundle, or None if it cannot be read."""
+    origin = _origin(url)
+    index = requests.get(origin, timeout=PROBE_TIMEOUT)
+    index.raise_for_status()
+    match = _MAIN_BUNDLE_RE.search(index.text)
+    if match is None:
+        return None
+    bundle = requests.get(urljoin(origin, match.group(1)), timeout=BUNDLE_TIMEOUT)
+    bundle.raise_for_status()
+    if len(bundle.content) > MAX_BUNDLE_BYTES:
+        return None
+    return bundle.text
 
-    The primary signal is the release the build descends from, taken from the
-    ``git describe`` string in ``tag``. That bounds which upstream features the build
-    can possibly contain, works for forks as well as upstream, and needs no allowlist
-    of known deployments -- a fork that rebases onto a newer release is recognized
-    automatically.
 
-    The build timestamp is only consulted for builds cut from the exact release the
-    features came after, where the release alone cannot distinguish them. A timestamp
-    records when a build was cut rather than what is in it, so a fresh rebuild of an
-    old branch would otherwise look modern.
+@cached(cache=_capability_cache)
+def probe_capabilities(url: str) -> Optional[Capabilities]:
+    """Determine what a deployment supports by reading its client bundle.
+
+    This asks the deployed viewer directly rather than inferring from a version,
+    because for a fork there is nothing reliable to infer from. Neuroglancer stamps a
+    ``git describe`` string in ``version.json``, but a fork describes against the last
+    tag *in its own repository*: Spelunker reports ``v2.37`` while containing commits
+    from well past ``v2.41.2``, so the release says nothing about which upstream
+    features were merged, and backports defeat the ordering entirely. Its build at
+    ``v2.37-347`` had no bool property support and the one at ``v2.37-398`` has the
+    full system, with the same release either way.
+
+    Results, including failures, are cached per origin -- an unreachable or
+    non-Neuroglancer URL costs one timeout per process rather than one per call.
 
     Parameters
     ----------
-    info : dict or None
-        A parsed version.json payload, as returned by `get_version_info`.
+    url : str
+        Any URL on the deployment; only its origin is used.
 
     Returns
     -------
     Capabilities or None
-        Inferred capabilities, or None if the payload carries nothing usable.
+        What the deployment supports, or None if its bundle could not be read.
     """
-    if not info:
+    if os.environ.get(DISABLE_PROBE_ENV_VAR):
         return None
-
-    commit_url = str(info.get("url", "")).lower()
-    repo = "/".join(urlparse(commit_url).path.strip("/").split("/")[:2])
-    # Whether tags render as `tagTool_*` bindings is a property of the deployment's
-    # branch, independent of which upstream release it descends from.
-    branch = str(info.get("branch", "")).strip().lower()
-    tag_tools = branch.rsplit("/", 1)[-1] == _TAG_TOOL_BRANCH_SUFFIX
-
-    described = parse_describe_tag(info.get("tag", ""))
-    if described is None:
+    try:
+        bundle = _fetch_client_bundle(url)
+    except Exception:
+        # Any failure is a non-answer, never an error: capability detection is a
+        # convenience and must not break state building.
         return None
-    release, commits_ahead = described
-
-    if release > _FEATURE_BASE_RELEASE:
-        bool_properties = property_tools = True
-        basis = f"release {'.'.join(map(str, release))}"
-    elif release < _FEATURE_BASE_RELEASE:
-        bool_properties = property_tools = False
-        basis = f"release {'.'.join(map(str, release))}"
-    elif commits_ahead == 0:
-        bool_properties = property_tools = False
-        basis = f"release {'.'.join(map(str, release))} exactly"
-    else:
-        # Cut from the release the features came after: only the build date separates
-        # a build that predates them from one that includes them.
-        built = _parse_build_timestamp(str(info.get("timestamp", "")))
-        if built is None:
-            return None
-        bool_properties = built >= _BOOL_PROPERTIES_LANDED
-        property_tools = built >= _PROPERTY_TOOLS_LANDED
-        basis = f"built {built.date()}"
-
+    if not bundle:
+        return None
     return Capabilities(
-        annotation_bool_properties=bool_properties,
-        annotation_property_tools=property_tools,
-        spelunker_tag_tools=tag_tools,
-        source=f"probe:{repo or 'unknown'}@{basis}",
+        annotation_bool_properties=bool(_BOOL_PROPERTY_MARKER.search(bundle)),
+        annotation_property_tools=_PROPERTY_TOOLS_MARKER in bundle,
+        spelunker_tag_tools=_TAG_TOOLS_MARKER in bundle,
+        source=f"probe:{_origin(url)}",
     )
 
 
@@ -568,7 +506,7 @@ def capabilities_for_url(
     True
     """
     if url:
-        resolved = capabilities_from_version_info(get_version_info(url))
+        resolved = probe_capabilities(url)
         if resolved is not None:
             return resolved
     if warn_on_fallback and url and url not in _warned_urls:
@@ -602,10 +540,11 @@ def prefetch(url: str) -> Optional[Capabilities]:
     Capabilities or None
         The detected capabilities, or None if the deployment was unreachable.
     """
-    return capabilities_from_version_info(get_version_info(url))
+    return probe_capabilities(url)
 
 
 def clear_capability_cache() -> None:
     """Forget all probed capabilities and fallback warnings."""
     _version_info_cache.clear()
+    _capability_cache.clear()
     _warned_urls.clear()

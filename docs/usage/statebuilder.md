@@ -492,24 +492,22 @@ vs = ViewerState(capabilities="main")     # bool annotation properties
 vs = ViewerState(capabilities="legacy")   # seung-lab tag properties
 ```
 
-Left unset, nglui reads `version.json` from the target deployment to see which it
-supports. Every Neuroglancer build stamps a `git describe` string there, such as
-`v2.41.2-110-g3598da30`, naming the release the build descends from. That release bounds
-which upstream features the build can contain, and it works for forks as well as for
-upstream -- a fork that rebases onto a newer release is recognized automatically, with no
-list of known deployments to maintain. The build date is only consulted for builds cut
-from the one release the features came after, since a timestamp records when a build was
-made rather than what is in it.
+Left unset, nglui asks the deployment directly: it fetches the viewer's own client
+bundle and looks for the features in it. That is the only answer that survives a fork.
+A fork's `git describe` string names the last tag in *its own* repository, so Spelunker
+reported `v2.37` both before and after gaining the entire bool-property system, and a
+backport puts a new feature on an old release. Reading the bundle needs no list of known
+deployments and cannot be fooled by either.
 
 That lookup is only attempted when a local annotation layer actually has tags, its result
 is cached, and a failure never raises -- so building states offline works, it just falls
 back to the default.
 
-**If your deployment does not serve `version.json`**, nothing raises. A 404, an
-unreachable host, a static host that answers every path with `index.html`, or a
-`version.json` with no `tag` field all resolve the same way: nglui falls back to the
-default, warns once naming the argument to set, and builds the state. The cost is one
-failed request per deployment per process, because failures are cached too.
+**If the bundle cannot be read**, nothing raises. An unreachable host, a page with no
+recognizable bundle, or anything that is not a Neuroglancer deployment all resolve the
+same way: nglui falls back to the default, warns once naming the argument to set, and
+builds the state. The lookup costs about 0.4s per deployment per process and is cached,
+failures included.
 
 For a deployment nglui cannot identify, say so once and skip the lookup entirely:
 
