@@ -461,15 +461,143 @@ There are also direct class to produce annotations in `statebuilder.ngl_annotati
 
 Local annotations can have **tags**, which is a way to categorize annotations with shortcuts in Neuroglancer.
 When you make an annotation layer, you can specify a list of tags that will be used to categorize the annotations.
-The shortcuts for adding these tags will be ++shift+q++, ++shift+w++, ++shift+e++, and so on.
-The tags run ++q++ to ++t++ for the first five tags, then ++a++ to ++g++ for the next five tags.
-A max of ten tags can be used in a single annotation layer in nglui to avoid overloading the interface.
+The shortcuts for adding these tags run ++q++ to ++t++ for the first five tags, then ++a++ to ++g++ for the next five.
 
-You can specify which tags the annotations already in two ways.
+You can specify which tags the annotations have in two ways.
 A `tag_column` specifies one or more column names, where each column has a single string per row that will be used as the tag for the annotation.
 With this approach, you can only use one tag per annotation per tag column.
 Alternatively, you can use `tag_bools`, which is a list of columns where each column name is taken to be a tag and the value in the column is a boolean indicating if the tag is applied to the annotation.
 In both cases, the layer will automatically generate the list of required tags based on the columns in the dataframe, added alphabetically if not already present in the specified tag list.
+
+###### Choosing a tag encoding
+
+Neuroglancer deployments encode tags in one of two incompatible ways, and nglui has to
+pick the one your target understands.
+
+* **Main Neuroglancer** has no tag concept at all. A tag is an annotation property of
+  `type: "bool"`, and hotkeys bind to a generic `toggleBoolProperty` tool.
+* **seung-lab forks**, including Spelunker, use `uint8` properties carrying the label in
+  a non-standard `tag` key, bound to `tagTool_*` tool types. These are limited to ten
+  tags per layer, because there are only ten such tools.
+
+The `capabilities` argument chooses between them, on the viewer state or on an
+individual layer:
+
+```python
+# Let nglui work it out from the target site (the default).
+vs = ViewerState(target_site="google")
+
+# Or say so explicitly, and skip the lookup.
+vs = ViewerState(capabilities="main")     # bool annotation properties
+vs = ViewerState(capabilities="legacy")   # seung-lab tag properties
+```
+
+The two deployments nglui ships with — `spelunker` and `google` — have their
+capabilities declared in code, so targeting either costs no network request at all.
+
+For anything else, nglui asks the deployment directly: it fetches the viewer's own client
+bundle and looks for the features in it. That is the only answer that survives a fork.
+A fork's `git describe` string names the last tag in *its own* repository, so Spelunker
+reported `v2.37` both before and after gaining the entire bool-property system, and a
+backport puts a new feature on an old release. Reading the bundle needs no list of known
+deployments and cannot be fooled by either.
+
+That lookup is only attempted when a local annotation layer actually has tags, its result
+is cached, and a failure never raises -- so building states offline works, it just falls
+back to the default.
+
+**If the bundle cannot be read**, nothing raises. An unreachable host, a page with no
+recognizable bundle, or anything that is not a Neuroglancer deployment all resolve the
+same way: nglui falls back to the default, warns once naming the argument to set, and
+builds the state. The lookup costs about 0.4s per deployment per process and is cached, failures
+included — building states offline pays one failed connection and then nothing. A
+deployment that accepts a connection and then stalls is bounded by the read timeouts
+rather than hanging indefinitely.
+
+Results are cached per deployment origin for an hour, so every URL pointing at the same
+viewer shares one entry, and a long-running session eventually notices a redeployment —
+which is not hypothetical, since Spelunker gained bool properties mid-session while this
+was being written. To pick up a change immediately:
+
+```python
+from nglui.statebuilder.capabilities import clear_capability_cache, prefetch
+clear_capability_cache()
+prefetch("https://spelunker.cave-explorer.org")   # optional: warm it deliberately
+```
+
+If you target one deployment regularly, declare it once and skip the lookup entirely:
+
+```python
+from nglui.statebuilder.capabilities import declare_capabilities
+declare_capabilities("https://ngl.my-lab.org", "main")
+declare_capabilities("https://ngl.my-lab.org", None)   # undo, go back to probing
+```
+
+The same call corrects a shipped declaration that has gone stale, without waiting for
+an nglui release.
+
+For a deployment nglui cannot identify, say so once and skip the lookup entirely:
+
+```python
+vs = ViewerState(capabilities="main", target_url="https://my-lab-neuroglancer.org")
+
+# or, if every state you build targets it:
+from nglui.statebuilder import set_default_capabilities
+set_default_capabilities("main")
+```
+
+Note that a `version.json` missing its `tag` is treated as unidentifiable even when it
+carries a repository and a build date. The date records when a build was cut rather than
+what is in it, so a fresh rebuild of an old branch would look capable when it is not --
+and claiming capability wrongly is the direction that costs the whole annotation layer.
+
+**When nglui cannot identify a deployment it assumes `main`**, since deployments
+overwhelmingly descend from it and the ones that do not — Spelunker among them — are
+identified by the lookup rather than left to the default.
+
+Know what that costs if it is wrong, because the two formats fail very differently. A
+`bool` property sent to a viewer predating the feature makes Neuroglancer **drop the
+annotation layer from the state entirely** and rewrite its URL without it, so the
+annotations are gone rather than merely unrendered. The reverse is only lossy: a Spelunker
+tag property in a current viewer still loads, just without its label or shortcut.
+
+So if you target a deployment that serves no usable `version.json` and predates bool
+annotation properties, say so once:
+
+```python
+set_default_capabilities("legacy")   # or capabilities="legacy" per state
+```
+
+`NGLUI_DISABLE_CAPABILITY_PROBE=1` suppresses the lookup entirely and uses the default.
+
+###### Tag names as property ids
+
+Under the modern encoding a tag becomes a property whose **identifier is what the viewer
+displays**, and Neuroglancer requires identifiers to match `^[a-z][a-zA-Z0-9_]*$`. Since
+tags usually come from dataframe column names, nglui sanitizes them the same way
+Neuroglancer's own annotation tab does -- `"Cell Body"` becomes `cell_body` -- keeping the
+original as the property's description, and warns once per layer listing everything it
+renamed.
+
+Non-ASCII labels are folded toward ASCII first, so accents survive (`café` → `cafe`)
+and Greek letters become their names (`β-cell` → `beta_cell`) rather than being dropped —
+without which `α-cell` and `β-cell` would both reduce to `cell`. Scripts with no Latin
+reading, such as CJK or Cyrillic, cannot be rendered into a legal identifier and fall
+back to a generated one like `tag_0`; the original is kept in the property description,
+and `tag_ids` gives exact control.
+
+If you want exact control, name the ids yourself, or make renaming an error:
+
+```python
+vs.add_annotation_layer(
+    name="annos",
+    tags=["Cell Body", "post-synaptic"],
+    tag_ids={"Cell Body": "soma", "post-synaptic": "post_syn"},
+)
+
+# Or refuse to guess:
+vs.add_annotation_layer(name="annos", tags=[...], strict_property_ids=True)
+```
 
 
 #### Cloud Annotations
@@ -520,6 +648,41 @@ This will use the info in the CAVEclient to find any relevent information (inclu
 
 There are a variety of parameters to control layer properties here, as well.
 In all cases, the image layer will be added first (if used) and then the segmentation layer.
+
+### Quick links from root ids
+
+If all you want is a link showing one or more root ids, `helpers.make_segment_link` does the whole thing in one line:
+
+``` pycon
+from nglui import statebuilder
+
+statebuilder.helpers.make_segment_link(client, root_ids=[864691135474648896])
+```
+
+By default this returns an HTML link that renders in a notebook.
+Use `return_as` to get something else: `"url"` for the URL string, `"clipboard"` to copy the URL to your system clipboard, `"browser"` to open it, `"dict"` or `"json"` for the raw state, or `"viewer"` for the `ViewerState` itself so you can keep building on it.
+
+``` pycon
+url = statebuilder.helpers.make_segment_link(
+    client,
+    root_ids=[864691135474648896],
+    return_as="url",
+    shorten="if_long",
+)
+```
+
+You can also attach [segment properties](../usage/segmentprops.md) at the same time.
+Pass either a `SegmentProperties` object or the property JSON it produces, and it will be uploaded via the client's state service and added as a source on the segmentation layer:
+
+``` pycon
+statebuilder.helpers.make_segment_link(
+    client,
+    root_ids=root_ids,
+    segment_properties=seg_prop,
+)
+```
+
+If you want the `ViewerState` rather than a rendered link, `helpers.make_segment_state` takes the same state-building arguments and returns the viewer directly.
 
 ## Mapping Data
 

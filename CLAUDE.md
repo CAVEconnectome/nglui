@@ -183,6 +183,62 @@ point_column=['x', 'y', 'z']
 point_column='position'  # → ['position_x', 'position_y', 'position_z']
 ```
 
+### Annotation Tags and Deployment Capabilities
+
+Neuroglancer is not semantically versioned and is deployed by many groups from many
+commits, so nglui picks its output from **what the target deployment can do**, not from
+a version. `statebuilder/capabilities.py` holds that model.
+
+Capabilities are read from the deployment's **client bundle**, not inferred from
+`version.json`. Inference was tried and does not hold: a fork's `git describe` string
+names the last tag *in its own repository*, so Spelunker reported `v2.37` both before
+and after gaining the entire bool-property system, and its commits-ahead count is in
+its own numbering rather than upstream's. Backports defeat any version ordering. The
+probe greps for markers that survive minification -- tool type names travel in state
+JSON, and `bool` is a key in the annotation property type table. It costs ~0.4s per
+origin, is cached including failures, and only runs when a local annotation layer has
+tags and capabilities are not pinned.
+
+Tags have two mutually incompatible encodings, and **neither is hardcoded** — pick one
+via `strategy_for_capabilities()` and never assume:
+
+| | main Neuroglancer | Spelunker (seung-lab) |
+|---|---|---|
+| property | `{"id": "axon", "type": "bool"}` | `{"id": "tag0", "type": "uint8", "tag": "axon"}` |
+| per-annotation | `props: [true, false]` | `props: [1, 0]` |
+| binding | `{"type": "toggleBoolProperty", "property": "axon"}` | `"tagTool_tag0"` |
+
+**These fail asymmetrically, and the direction matters.** A `type: "bool"` property sent
+to a viewer predating the feature makes Neuroglancer *drop the whole annotation layer
+from the state and rewrite the URL without it* — the annotations are gone, not just
+unrendered. The reverse is merely lossy. Verified in a live viewer, not inferred.
+
+**Wire-format invariants.** Violating any of these fails the entire layer, and the
+neuroglancer Python library checks none of them — `tests/test_viewer_invariants.py`
+asserts them instead:
+
+- property ids must match `^[a-z][a-zA-Z0-9_]*$`, and must be unique
+- each annotation's `props` array must be *exactly* one entry per declared property
+- property order is wire format: `props` is read positionally against
+  `annotationProperties`
+- tool binding keys must be single capitals
+
+The id is also **what the viewer displays** (the schema tab labels properties by id;
+`description` is only a tooltip), so `sanitize_property_id` keeps ids readable rather
+than slugifying, and warns once per layer with the rename map.
+
+**Working with the neuroglancer library.** Pass annotation property specs as plain
+**dicts**, not `AnnotationPropertySpec` — `JsonObjectWrapper` round-trips unknown keys,
+which is how both the non-standard `tag` key and `type: "bool"` survive on a released
+library that knows neither. `tool_bindings` *is* validated against a registry, so
+`register_property_tools()` self-registers the property tools; it is guarded per type
+and becomes a no-op once upstream ships them. Do not raise the `neuroglancer` floor or
+pin a fork to get these.
+
+**If you change tag serialization**, `tests/test_annotation_wire_format.py` pins the
+exact emitted JSON for both encodings. A diff there means the wire format moved — treat
+it as a breaking change, not a test to update.
+
 ## Common Development Workflows
 
 ### Adding New Annotation Types
@@ -190,9 +246,25 @@ point_column='position'  # → ['position_x', 'position_y', 'position_z']
 1. Create class inheriting from `AnnotationBase`
 2. Add type hints for all attributes
 3. Implement `_scale_points()` method
-4. Implement `to_neuroglancer()` method  
+4. Implement `to_neuroglancer()`, forwarding `tags`/`strategy` to `_to_neuroglancer()`
+   so the tag encoding stays the layer's decision rather than the annotation's
 5. Add comprehensive tests (unit + integration)
 6. Update documentation
+
+### Adding a New Capability
+
+Capabilities are named behaviors, not versions. To add one (e.g. numeric or enum
+annotation properties):
+
+1. Add a `_capability_field()` to `Capabilities` and a module-level name constant
+2. Teach `capabilities_from_version_info()` when it became available, keyed on the
+   release a build descends from (`parse_describe_tag`), not on the build timestamp —
+   a timestamp says when a build was cut, not what is in it
+3. **Add it to `MAIN_CAPABILITIES`.** The `"main"` alias is a promise to track
+   google/neuroglancer's main branch; omitting it makes the alias quietly lie
+4. Gate emission on it separately — features land upstream at different times, so a
+   deployment can understand a property type but not the tool that edits it
+5. Cover the undetectable path: it must fall back and warn, never raise
 
 ### Adding New Layer Types
 

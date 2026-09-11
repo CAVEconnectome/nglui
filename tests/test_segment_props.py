@@ -312,3 +312,37 @@ def test_random_sampler(test_df):
         random_column_prefix="random_sample_test",
     )
     assert "random_sample_test_2" in props.to_dataframe().columns
+
+
+class TestMissingValuesInBoolTags:
+    """A segment with no flag value is not a flagged segment.
+
+    `np.flatnonzero` on the raw column counts NaN as non-zero, so a missing flag was
+    reported as set -- silently, and in the direction that invents data.
+    """
+
+    @pytest.mark.parametrize(
+        "column",
+        [
+            [True, np.nan, False],
+            pd.array([1, 0, None], dtype="Int64"),
+            pd.array([True, None, False], dtype="boolean"),
+        ],
+    )
+    def test_missing_is_not_tagged(self, column):
+        props = SegmentProperties.from_dataframe(
+            pd.DataFrame({"pt_root_id": [1, 2, 3], "f": column}),
+            id_col="pt_root_id",
+            tag_bool_cols=["f"],
+        ).to_dict()
+        tag_prop = [p for p in props["inline"]["properties"] if p["type"] == "tags"][0]
+        assert [bool(v) for v in tag_prop["values"]] == [True, False, False]
+
+    def test_ordinary_bools_are_unaffected(self):
+        props = SegmentProperties.from_dataframe(
+            pd.DataFrame({"pt_root_id": [1, 2, 3], "f": [True, False, True]}),
+            id_col="pt_root_id",
+            tag_bool_cols=["f"],
+        ).to_dict()
+        tag_prop = [p for p in props["inline"]["properties"] if p["type"] == "tags"][0]
+        assert [bool(v) for v in tag_prop["values"]] == [True, False, True]

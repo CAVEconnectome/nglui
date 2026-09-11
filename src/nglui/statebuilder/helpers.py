@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Iterable, Literal, Optional, Union
 
 from caveclient import CAVEclient
 
+from ..segmentprops import SegmentProperties
 from .base import DataMap, ViewerState
 from .ngl_components import AnnotationLayer
 from .shaders import DEFAULT_SHADER_MAP, simple_point_shader
@@ -14,7 +15,147 @@ if TYPE_CHECKING:
 DEFAULT_POSTSYN_COLOR = "turquoise"
 DEFAULT_PRESYN_COLOR = "tomato"
 
+DEFAULT_SEGMENTATION_LAYER = "segmentation"
+
 MAX_URL_LENGTH = 1_750_000
+
+ReturnAs = Literal["link", "url", "clipboard", "browser", "dict", "json", "viewer"]
+Shorten = Union[bool, Literal["never", "always", "if_long"]]
+
+
+def _as_segment_list(root_ids: Union[int, str, Iterable[int]]) -> Union[list, dict]:
+    """Coerce a single root id or a collection of root ids into something `add_segments` accepts.
+
+    A dict of `{root_id: visible}` is passed through unchanged, since that form carries
+    visibility information that a list cannot.
+    """
+    if root_ids is None:
+        return []
+    if isinstance(root_ids, dict):
+        return root_ids
+    if isinstance(root_ids, str) or not isinstance(root_ids, Iterable):
+        return [root_ids]
+    return list(root_ids)
+
+
+def _normalize_shorten(shorten: Shorten) -> Union[bool, Literal["if_long"]]:
+    "Map the human-friendly shorten words onto the values `ViewerState.to_url` expects."
+    match shorten:
+        case "never":
+            return False
+        case "always":
+            return True
+        case _:
+            return shorten
+
+
+def add_segment_properties_source(
+    viewer: ViewerState,
+    segment_properties: Union[SegmentProperties, dict],
+    client: CAVEclient,
+    name: str = DEFAULT_SEGMENTATION_LAYER,
+) -> ViewerState:
+    """Upload an already-built segment property and add it as a source on a segmentation layer.
+
+    Use this when you already have a [SegmentProperties][nglui.segmentprops.SegmentProperties]
+    object (or the property JSON it produces). To build segment properties from a dataframe
+    as part of a viewer pipeline, use
+    [ViewerState.add_segment_properties][nglui.statebuilder.ViewerState.add_segment_properties]
+    instead.
+
+    Parameters
+    ----------
+    viewer : ViewerState
+        The viewer state holding the segmentation layer to add the property source to.
+    segment_properties : Union[SegmentProperties, dict]
+        Either an nglui `SegmentProperties` object or the property JSON dictionary it
+        serializes to.
+    client : CAVEclient
+        CAVEclient used to upload the property JSON to the state service.
+    name : str, optional
+        Name of the segmentation layer to add the source to, by default "segmentation".
+
+    Returns
+    -------
+    ViewerState
+        The viewer state, with the segment property source added.
+    """
+    if isinstance(segment_properties, SegmentProperties):
+        property_json = segment_properties.to_dict()
+    elif isinstance(segment_properties, dict):
+        property_json = segment_properties
+    else:
+        raise TypeError(
+            "segment_properties must be a SegmentProperties object or a property JSON dictionary, "
+            f"not {type(segment_properties)}."
+        )
+    # Resolve the target layer before uploading: the upload is a side effect on the
+    # state service, and failing after it would leave an orphaned property behind.
+    if name not in viewer.layer_names:
+        raise ValueError(
+            f"No layer named {name!r} in the viewer. Available layers: "
+            f"{viewer.layer_names}."
+        )
+    property_id = client.state.upload_property_json(property_json)
+    property_url = client.state.build_neuroglancer_url(
+        property_id, format_properties=True
+    )
+    viewer.layers[name].add_source(property_url)
+    return viewer
+
+
+def _render_viewer_state(
+    viewer: ViewerState,
+    return_as: ReturnAs,
+    shorten: Shorten = "if_long",
+    target_url: Optional[str] = None,
+    target_site: Optional[str] = None,
+    client: Optional[CAVEclient] = None,
+    link_text: str = "Neuroglancer Link",
+):
+    "Render a viewer state into whichever representation the caller asked for."
+    shorten = _normalize_shorten(shorten)
+    match return_as:
+        case "viewer":
+            return viewer
+        case "dict":
+            return viewer.to_dict()
+        case "json":
+            return viewer.to_json_string()
+        case "url":
+            return viewer.to_url(
+                shorten=shorten,
+                target_url=target_url,
+                target_site=target_site,
+                client=client,
+            )
+        case "link":
+            return viewer.to_link(
+                shorten=shorten,
+                target_url=target_url,
+                target_site=target_site,
+                client=client,
+                link_text=link_text,
+            )
+        case "clipboard":
+            return viewer.to_clipboard(
+                shorten=shorten,
+                target_url=target_url,
+                target_site=target_site,
+                client=client,
+            )
+        case "browser":
+            return viewer.to_browser(
+                shorten=shorten,
+                target_url=target_url,
+                target_site=target_site,
+                client=client,
+            )
+        case _:
+            raise ValueError(
+                f"Invalid return_as value: {return_as}. Must be one of 'link', 'url', "
+                "'clipboard', 'browser', 'dict', 'json', or 'viewer'."
+            )
 
 
 def sort_dataframe_by_root_id(
@@ -332,11 +473,188 @@ def make_connectivity_state_map(
     return ngl
 
 
+def make_segment_state(
+    client: CAVEclient,
+    root_ids: Optional[Union[int, Iterable[int], dict]] = None,
+    segment_properties: Optional[Union[SegmentProperties, dict]] = None,
+    segmentation_layer_name: str = DEFAULT_SEGMENTATION_LAYER,
+    imagery: Union[bool, str] = True,
+    selected_alpha: Optional[float] = None,
+    alpha_3d: Optional[float] = None,
+    mesh_silhouette: Optional[float] = None,
+    infer_coordinates: bool = True,
+) -> ViewerState:
+    """Build a viewer state showing one or more segments from a datastack.
+
+    This is the quickest way to go from a CAVEclient and a set of root ids to a
+    Neuroglancer state: imagery and segmentation layers come from the client, the root ids
+    are selected in the segmentation layer, and segment properties (if given) are uploaded
+    and attached as a source on that same layer.
+
+    Parameters
+    ----------
+    client : CAVEclient
+        CAVEclient configured for the datastack desired.
+    root_ids : Optional[Union[int, Iterable[int], dict]], optional
+        Root id or root ids to select in the segmentation layer, by default None.
+        If None, no segments are selected. A dict of `{root_id: visible}` can be used
+        to control per-segment visibility.
+    segment_properties : Optional[Union[SegmentProperties, dict]], optional
+        Segment properties to attach to the segmentation layer, by default None.
+        Either a [SegmentProperties][nglui.segmentprops.SegmentProperties] object or the
+        property JSON dictionary it serializes to. The property is uploaded to the state
+        service via the client and added as a source on the segmentation layer.
+    segmentation_layer_name : str, optional
+        Name of the segmentation layer, by default "segmentation".
+    imagery : Union[bool, str], optional
+        Whether to add an imagery layer, by default True.
+        If a string is provided, it is used as the name of the imagery layer.
+    selected_alpha : Optional[float], optional
+        Alpha value for selected segments in the 2D view, by default None (uses default value).
+    alpha_3d : Optional[float], optional
+        Alpha value for meshes, by default None (uses default value).
+    mesh_silhouette : Optional[float], optional
+        Mesh silhouette value, by default None (uses default value).
+    infer_coordinates : bool, optional
+        Whether to infer the viewer position from the layer sources, by default True.
+
+    Returns
+    -------
+    ViewerState
+        A viewer state with the requested segments selected.
+
+    Examples
+    --------
+    >>> from nglui import statebuilder
+    >>> vs = statebuilder.helpers.make_segment_state(client, root_ids=[864691135474648896])
+    >>> vs.to_url()
+    """
+    viewer = ViewerState(
+        client=client,
+        infer_coordinates=infer_coordinates,
+    ).add_layers_from_client(
+        client,
+        imagery=imagery,
+        segmentation=segmentation_layer_name,
+        selected_alpha=selected_alpha,
+        alpha_3d=alpha_3d,
+        mesh_silhouette=mesh_silhouette,
+    )
+
+    segments = _as_segment_list(root_ids)
+    if len(segments) > 0:
+        viewer.add_segments(segments, name=segmentation_layer_name)
+
+    if segment_properties is not None:
+        add_segment_properties_source(
+            viewer,
+            segment_properties,
+            client=client,
+            name=segmentation_layer_name,
+        )
+    return viewer
+
+
+def make_segment_link(
+    client: CAVEclient,
+    root_ids: Optional[Union[int, Iterable[int], dict]] = None,
+    segment_properties: Optional[Union[SegmentProperties, dict]] = None,
+    return_as: ReturnAs = "link",
+    shorten: Shorten = "if_long",
+    target_url: Optional[str] = None,
+    target_site: Optional[str] = None,
+    segmentation_layer_name: str = DEFAULT_SEGMENTATION_LAYER,
+    imagery: Union[bool, str] = True,
+    selected_alpha: Optional[float] = None,
+    alpha_3d: Optional[float] = None,
+    mesh_silhouette: Optional[float] = None,
+    infer_coordinates: bool = True,
+    link_text: str = "Neuroglancer Link",
+):
+    """Make a Neuroglancer link showing one or more segments from a datastack.
+
+    A one-line convenience wrapping [make_segment_state][nglui.statebuilder.helpers.make_segment_state]
+    that renders the resulting state as a link, URL, or other representation.
+
+    Parameters
+    ----------
+    client : CAVEclient
+        CAVEclient configured for the datastack desired.
+    root_ids : Optional[Union[int, Iterable[int], dict]], optional
+        Root id or root ids to select in the segmentation layer, by default None.
+        If None, no segments are selected. A dict of `{root_id: visible}` can be used
+        to control per-segment visibility.
+    segment_properties : Optional[Union[SegmentProperties, dict]], optional
+        Segment properties to attach to the segmentation layer, by default None.
+        Either a [SegmentProperties][nglui.segmentprops.SegmentProperties] object or the
+        property JSON dictionary it serializes to.
+    return_as : ReturnAs, optional
+        How to return the state, by default "link".
+        Options are "link" (an HTML link for notebooks), "url" (a URL string),
+        "clipboard" (copies the URL to the system clipboard and returns it),
+        "browser" (opens the URL in a web browser), "dict", "json", or "viewer"
+        (the [ViewerState][nglui.statebuilder.ViewerState] itself).
+    shorten : Shorten, optional
+        Whether to shorten the URL with the CAVE state service, by default "if_long",
+        which only shortens URLs past a length threshold. Also accepts True/"always"
+        and False/"never".
+    target_url : Optional[str], optional
+        Base Neuroglancer URL to use, by default None (uses the configured default).
+    target_site : Optional[str], optional
+        Target site to use, based on the keys in site_utils.NEUROGLANCER_SITES,
+        by default None (uses the configured default).
+    segmentation_layer_name : str, optional
+        Name of the segmentation layer, by default "segmentation".
+    imagery : Union[bool, str], optional
+        Whether to add an imagery layer, by default True.
+        If a string is provided, it is used as the name of the imagery layer.
+    selected_alpha : Optional[float], optional
+        Alpha value for selected segments in the 2D view, by default None (uses default value).
+    alpha_3d : Optional[float], optional
+        Alpha value for meshes, by default None (uses default value).
+    mesh_silhouette : Optional[float], optional
+        Mesh silhouette value, by default None (uses default value).
+    infer_coordinates : bool, optional
+        Whether to infer the viewer position from the layer sources, by default True.
+    link_text : str, optional
+        Text to display for the HTML link when `return_as` is "link", by default "Neuroglancer Link".
+
+    Returns
+    -------
+    The Neuroglancer state in the format specified by `return_as`.
+
+    Examples
+    --------
+    >>> from nglui import statebuilder
+    >>> statebuilder.helpers.make_segment_link(client, root_ids=[864691135474648896])
+    """
+    viewer = make_segment_state(
+        client,
+        root_ids=root_ids,
+        segment_properties=segment_properties,
+        segmentation_layer_name=segmentation_layer_name,
+        imagery=imagery,
+        selected_alpha=selected_alpha,
+        alpha_3d=alpha_3d,
+        mesh_silhouette=mesh_silhouette,
+        infer_coordinates=infer_coordinates,
+    )
+    return _render_viewer_state(
+        viewer,
+        return_as=return_as,
+        shorten=shorten,
+        target_url=target_url,
+        target_site=target_site,
+        client=client,
+        link_text=link_text,
+    )
+
+
 def make_neuron_neuroglancer_link(
     client: CAVEclient,
     root_ids: Union[int, list[int]],
-    return_as: Literal["link", "dict", "json", "url"] = "link",
-    shorten: Literal["never", "always", "if_long"] = "if_long",
+    return_as: ReturnAs = "link",
+    shorten: Shorten = "if_long",
     show_inputs: bool = True,
     show_outputs: bool = True,
     point_column: str = "ctr_pt_position",
@@ -344,6 +662,9 @@ def make_neuron_neuroglancer_link(
     target_site: Optional[str] = None,
     timestamp: Optional["datetime.datetime"] = None,
     infer_coordinates: bool = True,
+    segment_properties: Optional[Union[SegmentProperties, dict]] = None,
+    segmentation_layer_name: str = DEFAULT_SEGMENTATION_LAYER,
+    link_text: str = "Neuroglancer Link",
 ):
     """Create a Neuroglancer state with a neuron and optionally its inputs and outputs.
     Parameters
@@ -352,12 +673,12 @@ def make_neuron_neuroglancer_link(
         CAVEclient configured for the datastack desired
     root_ids : Union[int, list[int]]
         Root IDs of the neuron to visualize. Can be a single ID or a list of IDs.
-    return_as : Literal["link", "dict", "json", "url"], optional
+    return_as : ReturnAs, optional
         Format to return the Neuroglancer state, by default "link".
-        Options are "link", "dict", "json", or "url".
-    shorten : Literal["never", "always", "if_long"], optional
+        Options are "link", "url", "clipboard", "browser", "dict", "json", or "viewer".
+    shorten : Shorten, optional
         Whether to shorten the URL if it is long, by default "if_long".
-        Options are "never", "always", or "if_long".
+        Options are "never" (or False), "always" (or True), or "if_long".
     show_inputs : bool, optional
         Whether to show input synapses, by default True
     show_outputs : bool, optional
@@ -375,22 +696,33 @@ def make_neuron_neuroglancer_link(
         If None, the current time will be used.
     infer_coordinates : bool, optional
         Whether to infer coordinates from the data, by default True.
+    segment_properties : Optional[Union[SegmentProperties, dict]], optional
+        Segment properties to attach to the segmentation layer, by default None.
+        Either a [SegmentProperties][nglui.segmentprops.SegmentProperties] object or the
+        property JSON dictionary it serializes to.
+    segmentation_layer_name : str, optional
+        Name of the segmentation layer, by default "segmentation".
+    link_text : str, optional
+        Text to display for the HTML link when `return_as` is "link", by default "Neuroglancer Link".
 
     Returns
     -------
     Neuroglancer state in the specified format.
     """
 
-    if not isinstance(root_ids, Iterable):
-        root_ids = [root_ids]
+    root_ids = _as_segment_list(root_ids)
+    query_ids = list(root_ids)
 
-    viewer = ViewerState(infer_coordinates=infer_coordinates).add_layers_from_client(
+    viewer = make_segment_state(
         client,
+        root_ids=root_ids,
+        segment_properties=segment_properties,
+        segmentation_layer_name=segmentation_layer_name,
+        infer_coordinates=infer_coordinates,
     )
-    viewer.layers[1].add_segments(segments=root_ids)
     if show_inputs:
         post_df = client.materialize.synapse_query(
-            post_ids=root_ids,
+            post_ids=query_ids,
             desired_resolution=[1, 1, 1],
             split_positions=True,
             timestamp=timestamp,
@@ -405,7 +737,7 @@ def make_neuron_neuroglancer_link(
         )
     if show_outputs:
         pre_df = client.materialize.synapse_query(
-            pre_ids=root_ids,
+            pre_ids=query_ids,
             desired_resolution=[1, 1, 1],
             split_positions=True,
             timestamp=timestamp,
@@ -418,24 +750,12 @@ def make_neuron_neuroglancer_link(
             data_resolution=[1, 1, 1],
             shader=simple_point_shader(color=DEFAULT_PRESYN_COLOR),
         )
-    match return_as:
-        case "dict":
-            return viewer.to_dict()
-        case "json":
-            return viewer.to_json_string()
-        case "url":
-            return viewer.to_url(
-                shorten=shorten,
-                target_url=target_url,
-                target_site=target_site,
-            )
-        case "link":
-            return viewer.to_link(
-                shorten=shorten,
-                target_url=target_url,
-                target_site=target_site,
-            )
-        case _:
-            raise ValueError(
-                f"Invalid return_as value: {return_as}. Must be one of 'link', 'dict', 'json', or 'url'."
-            )
+    return _render_viewer_state(
+        viewer,
+        return_as=return_as,
+        shorten=shorten,
+        target_url=target_url,
+        target_site=target_site,
+        client=client,
+        link_text=link_text,
+    )

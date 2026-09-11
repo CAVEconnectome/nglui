@@ -154,36 +154,82 @@ def layer_source(state: dict, layer_name: str) -> Union[str, list]:
     return source
 
 
-def tag_dictionary(state: dict, layer_name: str) -> dict:
-    """Get the tag id to string dictionary for a layer
+def _tag_indices_and_labels(layer: dict, spelunker: bool) -> dict:
+    """Map the index of each tag-like property to its label.
+
+    Three dialects have to be read here, all keyed by position in the annotation
+    property list, which is how an annotation's ``props`` array is indexed:
+
+    - main Neuroglancer, where a tag is a property of ``type: "bool"`` and the label
+      is the id, with ``description`` holding the original if it had to be sanitized;
+    - seung-lab forks, where a tag is a ``uint8`` property named ``tagN`` carrying the
+      label in a non-standard ``tag`` key;
+    - older states, which list tags separately under ``annotationTags``.
+    """
+    if not spelunker:
+        return {t["id"]: t["label"] for t in layer.get("annotationTags", [])}
+
+    tags = {}
+    for index, prop in enumerate(layer.get("annotationProperties", [])):
+        if prop.get("type") == "bool":
+            tags[index] = prop.get("description") or prop.get("id")
+        elif (label := prop.get("tag")) is not None:
+            if re.match(r"^tag(\d+)$", prop.get("id", "")):
+                tags[index] = label
+    return tags
+
+
+def annotation_property_dictionary(state: dict, layer_name: str) -> dict:
+    """Get all annotation property specifications for a layer, keyed by id.
+
+    Unlike `tag_dictionary` this reports every property, not only tag-like ones, so
+    it also covers numeric and enum properties.
 
     Parameters
     ----------
     state : dict
-
-    layer_name : [type]
-        [description]
+        Neuroglancer state as a JSON dict.
+    layer_name : str
+        Name of the annotation layer.
 
     Returns
     -------
-    [type]
-        [description]
+    dict
+        Mapping of property id to its full specification.
     """
-    l = get_layer(state, layer_name)
-    if _is_spelunker_state(state):
-        tag_props = l.get("annotationProperties", [])
-        tags = {}
-        for ii, tp in enumerate(tag_props):
-            if (tag_str := tp.get("tag")) is not None:
-                m = re.match(r"^tag(\d+)$", tp.get("id", ""))
-                if m:
-                    tags[int(m.groups()[0])] = tag_str
-    else:
-        taginfo = l.get("annotationTags", [])
-        tags = {}
-        for t in taginfo:
-            tags[t["id"]] = t["label"]
-    return tags
+    layer = get_layer(state, layer_name)
+    return {
+        prop["id"]: prop
+        for prop in layer.get("annotationProperties", [])
+        if "id" in prop
+    }
+
+
+def tag_dictionary(state: dict, layer_name: str) -> dict:
+    """Get the tag id to label dictionary for a layer.
+
+    Parameters
+    ----------
+    state : dict
+        Neuroglancer state as a JSON dict.
+    layer_name : str
+        Name of the annotation layer.
+
+    Returns
+    -------
+    dict
+        Mapping of tag id to tag label. For states that store tags as annotation
+        properties, the tag id is the property's position in the property list,
+        which is also how each annotation's ``props`` array is indexed.
+
+    Examples
+    --------
+    >>> tag_dictionary(state, "annotations")  # doctest: +SKIP
+    {0: 'axon', 1: 'dendrite'}
+    """
+    return _tag_indices_and_labels(
+        get_layer(state, layer_name), _is_spelunker_state(state)
+    )
 
 
 def get_layer(state: dict, layer_name: str) -> dict:
@@ -384,8 +430,18 @@ def _generic_annotations(
         if not _is_spelunker_state(state):
             tag_list = [anno.get("tagIds", []) for anno in annos]
         else:
+            # Only tag-like properties count. Comparing against 1 rather than
+            # truthiness matters once numeric properties exist, where a value of
+            # 0.5 is data rather than a set tag; True == 1 keeps bool props working.
+            tag_indices = set(
+                _tag_indices_and_labels(get_layer(state, layer_name), True)
+            )
             tag_list = [
-                [ii for ii, val in enumerate(anno.get("props", [])) if val == 1]
+                [
+                    ii
+                    for ii, val in enumerate(anno.get("props", []))
+                    if ii in tag_indices and val == 1
+                ]
                 for anno in annos
             ]
         out.append(tag_list)

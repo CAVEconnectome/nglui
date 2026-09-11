@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import copy
+import re
+import unicodedata
+import warnings
 
 import attrs
 import numpy as np
@@ -19,10 +22,14 @@ class TagTool:
     tag_num = field(type=int)
 
     def initialize_neuroglancer(self) -> None:
+        tool_type = f"tagTool_tag{self.tag_num}"
+        if tool_type in viewer_state.tool_types:
+            return
+
         @viewer_state.export_tool
         class TagTool(viewer_state.Tool):
             __slots__ = ()
-            TOOL_TYPE = f"tagTool_tag{self.tag_num}"
+            TOOL_TYPE = tool_type
 
 
 def TagToolFactory(number_tags: int):
@@ -124,10 +131,17 @@ class AnnotationBase:
             self.id = make_random_token()
 
     def _to_neuroglancer(
-        self, NglAnnotation, tag_map=dict(), layer_resolution=None
+        self,
+        NglAnnotation,
+        tag_map=dict(),
+        layer_resolution=None,
+        tags=None,
+        strategy=None,
     ) -> dict:
         anno = copy.deepcopy(self)
-        if tag_map:
+        if strategy is not None and tags is not None:
+            anno.props = strategy.encode(anno, tags)
+        elif tag_map:
             anno.set_tags(tag_map)
         if layer_resolution is not None and self.resolution is not None:
             anno.scale_points(layer_resolution)
@@ -141,11 +155,15 @@ class PointAnnotation(AnnotationBase):
     def _scale_points(self, scale):
         self.point = strip_numpy_types(np.array(self.point) * scale)
 
-    def to_neuroglancer(self, tag_map=dict(), layer_resolution=None) -> dict:
+    def to_neuroglancer(
+        self, tag_map=dict(), layer_resolution=None, tags=None, strategy=None
+    ) -> dict:
         return self._to_neuroglancer(
             viewer_state.PointAnnotation,
             tag_map=tag_map,
             layer_resolution=layer_resolution,
+            tags=tags,
+            strategy=strategy,
         )
 
 
@@ -158,11 +176,15 @@ class LineAnnotation(AnnotationBase):
         self.pointA = strip_numpy_types(np.array(self.pointA) * scale)
         self.pointB = strip_numpy_types(np.array(self.pointB) * scale)
 
-    def to_neuroglancer(self, tag_map=dict(), layer_resolution=None) -> dict:
+    def to_neuroglancer(
+        self, tag_map=dict(), layer_resolution=None, tags=None, strategy=None
+    ) -> dict:
         return self._to_neuroglancer(
             viewer_state.LineAnnotation,
             tag_map=tag_map,
             layer_resolution=layer_resolution,
+            tags=tags,
+            strategy=strategy,
         )
 
 
@@ -175,11 +197,15 @@ class EllipsoidAnnotation(AnnotationBase):
         self.center = strip_numpy_types(np.array(self.center) * scale)
         self.radii = strip_numpy_types(np.array(self.radii) * scale)
 
-    def to_neuroglancer(self, tag_map=dict(), layer_resolution=None) -> dict:
+    def to_neuroglancer(
+        self, tag_map=dict(), layer_resolution=None, tags=None, strategy=None
+    ) -> dict:
         return self._to_neuroglancer(
             viewer_state.EllipsoidAnnotation,
             tag_map=tag_map,
             layer_resolution=layer_resolution,
+            tags=tags,
+            strategy=strategy,
         )
 
 
@@ -192,11 +218,15 @@ class BoundingBoxAnnotation(AnnotationBase):
         self.pointA = strip_numpy_types(np.array(self.pointA) * scale)
         self.pointB = strip_numpy_types(np.array(self.pointB) * scale)
 
-    def to_neuroglancer(self, tag_map=dict(), layer_resolution=None) -> dict:
+    def to_neuroglancer(
+        self, tag_map=dict(), layer_resolution=None, tags=None, strategy=None
+    ) -> dict:
         return self._to_neuroglancer(
             viewer_state.AxisAlignedBoundingBoxAnnotation,
             tag_map=tag_map,
             layer_resolution=layer_resolution,
+            tags=tags,
+            strategy=strategy,
         )
 
 
@@ -207,9 +237,402 @@ class PolylineAnnotation(AnnotationBase):
     def _scale_points(self, scale):
         self.points = strip_numpy_types(np.array(self.points) * scale)
 
-    def to_neuroglancer(self, tag_map=dict(), layer_resolution=None) -> dict:
+    def to_neuroglancer(
+        self, tag_map=dict(), layer_resolution=None, tags=None, strategy=None
+    ) -> dict:
         return self._to_neuroglancer(
             viewer_state.PolyLineAnnotation,
             tag_map=tag_map,
             layer_resolution=layer_resolution,
+            tags=tags,
+            strategy=strategy,
         )
+
+
+# --- Annotation property tools (main Neuroglancer) -----------------------------
+
+TOGGLE_BOOL_PROPERTY_TOOL = "toggleBoolProperty"
+ANNOTATE_ENUM_PROPERTY_TOOL = "annotateEnumProperty"
+ANNOTATE_NUMBER_PROPERTY_TOOL = "annotateNumberProperty"
+SELECT_PREVIOUS_ANNOTATION_TOOL = "selectPreviousAnnotation"
+SELECT_NEXT_ANNOTATION_TOOL = "selectNextAnnotation"
+
+_PROPERTY_TOOL_TYPES = (
+    TOGGLE_BOOL_PROPERTY_TOOL,
+    ANNOTATE_ENUM_PROPERTY_TOOL,
+    ANNOTATE_NUMBER_PROPERTY_TOOL,
+)
+_SELECTION_TOOL_TYPES = (
+    SELECT_PREVIOUS_ANNOTATION_TOOL,
+    SELECT_NEXT_ANNOTATION_TOOL,
+)
+
+
+def register_property_tools() -> None:
+    """Register main Neuroglancer's annotation property tools with the local library.
+
+    ``viewer_state`` validates tool bindings against a registry and raises KeyError on
+    an unknown type, so these must exist before they can be bound. Registration is
+    guarded, so it becomes a no-op once a released neuroglancer package ships the real
+    classes and the library's own definitions take precedence.
+    """
+    for tool_type in _PROPERTY_TOOL_TYPES:
+        if tool_type in viewer_state.tool_types:
+            continue
+        viewer_state.export_tool(
+            type(
+                f"_{tool_type}Tool",
+                (viewer_state.Tool,),
+                {
+                    "__slots__": (),
+                    "TOOL_TYPE": tool_type,
+                    "property": viewer_state.wrapped_property("property", str),
+                },
+            )
+        )
+    for tool_type in _SELECTION_TOOL_TYPES:
+        if tool_type in viewer_state.tool_types:
+            continue
+        viewer_state.export_tool(
+            type(
+                f"_{tool_type}Tool",
+                (viewer_state.Tool,),
+                {"__slots__": (), "TOOL_TYPE": tool_type},
+            )
+        )
+
+
+register_property_tools()
+
+
+# --- Property identifiers ------------------------------------------------------
+
+PROPERTY_ID_PATTERN = re.compile(r"^[a-z][a-zA-Z0-9_]*$")
+"""Neuroglancer's `parseAnnotationPropertyId`, which throws on anything else.
+
+A rejected identifier fails the whole layer, not just the property, so nglui has to
+enforce this even though the Python library does not.
+"""
+
+
+_GREEK_LETTER = re.compile(r"^GREEK (?:SMALL|CAPITAL) LETTER ([A-Z]+)$")
+
+
+def _latinize(label: str) -> str:
+    """Fold a label toward ASCII so that sanitizing it keeps its meaning.
+
+    Two transformations, both from the standard library:
+
+    Accented Latin is decomposed and its combining marks dropped, so ``café`` reaches
+    the sanitizer as ``cafe`` rather than losing the ``é`` outright and arriving as the
+    plausible-looking but wrong ``caf``.
+
+    Greek letters are replaced by their names -- ``β-cell`` becomes ``beta-cell``.
+    Greek appears in scientific labels as symbols rather than as a script words are
+    written in, so a letter-name substitution reads correctly there; the same treatment
+    of Cyrillic or Hebrew would produce nonsense, and those are left alone to fall back
+    on a generated id.
+
+    Without this, ``α-cell``, ``β-cell`` and ``γ-cell`` all sanitize to ``cell`` and are
+    then disambiguated to ``cell``, ``cell_2``, ``cell_3`` -- distinct cell types made
+    indistinguishable, in output that looks correct.
+    """
+    out = []
+    for char in unicodedata.normalize("NFKD", str(label)):
+        if unicodedata.combining(char):
+            continue
+        if char.isascii():
+            out.append(char)
+            continue
+        greek = _GREEK_LETTER.match(unicodedata.name(char, ""))
+        if greek:
+            out.append(f"_{greek.group(1).lower()}_")
+        # Anything else is dropped, and an empty result falls back to a generated id.
+    return "".join(out)
+
+
+def sanitize_property_id(label: str, fallback_index: int = 0) -> str:
+    """Convert a tag label into a valid Neuroglancer annotation property identifier.
+
+    Mirrors the transformation the Neuroglancer annotation schema tab applies to
+    typed input, so an nglui-generated identifier matches what a user would get by
+    entering the same string in the viewer. It then adds the step the viewer omits:
+    requiring a leading letter, without which an id like ``1st_pass`` is accepted on
+    entry but rejected when the state is reloaded.
+
+    The identifier is what a user actually sees -- the schema tab labels each property
+    by its id -- so this stays readable rather than producing an opaque slug.
+
+    Parameters
+    ----------
+    label : str
+        Human-readable tag label.
+    fallback_index : int, optional
+        Index used to build a placeholder if the label has no usable characters.
+
+    Returns
+    -------
+    str
+        An identifier matching `PROPERTY_ID_PATTERN`.
+
+    Examples
+    --------
+    >>> sanitize_property_id("Cell Body")
+    'cell_body'
+    >>> sanitize_property_id("post-synaptic")
+    'post_synaptic'
+    >>> sanitize_property_id("1st pass")
+    'tag_1st_pass'
+    >>> sanitize_property_id("β-cell")
+    'beta_cell'
+    >>> sanitize_property_id("café")
+    'cafe'
+    """
+    cleaned = re.sub(r"[-\s]+", "_", _latinize(label)).lower()
+    cleaned = re.sub(r"[^a-z0-9_]", "", cleaned)
+    cleaned = re.sub(r"_+", "_", cleaned).strip("_")
+    if not cleaned:
+        return f"tag_{fallback_index}"
+    if not cleaned[0].isalpha():
+        cleaned = f"tag_{cleaned}"
+    return cleaned
+
+
+def unique_tags(tags: list) -> list:
+    """Drop repeated tags, keeping first-seen order.
+
+    A repeated tag cannot be represented on the wire under either encoding: it would
+    mean two properties with the same identifier, which Neuroglancer rejects outright,
+    and the per-annotation value vector has one slot per distinct tag regardless.
+    Tags discovered from a dataframe are already distinct; this guards the case where
+    a caller supplies `tags` directly.
+
+    Parameters
+    ----------
+    tags : list
+        Tag labels, possibly with repeats.
+
+    Returns
+    -------
+    list
+        The same labels, first occurrence only.
+
+    Examples
+    --------
+    >>> unique_tags(["axon", "axon", "soma"])
+    ['axon', 'soma']
+    """
+    seen = {}
+    for tag in tags or []:
+        seen.setdefault(tag, None)
+    return list(seen)
+
+
+def build_property_ids(
+    tags: list,
+    tag_ids: dict = None,
+    strict: bool = False,
+) -> dict:
+    """Map tag labels to unique, valid annotation property identifiers.
+
+    Parameters
+    ----------
+    tags : list of str
+        Ordered tag labels.
+    tag_ids : dict, optional
+        Explicit ``{label: property_id}`` overrides. Identifiers given here are
+        validated but never rewritten.
+    strict : bool, optional
+        If True, raise instead of sanitizing a label that is not already a valid
+        identifier. Default is False.
+
+    Returns
+    -------
+    dict
+        Mapping of tag label to property identifier, in the order of ``tags``.
+
+    Raises
+    ------
+    ValueError
+        If ``strict`` is set and a label is not a valid identifier, or if an
+        explicitly supplied identifier is invalid.
+    """
+    tag_ids = tag_ids or {}
+    assigned = {}
+    renamed = {}
+    used = set()
+    for index, tag in enumerate(tags):
+        if tag in tag_ids:
+            candidate = str(tag_ids[tag])
+            if not PROPERTY_ID_PATTERN.match(candidate):
+                raise ValueError(
+                    f"Property id {candidate!r} for tag {tag!r} is not valid. "
+                    f"Ids must match {PROPERTY_ID_PATTERN.pattern}."
+                )
+        else:
+            candidate = sanitize_property_id(tag, fallback_index=index)
+            if candidate != tag:
+                if strict:
+                    raise ValueError(
+                        f"Tag {tag!r} is not a valid annotation property id "
+                        f"(must match {PROPERTY_ID_PATTERN.pattern}). Pass "
+                        f"strict_property_ids=False to sanitize automatically, or "
+                        f"supply an explicit id."
+                    )
+                renamed[tag] = candidate
+        # Neuroglancer rejects duplicate property ids outright.
+        unique = candidate
+        suffix = 2
+        while unique in used:
+            unique = f"{candidate}_{suffix}"
+            suffix += 1
+        if unique != candidate:
+            renamed[tag] = unique
+        used.add(unique)
+        assigned[tag] = unique
+    if renamed:
+        # One warning per layer, not one per tag: the whole rename map at once is
+        # what makes it actionable.
+        warnings.warn(
+            "Some tag labels are not valid Neuroglancer annotation property ids and "
+            f"were renamed: {renamed}. The id is what the viewer displays, so pass "
+            "explicit ids via `tag_ids` if these are not what you want.",
+            stacklevel=3,
+        )
+    return assigned
+
+
+# --- Tag encoding strategies ---------------------------------------------------
+
+DEFAULT_TAG_BINDINGS = ["Q", "W", "E", "R", "T", "A", "S", "D", "F", "G"]
+"""Keys bound to tag tools, in order. Neuroglancer requires single capital letters."""
+
+
+@define
+class TagStrategy:
+    """How a set of tag labels becomes Neuroglancer annotation properties.
+
+    The two dialects differ in every part of the encoding -- the property spec, the
+    tool binding, and the per-annotation value -- so they are kept as whole strategies
+    rather than as branches inside the serializer.
+    """
+
+    def property_specs(self, tags: list, **kwargs) -> list:
+        """Build the layer's ``annotationProperties`` list."""
+        raise NotImplementedError
+
+    def tool_bindings(self, specs: list) -> dict:
+        """Build the layer's ``toolBindings`` map."""
+        raise NotImplementedError
+
+    def encode(self, annotation, tags: list) -> list:
+        """Build one annotation's ``props`` array.
+
+        Must return exactly one entry per tag: Neuroglancer reads ``props``
+        positionally against ``annotationProperties`` and rejects an array of any
+        other length.
+        """
+        raise NotImplementedError
+
+
+@define
+class LegacyTagStrategy(TagStrategy):
+    """seung-lab / Spelunker encoding.
+
+    Tags are ``uint8`` properties named ``tag0..tagN`` carrying a non-standard ``tag``
+    key that holds the label, bound to ``tagTool_tagN`` tool types. Main Neuroglancer
+    parses these without error but ignores the ``tag`` key, so the tags survive a
+    modern viewer as unlabeled columns.
+    """
+
+    def property_specs(self, tags: list, **kwargs) -> list:
+        if len(tags) > MAX_TAG_COUNT:
+            raise ValueError(
+                f"The Spelunker tag encoding supports at most {MAX_TAG_COUNT} tags per "
+                f"layer and {len(tags)} were provided, because it binds each tag to one "
+                f"of {MAX_TAG_COUNT} dedicated tools. Deployments tracking Neuroglancer "
+                "main encode tags as boolean annotation properties and have no such "
+                "limit; pass capabilities='main' if the target supports them."
+            )
+        return make_annotation_properties(tags, tag_base_number=0)
+
+    def tool_bindings(self, specs: list) -> dict:
+        return make_bindings(specs)
+
+    def encode(self, annotation, tags: list) -> list:
+        annotation.set_tags({tag: ii for ii, tag in enumerate(tags)})
+        return annotation.props
+
+
+@define
+class BoolPropertyStrategy(TagStrategy):
+    """Main Neuroglancer encoding.
+
+    Tags are annotation properties of ``type: "bool"``, bound to the generic
+    ``toggleBoolProperty`` tool. Unlike the legacy encoding this is not backward
+    compatible: a viewer that predates bool properties fails to parse the entire
+    layer, which is why it is only used when the target is known to support it.
+    """
+
+    def property_specs(
+        self,
+        tags: list,
+        tag_ids: dict = None,
+        strict_property_ids: bool = False,
+        **kwargs,
+    ) -> list:
+        ids = build_property_ids(tags, tag_ids=tag_ids, strict=strict_property_ids)
+        specs = []
+        for tag in tags:
+            spec = {"id": ids[tag], "type": "bool"}
+            if ids[tag] != tag:
+                # The schema tab labels properties by id and shows the description
+                # only as a tooltip, so this preserves the original without relying
+                # on it for display.
+                spec["description"] = str(tag)
+            specs.append(spec)
+        return specs
+
+    def tool_bindings(self, specs: list) -> dict:
+        if len(specs) > len(DEFAULT_TAG_BINDINGS):
+            warnings.warn(
+                f"Only the first {len(DEFAULT_TAG_BINDINGS)} of {len(specs)} tags get "
+                "keyboard shortcuts; the rest remain usable from the annotation tab.",
+                stacklevel=2,
+            )
+        return {
+            key: {"type": TOGGLE_BOOL_PROPERTY_TOOL, "property": spec["id"]}
+            for key, spec in zip(DEFAULT_TAG_BINDINGS, specs)
+        }
+
+    def encode(self, annotation, tags: list) -> list:
+        labels = set(annotation.tags or [])
+        # Full-length vector: Neuroglancer requires len(props) == len(properties).
+        return [tag in labels for tag in tags]
+
+
+LEGACY_TAG_STRATEGY = LegacyTagStrategy()
+BOOL_PROPERTY_TAG_STRATEGY = BoolPropertyStrategy()
+
+
+def strategy_for_capabilities(capabilities) -> TagStrategy:
+    """Choose a tag encoding for a deployment's capabilities.
+
+    Parameters
+    ----------
+    capabilities : Capabilities
+        Capabilities of the target Neuroglancer deployment.
+
+    Returns
+    -------
+    TagStrategy
+        `BOOL_PROPERTY_TAG_STRATEGY` if bool annotation properties are supported,
+        otherwise `LEGACY_TAG_STRATEGY`.
+    """
+    if capabilities is None:
+        from .capabilities import get_default_capabilities
+
+        capabilities = get_default_capabilities()
+    if capabilities.annotation_bool_properties:
+        return BOOL_PROPERTY_TAG_STRATEGY
+    return LEGACY_TAG_STRATEGY

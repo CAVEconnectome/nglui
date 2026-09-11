@@ -12,7 +12,7 @@ from pandas.api.types import (
     is_string_dtype,
 )
 
-from ..utils import convert_arrow_to_numpy
+from ..utils import convert_arrow_to_numpy, truthy_mask
 
 """
 Options and validation for neuroglancer segment properties based on the segment properties spec:
@@ -279,7 +279,7 @@ def _generate_tag_values(df, value_columns, bool_columns, tag_map):
             concat_dfs.append(
                 pd.DataFrame(
                     {
-                        index_col: np.flatnonzero(tag_df[col]),
+                        index_col: np.flatnonzero(truthy_mask(tag_df[col])),
                         "tag_value": tag_map[col],
                     }
                 )

@@ -307,6 +307,49 @@ class TestViewerStateClientIntegration:
         assert vs.layers[0].name == "custom_img"
         assert vs.layers[1].name == "custom_seg"
 
+    def _segment_property_client(self):
+        mock_client = Mock()
+        mock_client.state.upload_property_json.return_value = 99
+        mock_client.state.build_neuroglancer_url.return_value = "precomputed://props"
+        return mock_client
+
+    def test_add_segment_properties_with_explicit_client(self):
+        mock_client = self._segment_property_client()
+        vs = ViewerState()
+        vs.add_segmentation_layer(source="precomputed://seg")
+
+        vs.add_segment_properties(
+            pd.DataFrame({"pt_root_id": [1, 2], "cell_type": ["a", "b"]}),
+            label_column="cell_type",
+            client=mock_client,
+        )
+
+        mock_client.state.upload_property_json.assert_called_once()
+        source_urls = [src["url"] for src in vs.to_dict()["layers"][0]["source"]]
+        assert "precomputed://props" in source_urls
+
+    def test_add_segment_properties_uses_viewer_client(self):
+        mock_client = self._segment_property_client()
+        vs = ViewerState(client=mock_client)
+        vs.add_segmentation_layer(source="precomputed://seg")
+
+        vs.add_segment_properties(
+            pd.DataFrame({"pt_root_id": [1, 2], "cell_type": ["a", "b"]}),
+            label_column="cell_type",
+        )
+
+        mock_client.state.upload_property_json.assert_called_once()
+
+    def test_add_segment_properties_no_client_error(self):
+        vs = ViewerState()
+        vs.add_segmentation_layer(source="precomputed://seg")
+
+        with pytest.raises(ValueError, match="Client must be specified"):
+            vs.add_segment_properties(
+                pd.DataFrame({"pt_root_id": [1, 2], "cell_type": ["a", "b"]}),
+                label_column="cell_type",
+            )
+
 
 class TestViewerStateSetViewerProperties:
     def test_set_viewer_properties_all_parameters(self):

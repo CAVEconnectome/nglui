@@ -19,6 +19,7 @@ from IPython.display import HTML
 from neuroglancer import viewer, viewer_base
 
 from . import source_info
+from .capabilities import Capabilities, capabilities_for_url, parse_capabilities
 from .ngl_components import (
     AnnotationLayer,
     CoordSpace,
@@ -104,6 +105,7 @@ class ViewerState:
         interactive: bool = False,
         infer_coordinates: bool = True,
         client: Optional["caveclient.CAVEclient"] = None,
+        capabilities: Optional[Union[str, "Capabilities"]] = None,
     ):
         """
         Parameters
@@ -138,10 +140,16 @@ class ViewerState:
             Whether to infer resolution and position from the source information using CloudVolume. Default is True.
         client : caveclient.CAVEclient, optional
             A CAVE client to use for configuration. If provided, it will be used by default in functions that can accept it.
+        capabilities : str or Capabilities, optional
+            What the target Neuroglancer deployment supports, which determines how
+            annotation tags are encoded. Either a `Capabilities` or an alias such as
+            ``"main"`` or ``"legacy"``. If None, nglui probes the target site and
+            falls back to the conservative default when it cannot tell.
         """
 
         self._target_site = target_site
         self._target_url = neuroglancer_url(target_url, target_site)
+        self._capabilities = parse_capabilities(capabilities)
         self._layers = NamedList(layers) if layers else NamedList()
         self._dimensions = dimensions
         self._position = position
@@ -784,9 +792,9 @@ class ViewerState:
             else:
                 raise ValueError("No segmentation layer found in the viewer.")
 
-        if client is None and self._client is not None:
+        if client is None:
             client = self._client
-        else:
+        if client is None:
             raise ValueError("Client must be specified.")
 
         self.layers[name].add_segment_properties(
@@ -861,6 +869,7 @@ class ViewerState:
         tags: Optional[list] = None,
         linked_segmentation: Union[str, bool, dict] = True,
         shader: str = None,
+        capabilities: Optional[Union[str, Capabilities]] = None,
         **kwargs,
     ) -> Self:
         """Add an annotation layer, either local or with precomputed annotation source
@@ -880,6 +889,9 @@ class ViewerState:
             If True, will link to the first segmentation layer found in the viewer.
             If False, will not link to any segmentation layer.
             If a string is provided, it will be used as the name of the segmentation layer to link to.
+        capabilities : str or Capabilities, optional
+            Override how this layer's tags are encoded, regardless of what the viewer
+            state resolved. See `ViewerState` for details.
         **kwargs : dict, optional
             Additional keyword arguments to pass to the annotation layer constructor.
 
@@ -905,6 +917,7 @@ class ViewerState:
             tags=tags,
             linked_segmentation=linked_segmentation,
             shader=shader,
+            capabilities=capabilities,
             **kwargs,
         )
         self.add_layer(anno_layer)
@@ -1426,6 +1439,69 @@ class ViewerState:
         )
         return self
 
+    def _has_local_tags(self) -> bool:
+        """Whether any local annotation layer actually carries tags.
+
+        The capability probe is only worth a network round trip when the answer can
+        change the output, which is exactly this case. Cloud annotation layers cannot
+        carry tags at all.
+        """
+        return any(
+            isinstance(layer, AnnotationLayer)
+            and layer.source is None
+            and layer.tags
+            and layer.capabilities is None
+            for layer in self.layers
+        )
+
+    def _resolve_capabilities(self):
+        """Determine the capabilities to encode this state against.
+
+        An explicit setting wins. Otherwise the target deployment is probed, but only
+        when a local annotation layer has tags -- an offline user building a state with
+        no tags should never wait on the network.
+        """
+        if self._capabilities is not None:
+            return self._capabilities
+        if not self._has_local_tags():
+            return None
+        return capabilities_for_url(self._target_url)
+
+    def _state_for_target(self, target_url):
+        """Build the neuroglancer state as the given target deployment would need it.
+
+        `to_url` and friends let a caller name a different target after the viewer has
+        already been built and cached. Since the target determines how annotation tags
+        are encoded, reusing that cached state would quietly ship the wrong encoding,
+        so rebuild when the target changes and the difference can matter.
+        """
+        unaffected = (
+            target_url is None
+            or target_url == self._target_url
+            or self._capabilities is not None
+            or not self._has_local_tags()
+        )
+        if unaffected:
+            return self.viewer.state
+        previous_url = self._target_url
+        try:
+            self._target_url = target_url
+            self._reset_viewer()
+            return self.viewer.state
+        finally:
+            self._target_url = previous_url
+            self._reset_viewer()
+
+    @property
+    def capabilities(self):
+        """Capabilities of the target deployment, if explicitly set."""
+        return self._capabilities
+
+    @capabilities.setter
+    def capabilities(self, value):
+        self._capabilities = parse_capabilities(value)
+        self._reset_viewer()
+
     def to_neuroglancer_state(self):
         if self.dimensions is None:
             if self.infer_coordinates and source_info.HAS_CLOUDVOLUME:
@@ -1465,8 +1541,9 @@ class ViewerState:
                 s.cross_section_scale = self.scale_imagery
                 s.projection_scale = self.scale_3d
                 s.show_slices = self.show_slices
+            capabilities = self._resolve_capabilities()
             for layer in self.layers:
-                layer.apply_to_neuroglancer(s)
+                layer.apply_to_neuroglancer(s, capabilities=capabilities)
 
         return self._viewer
 
@@ -1564,7 +1641,7 @@ class ViewerState:
                 target_url = neuroglancer_url(target_site=target_site)
 
         url = neuroglancer.to_url(
-            self.viewer.state,
+            self._state_for_target(target_url),
             prefix=target_url,
         )
         if shorten == "if_long":
@@ -1644,7 +1721,8 @@ class ViewerState:
         if client is None:
             raise ValueError("A CAVEclient instance is required to shorten the URL.")
 
-        state_id = client.state.upload_state_json(self.to_dict())
+        # Resolve the target before building the state: the target determines how
+        # annotation tags are encoded, so uploading first would pin the wrong one.
         if target_url is None:
             if target_site is None:
                 if self.interactive:
@@ -1653,6 +1731,9 @@ class ViewerState:
                     target_url = self._target_url
             else:
                 target_url = neuroglancer_url(target_site=target_site)
+        state_id = client.state.upload_state_json(
+            self._state_for_target(target_url).to_json()
+        )
         return client.state.build_neuroglancer_url(state_id, target_url)
 
     def to_clipboard(
