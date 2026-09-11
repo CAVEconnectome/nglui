@@ -1060,40 +1060,27 @@ class AnnotationLayer(LayerWithSource):
                 f"Too many tags. Only {MAX_TAG_COUNT} distinct tags are allowed and {len(self.tags)} have been provided."
             )
 
-        tag_map = {t: i for i, t in enumerate(self.tags)}
+        tag_map = self.tag_map
         props = make_annotation_properties(self.tags, tag_base_number=0)
         bindings = make_bindings(props)
         if not isinstance(self.resolution, CoordSpace):
             self.resolution = CoordSpace(resolution=self.resolution)
-        if self.shader is None:
-            return viewer_state.LocalAnnotationLayer(
-                dimensions=self.resolution.to_neuroglancer(),
-                annotation_color=self.color,
-                annotations=_handle_annotations(
-                    self.annotations, tag_map, self.resolution.resolution
-                ),
-                linked_segmentation_layer=_handle_linked_segmentation(
-                    self.linked_segmentation
-                ),
-                annotation_properties=props,
-                tool_bindings=bindings,
-                swap_visible_segments_on_move=self.swap_visible_segments_on_move,
-            )
-        else:
-            return viewer_state.LocalAnnotationLayer(
-                dimensions=self.resolution.to_neuroglancer(),
-                annotation_color=self.color,
-                annotations=_handle_annotations(
-                    self.annotations, tag_map, self.resolution.resolution
-                ),
-                linked_segmentation_layer=_handle_linked_segmentation(
-                    self.linked_segmentation
-                ),
-                shader=self.shader,
-                annotation_properties=props,
-                tool_bindings=bindings,
-                swap_visible_segments_on_move=self.swap_visible_segments_on_move,
-            )
+        kwargs = dict(
+            dimensions=self.resolution.to_neuroglancer(),
+            annotation_color=self.color,
+            annotations=_handle_annotations(
+                self.annotations, tag_map, self.resolution.resolution
+            ),
+            linked_segmentation_layer=_handle_linked_segmentation(
+                self.linked_segmentation
+            ),
+            annotation_properties=props,
+            tool_bindings=bindings,
+            swap_visible_segments_on_move=self.swap_visible_segments_on_move,
+        )
+        if self.shader is not None:
+            kwargs["shader"] = self.shader
+        return viewer_state.LocalAnnotationLayer(**kwargs)
 
     def _to_neuroglancer_layer_cloud(self) -> viewer_state.AnnotationLayer:
         kwargs = dict(
@@ -1856,7 +1843,12 @@ class AnnotationLayer(LayerWithSource):
 
     @property
     def tag_map(self) -> dict:
-        return {tag: f"tagTool_{ii}" for ii, tag in enumerate(self.tags)}
+        """Map each tag to its index in the layer's annotation property list.
+
+        The index is positional and contractual: an annotation's ``props`` array
+        is read by Neuroglancer against ``annotationProperties`` in this order.
+        """
+        return {tag: ii for ii, tag in enumerate(self.tags)}
 
     def add_shader(self, shader: str) -> Self:
         """Add a shader to the layer.
