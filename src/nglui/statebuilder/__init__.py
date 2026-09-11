@@ -6,6 +6,7 @@ from .capabilities import (
     get_default_capabilities,
     set_default_capabilities,
 )
+from .ngl_annotations import make_annotation_properties, make_bindings
 from .ngl_components import *
 from .site_utils import (
     add_neuroglancer_site,
