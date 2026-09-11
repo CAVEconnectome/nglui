@@ -399,3 +399,73 @@ class TestParseDescribeTag:
         older, _ = caps.parse_describe_tag("v2.37-347-gabc1234")
         newer, _ = caps.parse_describe_tag("v2.41.2-1-gabc1234")
         assert older < newer
+
+
+class TestCapabilityEncoding:
+    """Capabilities are a named set, not a label; strings are one way in, not the model."""
+
+    def test_provenance_does_not_affect_equality(self):
+        """Two deployments with the same abilities are equivalent however each was learned."""
+        probed = caps.capabilities_from_version_info(
+            {
+                "url": "https://github.com/google/neuroglancer/commit/abc",
+                "tag": "v2.41.2-110-gabc1234",
+                "timestamp": "Sat Sep 5 09:21:38 UTC 2026",
+            }
+        )
+        assert probed == caps.parse_capabilities("modern")
+        assert probed.source != caps.parse_capabilities("modern").source
+
+    def test_equal_capabilities_hash_alike(self):
+        probed = caps.Capabilities(
+            annotation_bool_properties=True,
+            annotation_property_tools=True,
+            source="probe:somewhere",
+        )
+        assert hash(probed) == hash(caps.MODERN_CAPABILITIES)
+        assert len({probed, caps.MODERN_CAPABILITIES}) == 1
+
+    @pytest.mark.parametrize("not_a_capability", ["source", "uses_bool_tags", "names"])
+    def test_supports_rejects_non_capability_attributes(self, not_a_capability):
+        """`hasattr` would wave these through; they are not capabilities."""
+        with pytest.raises(ValueError, match="Unknown capability"):
+            caps.MODERN_CAPABILITIES.supports(not_a_capability)
+
+    def test_membership_reads_as_a_set(self):
+        assert caps.ANNOTATION_BOOL_PROPERTIES in caps.MODERN_CAPABILITIES
+        assert caps.ANNOTATION_BOOL_PROPERTIES not in caps.LEGACY_CAPABILITIES
+        assert caps.SPELUNKER_TAG_TOOLS in caps.LEGACY_CAPABILITIES
+
+    def test_enabled_reports_only_capabilities(self):
+        assert caps.MODERN_CAPABILITIES.enabled == frozenset(
+            {"annotation_bool_properties", "annotation_property_tools"}
+        )
+        assert "source" not in caps.MODERN_CAPABILITIES.enabled
+
+    def test_names_excludes_metadata_fields(self):
+        assert "source" not in caps.Capabilities.names()
+        assert caps.ANNOTATION_BOOL_PROPERTIES in caps.Capabilities.names()
+
+    def test_from_names_round_trips(self):
+        built = caps.Capabilities.from_names(caps.MODERN_CAPABILITIES.enabled)
+        assert built == caps.MODERN_CAPABILITIES
+
+    def test_from_names_reaches_sets_no_alias_covers(self):
+        """A real build between the two landing dates has properties but not tools."""
+        partial = caps.Capabilities.from_names([caps.ANNOTATION_BOOL_PROPERTIES])
+        probed = caps.capabilities_from_version_info(
+            {
+                "url": "https://github.com/google/neuroglancer/commit/abc",
+                "tag": "v2.41.2-40-gabc1234",
+                "timestamp": "Wed Jul 1 00:00:00 UTC 2026",
+            }
+        )
+        assert partial == probed
+
+    def test_from_names_rejects_unknown(self):
+        with pytest.raises(ValueError, match="Unknown capabilities"):
+            caps.Capabilities.from_names(["annotation_bool_properties", "warp_drive"])
+
+    def test_a_capabilities_instance_passes_through_parse(self):
+        built = caps.Capabilities.from_names([caps.ANNOTATION_BOOL_PROPERTIES])
+        assert caps.parse_capabilities(built) is built

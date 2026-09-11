@@ -418,6 +418,20 @@ def _handle_source(
         raise ValueError("Invalid source type. Must be str or Source.")
 
 
+def _supports_tool_bindings(capabilities) -> bool:
+    """Whether the target understands the tool bindings the chosen encoding uses.
+
+    Legacy `tagTool_*` bindings are a Spelunker feature; the generic property tools are
+    an upstream one that arrived after bool properties did. Either way, binding a tool
+    type the viewer cannot parse is worse than binding nothing.
+    """
+    if capabilities is None:
+        return True
+    if capabilities.annotation_bool_properties:
+        return capabilities.annotation_property_tools
+    return True
+
+
 def _handle_annotations(annos, tags=None, resolution=None, strategy=None) -> list:
     """Convert nglui annotations to neuroglancer annotations.
 
@@ -1091,13 +1105,20 @@ class AnnotationLayer(LayerWithSource):
     def _to_neuroglancer_layer_local(
         self, capabilities=None
     ) -> viewer_state.LocalAnnotationLayer:
-        strategy = strategy_for_capabilities(self._resolve_capabilities(capabilities))
+        resolved = self._resolve_capabilities(capabilities)
+        strategy = strategy_for_capabilities(resolved)
         props = strategy.property_specs(
             self.tags,
             tag_ids=self.tag_ids,
             strict_property_ids=self.strict_property_ids,
         )
-        bindings = strategy.tool_bindings(props)
+        # Bool annotation properties and the tools that toggle them landed separately
+        # upstream, so a build cut between the two understands the properties but not
+        # the bindings. Emitting a tool type such a viewer cannot parse would cost the
+        # whole layer, so bind nothing rather than guess.
+        bindings = (
+            strategy.tool_bindings(props) if _supports_tool_bindings(resolved) else {}
+        )
         if not isinstance(self.resolution, CoordSpace):
             self.resolution = CoordSpace(resolution=self.resolution)
         kwargs = dict(

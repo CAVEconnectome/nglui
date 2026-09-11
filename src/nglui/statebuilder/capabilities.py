@@ -29,7 +29,7 @@ import os
 import re
 import warnings
 from datetime import datetime, timezone
-from typing import Optional, Union
+from typing import Iterable, Optional, Union
 from urllib.parse import urljoin, urlparse
 
 import attrs
@@ -69,9 +69,19 @@ deployment gives that key any meaning, which is a Spelunker behavior.
 """
 
 
+def _capability_field(default: bool = False):
+    """A field that is part of the capability set, as opposed to metadata about it."""
+    return attrs.field(default=default, metadata={"capability": True})
+
+
 @attrs.define(frozen=True)
 class Capabilities:
     """What a Neuroglancer deployment can do.
+
+    A set of named behaviors, not a version and not a single label. Members are typed
+    fields so they are discoverable and checkable, and the same set can also be handled
+    by name -- ``"annotation_bool_properties" in capabilities`` -- for code that works
+    over capabilities generically.
 
     Attributes
     ----------
@@ -82,13 +92,68 @@ class Capabilities:
     spelunker_tag_tools : bool
         Whether ``tagTool_tagN`` bindings and the ``tag`` property key are rendered.
     source : str
-        Human-readable note on where this determination came from, for diagnostics.
+        Where this determination came from, for diagnostics. Deliberately excluded
+        from equality: two deployments with the same abilities are equivalent whether
+        one was probed and the other named.
+
+    Examples
+    --------
+    >>> MODERN_CAPABILITIES.enabled == frozenset(
+    ...     {"annotation_bool_properties", "annotation_property_tools"}
+    ... )
+    True
+    >>> Capabilities.from_names(["annotation_bool_properties"]).annotation_bool_properties
+    True
     """
 
-    annotation_bool_properties: bool = False
-    annotation_property_tools: bool = False
-    spelunker_tag_tools: bool = False
-    source: str = "unspecified"
+    annotation_bool_properties: bool = _capability_field()
+    annotation_property_tools: bool = _capability_field()
+    spelunker_tag_tools: bool = _capability_field()
+    source: str = attrs.field(default="unspecified", eq=False)
+
+    @classmethod
+    def names(cls) -> tuple:
+        """Every capability name this version of nglui knows about."""
+        return tuple(
+            field.name
+            for field in attrs.fields(cls)
+            if field.metadata.get("capability")
+        )
+
+    @classmethod
+    def from_names(cls, names: Iterable, source: str = "explicit") -> "Capabilities":
+        """Build a capability set from the names that should be enabled.
+
+        Parameters
+        ----------
+        names : iterable of str
+            Capability names to enable. Anything omitted is disabled.
+        source : str, optional
+            Provenance note, by default "explicit".
+
+        Returns
+        -------
+        Capabilities
+            The described capability set.
+
+        Raises
+        ------
+        ValueError
+            If any name is not a known capability.
+        """
+        requested = set(names)
+        known = set(cls.names())
+        unknown = sorted(requested - known)
+        if unknown:
+            raise ValueError(
+                f"Unknown capabilities {unknown}. Known capabilities: {sorted(known)}."
+            )
+        return cls(source=source, **{name: name in requested for name in known})
+
+    @property
+    def enabled(self) -> frozenset:
+        """The names of the capabilities that are available."""
+        return frozenset(name for name in self.names() if getattr(self, name))
 
     def supports(self, capability: str) -> bool:
         """Return whether a named capability is available.
@@ -103,23 +168,26 @@ class Capabilities:
         bool
             True if the deployment supports the capability.
 
+        Raises
+        ------
+        ValueError
+            If the name is not a known capability. Metadata fields such as ``source``
+            are not capabilities and are rejected here.
+
         Examples
         --------
         >>> MODERN_CAPABILITIES.supports(ANNOTATION_BOOL_PROPERTIES)
         True
         """
-        if not hasattr(self, capability):
+        if capability not in self.names():
             raise ValueError(
                 f"Unknown capability {capability!r}. Known capabilities: "
-                f"{ANNOTATION_BOOL_PROPERTIES}, {ANNOTATION_PROPERTY_TOOLS}, "
-                f"{SPELUNKER_TAG_TOOLS}."
+                f"{sorted(self.names())}."
             )
         return bool(getattr(self, capability))
 
-    @property
-    def uses_bool_tags(self) -> bool:
-        """Whether tags should be encoded as boolean annotation properties."""
-        return self.annotation_bool_properties
+    def __contains__(self, capability: str) -> bool:
+        return self.supports(capability)
 
 
 LEGACY_CAPABILITIES = Capabilities(
@@ -135,6 +203,11 @@ MODERN_CAPABILITIES = Capabilities(
 )
 """Main Neuroglancer style: boolean annotation properties and property tools."""
 
+# Shorthand for the two sets that matter in practice. These are conveniences, not the
+# encoding: `Capabilities` is the encoding, and `Capabilities.from_names` builds any
+# other set. Note that "modern" means "everything nglui currently knows about", so its
+# meaning widens as capabilities are added -- pin an explicit `Capabilities` if you need
+# a set that will not move.
 _CAPABILITY_ALIASES = {
     "legacy": LEGACY_CAPABILITIES,
     "spelunker": LEGACY_CAPABILITIES,

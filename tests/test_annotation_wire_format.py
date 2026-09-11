@@ -238,3 +238,43 @@ class TestLateTargetOverride:
         )
         google = self._properties_from_url(vs.to_url(target_site="google"))
         assert google[0]["type"] == "uint8"
+
+
+class TestToolBindingsFollowCapabilities:
+    """Bool properties and the tools that toggle them landed separately upstream."""
+
+    def _layer(self, capabilities):
+        df = pd.DataFrame({"x": [1], "y": [2], "z": [3], "ct": ["axon"]})
+        vs = ViewerState(dimensions=[1, 1, 1], capabilities=capabilities)
+        vs.add_points(
+            df,
+            point_column=["x", "y", "z"],
+            tag_column="ct",
+            linked_segmentation=None,
+        )
+        return vs.to_dict()["layers"][0]
+
+    def test_properties_without_tools_bind_nothing(self):
+        """A build between the two landing dates parses the properties but not the tools.
+
+        Binding a tool type such a viewer cannot parse would cost the whole layer, so
+        the properties still ship and the bindings are dropped.
+        """
+        from nglui.statebuilder.capabilities import (
+            ANNOTATION_BOOL_PROPERTIES,
+            Capabilities,
+        )
+
+        layer = self._layer(Capabilities.from_names([ANNOTATION_BOOL_PROPERTIES]))
+        assert layer["annotationProperties"] == [{"id": "axon", "type": "bool"}]
+        assert layer.get("toolBindings", {}) == {}
+
+    def test_full_modern_binds_the_property_tools(self):
+        layer = self._layer("modern")
+        assert layer["toolBindings"] == {
+            "Q": {"type": "toggleBoolProperty", "property": "axon"}
+        }
+
+    def test_legacy_binds_tag_tools(self):
+        layer = self._layer("legacy")
+        assert layer["toolBindings"] == {"Q": "tagTool_tag0"}
