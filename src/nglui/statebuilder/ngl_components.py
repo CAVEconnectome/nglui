@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import warnings
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from functools import partial
@@ -22,6 +23,7 @@ from neuroglancer.json_wrappers import optional, wrapped_property
 
 from ..segmentprops import SegmentProperties
 from ..utils import convert_arrow_to_numpy
+from .capabilities import get_default_capabilities, parse_capabilities
 from .ngl_annotations import (
     MAX_TAG_COUNT,
     AnnotationBase,
@@ -30,8 +32,7 @@ from .ngl_annotations import (
     LineAnnotation,
     PointAnnotation,
     PolylineAnnotation,
-    make_annotation_properties,
-    make_bindings,
+    strategy_for_capabilities,
     strip_numpy_types,
 )
 from .shaders import DEFAULT_SHADER_MAP
@@ -272,10 +273,18 @@ class Layer(ABC):
                 return layer
 
     @abstractmethod
-    def to_neuroglancer_layer(self):
+    def to_neuroglancer_layer(self, capabilities=None):
+        """Build the neuroglancer layer object.
+
+        Parameters
+        ----------
+        capabilities : Capabilities, optional
+            What the target deployment supports. Only layers whose output depends on
+            the deployment consult it; the rest accept and ignore it.
+        """
         self._check_fully_mapped()
 
-    def to_dict(self, with_name: bool = True) -> dict:
+    def to_dict(self, with_name: bool = True, capabilities=None) -> dict:
         """Convert the layer to a dictionary.
         Parameters
         ----------
@@ -291,34 +300,36 @@ class Layer(ABC):
         dict
             The layer as a dictionary.
         """
-        layer_dict = self.to_neuroglancer_layer().to_json()
+        layer_dict = self.to_neuroglancer_layer(capabilities=capabilities).to_json()
         if with_name:
             layer_dict["name"] = self.name
             layer_dict["visible"] = self.visible
             layer_dict["archived"] = self.archived
         return layer_dict
 
-    def to_json(self, with_name: bool = True, indent: int = 2):
-        return json.dumps(self.to_dict(with_name=with_name), indent=indent)
+    def to_json(self, with_name: bool = True, indent: int = 2, capabilities=None):
+        return json.dumps(
+            self.to_dict(with_name=with_name, capabilities=capabilities), indent=indent
+        )
 
-    def _apply_to_neuroglancer_state(self, s):
+    def _apply_to_neuroglancer_state(self, s, capabilities=None):
         if self.name in s.layers:
             raise ValueError(
                 f"Layer {self.name} already exists in the viewer. Please use a different name."
             )
-        s.layers[self.name] = self.to_neuroglancer_layer()
+        s.layers[self.name] = self.to_neuroglancer_layer(capabilities=capabilities)
         ll = s.layers[self.name]
         ll.visible = self.visible
         ll.archived = self.archived
 
-    def _apply_to_neuroglancer(self, viewer):
+    def _apply_to_neuroglancer(self, viewer, capabilities=None):
         # Opens context or not depending on if the object is a viewer or a (presumed within-context) state
         self._check_fully_mapped()
         if isinstance(viewer, Viewer):
             with viewer.txn() as s:
-                self._apply_to_neuroglancer_state(s)
+                self._apply_to_neuroglancer_state(s, capabilities=capabilities)
         elif isinstance(viewer, viewer_state.ViewerState):
-            self._apply_to_neuroglancer_state(viewer)
+            self._apply_to_neuroglancer_state(viewer, capabilities=capabilities)
 
 
 @define
@@ -407,14 +418,27 @@ def _handle_source(
         raise ValueError("Invalid source type. Must be str or Source.")
 
 
-def _handle_annotations(annos, tag_map=None, resolution=None) -> list:
-    "Convert a multi-url source to a Source object."
+def _handle_annotations(annos, tags=None, resolution=None, strategy=None) -> list:
+    """Convert nglui annotations to neuroglancer annotations.
+
+    Parameters
+    ----------
+    annos : list
+        Annotations to convert. Non-nglui entries pass through untouched.
+    tags : list, optional
+        Ordered tag labels for the layer. Their order is the order of the
+        ``props`` array each annotation emits.
+    resolution : list, optional
+        Layer resolution, used to rescale annotations carrying their own.
+    strategy : TagStrategy, optional
+        Encoding used to turn an annotation's tags into its ``props`` array.
+    """
     if annos is None:
         return []
     elif len(annos) == 0:
         return []
     return [
-        anno.to_neuroglancer(tag_map=tag_map, layer_resolution=resolution)
+        anno.to_neuroglancer(tags=tags, layer_resolution=resolution, strategy=strategy)
         if issubclass(type(anno), AnnotationBase)
         else anno
         for anno in annos
@@ -490,11 +514,11 @@ class RawLayer(Layer):
     def is_static(self):
         return True
 
-    def to_neuroglancer_layer(self):
+    def to_neuroglancer_layer(self, capabilities=None):
         return viewer_state.Layer(json_data=self.json_data)
 
-    def apply_to_neuroglancer(self, viewer):
-        return self._apply_to_neuroglancer(viewer)
+    def apply_to_neuroglancer(self, viewer, capabilities=None):
+        return self._apply_to_neuroglancer(viewer, capabilities=capabilities)
 
     def remap_sources(self, source_map: dict) -> Self:
         """
@@ -576,8 +600,8 @@ class ImageLayer(LayerWithSource):
         self.color = parse_color(self.color)
         super().__attrs_post_init__()
 
-    def to_neuroglancer_layer(self) -> viewer_state.ImageLayer:
-        super().to_neuroglancer_layer()
+    def to_neuroglancer_layer(self, capabilities=None) -> viewer_state.ImageLayer:
+        super().to_neuroglancer_layer(capabilities=capabilities)
         if self.shader is None:
             return viewer_state.ImageLayer(
                 source=source_to_neuroglancer(
@@ -594,9 +618,11 @@ class ImageLayer(LayerWithSource):
                 annotation_color=self.color,
             )
 
-    def apply_to_neuroglancer(self, viewer: Viewer) -> viewer_state.ImageLayer:
+    def apply_to_neuroglancer(
+        self, viewer: Viewer, capabilities=None
+    ) -> viewer_state.ImageLayer:
         "Can be a viewer or a viewer.txn()-context state"
-        self._apply_to_neuroglancer(viewer)
+        self._apply_to_neuroglancer(viewer, capabilities=capabilities)
 
     def add_from_client(
         self,
@@ -694,8 +720,10 @@ class SegmentationLayer(LayerWithSource):
             self.segments = list()
         self.color = parse_color(self.color)
 
-    def to_neuroglancer_layer(self) -> viewer_state.SegmentationLayer:
-        super().to_neuroglancer_layer()
+    def to_neuroglancer_layer(
+        self, capabilities=None
+    ) -> viewer_state.SegmentationLayer:
+        super().to_neuroglancer_layer(capabilities=capabilities)
         if self.shader is None:
             return viewer_state.SegmentationLayer(
                 source=source_to_neuroglancer(self.source, resolution=self.resolution),
@@ -722,9 +750,11 @@ class SegmentationLayer(LayerWithSource):
                 pick=self.pick,
             )
 
-    def apply_to_neuroglancer(self, viewer) -> viewer_state.SegmentationLayer:
+    def apply_to_neuroglancer(
+        self, viewer, capabilities=None
+    ) -> viewer_state.SegmentationLayer:
         "Can be a viewer or a viewer.txn()-context state"
-        return self._apply_to_neuroglancer(viewer)
+        return self._apply_to_neuroglancer(viewer, capabilities=capabilities)
 
     def add_from_client(
         self,
@@ -1045,6 +1075,9 @@ class AnnotationLayer(LayerWithSource):
     swap_visible_segments_on_move = field(
         default=True, type=bool, kw_only=True, repr=False
     )
+    capabilities = field(default=None, kw_only=True, repr=False)
+    tag_ids = field(default=None, type=dict, kw_only=True, repr=False)
+    strict_property_ids = field(default=False, type=bool, kw_only=True, repr=False)
 
     def __attrs_post_init__(self):
         if self.source is not None:
@@ -1053,23 +1086,25 @@ class AnnotationLayer(LayerWithSource):
             self.name = "anno"
         if self.tags is None:
             self.tags = []
+        self.capabilities = parse_capabilities(self.capabilities)
 
-    def _to_neuroglancer_layer_local(self) -> viewer_state.LocalAnnotationLayer:
-        if len(self.tags) > MAX_TAG_COUNT:
-            raise ValueError(
-                f"Too many tags. Only {MAX_TAG_COUNT} distinct tags are allowed and {len(self.tags)} have been provided."
-            )
-
-        tag_map = self.tag_map
-        props = make_annotation_properties(self.tags, tag_base_number=0)
-        bindings = make_bindings(props)
+    def _to_neuroglancer_layer_local(
+        self, capabilities=None
+    ) -> viewer_state.LocalAnnotationLayer:
+        strategy = strategy_for_capabilities(self._resolve_capabilities(capabilities))
+        props = strategy.property_specs(
+            self.tags,
+            tag_ids=self.tag_ids,
+            strict_property_ids=self.strict_property_ids,
+        )
+        bindings = strategy.tool_bindings(props)
         if not isinstance(self.resolution, CoordSpace):
             self.resolution = CoordSpace(resolution=self.resolution)
         kwargs = dict(
             dimensions=self.resolution.to_neuroglancer(),
             annotation_color=self.color,
             annotations=_handle_annotations(
-                self.annotations, tag_map, self.resolution.resolution
+                self.annotations, self.tags, self.resolution.resolution, strategy
             ),
             linked_segmentation_layer=_handle_linked_segmentation(
                 self.linked_segmentation
@@ -1083,6 +1118,13 @@ class AnnotationLayer(LayerWithSource):
         return viewer_state.LocalAnnotationLayer(**kwargs)
 
     def _to_neuroglancer_layer_cloud(self) -> viewer_state.AnnotationLayer:
+        if self.tags:
+            warnings.warn(
+                f"Annotation layer '{self.name}' has a cloud source, so its tags "
+                f"({list(self.tags)}) will not be included. Tags are only supported "
+                "for local annotations.",
+                stacklevel=2,
+            )
         kwargs = dict(
             source=source_to_neuroglancer(self.source),
             annotation_color=self.color,
@@ -1099,18 +1141,33 @@ class AnnotationLayer(LayerWithSource):
             kwargs["shader"] = self.shader
         return viewer_state.AnnotationLayer(**kwargs)
 
+    def _resolve_capabilities(self, capabilities=None):
+        """Pick the capabilities to encode against.
+
+        A layer-level setting wins over whatever the enclosing state resolved, which
+        in turn wins over the module default. Nothing is stored: the same layer can be
+        serialized against two different deployments.
+        """
+        if self.capabilities is not None:
+            return self.capabilities
+        if capabilities is not None:
+            return capabilities
+        return get_default_capabilities()
+
     def to_neuroglancer_layer(
         self,
+        capabilities=None,
     ) -> Union[viewer_state.AnnotationLayer, viewer_state.LocalAnnotationLayer]:
-        super().to_neuroglancer_layer()
+        super().to_neuroglancer_layer(capabilities=capabilities)
         if self.source is None:
-            return self._to_neuroglancer_layer_local()
+            return self._to_neuroglancer_layer_local(capabilities=capabilities)
         else:
             return self._to_neuroglancer_layer_cloud()
 
     def apply_to_neuroglancer(
         self,
         viewer,
+        capabilities=None,
     ):
         "Can be a viewer or a viewer.txn()-context state"
         if self.source is None:
@@ -1158,7 +1215,7 @@ class AnnotationLayer(LayerWithSource):
                             scale,
                         )[0].points[0]
                     viewer.position = new_position
-        self._apply_to_neuroglancer(viewer)
+        self._apply_to_neuroglancer(viewer, capabilities=capabilities)
 
     def set_linked_segmentation(
         self,

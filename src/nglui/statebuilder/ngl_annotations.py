@@ -130,10 +130,17 @@ class AnnotationBase:
             self.id = make_random_token()
 
     def _to_neuroglancer(
-        self, NglAnnotation, tag_map=dict(), layer_resolution=None
+        self,
+        NglAnnotation,
+        tag_map=dict(),
+        layer_resolution=None,
+        tags=None,
+        strategy=None,
     ) -> dict:
         anno = copy.deepcopy(self)
-        if tag_map:
+        if strategy is not None and tags is not None:
+            anno.props = strategy.encode(anno, tags)
+        elif tag_map:
             anno.set_tags(tag_map)
         if layer_resolution is not None and self.resolution is not None:
             anno.scale_points(layer_resolution)
@@ -147,11 +154,15 @@ class PointAnnotation(AnnotationBase):
     def _scale_points(self, scale):
         self.point = strip_numpy_types(np.array(self.point) * scale)
 
-    def to_neuroglancer(self, tag_map=dict(), layer_resolution=None) -> dict:
+    def to_neuroglancer(
+        self, tag_map=dict(), layer_resolution=None, tags=None, strategy=None
+    ) -> dict:
         return self._to_neuroglancer(
             viewer_state.PointAnnotation,
             tag_map=tag_map,
             layer_resolution=layer_resolution,
+            tags=tags,
+            strategy=strategy,
         )
 
 
@@ -164,11 +175,15 @@ class LineAnnotation(AnnotationBase):
         self.pointA = strip_numpy_types(np.array(self.pointA) * scale)
         self.pointB = strip_numpy_types(np.array(self.pointB) * scale)
 
-    def to_neuroglancer(self, tag_map=dict(), layer_resolution=None) -> dict:
+    def to_neuroglancer(
+        self, tag_map=dict(), layer_resolution=None, tags=None, strategy=None
+    ) -> dict:
         return self._to_neuroglancer(
             viewer_state.LineAnnotation,
             tag_map=tag_map,
             layer_resolution=layer_resolution,
+            tags=tags,
+            strategy=strategy,
         )
 
 
@@ -181,11 +196,15 @@ class EllipsoidAnnotation(AnnotationBase):
         self.center = strip_numpy_types(np.array(self.center) * scale)
         self.radii = strip_numpy_types(np.array(self.radii) * scale)
 
-    def to_neuroglancer(self, tag_map=dict(), layer_resolution=None) -> dict:
+    def to_neuroglancer(
+        self, tag_map=dict(), layer_resolution=None, tags=None, strategy=None
+    ) -> dict:
         return self._to_neuroglancer(
             viewer_state.EllipsoidAnnotation,
             tag_map=tag_map,
             layer_resolution=layer_resolution,
+            tags=tags,
+            strategy=strategy,
         )
 
 
@@ -198,11 +217,15 @@ class BoundingBoxAnnotation(AnnotationBase):
         self.pointA = strip_numpy_types(np.array(self.pointA) * scale)
         self.pointB = strip_numpy_types(np.array(self.pointB) * scale)
 
-    def to_neuroglancer(self, tag_map=dict(), layer_resolution=None) -> dict:
+    def to_neuroglancer(
+        self, tag_map=dict(), layer_resolution=None, tags=None, strategy=None
+    ) -> dict:
         return self._to_neuroglancer(
             viewer_state.AxisAlignedBoundingBoxAnnotation,
             tag_map=tag_map,
             layer_resolution=layer_resolution,
+            tags=tags,
+            strategy=strategy,
         )
 
 
@@ -213,11 +236,15 @@ class PolylineAnnotation(AnnotationBase):
     def _scale_points(self, scale):
         self.points = strip_numpy_types(np.array(self.points) * scale)
 
-    def to_neuroglancer(self, tag_map=dict(), layer_resolution=None) -> dict:
+    def to_neuroglancer(
+        self, tag_map=dict(), layer_resolution=None, tags=None, strategy=None
+    ) -> dict:
         return self._to_neuroglancer(
             viewer_state.PolyLineAnnotation,
             tag_map=tag_map,
             layer_resolution=layer_resolution,
+            tags=tags,
+            strategy=strategy,
         )
 
 

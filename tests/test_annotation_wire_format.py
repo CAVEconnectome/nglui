@@ -28,8 +28,8 @@ def tagged_df():
     )
 
 
-def _anno_layer(df, **kwargs):
-    vs = ViewerState(dimensions=[1, 1, 1])
+def _anno_layer(df, capabilities=None, **kwargs):
+    vs = ViewerState(dimensions=[1, 1, 1], capabilities=capabilities)
     vs.add_points(
         df,
         point_column=["x", "y", "z"],
@@ -103,3 +103,138 @@ class TestLegacyTagWireFormat:
         layer = vs.to_dict()["layers"][0]
         assert layer["annotationProperties"] == []
         assert layer.get("toolBindings", {}) == {}
+
+
+class TestBoolPropertyWireFormat:
+    """The encoding used by main Neuroglancer, where a tag is a bool property."""
+
+    def test_annotation_properties(self, tagged_df):
+        layer = _anno_layer(tagged_df, capabilities="modern")
+        assert layer["annotationProperties"] == [
+            {"id": "a", "type": "bool"},
+            {"id": "b", "type": "bool"},
+            {"id": "flag", "type": "bool"},
+        ]
+
+    def test_tool_bindings_are_object_form(self, tagged_df):
+        layer = _anno_layer(tagged_df, capabilities="modern")
+        assert layer["toolBindings"] == {
+            "Q": {"type": "toggleBoolProperty", "property": "a"},
+            "W": {"type": "toggleBoolProperty", "property": "b"},
+            "E": {"type": "toggleBoolProperty", "property": "flag"},
+        }
+
+    def test_props_are_booleans(self, tagged_df):
+        layer = _anno_layer(tagged_df, capabilities="modern")
+        props = [a["props"] for a in layer["annotations"]]
+        assert props == [[True, False, True], [False, True, False]]
+
+    def test_props_length_matches_property_count(self, tagged_df):
+        layer = _anno_layer(tagged_df, capabilities="modern")
+        n_props = len(layer["annotationProperties"])
+        assert all(len(a["props"]) == n_props for a in layer["annotations"])
+
+    def test_invalid_label_is_sanitized_and_described(self):
+        df = pd.DataFrame({"x": [1], "y": [2], "z": [3], "Cell Body": [True]})
+        vs = ViewerState(dimensions=[1, 1, 1], capabilities="modern")
+        with pytest.warns(UserWarning, match="were renamed"):
+            vs.add_points(
+                df,
+                point_column=["x", "y", "z"],
+                tag_bools=["Cell Body"],
+                linked_segmentation=None,
+            )
+            layer = vs.to_dict()["layers"][0]
+        assert layer["annotationProperties"] == [
+            {"id": "cell_body", "type": "bool", "description": "Cell Body"}
+        ]
+
+
+class TestCapabilityResolution:
+    def test_explicit_capabilities_win_over_target(self, tagged_df):
+        """A pinned setting must not be second-guessed by a probe."""
+        layer = _anno_layer(tagged_df, capabilities="legacy")
+        assert layer["annotationProperties"][0]["type"] == "uint8"
+
+    def test_layer_capabilities_override_state(self, tagged_df):
+        vs = ViewerState(dimensions=[1, 1, 1], capabilities="legacy")
+        vs.add_annotation_layer(name="anno", capabilities="modern")
+        vs.add_points(
+            tagged_df,
+            name="anno",
+            point_column=["x", "y", "z"],
+            tag_column="ct",
+            linked_segmentation=None,
+        )
+        layer = vs.to_dict()["layers"][0]
+        assert layer["annotationProperties"][0]["type"] == "bool"
+
+    def test_tagless_state_never_probes(self, mocker):
+        """No tags means the encoding cannot differ, so the network is not touched."""
+        get = mocker.patch("requests.get")
+        df = pd.DataFrame({"x": [1], "y": [2], "z": [3]})
+        vs = ViewerState(dimensions=[1, 1, 1])
+        vs.add_points(df, point_column=["x", "y", "z"], linked_segmentation=None)
+        vs.to_dict()
+        assert get.call_count == 0
+
+    def test_pinned_capabilities_never_probe(self, mocker, tagged_df):
+        get = mocker.patch("requests.get")
+        _anno_layer(tagged_df, capabilities="modern")
+        assert get.call_count == 0
+
+    def test_cloud_layer_warns_that_tags_are_dropped(self):
+        vs = ViewerState(dimensions=[1, 1, 1])
+        vs.add_annotation_layer(
+            name="anno",
+            source="precomputed://gs://example/annotations",
+            tags=["axon"],
+            linked_segmentation=None,
+        )
+        with pytest.warns(UserWarning, match="will not be included"):
+            vs.to_dict()
+
+
+class TestLateTargetOverride:
+    """`to_url` can name a target after the state was already built and cached."""
+
+    def _properties_from_url(self, url):
+        import json
+        import urllib.parse
+
+        fragment = urllib.parse.unquote(url.split("#!", 1)[1])
+        return json.loads(fragment)["layers"][0]["annotationProperties"]
+
+    @pytest.fixture
+    def tagged_state(self, tagged_df):
+        vs = ViewerState(dimensions=[1, 1, 1])
+        vs.add_points(
+            tagged_df,
+            point_column=["x", "y", "z"],
+            tag_column="ct",
+            linked_segmentation=None,
+        )
+        return vs
+
+    def test_target_site_changes_the_encoding(self, tagged_state):
+        """Reusing the cached state here would silently ship the wrong encoding."""
+        default = self._properties_from_url(tagged_state.to_url())
+        google = self._properties_from_url(tagged_state.to_url(target_site="google"))
+        assert default[0]["type"] == "uint8"
+        assert google[0]["type"] == "bool"
+
+    def test_original_target_is_restored(self, tagged_state):
+        tagged_state.to_url(target_site="google")
+        after = self._properties_from_url(tagged_state.to_url())
+        assert after[0]["type"] == "uint8"
+
+    def test_pinned_capabilities_ignore_the_target(self, tagged_df):
+        vs = ViewerState(dimensions=[1, 1, 1], capabilities="legacy")
+        vs.add_points(
+            tagged_df,
+            point_column=["x", "y", "z"],
+            tag_column="ct",
+            linked_segmentation=None,
+        )
+        google = self._properties_from_url(vs.to_url(target_site="google"))
+        assert google[0]["type"] == "uint8"
