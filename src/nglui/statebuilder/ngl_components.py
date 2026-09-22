@@ -13,11 +13,12 @@ try:
 except ImportError:
     from typing_extensions import Self
 
+import attrs
 import caveclient
 import numpy as np
 import pandas as pd
 from attrs import define, field
-from neuroglancer import Viewer, viewer_state
+from neuroglancer import Viewer, equivalence_map, viewer_state
 from neuroglancer.coordinate_space import CoordinateSpace
 from neuroglancer.json_wrappers import optional, wrapped_property
 
@@ -46,6 +47,7 @@ from .utils import (
     parse_graphene_image_url,
     split_point_columns,
 )
+from .viewer_config import SkeletonRendering
 
 # Monkey-patch AnnotationLayer to add swap_visible_segments_on_move property.
 # The key's spelling is not a typo to fix: "swapVisbleSegmentsOnMove" is what
@@ -54,6 +56,35 @@ from .utils import (
 viewer_state.AnnotationLayer.swap_visible_segments_on_move = (
     viewer_state.AnnotationLayer.swapVisibleSegmentsOnMove
 ) = wrapped_property("swapVisbleSegmentsOnMove", optional(bool, True))
+
+
+_MAX_SAFE_INTEGER = 2**53 - 1
+
+
+def _patch_equivalence_ids() -> None:
+    """Serialize equivalence ids beyond 2**53 as strings.
+
+    Neuroglancer reads states with a plain ``JSON.parse``, which rounds integers
+    past 2**53, and real uint64 root ids are past it -- a merge would silently name
+    different segments. neuroglancer-python means to stringify such ids (its
+    ``json_encoder_default``), but that hook never runs for native ints, so
+    ``EquivalenceMap.to_json`` emits them bare. Neuroglancer accepts either form.
+    """
+    to_json = equivalence_map.EquivalenceMap.to_json
+    if getattr(to_json, "_nglui_safe_ids", False):
+        return
+
+    def safe_to_json(self):
+        return [
+            [str(x) if abs(x) > _MAX_SAFE_INTEGER else x for x in group]
+            for group in to_json(self)
+        ]
+
+    safe_to_json._nglui_safe_ids = True
+    equivalence_map.EquivalenceMap.to_json = safe_to_json
+
+
+_patch_equivalence_ids()
 
 
 class UnmappedDataError(Exception):
@@ -517,6 +548,15 @@ def _handle_linked_segmentation(segmentation_layer) -> dict:
         )
 
 
+def _set_if_given(kwargs: dict, **optional) -> dict:
+    """Add the `optional` values that are not None to `kwargs`.
+
+    Unset options are left out so Neuroglancer's own defaults apply.
+    """
+    kwargs.update({k: v for k, v in optional.items() if v is not None})
+    return kwargs
+
+
 def _handle_filter_by_segmentation(
     filter: Optional[Union[list, bool, str]],
     linked_segmentation: Optional[Union[list, bool, str]],
@@ -621,8 +661,14 @@ class ImageLayer(LayerWithSource):
         The number of depth samples for volume rendering. Default is None, which will use the default number of samples.
     cross_section_render_scale : float, optional
         The scale for cross-section rendering. Default is None, which will use the default scale.
+    shader_controls : dict, optional
+        Values for the ``#uicontrol`` controls the shader declares, keyed by control
+        name. An ``invlerp`` control takes a dict such as ``{"range": [30, 220]}``.
+        See also `set_contrast`.
     pick: bool, optional
         Whether to allow cursor interaction with meshes and skeletons. Default is True.
+    extra : dict, optional
+        Raw Neuroglancer layer JSON merged over the layer last, for options nglui does not wrap.
     """
 
     name = field(default="img", type=str)
@@ -639,10 +685,54 @@ class ImageLayer(LayerWithSource):
     cross_section_render_scale = field(
         default=None, type=float, kw_only=True, repr=False
     )
+    shader_controls = field(default=None, type=Optional[dict], kw_only=True, repr=False)
 
     def __attrs_post_init__(self):
         self.color = parse_color(self.color)
         super().__attrs_post_init__()
+
+    def set_contrast(
+        self,
+        range: Optional[tuple[float, float]] = None,
+        window: Optional[tuple[float, float]] = None,
+        control: str = "normalized",
+    ) -> Self:
+        """Set the brightness/contrast range of an ``invlerp`` shader control.
+
+        Neuroglancer's default image shader maps intensity through an ``invlerp``
+        control named ``normalized``, so with the default shader this sets the
+        display contrast directly.
+
+        Parameters
+        ----------
+        range : tuple of float, optional
+            Intensities mapped to black and white. Values outside are clamped.
+        window : tuple of float, optional
+            Extent of the control's histogram widget in the layer panel.
+        control : str, optional
+            Name of the ``invlerp`` control. Default is "normalized".
+
+        Returns
+        -------
+        ImageLayer
+            The layer, for chaining.
+
+        Examples
+        --------
+        >>> ImageLayer(source=em_source).set_contrast(range=(40, 210))
+        """
+        params = _set_if_given(
+            {},
+            range=None if range is None else [float(x) for x in range],
+            window=None if window is None else [float(x) for x in window],
+        )
+        controls = dict(self.shader_controls or {})
+        existing = controls.get(control)
+        controls[control] = (
+            {**existing, **params} if isinstance(existing, dict) else params
+        )
+        self.shader_controls = controls
+        return self
 
     def to_neuroglancer_layer(self, capabilities=None) -> viewer_state.ImageLayer:
         super().to_neuroglancer_layer(capabilities=capabilities)
@@ -653,8 +743,10 @@ class ImageLayer(LayerWithSource):
             annotation_color=self.color,
         )
         # Unset options are left out so Neuroglancer's own defaults apply.
-        optional = dict(
+        _set_if_given(
+            kwargs,
             shader=self.shader,
+            shader_controls=self.shader_controls,
             opacity=self.opacity,
             blend=self.blend,
             volume_rendering_mode=self.volume_rendering_mode,
@@ -662,7 +754,6 @@ class ImageLayer(LayerWithSource):
             volume_rendering_depth_samples=self.volume_rendering_depth_samples,
             cross_section_render_scale=self.cross_section_render_scale,
         )
-        kwargs.update({k: v for k, v in optional.items() if v is not None})
         return viewer_state.ImageLayer(**kwargs)
 
     def apply_to_neuroglancer(
@@ -735,8 +826,38 @@ class SegmentationLayer(LayerWithSource):
         A dictionary mapping segment IDs to colors. Default is None, which will use the default colors.
     shader : str, optional
         The shader to use for rendering the skeletons if a skeleton source is provided. Default is None, which will use the default shader.
+        Equivalent to ``skeleton_rendering=SkeletonRendering(shader=...)``; set one or the other.
+    skeleton_rendering : SkeletonRendering or dict, optional
+        Skeleton shader, shader control values, render modes, and line widths.
+    segment_query : str, optional
+        Text in the layer's segment search box, e.g. a label prefix or ``#tag`` query
+        against segment properties.
+    saturation : float, optional
+        Saturation of the segment colors, from 0 (gray) to 1.
+    color_seed : int, optional
+        Seed for the random segment colors; change it to get a different palette.
+    segment_default_color : str or tuple, optional
+        One color for every segment without an explicit `segment_colors` entry.
+    mesh_render_scale : float, optional
+        Level-of-detail for meshes; smaller values load finer meshes. Neuroglancer's default is 10.
+    cross_section_render_scale : float, optional
+        Resolution of the 2d segmentation rendering; larger values are coarser.
+    hover_highlight : bool, optional
+        Whether to highlight the segment under the mouse.
+    base_segment_coloring : bool, optional
+        Whether to color supervoxels individually rather than by their root.
+    ignore_null_visible_set : bool, optional
+        Whether an empty visible-segment set shows nothing (True) or everything (False).
+    linked_segmentation_group : str, optional
+        Name of another segmentation layer to share segment visibility with.
+    linked_segmentation_color_group : str or bool, optional
+        Name of another segmentation layer to share segment colors with, or False to keep colors separate.
+    equivalences : list of list of int, optional
+        Groups of segment ids to treat as a single object.
     pick: bool, optional
         Whether to allow cursor interaction with meshes and skeletons. Default is True.
+    extra : dict, optional
+        Raw Neuroglancer layer JSON merged over the layer last, for options nglui does not wrap.
 
     """
 
@@ -758,6 +879,39 @@ class SegmentationLayer(LayerWithSource):
     mesh_silhouette = field(default=0.0, type=float, kw_only=True, repr=False)
     segment_colors = field(default=None, type=dict, kw_only=True, repr=False)
     shader = field(default=None, type=str, kw_only=True, repr=False)
+    skeleton_rendering = field(
+        default=None,
+        type=Optional[SkeletonRendering],
+        converter=SkeletonRendering.coerce,
+        kw_only=True,
+        repr=False,
+    )
+    segment_query = field(default=None, type=Optional[str], kw_only=True, repr=False)
+    saturation = field(default=None, type=Optional[float], kw_only=True, repr=False)
+    color_seed = field(default=None, type=Optional[int], kw_only=True, repr=False)
+    segment_default_color = field(
+        default=None, converter=parse_color, kw_only=True, repr=False
+    )
+    mesh_render_scale = field(
+        default=None, type=Optional[float], kw_only=True, repr=False
+    )
+    cross_section_render_scale = field(
+        default=None, type=Optional[float], kw_only=True, repr=False
+    )
+    hover_highlight = field(default=None, type=Optional[bool], kw_only=True, repr=False)
+    base_segment_coloring = field(
+        default=None, type=Optional[bool], kw_only=True, repr=False
+    )
+    ignore_null_visible_set = field(
+        default=None, type=Optional[bool], kw_only=True, repr=False
+    )
+    linked_segmentation_group = field(
+        default=None, type=Optional[str], kw_only=True, repr=False
+    )
+    linked_segmentation_color_group = field(
+        default=None, type=Optional[Union[str, bool]], kw_only=True, repr=False
+    )
+    equivalences = field(default=None, type=Optional[list], kw_only=True, repr=False)
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -785,13 +939,37 @@ class SegmentationLayer(LayerWithSource):
             mesh_silhouette_rendering=self.mesh_silhouette,
             pick=self.pick,
         )
-        # Unset options are left out so Neuroglancer's own defaults apply.
-        optional = dict(
-            skeleton_shader=self.shader,
+        _set_if_given(
+            kwargs,
+            skeleton_rendering=self._skeleton_rendering_json(),
             hide_segment_zero=self.hide_segment_zero,
+            segment_query=self.segment_query,
+            saturation=self.saturation,
+            color_seed=self.color_seed,
+            segment_default_color=self.segment_default_color,
+            mesh_render_scale=self.mesh_render_scale,
+            cross_section_render_scale=self.cross_section_render_scale,
+            hover_highlight=self.hover_highlight,
+            base_segment_coloring=self.base_segment_coloring,
+            ignore_null_visible_set=self.ignore_null_visible_set,
+            linked_segmentation_group=self.linked_segmentation_group,
+            linked_segmentation_color_group=self.linked_segmentation_color_group,
+            equivalences=None
+            if self.equivalences is None
+            else [[int(sid) for sid in group] for group in self.equivalences],
         )
-        kwargs.update({k: v for k, v in optional.items() if v is not None})
         return viewer_state.SegmentationLayer(**kwargs)
+
+    def _skeleton_rendering_json(self) -> Optional[dict]:
+        rendering = self.skeleton_rendering or SkeletonRendering()
+        if self.shader is not None:
+            if rendering.shader is not None and rendering.shader != self.shader:
+                raise ValueError(
+                    f"Segmentation layer '{self.name}' sets a skeleton shader both as "
+                    "`shader` and in `skeleton_rendering`; set only one."
+                )
+            rendering = attrs.evolve(rendering, shader=self.shader)
+        return rendering.to_json() or None
 
     def apply_to_neuroglancer(
         self, viewer, capabilities=None
@@ -1120,6 +1298,10 @@ class AnnotationLayer(LayerWithSource):
     swap_visible_segments_on_move = field(
         default=True, type=bool, kw_only=True, repr=False
     )
+    shader_controls = field(default=None, type=Optional[dict], kw_only=True, repr=False)
+    ignore_null_segment_filter = field(
+        default=None, type=Optional[bool], kw_only=True, repr=False
+    )
     capabilities = field(default=None, kw_only=True, repr=False)
     tag_ids = field(default=None, type=dict, kw_only=True, repr=False)
     strict_property_ids = field(default=False, type=bool, kw_only=True, repr=False)
@@ -1181,9 +1363,16 @@ class AnnotationLayer(LayerWithSource):
         )
         if filter_by:
             kwargs["filter_by_segmentation"] = filter_by
-        if self.shader is not None:
-            kwargs["shader"] = self.shader
+        self._set_display_options(kwargs)
         return viewer_state.LocalAnnotationLayer(**kwargs)
+
+    def _set_display_options(self, kwargs: dict) -> dict:
+        return _set_if_given(
+            kwargs,
+            shader=self.shader,
+            shader_controls=self.shader_controls,
+            ignore_null_segment_filter=self.ignore_null_segment_filter,
+        )
 
     def _to_neuroglancer_layer_cloud(self) -> viewer_state.AnnotationLayer:
         if self.tags:
@@ -1205,8 +1394,7 @@ class AnnotationLayer(LayerWithSource):
             ),
             swap_visible_segments_on_move=self.swap_visible_segments_on_move,
         )
-        if self.shader is not None:
-            kwargs["shader"] = self.shader
+        self._set_display_options(kwargs)
         return viewer_state.AnnotationLayer(**kwargs)
 
     def _resolve_capabilities(self, capabilities=None):

@@ -20,6 +20,7 @@ import numpy as np
 __all__ = [
     "Camera",
     "SidePanel",
+    "SkeletonRendering",
     "NAMED_ORIENTATIONS",
     "parse_orientation",
 ]
@@ -207,3 +208,72 @@ class SidePanel:
         """Write the set fields onto a neuroglancer side panel state."""
         for name, value in _set_fields(self).items():
             setattr(panel_state, name, value)
+
+
+@attrs.define
+class SkeletonRendering:
+    """How a segmentation layer draws skeletons.
+
+    Parameters
+    ----------
+    shader : str, optional
+        GLSL skeleton shader. See `nglui.statebuilder.shaders` for ready-made ones.
+    shader_controls : dict, optional
+        Values for the ``#uicontrol`` controls the shader declares, keyed by name.
+    mode_2d, mode_3d : {"lines", "lines_and_points"}, optional
+        Whether to draw vertices as well as edges, in the 2d and 3d views.
+    line_width_2d, line_width_3d : float, optional
+        Edge width in pixels, in the 2d and 3d views.
+
+    Examples
+    --------
+    >>> SegmentationLayer(
+    ...     source=...,
+    ...     skeleton_rendering=SkeletonRendering(line_width_3d=3, mode_3d="lines_and_points"),
+    ... )
+    """
+
+    shader: Optional[str] = attrs.field(default=None, kw_only=True)
+    shader_controls: Optional[dict] = attrs.field(default=None, kw_only=True)
+    mode_2d: Optional[Literal["lines", "lines_and_points"]] = attrs.field(
+        default=None,
+        kw_only=True,
+        validator=attrs.validators.optional(
+            attrs.validators.in_(("lines", "lines_and_points"))
+        ),
+    )
+    mode_3d: Optional[Literal["lines", "lines_and_points"]] = attrs.field(
+        default=None,
+        kw_only=True,
+        validator=attrs.validators.optional(
+            attrs.validators.in_(("lines", "lines_and_points"))
+        ),
+    )
+    line_width_2d: Optional[float] = attrs.field(
+        default=None, kw_only=True, converter=_optional_float
+    )
+    line_width_3d: Optional[float] = attrs.field(
+        default=None, kw_only=True, converter=_optional_float
+    )
+
+    _JSON_KEYS = {
+        "shader": "shader",
+        "shader_controls": "shaderControls",
+        "mode_2d": "mode2d",
+        "mode_3d": "mode3d",
+        "line_width_2d": "lineWidth2d",
+        "line_width_3d": "lineWidth3d",
+    }
+
+    @classmethod
+    def coerce(cls, value: Union[SkeletonRendering, dict, None]):
+        """Accept a SkeletonRendering or a dict of its fields."""
+        if value is None or isinstance(value, cls):
+            return value
+        if isinstance(value, dict):
+            return cls(**value)
+        raise TypeError(f"Expected a SkeletonRendering or dict, got {value!r}.")
+
+    def to_json(self) -> dict:
+        """The set fields, under Neuroglancer's ``skeletonRendering`` JSON keys."""
+        return {self._JSON_KEYS[k]: v for k, v in _set_fields(self).items()}

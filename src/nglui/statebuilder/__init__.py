@@ -15,4 +15,4 @@ from .site_utils import (
     neuroglancer_url,
     set_default_neuroglancer_site,
 )
-from .viewer_config import Camera, SidePanel
+from .viewer_config import Camera, SidePanel, SkeletonRendering

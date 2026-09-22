@@ -342,6 +342,28 @@ img_layer_transformed = ImageLayer(
 The first three columns of the CoordSpaceTransform specify a linear transform matrix, while the last column is a translation vector.
 The 4th row is implicit and always `[0, 0, 0, 1]`, so it is not specified.
 
+#### Display Options
+
+Image layers take `opacity`, `blend`, `cross_section_render_scale`, and the volume rendering options `volume_rendering_mode`, `volume_rendering_gain`, and `volume_rendering_depth_samples`.
+Options you do not set are left to Neuroglancer's defaults.
+
+To set the **contrast** of an image, use `set_contrast`.
+Neuroglancer's default image shader maps intensity through a control named `normalized`, and `range` sets the intensities that map to black and white:
+
+``` py
+img_layer = ImageLayer(source=em_source).set_contrast(range=(40, 210))
+```
+
+More generally, `shader_controls` sets the values of any `#uicontrol` a shader declares, keyed by name:
+
+``` py
+img_layer = ImageLayer(
+    source=em_source,
+    shader=my_shader,
+    shader_controls={"normalized": {"range": [40, 210]}, "brightness": 0.2},
+)
+```
+
 ### Segmentation Layers
 
 Segmentation layers are also volumetric data, but have objects with segment ids that can be selected, hidden, and visualized in 3d using meshes or skeletons.
@@ -401,6 +423,36 @@ seg_layer = (
 
 As in images, any specification of sources can be either a string URL or a list of URLs.
 
+#### Display Options
+
+Beyond `set_view_options`, segmentation layers take these options as keyword arguments:
+
+| Option | Effect |
+|---|---|
+| `segment_query` | Text in the layer's segment search box |
+| `saturation` | Saturation of segment colors, from 0 (gray) to 1 |
+| `color_seed` | Seed for random segment colors; change it for a different palette |
+| `segment_default_color` | One color for every segment without an explicit color |
+| `mesh_render_scale` | Mesh level of detail; smaller loads finer meshes |
+| `cross_section_render_scale` | Resolution of the 2d rendering; larger is coarser |
+| `hover_highlight` | Whether to highlight the segment under the mouse |
+| `base_segment_coloring` | Color supervoxels individually rather than by root |
+| `hide_segment_zero` | Whether segment 0 is hidden |
+| `ignore_null_visible_set` | Whether an empty selection shows nothing (True) or everything (False) |
+| `linked_segmentation_group` | Share segment visibility with another segmentation layer |
+| `linked_segmentation_color_group` | Share segment colors with another layer, or `False` to keep them separate |
+| `equivalences` | Groups of segment ids to treat as a single object |
+
+Linking is useful for showing the same cells two ways, for example a mesh layer and a skeleton-only layer that follows its selection:
+
+``` py
+vs = (
+    ViewerState()
+    .add_layer(SegmentationLayer(name="seg", source=seg_source, segments=root_ids))
+    .add_layer(SegmentationLayer(name="skel", source=skeleton_source, linked_segmentation_group="seg"))
+)
+```
+
 Would select all segment ids in `my_dataframe['pt_root_id']` to the segmentation layer, toggle their visibility by the boolean values in `my_dataframe['is_visible']`, and set their colors to the values in `my_dataframe['color_value']`.
 Colors can be hex values or web-readable color names, such as `'red'`, `'blue'`, or `'green'`.
 
@@ -445,6 +497,23 @@ See the [Segment Properties documentation](segmentprops.md) for more information
 The `shader` field of a segmentation layer currently specifies how skeletons are rendered in Neuroglancer.
 The `statebuilder.shaders` module has some examples and tooling to help generate these shaders, but GL shaders like this are effectively a new language.
 Once you have a shader you want to use, you can set it with the `add_shader` method of the segmentation layer.
+
+Other skeleton options -- line widths, whether to draw vertices, and values for the shader's controls -- go in a `SkeletonRendering`:
+
+``` py
+from nglui.statebuilder import SkeletonRendering
+
+seg_layer = SegmentationLayer(
+    source=seg_source,
+    skeleton_rendering=SkeletonRendering(
+        line_width_3d=3,
+        mode_3d="lines_and_points",
+        shader_controls={"axon_saturation": 0.5},
+    ),
+)
+```
+
+A shader can be given either as `shader` or inside `SkeletonRendering`, but not both.
 
 ### Annotation Layers
 
@@ -673,6 +742,12 @@ vs.add_annotation_layer(
 vs.add_annotation_layer(name="annos", tags=[...], strict_property_ids=True)
 ```
 
+
+#### Annotation Display Options
+
+Local and cloud annotation layers both take `shader_controls`, which sets values for the `#uicontrol` controls an annotation shader declares, and `ignore_null_segment_filter`.
+With `filter_by_segmentation`, annotations are shown only if linked to a visible segment, and `ignore_null_segment_filter=False` also hides annotations with no linked segment.
+`filter_by_segmentation` takes `True` (every linked relationship), a relationship name, or a list of them.
 
 #### Cloud Annotations
 
