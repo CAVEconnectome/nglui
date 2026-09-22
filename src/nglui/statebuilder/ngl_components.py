@@ -46,7 +46,10 @@ from .utils import (
     split_point_columns,
 )
 
-# Monkey-patch AnnotationLayer to add swap_visible_segments_on_move property
+# Monkey-patch AnnotationLayer to add swap_visible_segments_on_move property.
+# The key's spelling is not a typo to fix: "swapVisbleSegmentsOnMove" is what
+# Spelunker reads (seung-lab/neuroglancer src/layer/annotation/index.ts). Upstream
+# Neuroglancer has no such key and ignores it.
 viewer_state.AnnotationLayer.swap_visible_segments_on_move = (
     viewer_state.AnnotationLayer.swapVisibleSegmentsOnMove
 ) = wrapped_property("swapVisbleSegmentsOnMove", optional(bool, True))
@@ -136,10 +139,14 @@ class CoordSpaceTransform:
     matrix = field(default=None, type=list[list[float]])
 
     def __attrs_post_init__(self):
-        if self.output_dimensions is None:
-            self.output_dimensions = None
-        elif not isinstance(self.output_dimensions, CoordSpace):
+        if self.output_dimensions is not None and not isinstance(
+            self.output_dimensions, CoordSpace
+        ):
             self.output_dimensions = CoordSpace(resolution=self.output_dimensions)
+        if self.input_dimensions is not None and not isinstance(
+            self.input_dimensions, CoordSpace
+        ):
+            self.input_dimensions = CoordSpace(resolution=self.input_dimensions)
 
     def to_neuroglancer(self):
         if self.output_dimensions is None:
@@ -500,13 +507,21 @@ def _handle_filter_by_segmentation(
     filter: Optional[Union[list, bool, str]],
     linked_segmentation: Optional[Union[list, bool, str]],
 ):
-    linked_seg = _handle_linked_segmentation(linked_segmentation)
+    """Resolve the relationship names to filter annotations by.
+
+    ``True`` filters on every linked relationship, a string or list names them, and
+    ``False``/``None`` disables filtering.
+    """
     if filter is True:
-        return [x for x in linked_seg.keys()]
-    elif filter is False:
+        linked_seg = _handle_linked_segmentation(linked_segmentation) or {}
+        return list(linked_seg.keys())
+    elif filter is False or filter is None:
         return []
+    elif isinstance(filter, str):
+        return [filter]
     elif is_list_like(filter):
-        return linked_seg
+        return list(filter)
+    raise ValueError(f"Invalid filter_by_segmentation value: {filter!r}")
 
 
 @define
@@ -581,7 +596,7 @@ class ImageLayer(LayerWithSource):
     color : list, optional
         The color to use for the image layer. Default is None, which will use the default color.
     opacity : float, optional
-        The opacity of the image layer. Default is 1.0.
+        The opacity of the image layer. Default is None, which uses Neuroglancer's default (0.5).
     blend : str, optional
         The blending mode for the image layer. Default is None, which will use the default blend mode.
     volume_rendering_mode : str, optional
@@ -600,7 +615,7 @@ class ImageLayer(LayerWithSource):
     source = field(factory=list, type=Union[list, Source])
     shader = field(default=None, type=Optional[str], kw_only=True, repr=False)
     color = field(default=None, type=list, kw_only=True, repr=False)
-    opacity = field(default=1.0, type=float, kw_only=True, repr=False)
+    opacity = field(default=None, type=Optional[float], kw_only=True, repr=False)
     blend = field(default=None, type=str, kw_only=True, repr=False)
     volume_rendering_mode = field(default=None, type=str, kw_only=True, repr=False)
     volume_rendering_gain = field(default=None, type=float, kw_only=True, repr=False)
@@ -617,21 +632,24 @@ class ImageLayer(LayerWithSource):
 
     def to_neuroglancer_layer(self, capabilities=None) -> viewer_state.ImageLayer:
         super().to_neuroglancer_layer(capabilities=capabilities)
-        if self.shader is None:
-            return viewer_state.ImageLayer(
-                source=source_to_neuroglancer(
-                    self.source, resolution=self.resolution, image_layer=True
-                ),
-                annotation_color=self.color,
-            )
-        else:
-            return viewer_state.ImageLayer(
-                source=source_to_neuroglancer(
-                    self.source, resolution=self.resolution, image_layer=True
-                ),
-                shader=self.shader,
-                annotation_color=self.color,
-            )
+        kwargs = dict(
+            source=source_to_neuroglancer(
+                self.source, resolution=self.resolution, image_layer=True
+            ),
+            annotation_color=self.color,
+        )
+        # Unset options are left out so Neuroglancer's own defaults apply.
+        optional = dict(
+            shader=self.shader,
+            opacity=self.opacity,
+            blend=self.blend,
+            volume_rendering_mode=self.volume_rendering_mode,
+            volume_rendering_gain=self.volume_rendering_gain,
+            volume_rendering_depth_samples=self.volume_rendering_depth_samples,
+            cross_section_render_scale=self.cross_section_render_scale,
+        )
+        kwargs.update({k: v for k, v in optional.items() if v is not None})
+        return viewer_state.ImageLayer(**kwargs)
 
     def apply_to_neuroglancer(
         self, viewer: Viewer, capabilities=None
@@ -689,7 +707,8 @@ class SegmentationLayer(LayerWithSource):
     color : list, optional
         The color to use for the segments. Default is None, which will use the default color.
     hide_segment_zero : bool, optional
-        Whether to hide segment zero, which is typically treated as "no segmentation". Default is True.
+        Whether to hide segment zero, which is typically treated as "no segmentation".
+        Default is None, which uses Neuroglancer's default (True).
     selected_alpha : float, optional
         The transparency value for selected segments in the 2d views. Default is 0.2.
     not_selected_alpha : float, optional
@@ -716,7 +735,9 @@ class SegmentationLayer(LayerWithSource):
         repr=False,
     )
     color = field(default=None, type=list, kw_only=True, repr=False)
-    hide_segment_zero = field(default=True, type=bool, kw_only=True, repr=False)
+    hide_segment_zero = field(
+        default=None, type=Optional[bool], kw_only=True, repr=False
+    )
     selected_alpha = field(default=0.2, type=float, kw_only=True, repr=False)
     not_selected_alpha = field(default=0.0, type=float, kw_only=True, repr=False)
     alpha_3d = field(default=0.9, type=float, kw_only=True, repr=False)
@@ -739,31 +760,24 @@ class SegmentationLayer(LayerWithSource):
         self, capabilities=None
     ) -> viewer_state.SegmentationLayer:
         super().to_neuroglancer_layer(capabilities=capabilities)
-        if self.shader is None:
-            return viewer_state.SegmentationLayer(
-                source=source_to_neuroglancer(self.source, resolution=self.resolution),
-                starred_segments=dict(segments_to_neuroglancer(self.segments)),
-                annotation_color=self.color,
-                selected_alpha=self.selected_alpha,
-                not_selected_alpha=self.not_selected_alpha,
-                object_alpha=self.alpha_3d,
-                segment_colors=self.segment_colors,
-                mesh_silhouette_rendering=self.mesh_silhouette,
-                pick=self.pick,
-            )
-        else:
-            return viewer_state.SegmentationLayer(
-                source=source_to_neuroglancer(self.source, resolution=self.resolution),
-                starred_segments=dict(segments_to_neuroglancer(self.segments)),
-                annotation_color=self.color,
-                selected_alpha=self.selected_alpha,
-                not_selected_alpha=self.not_selected_alpha,
-                object_alpha=self.alpha_3d,
-                segment_colors=self.segment_colors,
-                mesh_silhouette_rendering=self.mesh_silhouette,
-                skeleton_shader=self.shader,
-                pick=self.pick,
-            )
+        kwargs = dict(
+            source=source_to_neuroglancer(self.source, resolution=self.resolution),
+            starred_segments=dict(segments_to_neuroglancer(self.segments)),
+            annotation_color=self.color,
+            selected_alpha=self.selected_alpha,
+            not_selected_alpha=self.not_selected_alpha,
+            object_alpha=self.alpha_3d,
+            segment_colors=self.segment_colors,
+            mesh_silhouette_rendering=self.mesh_silhouette,
+            pick=self.pick,
+        )
+        # Unset options are left out so Neuroglancer's own defaults apply.
+        optional = dict(
+            skeleton_shader=self.shader,
+            hide_segment_zero=self.hide_segment_zero,
+        )
+        kwargs.update({k: v for k, v in optional.items() if v is not None})
+        return viewer_state.SegmentationLayer(**kwargs)
 
     def apply_to_neuroglancer(
         self, viewer, capabilities=None
@@ -888,7 +902,7 @@ class SegmentationLayer(LayerWithSource):
         if isinstance(data, DataMap):
             self._register_datamap(
                 key=data,
-                func=self.segments_from_dataframe,
+                func=self.add_segments_from_data,
                 segment_column=segment_column,
                 visible_column=visible_column,
                 color_column=color_column,
@@ -974,7 +988,7 @@ class SegmentationLayer(LayerWithSource):
         if isinstance(data, DataMap):
             self._register_datamap(
                 key=data,
-                func=self.segment_properties,
+                func=self.add_segment_properties,
                 client=client,
                 id_column=id_column,
                 label_column=label_column,
@@ -990,7 +1004,9 @@ class SegmentationLayer(LayerWithSource):
                 prepend_col_name=prepend_col_name,
                 random_columns=random_columns,
                 random_column_prefix=random_column_prefix,
+                dry_run=dry_run,
             )
+            return self
         segprops = SegmentProperties.from_dataframe(
             df=data,
             id_col=id_column,
@@ -1044,13 +1060,13 @@ class SegmentationLayer(LayerWithSource):
             A SegmentationLayer object with updated view options.
 
         """
-        if selected_alpha:
+        if selected_alpha is not None:
             self.selected_alpha = selected_alpha
-        if not_selected_alpha:
+        if not_selected_alpha is not None:
             self.not_selected_alpha = not_selected_alpha
-        if alpha_3d:
+        if alpha_3d is not None:
             self.alpha_3d = alpha_3d
-        if mesh_silhouette:
+        if mesh_silhouette is not None:
             self.mesh_silhouette = mesh_silhouette
         return self
 
@@ -1146,6 +1162,11 @@ class AnnotationLayer(LayerWithSource):
             tool_bindings=bindings,
             swap_visible_segments_on_move=self.swap_visible_segments_on_move,
         )
+        filter_by = _handle_filter_by_segmentation(
+            self.filter_by_segmentation, self.linked_segmentation
+        )
+        if filter_by:
+            kwargs["filter_by_segmentation"] = filter_by
         if self.shader is not None:
             kwargs["shader"] = self.shader
         return viewer_state.LocalAnnotationLayer(**kwargs)

@@ -36,6 +36,12 @@ if TYPE_CHECKING:
     import caveclient
     import pandas as pd
 
+_LAYOUTS = ("xy", "yz", "xz", "xy-3d", "xz-3d", "yz-3d", "4panel", "3d", "4panel-alt")
+_DEFAULT_LAYOUT = "xy-3d"
+_DEFAULT_SCALE_IMAGERY = 1.0
+_DEFAULT_SCALE_3D = 50000.0
+_DEFAULT_SHOW_SLICES = False
+
 
 class NumpyEncoder(json.JSONEncoder):
     """Custom JSON encoder that handles numpy and pandas types.
@@ -93,14 +99,24 @@ class ViewerState:
         dimensions: Optional[Union[list, CoordSpace]] = None,
         *,
         position: Optional[Union[list, np.ndarray]] = None,
-        scale_imagery: float = 1.0,
-        scale_3d: float = 50000.0,
-        show_slices: bool = False,
+        scale_imagery: Optional[float] = None,
+        scale_3d: Optional[float] = None,
+        show_slices: Optional[bool] = None,
         selected_layer: Optional[str] = None,
         selected_layer_visible: bool = False,
-        layout: Literal[
-            "xy", "yz", "xz", "xy-3d", "xz-3d", "yz-3d", "4panel", "3d", "4panel-alt"
-        ] = "xy-3d",
+        layout: Optional[
+            Literal[
+                "xy",
+                "yz",
+                "xz",
+                "xy-3d",
+                "xz-3d",
+                "yz-3d",
+                "4panel",
+                "3d",
+                "4panel-alt",
+            ]
+        ] = None,
         base_state: Optional[dict] = None,
         interactive: bool = False,
         infer_coordinates: bool = True,
@@ -134,6 +150,8 @@ class ViewerState:
             The panel layout of the viewer. Default is "xy-3d".
         base_state : dict
             The base state of the viewer. If None, the default state will be used.
+            When given, its values for `scale_imagery`, `scale_3d`, `show_slices`,
+            and `layout` are kept unless those are set explicitly.
         interactive : bool
             Whether the viewer is interactive. Default is False.
         infer_coordinates : bool
@@ -153,12 +171,33 @@ class ViewerState:
         self._layers = NamedList(layers) if layers else NamedList()
         self._dimensions = dimensions
         self._position = position
-        self._scale_imagery = scale_imagery
-        self._scale_3d = scale_3d
-        self._show_slices = show_slices
+        # View settings the user set explicitly, which override a base state. The
+        # rest fall back to nglui's defaults only when there is no base state.
+        self._explicit_view = {
+            name
+            for name, value in [
+                ("scale_imagery", scale_imagery),
+                ("scale_3d", scale_3d),
+                ("show_slices", show_slices),
+                ("layout", layout),
+            ]
+            if value is not None
+        }
+        self._scale_imagery = _DEFAULT_SCALE_IMAGERY
+        self._scale_3d = _DEFAULT_SCALE_3D
+        self._show_slices = _DEFAULT_SHOW_SLICES
+        self._layout = _DEFAULT_LAYOUT
+        if scale_imagery is not None:
+            self._scale_imagery = scale_imagery
+        if scale_3d is not None:
+            self._scale_3d = scale_3d
+        if show_slices is not None:
+            self._show_slices = show_slices
+        if layout is not None:
+            self._validate_layout(layout)
+            self._layout = layout
         self._selected_layer = selected_layer
         self._selected_layer_visible = selected_layer_visible
-        self._layout = layout
         self._base_state = base_state
         self._interactive = interactive
         self._saved_state_url = None
@@ -385,6 +424,7 @@ class ViewerState:
     @scale_imagery.setter
     def scale_imagery(self, value):
         self._scale_imagery = value
+        self._explicit_view.add("scale_imagery")
         self._reset_viewer()
 
     @property
@@ -394,7 +434,8 @@ class ViewerState:
     @scale_3d.setter
     def scale_3d(self, value):
         self._scale_3d = value
-        self._viewer = None
+        self._explicit_view.add("scale_3d")
+        self._reset_viewer()
 
     @property
     def show_slices(self):
@@ -403,7 +444,8 @@ class ViewerState:
     @show_slices.setter
     def show_slices(self, value):
         self._show_slices = value
-        self._viewer = None
+        self._explicit_view.add("show_slices")
+        self._reset_viewer()
 
     @property
     def selected_layer(self):
@@ -432,28 +474,28 @@ class ViewerState:
     def selected_layer_visible(self):
         return self._selected_layer_visible
 
+    @selected_layer_visible.setter
+    def selected_layer_visible(self, value: bool):
+        self._selected_layer_visible = value
+        self._reset_viewer()
+
     @property
     def layout(self):
         return self._layout
 
     @layout.setter
     def layout(self, value):
-        if value not in [
-            "xy",
-            "yz",
-            "xz",
-            "xy-3d",
-            "xz-3d",
-            "yz-3d",
-            "4panel",
-            "3d",
-            "4panel-alt",
-        ]:
+        self._validate_layout(value)
+        self._layout = value
+        self._explicit_view.add("layout")
+        self._reset_viewer()
+
+    @staticmethod
+    def _validate_layout(value):
+        if value not in _LAYOUTS:
             raise ValueError(
                 f"Invalid layout: {value}. Must be one of 'xy', 'yz', 'xz', 'xy-3d', 'xz-3d', 'yz-3d', '4panel', '3d', or '4panel-alt'."
             )
-        self._layout = value
-        self._reset_viewer()
 
     @property
     def base_state(self):
@@ -498,7 +540,7 @@ class ViewerState:
         ] = None,
         base_state: Optional[dict] = None,
         interactive: Optional[bool] = None,
-        infer_coordinates: bool = False,
+        infer_coordinates: Optional[bool] = None,
     ) -> Self:
         """
         Set various properties of the viewer state.
@@ -1533,14 +1575,20 @@ class ViewerState:
                 s.position = self._suggest_position_from_source(
                     resolution=self.dimensions.resolution
                 )
-            if self.layout:
-                s.layout = self.layout
             if s.dimensions.rank == 0:
                 s.dimensions = self.dimensions.to_neuroglancer()
-            if not self.base_state:
-                s.cross_section_scale = self.scale_imagery
-                s.projection_scale = self.scale_3d
-                s.show_slices = self.show_slices
+            view_settings = [
+                ("layout", "layout", self.layout),
+                ("scale_imagery", "cross_section_scale", self.scale_imagery),
+                ("scale_3d", "projection_scale", self.scale_3d),
+                ("show_slices", "show_slices", self.show_slices),
+            ]
+            for name, attr, value in view_settings:
+                if not self.base_state or name in self._explicit_view:
+                    setattr(s, attr, value)
+            if self._selected_layer is not None:
+                s.selected_layer.layer = self._selected_layer
+                s.selected_layer.visible = self._selected_layer_visible
             capabilities = self._resolve_capabilities()
             for layer in self.layers:
                 layer.apply_to_neuroglancer(s, capabilities=capabilities)
