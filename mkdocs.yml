@@ -18,6 +18,7 @@ nav:
 - Function Reference:
     - reference/statebuilder.md
     - reference/ngl_components.md
+    - reference/viewer_config.md
     - reference/ngl_annotations.md
     - reference/shaders.md
     - reference/skeletons.md

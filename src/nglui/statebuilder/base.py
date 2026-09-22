@@ -30,7 +30,14 @@ from .ngl_components import (
     Source,
 )
 from .site_utils import MAX_URL_LENGTH, neuroglancer_url
-from .utils import NamedList, strip_layers, strip_state_properties
+from .utils import (
+    NamedList,
+    deep_merge,
+    parse_color,
+    strip_layers,
+    strip_state_properties,
+)
+from .viewer_config import Camera, SidePanel
 
 if TYPE_CHECKING:
     import caveclient
@@ -41,6 +48,27 @@ _DEFAULT_LAYOUT = "xy-3d"
 _DEFAULT_SCALE_IMAGERY = 1.0
 _DEFAULT_SCALE_3D = 50000.0
 _DEFAULT_SHOW_SLICES = False
+
+# Top-level presentation options, emitted under the same attribute name on the
+# neuroglancer ViewerState. Each maps to its parser.
+_DISPLAY_OPTIONS = {
+    "title": str,
+    "show_axis_lines": bool,
+    "show_scale_bar": bool,
+    "show_default_annotations": bool,
+    "cross_section_background_color": parse_color,
+    "projection_background_color": parse_color,
+    "hide_cross_section_background_3d": bool,
+    "wire_frame": bool,
+}
+
+# nglui panel name -> attribute of the neuroglancer ViewerState holding its location
+_PANELS = {
+    "layer_list": "layer_list_panel",
+    "statistics": "statistics",
+    "help": "help_panel",
+    "selected_layer": "selected_layer",
+}
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -117,6 +145,16 @@ class ViewerState:
                 "4panel-alt",
             ]
         ] = None,
+        title: Optional[str] = None,
+        show_axis_lines: Optional[bool] = None,
+        show_scale_bar: Optional[bool] = None,
+        show_default_annotations: Optional[bool] = None,
+        cross_section_background_color: Optional[Union[str, tuple]] = None,
+        projection_background_color: Optional[Union[str, tuple]] = None,
+        hide_cross_section_background_3d: Optional[bool] = None,
+        wire_frame: Optional[bool] = None,
+        camera: Optional[Camera] = None,
+        extra: Optional[dict] = None,
         base_state: Optional[dict] = None,
         interactive: bool = False,
         infer_coordinates: bool = True,
@@ -148,6 +186,32 @@ class ViewerState:
             Whether the selected layer is visible. Default is False.
         layout : str
             The panel layout of the viewer. Default is "xy-3d".
+        title : str, optional
+            Title shown in the browser tab.
+        show_axis_lines : bool, optional
+            Whether to draw the red/green/blue axis lines. Neuroglancer's default is True.
+        show_scale_bar : bool, optional
+            Whether to draw the scale bar. Neuroglancer's default is True.
+        show_default_annotations : bool, optional
+            Whether to draw the default annotations, such as the outline of the
+            cross-section plane in the 3d view. Neuroglancer's default is True.
+        cross_section_background_color : str or tuple, optional
+            Background color of the 2d views, as a name, hex string, or RGB in [0, 1].
+        projection_background_color : str or tuple, optional
+            Background color of the 3d view, as a name, hex string, or RGB in [0, 1].
+        hide_cross_section_background_3d : bool, optional
+            Whether to hide the background of the cross-section plane where it
+            appears in the 3d view.
+        wire_frame : bool, optional
+            Whether to render meshes as wire frames.
+        camera : Camera, optional
+            Zoom, orientation, and depth for the 2d and 3d views. Its scales take
+            precedence over `scale_imagery` and `scale_3d`. See `set_camera`.
+        extra : dict, optional
+            Raw Neuroglancer state JSON (camelCase keys) for options nglui does not
+            wrap, deep-merged over the built state last so it wins over anything
+            nglui sets. A value of None removes that key.
+            For example, ``{"gpuMemoryLimit": 2_000_000_000}``.
         base_state : dict
             The base state of the viewer. If None, the default state will be used.
             When given, its values for `scale_imagery`, `scale_3d`, `show_slices`,
@@ -173,24 +237,32 @@ class ViewerState:
         self._position = position
         # View settings the user set explicitly, which override a base state. The
         # rest fall back to nglui's defaults only when there is no base state.
+        # Camera fields are None until set, so they track this themselves.
         self._explicit_view = {
             name
-            for name, value in [
-                ("scale_imagery", scale_imagery),
-                ("scale_3d", scale_3d),
-                ("show_slices", show_slices),
-                ("layout", layout),
-            ]
+            for name, value in [("show_slices", show_slices), ("layout", layout)]
             if value is not None
         }
-        self._scale_imagery = _DEFAULT_SCALE_IMAGERY
-        self._scale_3d = _DEFAULT_SCALE_3D
+        self._camera = Camera(
+            cross_section_scale=scale_imagery, projection_scale=scale_3d
+        )
+        if camera is not None:
+            self._camera = self._camera.merge(camera)
         self._show_slices = _DEFAULT_SHOW_SLICES
         self._layout = _DEFAULT_LAYOUT
-        if scale_imagery is not None:
-            self._scale_imagery = scale_imagery
-        if scale_3d is not None:
-            self._scale_3d = scale_3d
+        self._display = {}
+        self._set_display(
+            title=title,
+            show_axis_lines=show_axis_lines,
+            show_scale_bar=show_scale_bar,
+            show_default_annotations=show_default_annotations,
+            cross_section_background_color=cross_section_background_color,
+            projection_background_color=projection_background_color,
+            hide_cross_section_background_3d=hide_cross_section_background_3d,
+            wire_frame=wire_frame,
+        )
+        self._panels: dict[str, SidePanel] = {}
+        self._extra = dict(extra) if extra else {}
         if show_slices is not None:
             self._show_slices = show_slices
         if layout is not None:
@@ -419,22 +491,164 @@ class ViewerState:
 
     @property
     def scale_imagery(self):
-        return self._scale_imagery
+        """Zoom of the 2d views; the camera's `cross_section_scale`."""
+        if self._camera.cross_section_scale is None:
+            return _DEFAULT_SCALE_IMAGERY
+        return self._camera.cross_section_scale
 
     @scale_imagery.setter
     def scale_imagery(self, value):
-        self._scale_imagery = value
-        self._explicit_view.add("scale_imagery")
-        self._reset_viewer()
+        self.set_camera(cross_section_scale=value)
 
     @property
     def scale_3d(self):
-        return self._scale_3d
+        """Zoom of the 3d view; the camera's `projection_scale`."""
+        if self._camera.projection_scale is None:
+            return _DEFAULT_SCALE_3D
+        return self._camera.projection_scale
 
     @scale_3d.setter
     def scale_3d(self, value):
-        self._scale_3d = value
-        self._explicit_view.add("scale_3d")
+        self.set_camera(projection_scale=value)
+
+    @property
+    def camera(self) -> Camera:
+        """The camera settings that have been set explicitly."""
+        return self._camera
+
+    @camera.setter
+    def camera(self, value: Camera):
+        self._camera = value if value is not None else Camera()
+        self._reset_viewer()
+
+    def set_camera(
+        self,
+        camera: Optional[Camera] = None,
+        *,
+        cross_section_scale: Optional[float] = None,
+        cross_section_orientation=None,
+        cross_section_depth: Optional[float] = None,
+        projection_scale: Optional[float] = None,
+        projection_orientation=None,
+        projection_depth: Optional[float] = None,
+    ) -> Self:
+        """Set the zoom, orientation, and depth of the 2d and 3d views.
+
+        Only the values given are changed; the rest keep their current settings.
+
+        Parameters
+        ----------
+        camera : Camera, optional
+            A camera whose set fields are applied, for reusing one view across states.
+        cross_section_scale : float, optional
+            Zoom of the 2d views. Same as `scale_imagery`.
+        cross_section_orientation : str or sequence of float, optional
+            Orientation of the 2d views, as a plane name (``"xy"``, ``"xz"``,
+            ``"yz"``) or an ``[x, y, z, w]`` quaternion.
+        cross_section_depth : float, optional
+            Depth of field of the 2d views.
+        projection_scale : float, optional
+            Zoom of the 3d view. Same as `scale_3d`.
+        projection_orientation : str or sequence of float, optional
+            Orientation of the 3d view, as a plane name or quaternion.
+        projection_depth : float, optional
+            Depth of the 3d view's clipping volume.
+
+        Returns
+        -------
+        ViewerState
+            The viewer state, for chaining.
+
+        Examples
+        --------
+        >>> vs.set_camera(projection_orientation="xz", projection_scale=5000)
+        """
+        if camera is not None:
+            self._camera = self._camera.merge(camera)
+        self._camera = self._camera.merge(
+            Camera(
+                cross_section_scale=cross_section_scale,
+                cross_section_orientation=cross_section_orientation,
+                cross_section_depth=cross_section_depth,
+                projection_scale=projection_scale,
+                projection_orientation=projection_orientation,
+                projection_depth=projection_depth,
+            )
+        )
+        self._reset_viewer()
+        return self
+
+    def _set_display(self, **options) -> None:
+        """Set presentation options, ignoring any passed as None."""
+        for name, value in options.items():
+            if value is not None:
+                self._display[name] = _DISPLAY_OPTIONS[name](value)
+        self._reset_viewer()
+
+    def set_panels(
+        self,
+        *,
+        layer_list: Optional[Union[bool, SidePanel, dict]] = None,
+        statistics: Optional[Union[bool, SidePanel, dict]] = None,
+        help: Optional[Union[bool, SidePanel, dict]] = None,
+        selected_layer: Optional[Union[bool, SidePanel, dict]] = None,
+    ) -> Self:
+        """Open, close, or place Neuroglancer's side panels.
+
+        Each panel takes a `SidePanel`, a dict of its fields, or a bool as shorthand
+        for ``SidePanel(visible=...)``. Only the panels and fields given are changed.
+
+        Parameters
+        ----------
+        layer_list : bool, SidePanel, or dict, optional
+            The panel listing all layers.
+        statistics : bool, SidePanel, or dict, optional
+            The chunk-download statistics panel.
+        help : bool, SidePanel, or dict, optional
+            The keyboard and mouse bindings help panel.
+        selected_layer : bool, SidePanel, or dict, optional
+            The panel for the selected layer's settings. Which layer it shows is set
+            with `set_selected_layer`; ``visible`` here takes precedence over
+            `selected_layer_visible`.
+
+        Returns
+        -------
+        ViewerState
+            The viewer state, for chaining.
+
+        Examples
+        --------
+        >>> vs.set_panels(layer_list=True, selected_layer=SidePanel(side="right", size=500))
+        """
+        given = dict(
+            layer_list=layer_list,
+            statistics=statistics,
+            help=help,
+            selected_layer=selected_layer,
+        )
+        for name, value in given.items():
+            if value is None:
+                continue
+            panel = SidePanel.coerce(value)
+            if name in self._panels:
+                panel = self._panels[name].merge(panel)
+            self._panels[name] = panel
+        self._reset_viewer()
+        return self
+
+    @property
+    def panels(self) -> dict:
+        """Side panel settings, keyed by panel name."""
+        return dict(self._panels)
+
+    @property
+    def extra(self) -> dict:
+        """Raw Neuroglancer state JSON merged over the built state last."""
+        return self._extra
+
+    @extra.setter
+    def extra(self, value: Optional[dict]):
+        self._extra = dict(value) if value else {}
         self._reset_viewer()
 
     @property
@@ -538,6 +752,16 @@ class ViewerState:
                 "4panel-alt",
             ]
         ] = None,
+        title: Optional[str] = None,
+        show_axis_lines: Optional[bool] = None,
+        show_scale_bar: Optional[bool] = None,
+        show_default_annotations: Optional[bool] = None,
+        cross_section_background_color: Optional[Union[str, tuple]] = None,
+        projection_background_color: Optional[Union[str, tuple]] = None,
+        hide_cross_section_background_3d: Optional[bool] = None,
+        wire_frame: Optional[bool] = None,
+        camera: Optional[Camera] = None,
+        extra: Optional[dict] = None,
         base_state: Optional[dict] = None,
         interactive: Optional[bool] = None,
         infer_coordinates: Optional[bool] = None,
@@ -569,6 +793,16 @@ class ViewerState:
             Whether the selected layer is visible.
         layout : {"xy", "yz", "xz", "xy-3d", "xz-3d", "yz-3d", "4panel", "3d", "4panel-alt"}, optional
             The panel layout of the viewer.
+        title, show_axis_lines, show_scale_bar, show_default_annotations : optional
+            Presentation options; see the `ViewerState` constructor.
+        cross_section_background_color, projection_background_color : optional
+            Background colors; see the `ViewerState` constructor.
+        hide_cross_section_background_3d, wire_frame : bool, optional
+            Presentation options; see the `ViewerState` constructor.
+        camera : Camera, optional
+            Camera settings to apply; see `set_camera`.
+        extra : dict, optional
+            Raw Neuroglancer state JSON, deep-merged into any existing `extra`.
         base_state : dict, optional
             The base state of the viewer.
         interactive : bool, optional
@@ -604,6 +838,20 @@ class ViewerState:
             self.selected_layer_visible = selected_layer_visible
         if layout is not None:
             self.layout = layout
+        self._set_display(
+            title=title,
+            show_axis_lines=show_axis_lines,
+            show_scale_bar=show_scale_bar,
+            show_default_annotations=show_default_annotations,
+            cross_section_background_color=cross_section_background_color,
+            projection_background_color=projection_background_color,
+            hide_cross_section_background_3d=hide_cross_section_background_3d,
+            wire_frame=wire_frame,
+        )
+        if camera is not None:
+            self.set_camera(camera)
+        if extra is not None:
+            self.extra = deep_merge(self._extra, extra)
         if base_state is not None:
             self.base_state = base_state
         if interactive is not None:
@@ -1579,20 +1827,33 @@ class ViewerState:
                 s.dimensions = self.dimensions.to_neuroglancer()
             view_settings = [
                 ("layout", "layout", self.layout),
-                ("scale_imagery", "cross_section_scale", self.scale_imagery),
-                ("scale_3d", "projection_scale", self.scale_3d),
                 ("show_slices", "show_slices", self.show_slices),
             ]
             for name, attr, value in view_settings:
                 if not self.base_state or name in self._explicit_view:
                     setattr(s, attr, value)
+            camera = self._camera
+            if not self.base_state:
+                camera = Camera(
+                    cross_section_scale=_DEFAULT_SCALE_IMAGERY,
+                    projection_scale=_DEFAULT_SCALE_3D,
+                ).merge(camera)
+            camera.apply_to(s)
+            for name, value in self._display.items():
+                setattr(s, name, value)
             if self._selected_layer is not None:
                 s.selected_layer.layer = self._selected_layer
                 s.selected_layer.visible = self._selected_layer_visible
+            for name, panel in self._panels.items():
+                panel.apply_to(getattr(s, _PANELS[name]))
             capabilities = self._resolve_capabilities()
             for layer in self.layers:
                 layer.apply_to_neuroglancer(s, capabilities=capabilities)
 
+        if self._extra:
+            self._viewer.set_state(
+                deep_merge(self._viewer.state.to_json(), self._extra)
+            )
         return self._viewer
 
     def map(self, datamap: dict, inplace: bool = False) -> Self:
@@ -1883,3 +2144,21 @@ class ViewerState:
             browser_controller = webbrowser.get(browser)
             browser_controller.open(url, new=new, autoraise=autoraise)
         return url
+
+
+def _display_property(name: str) -> property:
+    def fget(self):
+        return self._display.get(name)
+
+    def fset(self, value):
+        if value is None:
+            self._display.pop(name, None)
+            self._reset_viewer()
+        else:
+            self._set_display(**{name: value})
+
+    return property(fget, fset, doc=f"Presentation option `{name}`; None if unset.")
+
+
+for _name in _DISPLAY_OPTIONS:
+    setattr(ViewerState, _name, _display_property(_name))

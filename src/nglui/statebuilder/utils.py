@@ -240,3 +240,39 @@ def _parse_to_mainline_imagery(qry):
             return f"precomputed://middleauth+http:{qry.path}"
     else:
         return qry.geturl()
+
+
+def deep_merge(base: dict, override: Mapping) -> dict:
+    """Merge `override` into a copy of `base`, recursing into nested dicts.
+
+    Values in `override` replace those in `base`, except that two dicts at the same
+    key are merged rather than replaced, and a value of None removes the key.
+    Lists are replaced whole: Neuroglancer lists (layers, sources) are positional,
+    so an element-wise merge would silently pair up unrelated entries.
+
+    Parameters
+    ----------
+    base : dict
+        The dict to merge into. It is not modified.
+    override : Mapping
+        The values to lay over `base`.
+
+    Returns
+    -------
+    dict
+        The merged dict.
+
+    Examples
+    --------
+    >>> deep_merge({"a": {"b": 1, "c": 2}, "d": 3}, {"a": {"b": 5}, "d": None})
+    {'a': {'b': 5, 'c': 2}}
+    """
+    merged = copy.deepcopy(dict(base))
+    for key, value in override.items():
+        if value is None:
+            merged.pop(key, None)
+        elif isinstance(value, Mapping) and isinstance(merged.get(key), Mapping):
+            merged[key] = deep_merge(merged[key], value)
+        else:
+            merged[key] = copy.deepcopy(value)
+    return merged

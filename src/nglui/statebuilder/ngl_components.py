@@ -38,6 +38,7 @@ from .ngl_annotations import (
 )
 from .shaders import DEFAULT_SHADER_MAP
 from .utils import (
+    deep_merge,
     is_dict_like,
     is_list_like,
     parse_color,
@@ -206,6 +207,7 @@ class Layer(ABC):
     visible = field(default=True, type=bool, kw_only=True, repr=False)
     archived = field(default=False, type=bool, kw_only=True, repr=False)
     pick = field(default=True, type=bool, kw_only=True, repr=False)
+    extra = field(factory=dict, type=dict, kw_only=True, repr=False)
     _datamaps = field(factory=dict, type=dict, init=False, repr=False)
     _datamap_priority = field(factory=dict, type=dict, init=False, repr=False)
 
@@ -292,6 +294,18 @@ class Layer(ABC):
         """
         self._check_fully_mapped()
 
+    def _build_neuroglancer_layer(self, capabilities=None):
+        """Build the neuroglancer layer, with `extra` merged over it last.
+
+        `extra` is raw Neuroglancer layer JSON (camelCase keys) for options nglui
+        does not wrap. It is deep-merged, so it wins over anything nglui sets, and a
+        value of None removes that key.
+        """
+        layer = self.to_neuroglancer_layer(capabilities=capabilities)
+        if not self.extra:
+            return layer
+        return viewer_state.make_layer(deep_merge(layer.to_json(), self.extra))
+
     def to_dict(self, with_name: bool = True, capabilities=None) -> dict:
         """Convert the layer to a dictionary.
         Parameters
@@ -308,7 +322,7 @@ class Layer(ABC):
         dict
             The layer as a dictionary.
         """
-        layer_dict = self.to_neuroglancer_layer(capabilities=capabilities).to_json()
+        layer_dict = self._build_neuroglancer_layer(capabilities=capabilities).to_json()
         if with_name:
             layer_dict["name"] = self.name
             layer_dict["visible"] = self.visible
@@ -325,7 +339,7 @@ class Layer(ABC):
             raise ValueError(
                 f"Layer {self.name} already exists in the viewer. Please use a different name."
             )
-        s.layers[self.name] = self.to_neuroglancer_layer(capabilities=capabilities)
+        s.layers[self.name] = self._build_neuroglancer_layer(capabilities=capabilities)
         ll = s.layers[self.name]
         ll.visible = self.visible
         ll.archived = self.archived

@@ -31,8 +31,8 @@ Where possible, Statebuilder tries to tie components together as simply as possi
 
 !!! note
 
-    Current functionality is focused on viewing data. The many options for controlling the Neuroglancer interface are not yet implemented directly, although they are available in the underlying `neuroglancer` python library and JSON state.
-    You can always access the raw neuroglancer state with `vs.to_neuroglancer_state` for further manipulation.
+    Common viewer options -- title, camera, background colors, side panels -- are set directly (see [Viewer Options](#viewer-options)).
+    Anything nglui does not wrap can still be set with the `extra` argument, which takes raw Neuroglancer JSON, or by manipulating the neuroglancer state from `vs.to_neuroglancer_state()`.
 
 ## NGLui ViewerState
 
@@ -95,6 +95,80 @@ viewerstate = (
 ```
 
 There are many such convenience functions, with the goal of making the most typical use cases as simple as possible while allowing for more complex configurations by using the underlying layer classes directly.
+
+### Viewer Options
+
+Simple, single-value options are keyword arguments on `ViewerState` (and on `set_viewer_properties`, to change them later).
+Options left unset are left out of the state, so Neuroglancer's own defaults apply.
+
+``` py
+viewerstate = ViewerState(
+    title="Pyramidal cell 864691135",   # shown in the browser tab
+    show_axis_lines=False,
+    show_scale_bar=False,
+    projection_background_color="white",
+    layout="3d",
+)
+```
+
+The full list is `title`, `show_axis_lines`, `show_scale_bar`, `show_default_annotations`, `cross_section_background_color`, `projection_background_color`, `hide_cross_section_background_3d`, and `wire_frame`.
+Colors can be names, hex strings, or RGB tuples in [0, 1].
+
+#### Camera
+
+Neuroglancer keeps separate zoom, orientation, and depth for the 2d cross-section views and the 3d projection view.
+Set them with `set_camera`, which only changes the values you pass:
+
+``` py
+viewerstate.set_camera(
+    projection_orientation="xz",   # look at the 3d view the way the xz panel does
+    projection_scale=12000,        # smaller is closer
+)
+```
+
+Orientations are either a plane name (`"xy"`, `"xz"`, `"yz"`) or an `[x, y, z, w]` quaternion, such as one copied from an existing state.
+Because a `Camera` is an object, you can define a view once and reuse it across many states:
+
+``` py
+from nglui.statebuilder import Camera
+
+side_view = Camera(projection_orientation=[0.5, 0.5, 0.5, 0.5], projection_scale=8000)
+
+for root_id in root_ids:
+    vs = ViewerState(camera=side_view).add_segmentation_layer(...)
+```
+
+`scale_imagery` and `scale_3d` are shorthand for the camera's `cross_section_scale` and `projection_scale`.
+
+#### Side Panels
+
+`set_panels` opens, closes, and places the layer list, statistics, help, and selected-layer panels.
+Pass `True`/`False` to open or close a panel, or a `SidePanel` to also choose its side and size:
+
+``` py
+from nglui.statebuilder import SidePanel
+
+viewerstate.set_panels(
+    layer_list=True,
+    selected_layer=SidePanel(visible=True, side="right", size=500),
+)
+```
+
+Which layer the selected-layer panel shows is set with `add_layer(..., selected=True)` or `set_selected_layer`.
+
+#### Anything Else: `extra`
+
+For options nglui does not wrap, pass raw Neuroglancer state JSON as `extra`.
+It is merged into the finished state last, so it overrides anything nglui set; nested dictionaries are merged and a value of `None` removes a key.
+Every layer takes an `extra` argument as well, merged into that layer's JSON.
+
+``` py
+viewerstate = ViewerState(extra={"gpuMemoryLimit": 4_000_000_000, "concurrentDownloads": 64})
+seg = SegmentationLayer(source=..., extra={"meshRenderScale": 1})
+```
+
+Keys are Neuroglancer's JSON names (camelCase), exactly as they appear in a state's JSON.
+Neuroglancer does not validate them when building the state, so a misspelled key is silently ignored by the viewer.
 
 ### Exporting States...
 
@@ -622,7 +696,9 @@ However, there are a few changes you can make when bringing them into your Viewe
 If you're using raw layers, you might find it useful to be using a base state as well.
 You can provide a `base_state` state dictionary to the `ViewerState` class on creation.
 You can strip out inconvenient parts with functions `strip_layers` (which strips just the layer definitions and active layer) and `strip_state_properties`, which offers more selective control.
-This might be useful if you want to preserve things that cannot be easily set in the python interface such as complex tool panels. 
+This might be useful if you want to preserve things that cannot be easily set in the python interface such as complex tool panels.
+Values from a base state are kept unless you set them explicitly: for example, a base state's layout survives unless you also pass `layout`.
+For individual options, the `extra` argument (see [Viewer Options](#anything-else-extra)) is usually simpler than a base state.
 
 ### CAVEclient Integration
 
