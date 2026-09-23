@@ -1977,8 +1977,15 @@ class ViewerState:
             requests = [(tool, None) for tool in self._tools] + [
                 (tool, layer.name) for layer in self.layers for tool in layer.tools
             ]
-            if requests:
-                bind_tools(s, requests)
+            # Tag tools nglui generated may move to free keys; bindings from raw
+            # layers or a base state were chosen by the user and stay put.
+            tag_layers = tuple(
+                layer.name
+                for layer in self.layers
+                if isinstance(layer, AnnotationLayer) and layer.tags
+            )
+            if requests or tag_layers:
+                bind_tools(s, requests, tag_layers=tag_layers)
             add_palettes(s, self._palettes)
 
         if self._extra:

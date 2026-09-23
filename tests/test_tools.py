@@ -183,9 +183,60 @@ class TestCoexistence:
         assert set(bindings) == {"Q", "W", "Z"}
         assert bindings["Z"] == {"type": "annotatePoint"}
 
-    def test_explicit_key_colliding_with_tag_raises(self):
+    def test_explicit_key_moves_tag_tool(self):
+        """A key the user names wins; the generated tag tool moves to a free one."""
         vs = _state(_anno(tags=["axon"]), capabilities="main")
         vs.add_tools(tools.AnnotatePoint(layer="anno", key="Q"))
+        bindings = _layer(vs.to_dict(), "anno")["toolBindings"]
+        assert bindings["Q"] == {"type": "annotatePoint"}
+        assert bindings["W"] == {"type": "toggleBoolProperty", "property": "axon"}
+
+    def test_two_tagged_layers_get_distinct_keys(self):
+        vs = _state(
+            _anno("a", tags=["axon", "soma"]),
+            _anno("b", tags=["spine"]),
+            capabilities="main",
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            d = vs.to_dict()
+        assert list(_layer(d, "a")["toolBindings"]) == ["Q", "W"]
+        assert _layer(d, "b")["toolBindings"] == {
+            "E": {"type": "toggleBoolProperty", "property": "spine"}
+        }
+
+    def test_legacy_tag_bindings_stay_strings_when_moved(self):
+        vs = _state(
+            _anno("a", tags=["axon"]), _anno("b", tags=["soma"]), capabilities="legacy"
+        )
+        d = vs.to_dict()
+        assert _layer(d, "a")["toolBindings"] == {"Q": "tagTool_tag0"}
+        assert _layer(d, "b")["toolBindings"] == {"W": "tagTool_tag0"}
+
+    def test_tag_tool_moves_off_raw_layer_key(self):
+        raw = RawLayer(
+            name="old",
+            json_data={
+                "type": "segmentation",
+                "source": SEG_SRC,
+                "toolBindings": {"Q": "selectSegments"},
+            },
+        )
+        d = _state(raw, _anno(tags=["axon"]), capabilities="main").to_dict()
+        assert _layer(d, "old")["toolBindings"] == {"Q": "selectSegments"}
+        assert list(_layer(d, "anno")["toolBindings"]) == ["W"]
+
+    def test_explicit_key_colliding_with_raw_layer_raises(self):
+        raw = RawLayer(
+            name="old",
+            json_data={
+                "type": "segmentation",
+                "source": SEG_SRC,
+                "toolBindings": {"Q": "selectSegments"},
+            },
+        )
+        vs = _state(raw, SegmentationLayer(source=SEG_SRC))
+        vs.add_tools(tools.SelectSegments(layer="seg", key="Q"))
         with pytest.raises(ValueError, match="already bound"):
             vs.to_dict()
 
@@ -206,13 +257,20 @@ class TestCoexistence:
         vs = _state(base_state=base).add_tools(tools.Dimension(dimension="x"))
         assert set(vs.to_dict()["toolBindings"]) == {"Z", "X"}
 
-    def test_duplicate_existing_keys_warn(self):
-        """Two tagged layers both claim Q; the viewer will drop one binding."""
-        vs = _state(
-            _anno("a", tags=["axon"]),
-            _anno("b", tags=["soma"]),
-            capabilities="main",
-        ).add_tools(tools.Dimension(dimension="z"))
+    def test_duplicate_fixed_keys_warn(self):
+        """Two raw layers both claim Q; nglui cannot move them, so it warns."""
+        raws = [
+            RawLayer(
+                name=name,
+                json_data={
+                    "type": "segmentation",
+                    "source": SEG_SRC,
+                    "toolBindings": {"Q": "selectSegments"},
+                },
+            )
+            for name in ("r1", "r2")
+        ]
+        vs = _state(*raws).add_tools(tools.Dimension(dimension="z"))
         with pytest.warns(UserWarning, match="bound both"):
             vs.to_dict()
 

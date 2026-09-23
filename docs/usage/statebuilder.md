@@ -198,8 +198,12 @@ viewerstate.add_tools(
 ```
 
 Neuroglancer has one set of keys for the whole viewer, and a key bound twice silently loses one of its tools when the state loads.
-So nglui assigns keys when the state is built, after it knows every key already taken -- by annotation tag tools, raw layers, or a base state.
-A tool with an explicit `key` must use a free one (otherwise you get an error naming what holds it); a tool with `key=None` gets the next free letter; and `key=False` binds no key, for a tool that should only appear in a palette.
+So nglui assigns keys when the state is built, once it knows every key in use:
+
+1. Bindings from raw layers or a base state stay where they are.
+2. A tool with an explicit `key` must use a free one; otherwise you get an error naming what holds it.
+3. Annotation tag tools keep their usual keys (`Q`, `W`, `E`, ...) when free, and otherwise move to the next free letter -- so two tagged layers no longer fight over `Q`.
+4. A tool with `key=None` gets the next free letter, and `key=False` binds no key, for a tool that should only appear in a palette.
 
 Layer tools accept the layer as a name or as the layer object, and are checked against the layer type (you cannot bind `SelectSegments` to an image layer).
 A layer can also carry its own tools, which need no `layer` argument: `SegmentationLayer(..., tools=[tools.SelectSegments()])`.

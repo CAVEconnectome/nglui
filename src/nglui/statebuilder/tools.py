@@ -26,6 +26,8 @@ from typing import TYPE_CHECKING, ClassVar, Optional, Union
 import attrs
 from neuroglancer import viewer_state
 
+from .ngl_annotations import TOGGLE_BOOL_PROPERTY_TOOL
+
 if TYPE_CHECKING:
     from .ngl_components import Layer
 
@@ -49,9 +51,11 @@ __all__ = [
 _KEY_PATTERN = re.compile(r"^[A-Z]$")
 
 # Keys handed out when a tool does not name one. Tag tools take Q W E R T A S D F G,
-# so these start from the other rows to leave a tagged layer's keys where users
-# expect them.
+# so these start from the other rows to leave tags on the keys users expect.
 _AUTO_KEY_ORDER = "ZXCVBNMYUIOPHJKLQWERTASDFG"
+# Where a tag tool goes when its usual key is taken: on after the tag keys, so a
+# second tagged layer's tags sit next to the first's.
+_TAG_KEY_ORDER = "QWERTASDFGYUIOPHJKLZXCVBNM"
 
 #: Layer settings Neuroglancer can bind to a key, adjusted by dragging while held.
 LAYER_SETTINGS = (
@@ -319,8 +323,18 @@ class ToolPalette:
         return spec
 
 
-def bind_tools(state, requests: list) -> None:
+def bind_tools(state, requests: list, tag_layers: tuple = ()) -> None:
     """Bind tools onto a built neuroglancer state, allocating keys viewer-wide.
+
+    Keys are claimed in order of how deliberately they were chosen:
+
+    1. Bindings the state already has from a raw layer or base state, which are
+       kept as they are. Duplicates among them are warned about, since the viewer
+       will drop one.
+    2. Tools with an explicit `key`, which must be free, or this raises.
+    3. Tag tools that nglui generated on `tag_layers`, which keep their usual key
+       when it is free and otherwise move to the next free letter.
+    4. Tools with ``key=None``, which take the next free letter.
 
     Parameters
     ----------
@@ -329,15 +343,24 @@ def bind_tools(state, requests: list) -> None:
     requests : list of (Tool, str or None)
         Each tool with the name of the layer it belongs to, if it came from a
         layer's own ``tools`` list.
+    tag_layers : tuple of str
+        Names of nglui annotation layers whose tag tool bindings may be moved.
     """
-    used = _used_keys(state)
+    fixed, tag_bindings, kept = _existing_bindings(state, tag_layers)
+    used = dict(fixed)
     resolved = []
     for tool, owner in requests:
         layer_name = tool.layer or owner
         _check_target(state, tool, layer_name)
         resolved.append((tool, layer_name))
 
-    # Explicit keys first, so an auto-assigned key never takes one a user named.
+    # Final bindings for each layer (None is the viewer) that nglui rewrites
+    new_bindings: dict = {}
+
+    def claim(key, layer_name, value, description):
+        used[key] = description
+        new_bindings.setdefault(layer_name, {})[key] = value
+
     for tool, layer_name in resolved:
         if isinstance(tool.key, str):
             if tool.key in used:
@@ -346,17 +369,32 @@ def bind_tools(state, requests: list) -> None:
                     f"{used[tool.key]}. Neuroglancer has one key namespace for the "
                     "whole viewer; choose another key or leave key=None to assign one."
                 )
-            _bind(state, tool, layer_name, tool.key)
-            used[tool.key] = _describe(tool, layer_name)
+            target = layer_name if tool.is_layer_tool else None
+            claim(tool.key, target, tool.to_json(), _describe(tool, layer_name))
+
+    for layer_name, key, value in tag_bindings:
+        if key in used:
+            key = _next_free(used, _TAG_KEY_ORDER, "tag tools")
+        claim(key, layer_name, value, f"a tag tool on layer '{layer_name}'")
+
     for tool, layer_name in resolved:
         if tool.key is None:
-            key = next((k for k in _AUTO_KEY_ORDER if k not in used), None)
-            if key is None:
-                raise ValueError(
-                    "Every tool key A-Z is in use; set key=False on some tools."
-                )
-            _bind(state, tool, layer_name, key)
-            used[key] = _describe(tool, layer_name)
+            key = _next_free(used, _AUTO_KEY_ORDER, "tools")
+            target = layer_name if tool.is_layer_tool else None
+            claim(key, target, tool.to_json(), _describe(tool, layer_name))
+
+    # Rewrite each touched map in one assignment: assigning a key at a time turns
+    # a legacy "tagTool_*" string into object form, changing the wire format.
+    for layer_name, bindings in new_bindings.items():
+        merged = {**kept.get(layer_name, {}), **bindings}
+        if layer_name is None:
+            state.tool_bindings = merged
+        else:
+            state.layers[layer_name].tool_bindings = merged
+    for layer_name in tag_layers:
+        # A tagged layer whose tag keys were all taken still needs its old ones cleared
+        if layer_name not in new_bindings and layer_name in kept:
+            state.layers[layer_name].tool_bindings = kept[layer_name]
 
 
 def add_palettes(state, palettes: dict) -> None:
@@ -365,24 +403,60 @@ def add_palettes(state, palettes: dict) -> None:
         state.tool_palettes[name] = palette.to_json(state)
 
 
-def _used_keys(state) -> dict:
-    """Keys already bound in the state -- by tags, raw layers, or a base state."""
+def _is_tag_tool(value) -> bool:
+    tool_type = value if isinstance(value, str) else value.get("type", "")
+    return tool_type.startswith("tagTool_") or tool_type == TOGGLE_BOOL_PROPERTY_TOOL
+
+
+def _existing_bindings(state, tag_layers) -> tuple[dict, list, dict]:
+    """Split the state's bindings into fixed keys, movable tag bindings, and the rest.
+
+    Returns
+    -------
+    fixed : dict
+        Key -> description of what holds it, for bindings that must not move.
+    tag_bindings : list of (layer name, key, value)
+        Tag tool bindings nglui generated, in layer order.
+    kept : dict
+        Layer name (None for the viewer) -> its non-tag bindings, as raw JSON.
+    """
     # Read through JSON: touching the wrapped `tool_bindings` property creates an
     # empty map that would then be emitted as "toolBindings": {}.
-    used = {}
-    for key in state.to_json().get("toolBindings", {}):
-        used[key] = "the viewer"
+    fixed, tag_bindings, kept = {}, [], {}
+    viewer_bindings = state.to_json().get("toolBindings", {})
+    if viewer_bindings:
+        kept[None] = dict(viewer_bindings)
+    for key in viewer_bindings:
+        fixed[key] = "the viewer"
     for layer in state.layers:
-        for key in layer.to_json().get("toolBindings", {}):
-            if key in used:
+        bindings = layer.to_json().get("toolBindings", {})
+        movable = layer.name in tag_layers
+        for key, value in bindings.items():
+            if movable and _is_tag_tool(value):
+                tag_bindings.append((layer.name, key, value))
+                continue
+            kept.setdefault(layer.name, {})[key] = value
+            if key in fixed:
                 warnings.warn(
-                    f"Key {key!r} is bound both on {used[key]} and on layer "
+                    f"Key {key!r} is bound both on {fixed[key]} and on layer "
                     f"'{layer.name}'. Neuroglancer keeps one binding per key, so one "
                     "of these tools will be unbound when the state loads.",
                     stacklevel=4,
                 )
-            used[key] = f"layer '{layer.name}'"
-    return used
+            fixed[key] = f"layer '{layer.name}'"
+        if movable:
+            kept.setdefault(layer.name, {})
+    return fixed, tag_bindings, kept
+
+
+def _next_free(used: dict, order: str, what: str) -> str:
+    key = next((k for k in order if k not in used), None)
+    if key is None:
+        raise ValueError(
+            f"Every key A-Z is in use, so no key is left for the {what}. "
+            "Set key=False on some tools, or use fewer tags."
+        )
+    return key
 
 
 def _check_target(state, tool: Tool, layer_name: Optional[str]) -> None:
