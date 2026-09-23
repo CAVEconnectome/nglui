@@ -10,6 +10,7 @@ nav:
     - usage/index.md
     - StateBuilder:
       - usage/statebuilder.md
+      - usage/tools.md
       - usage/config.md
     - Other Features:
       - usage/skeletons.md

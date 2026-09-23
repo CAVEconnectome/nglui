@@ -494,3 +494,21 @@ class TestLayerToolsMapping:
         seg = SegmentationLayer(source=SEG_SRC, tools={"Z": tools.MeshSilhouette})
         vs = _state(seg).add_tools(tools.Alpha3d(layer="seg"))
         assert set(_layer(vs.to_dict(), "seg")["toolBindings"]) == {"Z", "X"}
+
+
+class TestToolDocs:
+    """docs/usage/tools.md lists every tool, so it cannot drift from the code."""
+
+    @pytest.fixture(scope="class")
+    def page(self):
+        from pathlib import Path
+
+        return (Path(__file__).parents[1] / "docs" / "usage" / "tools.md").read_text()
+
+    @pytest.mark.parametrize("tool_type", sorted(tools.TOOL_TYPES))
+    def test_every_tool_is_documented(self, page, tool_type):
+        cls = tools.TOOL_TYPES[tool_type]
+        assert f"`{cls.__name__}`" in page
+        assert f"`{tool_type}`" in page
+        if issubclass(cls, tools.LayerSetting):
+            assert cls.ui_label and f"| {cls.ui_label} |" in page

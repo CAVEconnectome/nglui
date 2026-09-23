@@ -181,64 +181,20 @@ Which layer the selected-layer panel shows is set with `add_layer(..., selected=
 
 #### Tools
 
-Neuroglancer tools are actions bound to a key -- activated with shift plus that key -- or shown as buttons in a tool palette: selecting segments, adjusting a shader control or layer setting by dragging, or stepping through a dimension.
-Add them with `add_tools`, from the `tools` module:
+Neuroglancer tools are actions triggered with shift plus a bound key, or from a tool palette: selecting segments, adjusting a layer's display settings, or stepping through a dimension.
+The quickest way to bind them is on the layer they act on:
 
 ``` py
 from nglui.statebuilder import tools
 
-viewerstate.add_tools(
-    tools.SelectSegments(layer="seg", key="S"),
-    tools.MergeSegments(layer="seg"),                            # key assigned for you
-    tools.ShaderControl(layer="img", control="normalized"),      # image contrast
-    tools.Alpha3d(layer="seg"),                                  # mesh transparency
-    tools.Dimension(dimension="z"),                              # step through z
-    palette=tools.ToolPalette("Review", side="right"),           # also show as buttons
-)
-```
-
-Neuroglancer has one set of keys for the whole viewer, and a key bound twice silently loses one of its tools when the state loads.
-So nglui assigns keys when the state is built, once it knows every key in use:
-
-1. Bindings from raw layers or a base state stay where they are.
-2. A tool with an explicit `key` must use a free one; otherwise you get an error naming what holds it.
-3. Annotation tag tools keep their usual keys (`Q`, `W`, `E`, ...) when free, and otherwise move to the next free letter -- so two tagged layers no longer fight over `Q`.
-4. A tool with `key=None` gets the next free letter, and `key=False` binds no key, for a tool that should only appear in a palette.
-
-Layer tools accept the layer as a name or as the layer object, and are checked against the layer type (you cannot bind `SelectSegments` to an image layer).
-A layer can also carry its own tools, which need no `layer` argument.
-The most compact form maps keys to tools:
-
-``` py
 SegmentationLayer(
     source=seg_source,
     tools={"H": tools.MeshSilhouette, "S": tools.SelectSegments},
 )
 ```
 
-Values can be tool classes, tool objects (for tools with options, such as `tools.ShaderControl(control="gain")`), or Neuroglancer's tool type names such as `"meshSilhouetteRendering"`.
-Prefer the classes: a misspelled class name is flagged by your editor or type checker (pyright, mypy) before the code runs, while a misspelled string is only caught when the layer is created.
-Either way, a tool that does not suit the layer type -- `MeshSilhouette` on an image layer -- fails when the layer is created.
-Layer tools are bound only when the layer is part of a ViewerState, and their keys join the viewer-wide allocation above.
-
-The available tools are:
-
-| Layers | Tools |
-|---|---|
-| Segmentation | `SelectSegments`, `MergeSegments`, `SplitSegments`, `SelectedAlpha`, `NotSelectedAlpha`, `Alpha3d`, `MeshSilhouette`, `MeshRenderScale`, `Saturation`, `HideSegmentZero`, `HoverHighlight`, `BaseSegmentColoring`, `IgnoreNullVisibleSet`, `ColorSeed`, `SegmentDefaultColor`, `SkeletonMode2d`, `SkeletonMode3d`, `SkeletonLineWidth2d`, `SkeletonLineWidth3d` |
-| Image | `Opacity`, `Blend`, `VolumeRendering`, `VolumeRenderingGain`, `VolumeRenderingDepthSamples` |
-| Image or segmentation | `CrossSectionRenderScale`, `ShaderControl` (also annotation) |
-| Viewer | `Dimension` |
-
-Setting tools are named after the matching layer option where nglui has one (`mesh_silhouette` → `MeshSilhouette`, `alpha_3d` → `Alpha3d`); `tools.TOOL_TYPES` maps Neuroglancer's names to them.
-
-Annotation-placing tools are the exception: Neuroglancer can't restore them from a key binding or palette.
-Worse, it drops every binding after them on the same layer.
-Instead, make one the layer's active tool, so it is ready to use as soon as the state loads:
-
-``` py
-AnnotationLayer(name="synapses", ..., active_tool="point")   # or "line", "box", "ellipsoid", "polyline"
-```
+nglui assigns keys across the whole viewer when the state is built, so bindings never silently collide.
+See [Tools and Key Bindings](tools.md) for every available tool, what each one does in Neuroglancer, palettes, and how keys are assigned.
 
 #### Anything Else: `extra`
 

@@ -186,187 +186,279 @@ class ShaderControl(Tool):
 
 @attrs.define
 class LayerSetting(Tool):
-    """Base class for tools that adjust a layer setting while the key is held.
+    """Base class for tools that adjust one of a layer's display settings.
 
-    Use the named subclasses, e.g. `MeshSilhouette` or `Alpha3d`, so a misspelled
-    setting is an attribute error your editor or type checker catches.
+    Activating one (shift plus its key) shows that setting's control at the bottom
+    of the viewer. Use the named subclasses, e.g. `MeshSilhouette` or `Alpha3d`, so
+    a misspelled setting is an attribute error your editor or type checker catches.
     """
+
+    #: The setting's label in Neuroglancer's layer panel
+    ui_label: ClassVar[str] = ""
 
 
 @attrs.define
 class Opacity(LayerSetting):
-    """Image opacity."""
+    """Image opacity in the 2d views. Hold the key and scroll to adjust.
+
+    The "Opacity (slice)" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "opacity"
     layer_types: ClassVar = ("image",)
+    ui_label: ClassVar[str] = "Opacity (slice)"
 
 
 @attrs.define
 class Blend(LayerSetting):
-    """Image blend mode."""
+    """How the image combines with the layers beneath it. Hold the key and scroll to cycle through the options.
+
+    The "Blending (slice)" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "blend"
     layer_types: ClassVar = ("image",)
+    ui_label: ClassVar[str] = "Blending (slice)"
 
 
 @attrs.define
 class VolumeRendering(LayerSetting):
-    """Image volume rendering mode."""
+    """Volume rendering mode in the 3d view. Hold the key and scroll to cycle through the options.
+
+    The "Volume rendering (experimental)" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "volumeRendering"
     layer_types: ClassVar = ("image",)
+    ui_label: ClassVar[str] = "Volume rendering (experimental)"
 
 
 @attrs.define
 class VolumeRenderingGain(LayerSetting):
-    """Volume rendering gain."""
+    """Brightness of the volume rendering. Hold the key and scroll to adjust.
+
+    The "Gain (3D)" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "volumeRenderingGain"
     layer_types: ClassVar = ("image",)
+    ui_label: ClassVar[str] = "Gain (3D)"
 
 
 @attrs.define
 class VolumeRenderingDepthSamples(LayerSetting):
-    """Volume rendering depth samples."""
+    """Depth samples for the volume rendering. Hold the key and scroll to adjust.
+
+    The "Resolution (3D)" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "volumeRenderingDepthSamples"
     layer_types: ClassVar = ("image",)
+    ui_label: ClassVar[str] = "Resolution (3D)"
 
 
 @attrs.define
 class CrossSectionRenderScale(LayerSetting):
-    """2d rendering resolution (the UI's 'Resolution (slice)')."""
+    """Resolution of the 2d rendering. Hold the key and scroll to adjust.
+
+    The "Resolution (slice)" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "crossSectionRenderScale"
     layer_types: ClassVar = ("image", "segmentation")
+    ui_label: ClassVar[str] = "Resolution (slice)"
 
 
 @attrs.define
 class SelectedAlpha(LayerSetting):
-    """2d opacity of selected segments (the UI's 'Opacity (on)')."""
+    """2d opacity of selected segments. Hold the key and scroll to adjust.
+
+    The "Opacity (on)" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "selectedAlpha"
     layer_types: ClassVar = ("segmentation",)
+    ui_label: ClassVar[str] = "Opacity (on)"
 
 
 @attrs.define
 class NotSelectedAlpha(LayerSetting):
-    """2d opacity of unselected segments (the UI's 'Opacity (off)')."""
+    """2d opacity of unselected segments. Hold the key and scroll to adjust.
+
+    The "Opacity (off)" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "notSelectedAlpha"
     layer_types: ClassVar = ("segmentation",)
+    ui_label: ClassVar[str] = "Opacity (off)"
 
 
 @attrs.define
 class Alpha3d(LayerSetting):
-    """3d mesh opacity (the UI's 'Opacity (3d)')."""
+    """Opacity of meshes in the 3d view. Hold the key and scroll to adjust.
+
+    The "Opacity (3d)" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "objectAlpha"
     layer_types: ClassVar = ("segmentation",)
+    ui_label: ClassVar[str] = "Opacity (3d)"
 
 
 @attrs.define
 class MeshSilhouette(LayerSetting):
-    """3d mesh silhouette (the UI's 'Silhouette (3d)')."""
+    """Silhouette shading of meshes in the 3d view. Hold the key and scroll to adjust.
+
+    The "Silhouette (3d)" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "meshSilhouetteRendering"
     layer_types: ClassVar = ("segmentation",)
+    ui_label: ClassVar[str] = "Silhouette (3d)"
 
 
 @attrs.define
 class MeshRenderScale(LayerSetting):
-    """Mesh level of detail (the UI's 'Resolution (mesh)')."""
+    """Mesh level of detail. Hold the key and scroll to adjust.
+
+    The "Resolution (mesh)" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "meshRenderScale"
     layer_types: ClassVar = ("segmentation",)
+    ui_label: ClassVar[str] = "Resolution (mesh)"
 
 
 @attrs.define
 class Saturation(LayerSetting):
-    """Segment color saturation."""
+    """Saturation of segment colors. Hold the key and scroll to adjust.
+
+    The "Saturation" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "saturation"
     layer_types: ClassVar = ("segmentation",)
+    ui_label: ClassVar[str] = "Saturation"
 
 
 @attrs.define
 class HideSegmentZero(LayerSetting):
-    """Toggle hiding segment 0."""
+    """Whether segment 0 is hidden. Press to toggle.
+
+    The "Hide segment ID 0" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "hideSegmentZero"
     layer_types: ClassVar = ("segmentation",)
+    ui_label: ClassVar[str] = "Hide segment ID 0"
 
 
 @attrs.define
 class HoverHighlight(LayerSetting):
-    """Toggle highlighting the segment under the mouse."""
+    """Whether the segment under the mouse is highlighted. Press to toggle.
+
+    The "Highlight on hover" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "hoverHighlight"
     layer_types: ClassVar = ("segmentation",)
+    ui_label: ClassVar[str] = "Highlight on hover"
 
 
 @attrs.define
 class BaseSegmentColoring(LayerSetting):
-    """Toggle coloring supervoxels individually."""
+    """Whether supervoxels are colored individually. Press to toggle.
+
+    The "Base segment coloring" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "baseSegmentColoring"
     layer_types: ClassVar = ("segmentation",)
+    ui_label: ClassVar[str] = "Base segment coloring"
 
 
 @attrs.define
 class IgnoreNullVisibleSet(LayerSetting):
-    """Toggle whether an empty selection shows everything."""
+    """Whether an empty selection shows every segment. Press to toggle.
+
+    The "Show all by default" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "ignoreNullVisibleSet"
     layer_types: ClassVar = ("segmentation",)
+    ui_label: ClassVar[str] = "Show all by default"
 
 
 @attrs.define
 class ColorSeed(LayerSetting):
-    """Randomize segment colors."""
+    """The random segment color palette. Press to pick new random colors.
+
+    The "Color seed" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "colorSeed"
     layer_types: ClassVar = ("segmentation",)
+    ui_label: ClassVar[str] = "Color seed"
 
 
 @attrs.define
 class SegmentDefaultColor(LayerSetting):
-    """Single default segment color."""
+    """One color for all segments without an explicit color. Press to switch to a fixed color, then scroll to adjust it.
+
+    The "Fixed color" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "segmentDefaultColor"
     layer_types: ClassVar = ("segmentation",)
+    ui_label: ClassVar[str] = "Fixed color"
 
 
 @attrs.define
 class SkeletonMode2d(LayerSetting):
-    """2d skeleton mode (lines, or lines and points)."""
+    """Skeletons as lines, or lines and points, in the 2d views. Hold the key and scroll to cycle through the options.
+
+    The "Skeleton mode (2d)" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "skeletonRendering.mode2d"
     layer_types: ClassVar = ("segmentation",)
+    ui_label: ClassVar[str] = "Skeleton mode (2d)"
 
 
 @attrs.define
 class SkeletonMode3d(LayerSetting):
-    """3d skeleton mode (lines, or lines and points)."""
+    """Skeletons as lines, or lines and points, in the 3d view. Hold the key and scroll to cycle through the options.
+
+    The "Skeleton mode (3d)" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "skeletonRendering.mode3d"
     layer_types: ClassVar = ("segmentation",)
+    ui_label: ClassVar[str] = "Skeleton mode (3d)"
 
 
 @attrs.define
 class SkeletonLineWidth2d(LayerSetting):
-    """2d skeleton line width."""
+    """Skeleton line width in the 2d views. Hold the key and scroll to adjust.
+
+    The "Line width (2d)" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "skeletonRendering.lineWidth2d"
     layer_types: ClassVar = ("segmentation",)
+    ui_label: ClassVar[str] = "Line width (2d)"
 
 
 @attrs.define
 class SkeletonLineWidth3d(LayerSetting):
-    """3d skeleton line width."""
+    """Skeleton line width in the 3d view. Hold the key and scroll to adjust.
+
+    The "Line width (3d)" control in Neuroglancer's layer panel.
+    """
 
     tool_type: ClassVar[str] = "skeletonRendering.lineWidth3d"
     layer_types: ClassVar = ("segmentation",)
+    ui_label: ClassVar[str] = "Line width (3d)"
 
 
 @attrs.define
