@@ -1,0 +1,1684 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://caveconnectome.github.io/nglui/usage/tools/">
+      
+      
+        <link rel="prev" href="../statebuilder/">
+      
+      
+        <link rel="next" href="../config/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Tools and Key Bindings - NGLui Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Funnel+Sans:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Funnel Sans";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tools-and-key-bindings" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="NGLui Documentation" class="md-header__button md-logo" aria-label="NGLui Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.33 12.91c.09 1.55-.62 3.04-1.89 3.95l.77 1.49c.23.45.26.98.06 1.45-.19.47-.58.84-1.06 1l-.79.25a1.687 1.687 0 0 1-1.86-.55L14.44 18c-.89-.15-1.73-.53-2.44-1.1-.5.15-1 .23-1.5.23-.88 0-1.76-.27-2.5-.79-.53.16-1.07.23-1.62.22-.79.01-1.57-.15-2.3-.45a4.1 4.1 0 0 1-2.43-3.61c-.08-.72.04-1.45.35-2.11-.29-.75-.32-1.57-.07-2.33C2.3 7.11 3 6.32 3.87 5.82c.58-1.69 2.21-2.82 4-2.7 1.6-1.5 4.05-1.66 5.83-.37.42-.11.86-.17 1.3-.17 1.36-.03 2.65.57 3.5 1.64 2.04.53 3.5 2.35 3.58 4.47.05 1.11-.25 2.2-.86 3.13.07.36.11.72.11 1.09m-5-1.41c.57.07 1.02.5 1.02 1.07a1 1 0 0 1-1 1h-.63c-.32.9-.88 1.69-1.62 2.29.25.09.51.14.77.21 5.13-.07 4.53-3.2 4.53-3.25a2.59 2.59 0 0 0-2.69-2.49 1 1 0 0 1-1-1 1 1 0 0 1 1-1c1.23.03 2.41.49 3.33 1.3.05-.29.08-.59.08-.89-.06-1.24-.62-2.32-2.87-2.53-1.25-2.96-4.4-1.32-4.4-.4-.03.23.21.72.25.75a1 1 0 0 1 1 1c0 .55-.45 1-1 1-.53-.02-1.03-.22-1.43-.56-.48.31-1.03.5-1.6.56-.57.05-1.04-.35-1.07-.9a.97.97 0 0 1 .88-1.1c.16-.02.94-.14.94-.77 0-.66.25-1.29.68-1.79-.92-.25-1.91.08-2.91 1.29C6.75 5 6 5.25 5.45 7.2 4.5 7.67 4 8 3.78 9c1.08-.22 2.19-.13 3.22.25.5.19.78.75.59 1.29-.19.52-.77.78-1.29.59-.73-.32-1.55-.34-2.3-.06-.32.27-.32.83-.32 1.27 0 .74.37 1.43 1 1.83.53.27 1.12.41 1.71.4q-.225-.39-.39-.81a1.038 1.038 0 0 1 1.96-.68c.4 1.14 1.42 1.92 2.62 2.05 1.37-.07 2.59-.88 3.19-2.13.23-1.38 1.34-1.5 2.56-1.5m2 7.47-.62-1.3-.71.16 1 1.25zm-4.65-8.61a1 1 0 0 0-.91-1.03c-.71-.04-1.4.2-1.93.67-.57.58-.87 1.38-.84 2.19a1 1 0 0 0 1 1c.57 0 1-.45 1-1 0-.27.07-.54.23-.76.12-.1.27-.15.43-.15.55.03 1.02-.38 1.02-.92"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            NGLui Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Tools and Key Bindings
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/CAVEconnectome/nglui/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CAVEconnectome/NGLui
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  About
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+    
+  
+  How to Use
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../reference/statebuilder/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Function Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="NGLui Documentation" class="md-nav__button md-logo" aria-label="NGLui Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.33 12.91c.09 1.55-.62 3.04-1.89 3.95l.77 1.49c.23.45.26.98.06 1.45-.19.47-.58.84-1.06 1l-.79.25a1.687 1.687 0 0 1-1.86-.55L14.44 18c-.89-.15-1.73-.53-2.44-1.1-.5.15-1 .23-1.5.23-.88 0-1.76-.27-2.5-.79-.53.16-1.07.23-1.62.22-.79.01-1.57-.15-2.3-.45a4.1 4.1 0 0 1-2.43-3.61c-.08-.72.04-1.45.35-2.11-.29-.75-.32-1.57-.07-2.33C2.3 7.11 3 6.32 3.87 5.82c.58-1.69 2.21-2.82 4-2.7 1.6-1.5 4.05-1.66 5.83-.37.42-.11.86-.17 1.3-.17 1.36-.03 2.65.57 3.5 1.64 2.04.53 3.5 2.35 3.58 4.47.05 1.11-.25 2.2-.86 3.13.07.36.11.72.11 1.09m-5-1.41c.57.07 1.02.5 1.02 1.07a1 1 0 0 1-1 1h-.63c-.32.9-.88 1.69-1.62 2.29.25.09.51.14.77.21 5.13-.07 4.53-3.2 4.53-3.25a2.59 2.59 0 0 0-2.69-2.49 1 1 0 0 1-1-1 1 1 0 0 1 1-1c1.23.03 2.41.49 3.33 1.3.05-.29.08-.59.08-.89-.06-1.24-.62-2.32-2.87-2.53-1.25-2.96-4.4-1.32-4.4-.4-.03.23.21.72.25.75a1 1 0 0 1 1 1c0 .55-.45 1-1 1-.53-.02-1.03-.22-1.43-.56-.48.31-1.03.5-1.6.56-.57.05-1.04-.35-1.07-.9a.97.97 0 0 1 .88-1.1c.16-.02.94-.14.94-.77 0-.66.25-1.29.68-1.79-.92-.25-1.91.08-2.91 1.29C6.75 5 6 5.25 5.45 7.2 4.5 7.67 4 8 3.78 9c1.08-.22 2.19-.13 3.22.25.5.19.78.75.59 1.29-.19.52-.77.78-1.29.59-.73-.32-1.55-.34-2.3-.06-.32.27-.32.83-.32 1.27 0 .74.37 1.43 1 1.83.53.27 1.12.41 1.71.4q-.225-.39-.39-.81a1.038 1.038 0 0 1 1.96-.68c.4 1.14 1.42 1.92 2.62 2.05 1.37-.07 2.59-.88 3.19-2.13.23-1.38 1.34-1.5 2.56-1.5m2 7.47-.62-1.3-.71.16 1 1.25zm-4.65-8.61a1 1 0 0 0-.91-1.03c-.71-.04-1.4.2-1.93.67-.57.58-.87 1.38-.84 2.19a1 1 0 0 0 1 1c.57 0 1-.45 1-1 0-.27.07-.54.23-.76.12-.1.27-.15.43-.15.55.03 1.02-.38 1.02-.92"/></svg>
+
+    </a>
+    NGLui Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/CAVEconnectome/nglui/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CAVEconnectome/NGLui
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How to Use
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How to Use
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    StateBuilder
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    StateBuilder
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../statebuilder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    StateBuilder
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools and Key Bindings
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools and Key Bindings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#binding-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Binding tools
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Binding tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-keys-are-assigned" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How keys are assigned
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#segmentation-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Segmentation layers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Segmentation layers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#selection-and-proofreading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selection and proofreading
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#display-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Display settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#skeleton-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skeleton settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#image-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image layers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#image-and-segmentation-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image and segmentation layers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#any-layer-with-a-shader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Any layer with a shader
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#viewer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Viewer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#annotation-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Annotation tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tool-palettes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tool palettes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Site Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Other Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Other Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../skeletons/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skeletons
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../segmentprops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Segment Properties
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parser
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../reference/statebuilder/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Function Reference
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#binding-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Binding tools
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Binding tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-keys-are-assigned" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How keys are assigned
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#segmentation-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Segmentation layers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Segmentation layers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#selection-and-proofreading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selection and proofreading
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#display-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Display settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#skeleton-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skeleton settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#image-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image layers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#image-and-segmentation-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image and segmentation layers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#any-layer-with-a-shader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Any layer with a shader
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#viewer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Viewer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#annotation-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Annotation tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tool-palettes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tool palettes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="tools-and-key-bindings">Tools and Key Bindings</h1>
+<p>Neuroglancer tools are actions a user triggers from the keyboard -- <strong>shift plus the bound letter</strong> -- or by clicking a button in a tool palette.
+nglui gives every bindable tool a class in <code>nglui.statebuilder.tools</code>, so your editor can autocomplete them and flag a misspelled name before the code runs.</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">nglui.statebuilder</span><span class="w"> </span><span class="kn">import</span> <span class="n">tools</span>
+</span></code></pre></div>
+<h2 id="binding-tools">Binding tools</h2>
+<p>There are three ways to bind a tool, and they can be mixed freely.</p>
+<p><strong>On a layer</strong>, mapping keys to tools.
+This keeps a layer's controls next to its other options:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">SegmentationLayer</span><span class="p">(</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">source</span><span class="o">=</span><span class="n">seg_source</span><span class="p">,</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">tools</span><span class="o">=</span><span class="p">{</span><span class="s2">"H"</span><span class="p">:</span> <span class="n">tools</span><span class="o">.</span><span class="n">MeshSilhouette</span><span class="p">,</span> <span class="s2">"S"</span><span class="p">:</span> <span class="n">tools</span><span class="o">.</span><span class="n">SelectSegments</span><span class="p">},</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>Across the viewer</strong>, with <code>add_tools</code>.
+Here layer tools say which layer they act on, by name or layer object, and can also be shown in a palette:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">viewerstate</span><span class="o">.</span><span class="n">add_tools</span><span class="p">(</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">tools</span><span class="o">.</span><span class="n">MeshSilhouette</span><span class="p">(</span><span class="n">layer</span><span class="o">=</span><span class="s2">"seg"</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">"H"</span><span class="p">),</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">tools</span><span class="o">.</span><span class="n">Dimension</span><span class="p">(</span><span class="n">dimension</span><span class="o">=</span><span class="s2">"z"</span><span class="p">),</span>                      <span class="c1"># key assigned for you</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">palette</span><span class="o">=</span><span class="n">tools</span><span class="o">.</span><span class="n">ToolPalette</span><span class="p">(</span><span class="s2">"Review"</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="s2">"right"</span><span class="p">),</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>As raw JSON</strong>, through a layer's <code>extra</code> argument: <code>extra={"toolBindings": {"H": "meshSilhouetteRendering"}}</code>.
+This skips nglui's checks, so prefer the forms above.</p>
+<p>In a <code>tools={...}</code> mapping, a value can be a tool class (<code>tools.MeshSilhouette</code>), a tool object (needed for tools with options, like <code>tools.ShaderControlTool(control="gain")</code>), or Neuroglancer's name for the tool (<code>"meshSilhouetteRendering"</code>).
+Classes are best: a typo in a class name is caught by your editor or type checker, while a typo in a string is only caught when the layer is created (with a suggestion of what you meant).</p>
+<h3 id="how-keys-are-assigned">How keys are assigned</h3>
+<p>Neuroglancer has <strong>one set of keys for the whole viewer</strong>: if two tools share a key, it silently drops one when the state loads.
+So nglui assigns keys when the state is built, once it knows every key in use:</p>
+<ol>
+<li>Bindings that came from a raw layer or a base state keep their keys.</li>
+<li>A tool with an explicit <code>key</code> must use a free one, or you get an error saying what holds it.</li>
+<li>Annotation tag tools keep their usual keys (<code>Q</code>, <code>W</code>, <code>E</code>, ...) when free, and otherwise move to the next free letter.</li>
+<li>A tool with no <code>key</code> gets the next free letter (<code>Z</code>, <code>X</code>, <code>C</code>, ...). Use <code>key=False</code> for a tool that should appear only in a palette.</li>
+</ol>
+<p>A tool that does not suit its layer -- <code>MeshSilhouette</code> on an image layer, say -- raises an error when the layer is created.</p>
+<h2 id="segmentation-layers">Segmentation layers</h2>
+<h3 id="selection-and-proofreading">Selection and proofreading</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Does</th>
+<th>Options</th>
+<th>Neuroglancer name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SelectSegments</code></td>
+<td>Select or deselect segments by painting over them.</td>
+<td>--</td>
+<td><code>selectSegments</code></td>
+</tr>
+<tr>
+<td><code>MergeSegments</code></td>
+<td>Merge two segments. Needs a proofreading-enabled (graphene) segmentation.</td>
+<td>--</td>
+<td><code>mergeSegments</code></td>
+</tr>
+<tr>
+<td><code>SplitSegments</code></td>
+<td>Split a segment. Needs a proofreading-enabled (graphene) segmentation.</td>
+<td>--</td>
+<td><code>splitSegments</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="display-settings">Display settings</h3>
+<p>These correspond to controls in the layer's <strong>Render</strong> tab.
+Activating one shows that control at the bottom of the viewer.</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Neuroglancer label</th>
+<th>Adjusts</th>
+<th>Using it</th>
+<th>Neuroglancer name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SelectedAlpha</code></td>
+<td>Opacity (on)</td>
+<td>2d opacity of selected segments.</td>
+<td>Hold the key and scroll to adjust.</td>
+<td><code>selectedAlpha</code></td>
+</tr>
+<tr>
+<td><code>NotSelectedAlpha</code></td>
+<td>Opacity (off)</td>
+<td>2d opacity of unselected segments.</td>
+<td>Hold the key and scroll to adjust.</td>
+<td><code>notSelectedAlpha</code></td>
+</tr>
+<tr>
+<td><code>Alpha3d</code></td>
+<td>Opacity (3d)</td>
+<td>Opacity of meshes in the 3d view.</td>
+<td>Hold the key and scroll to adjust.</td>
+<td><code>objectAlpha</code></td>
+</tr>
+<tr>
+<td><code>MeshSilhouette</code></td>
+<td>Silhouette (3d)</td>
+<td>Silhouette shading of meshes in the 3d view.</td>
+<td>Hold the key and scroll to adjust.</td>
+<td><code>meshSilhouetteRendering</code></td>
+</tr>
+<tr>
+<td><code>MeshRenderScale</code></td>
+<td>Resolution (mesh)</td>
+<td>Mesh level of detail.</td>
+<td>Hold the key and scroll to adjust.</td>
+<td><code>meshRenderScale</code></td>
+</tr>
+<tr>
+<td><code>Saturation</code></td>
+<td>Saturation</td>
+<td>Saturation of segment colors.</td>
+<td>Hold the key and scroll to adjust.</td>
+<td><code>saturation</code></td>
+</tr>
+<tr>
+<td><code>HideSegmentZero</code></td>
+<td>Hide segment ID 0</td>
+<td>Whether segment 0 is hidden.</td>
+<td>Press to toggle.</td>
+<td><code>hideSegmentZero</code></td>
+</tr>
+<tr>
+<td><code>HoverHighlight</code></td>
+<td>Highlight on hover</td>
+<td>Whether the segment under the mouse is highlighted.</td>
+<td>Press to toggle.</td>
+<td><code>hoverHighlight</code></td>
+</tr>
+<tr>
+<td><code>BaseSegmentColoring</code></td>
+<td>Base segment coloring</td>
+<td>Whether supervoxels are colored individually.</td>
+<td>Press to toggle.</td>
+<td><code>baseSegmentColoring</code></td>
+</tr>
+<tr>
+<td><code>IgnoreNullVisibleSet</code></td>
+<td>Show all by default</td>
+<td>Whether an empty selection shows every segment.</td>
+<td>Press to toggle.</td>
+<td><code>ignoreNullVisibleSet</code></td>
+</tr>
+<tr>
+<td><code>ColorSeed</code></td>
+<td>Color seed</td>
+<td>The random segment color palette.</td>
+<td>Press to pick new random colors.</td>
+<td><code>colorSeed</code></td>
+</tr>
+<tr>
+<td><code>SegmentDefaultColor</code></td>
+<td>Fixed color</td>
+<td>One color for all segments without an explicit color.</td>
+<td>Press to switch to a fixed color, then scroll to adjust it.</td>
+<td><code>segmentDefaultColor</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="skeleton-settings">Skeleton settings</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Neuroglancer label</th>
+<th>Adjusts</th>
+<th>Using it</th>
+<th>Neuroglancer name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SkeletonMode2d</code></td>
+<td>Skeleton mode (2d)</td>
+<td>Skeletons as lines, or lines and points, in the 2d views.</td>
+<td>Hold the key and scroll to cycle through the options.</td>
+<td><code>skeletonRendering.mode2d</code></td>
+</tr>
+<tr>
+<td><code>SkeletonMode3d</code></td>
+<td>Skeleton mode (3d)</td>
+<td>Skeletons as lines, or lines and points, in the 3d view.</td>
+<td>Hold the key and scroll to cycle through the options.</td>
+<td><code>skeletonRendering.mode3d</code></td>
+</tr>
+<tr>
+<td><code>SkeletonLineWidth2d</code></td>
+<td>Line width (2d)</td>
+<td>Skeleton line width in the 2d views.</td>
+<td>Hold the key and scroll to adjust.</td>
+<td><code>skeletonRendering.lineWidth2d</code></td>
+</tr>
+<tr>
+<td><code>SkeletonLineWidth3d</code></td>
+<td>Line width (3d)</td>
+<td>Skeleton line width in the 3d view.</td>
+<td>Hold the key and scroll to adjust.</td>
+<td><code>skeletonRendering.lineWidth3d</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="image-layers">Image layers</h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Neuroglancer label</th>
+<th>Adjusts</th>
+<th>Using it</th>
+<th>Neuroglancer name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Opacity</code></td>
+<td>Opacity (slice)</td>
+<td>Image opacity in the 2d views.</td>
+<td>Hold the key and scroll to adjust.</td>
+<td><code>opacity</code></td>
+</tr>
+<tr>
+<td><code>Blend</code></td>
+<td>Blending (slice)</td>
+<td>How the image combines with the layers beneath it.</td>
+<td>Hold the key and scroll to cycle through the options.</td>
+<td><code>blend</code></td>
+</tr>
+<tr>
+<td><code>VolumeRendering</code></td>
+<td>Volume rendering (experimental)</td>
+<td>Volume rendering mode in the 3d view.</td>
+<td>Hold the key and scroll to cycle through the options.</td>
+<td><code>volumeRendering</code></td>
+</tr>
+<tr>
+<td><code>VolumeRenderingGain</code></td>
+<td>Gain (3D)</td>
+<td>Brightness of the volume rendering.</td>
+<td>Hold the key and scroll to adjust.</td>
+<td><code>volumeRenderingGain</code></td>
+</tr>
+<tr>
+<td><code>VolumeRenderingDepthSamples</code></td>
+<td>Resolution (3D)</td>
+<td>Depth samples for the volume rendering.</td>
+<td>Hold the key and scroll to adjust.</td>
+<td><code>volumeRenderingDepthSamples</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="image-and-segmentation-layers">Image and segmentation layers</h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Neuroglancer label</th>
+<th>Adjusts</th>
+<th>Using it</th>
+<th>Neuroglancer name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CrossSectionRenderScale</code></td>
+<td>Resolution (slice)</td>
+<td>Resolution of the 2d rendering.</td>
+<td>Hold the key and scroll to adjust.</td>
+<td><code>crossSectionRenderScale</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="any-layer-with-a-shader">Any layer with a shader</h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Does</th>
+<th>Options</th>
+<th>Neuroglancer name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ShaderControlTool</code></td>
+<td>Adjust one of the shader's <code>#uicontrol</code> controls, such as an image's contrast.</td>
+<td><code>control</code>: the control's name. Default <code>"normalized"</code>, the default image shader's contrast control.</td>
+<td><code>shaderControl</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="viewer">Viewer</h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Does</th>
+<th>Options</th>
+<th>Neuroglancer name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Dimension</code></td>
+<td>Step through one dimension of the viewer position: hold the key and scroll.</td>
+<td><code>dimension</code>: the dimension's name, e.g. <code>"z"</code>.</td>
+<td><code>dimension</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="annotation-tools">Annotation tools</h2>
+<p>Tools that place annotations -- points, lines, boxes, ellipsoids, polylines -- <strong>cannot be bound to keys</strong>.
+Neuroglancer only restores them as a layer's active tool, and a key binding for one makes it drop every binding after it on the same layer.
+Instead, make one the layer's active tool, so it is ready to use as soon as the state loads:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">AnnotationLayer</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"synapses"</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">active_tool</span><span class="o">=</span><span class="s2">"point"</span><span class="p">)</span>   <span class="c1"># or "line", "box", "ellipsoid", "polyline"</span>
+</span></code></pre></div>
+<p>Annotation tags have their own tools, which nglui binds automatically; see <a href="../statebuilder/#tags">Tags</a>.</p>
+<h2 id="tool-palettes">Tool palettes</h2>
+<p>A palette is a panel of tool buttons.
+Pass <code>palette=</code> to <code>add_tools</code> to show those tools in it as well as binding them, or build one directly:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">viewerstate</span><span class="o">.</span><span class="n">add_tool_palette</span><span class="p">(</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">tools</span><span class="o">.</span><span class="n">ToolPalette</span><span class="p">(</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>        <span class="s2">"Display"</span><span class="p">,</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>        <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">tools</span><span class="o">.</span><span class="n">Alpha3d</span><span class="p">(</span><span class="n">layer</span><span class="o">=</span><span class="s2">"seg"</span><span class="p">),</span> <span class="n">tools</span><span class="o">.</span><span class="n">MeshSilhouette</span><span class="p">(</span><span class="n">layer</span><span class="o">=</span><span class="s2">"seg"</span><span class="p">)],</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>        <span class="n">side</span><span class="o">=</span><span class="s2">"right"</span><span class="p">,</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="p">)</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>Tools listed in a palette this way are shown but not bound to keys.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../statebuilder/" class="md-footer__link md-footer__link--prev" aria-label="Previous: StateBuilder">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                StateBuilder
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../config/" class="md-footer__link md-footer__link--next" aria-label="Next: Site Configuration">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Site Configuration
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.indexes", "navigation.instant", "navigation.footer", "navigation.prune", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "toc.follow", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

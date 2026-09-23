@@ -1,0 +1,4223 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://caveconnectome.github.io/nglui/reference/tools/">
+      
+      
+        <link rel="prev" href="../viewer_config/">
+      
+      
+        <link rel="next" href="../layouts/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>statebuilder.tools - NGLui Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Funnel+Sans:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Funnel Sans";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#nglui.statebuilder.tools.Alpha3d" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="NGLui Documentation" class="md-header__button md-logo" aria-label="NGLui Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.33 12.91c.09 1.55-.62 3.04-1.89 3.95l.77 1.49c.23.45.26.98.06 1.45-.19.47-.58.84-1.06 1l-.79.25a1.687 1.687 0 0 1-1.86-.55L14.44 18c-.89-.15-1.73-.53-2.44-1.1-.5.15-1 .23-1.5.23-.88 0-1.76-.27-2.5-.79-.53.16-1.07.23-1.62.22-.79.01-1.57-.15-2.3-.45a4.1 4.1 0 0 1-2.43-3.61c-.08-.72.04-1.45.35-2.11-.29-.75-.32-1.57-.07-2.33C2.3 7.11 3 6.32 3.87 5.82c.58-1.69 2.21-2.82 4-2.7 1.6-1.5 4.05-1.66 5.83-.37.42-.11.86-.17 1.3-.17 1.36-.03 2.65.57 3.5 1.64 2.04.53 3.5 2.35 3.58 4.47.05 1.11-.25 2.2-.86 3.13.07.36.11.72.11 1.09m-5-1.41c.57.07 1.02.5 1.02 1.07a1 1 0 0 1-1 1h-.63c-.32.9-.88 1.69-1.62 2.29.25.09.51.14.77.21 5.13-.07 4.53-3.2 4.53-3.25a2.59 2.59 0 0 0-2.69-2.49 1 1 0 0 1-1-1 1 1 0 0 1 1-1c1.23.03 2.41.49 3.33 1.3.05-.29.08-.59.08-.89-.06-1.24-.62-2.32-2.87-2.53-1.25-2.96-4.4-1.32-4.4-.4-.03.23.21.72.25.75a1 1 0 0 1 1 1c0 .55-.45 1-1 1-.53-.02-1.03-.22-1.43-.56-.48.31-1.03.5-1.6.56-.57.05-1.04-.35-1.07-.9a.97.97 0 0 1 .88-1.1c.16-.02.94-.14.94-.77 0-.66.25-1.29.68-1.79-.92-.25-1.91.08-2.91 1.29C6.75 5 6 5.25 5.45 7.2 4.5 7.67 4 8 3.78 9c1.08-.22 2.19-.13 3.22.25.5.19.78.75.59 1.29-.19.52-.77.78-1.29.59-.73-.32-1.55-.34-2.3-.06-.32.27-.32.83-.32 1.27 0 .74.37 1.43 1 1.83.53.27 1.12.41 1.71.4q-.225-.39-.39-.81a1.038 1.038 0 0 1 1.96-.68c.4 1.14 1.42 1.92 2.62 2.05 1.37-.07 2.59-.88 3.19-2.13.23-1.38 1.34-1.5 2.56-1.5m2 7.47-.62-1.3-.71.16 1 1.25zm-4.65-8.61a1 1 0 0 0-.91-1.03c-.71-.04-1.4.2-1.93.67-.57.58-.87 1.38-.84 2.19a1 1 0 0 0 1 1c.57 0 1-.45 1-1 0-.27.07-.54.23-.76.12-.1.27-.15.43-.15.55.03 1.02-.38 1.02-.92"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            NGLui Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              statebuilder.tools
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/CAVEconnectome/nglui/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CAVEconnectome/NGLui
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  About
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../usage/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  How to Use
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../statebuilder/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Function Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="NGLui Documentation" class="md-nav__button md-logo" aria-label="NGLui Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.33 12.91c.09 1.55-.62 3.04-1.89 3.95l.77 1.49c.23.45.26.98.06 1.45-.19.47-.58.84-1.06 1l-.79.25a1.687 1.687 0 0 1-1.86-.55L14.44 18c-.89-.15-1.73-.53-2.44-1.1-.5.15-1 .23-1.5.23-.88 0-1.76-.27-2.5-.79-.53.16-1.07.23-1.62.22-.79.01-1.57-.15-2.3-.45a4.1 4.1 0 0 1-2.43-3.61c-.08-.72.04-1.45.35-2.11-.29-.75-.32-1.57-.07-2.33C2.3 7.11 3 6.32 3.87 5.82c.58-1.69 2.21-2.82 4-2.7 1.6-1.5 4.05-1.66 5.83-.37.42-.11.86-.17 1.3-.17 1.36-.03 2.65.57 3.5 1.64 2.04.53 3.5 2.35 3.58 4.47.05 1.11-.25 2.2-.86 3.13.07.36.11.72.11 1.09m-5-1.41c.57.07 1.02.5 1.02 1.07a1 1 0 0 1-1 1h-.63c-.32.9-.88 1.69-1.62 2.29.25.09.51.14.77.21 5.13-.07 4.53-3.2 4.53-3.25a2.59 2.59 0 0 0-2.69-2.49 1 1 0 0 1-1-1 1 1 0 0 1 1-1c1.23.03 2.41.49 3.33 1.3.05-.29.08-.59.08-.89-.06-1.24-.62-2.32-2.87-2.53-1.25-2.96-4.4-1.32-4.4-.4-.03.23.21.72.25.75a1 1 0 0 1 1 1c0 .55-.45 1-1 1-.53-.02-1.03-.22-1.43-.56-.48.31-1.03.5-1.6.56-.57.05-1.04-.35-1.07-.9a.97.97 0 0 1 .88-1.1c.16-.02.94-.14.94-.77 0-.66.25-1.29.68-1.79-.92-.25-1.91.08-2.91 1.29C6.75 5 6 5.25 5.45 7.2 4.5 7.67 4 8 3.78 9c1.08-.22 2.19-.13 3.22.25.5.19.78.75.59 1.29-.19.52-.77.78-1.29.59-.73-.32-1.55-.34-2.3-.06-.32.27-.32.83-.32 1.27 0 .74.37 1.43 1 1.83.53.27 1.12.41 1.71.4q-.225-.39-.39-.81a1.038 1.038 0 0 1 1.96-.68c.4 1.14 1.42 1.92 2.62 2.05 1.37-.07 2.59-.88 3.19-2.13.23-1.38 1.34-1.5 2.56-1.5m2 7.47-.62-1.3-.71.16 1 1.25zm-4.65-8.61a1 1 0 0 0-.91-1.03c-.71-.04-1.4.2-1.93.67-.57.58-.87 1.38-.84 2.19a1 1 0 0 0 1 1c.57 0 1-.45 1-1 0-.27.07-.54.23-.76.12-.1.27-.15.43-.15.55.03 1.02-.38 1.02-.92"/></svg>
+
+    </a>
+    NGLui Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/CAVEconnectome/nglui/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CAVEconnectome/NGLui
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../usage/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How to Use
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Function Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Function Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../statebuilder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.base
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ngl_components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.ngl_components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../viewer_config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.viewer_config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.tools
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.Alpha3d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alpha3d
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.BaseSegmentColoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BaseSegmentColoring
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.Blend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Blend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.ColorSeed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ColorSeed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.CrossSectionRenderScale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CrossSectionRenderScale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.Dimension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dimension
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.HideSegmentZero" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HideSegmentZero
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.HoverHighlight" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HoverHighlight
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.IgnoreNullVisibleSet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IgnoreNullVisibleSet
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.LayerSetting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LayerSetting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.MergeSegments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MergeSegments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.MeshRenderScale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshRenderScale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.MeshSilhouette" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshSilhouette
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.NotSelectedAlpha" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NotSelectedAlpha
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.Opacity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Opacity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.Saturation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Saturation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.SegmentDefaultColor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SegmentDefaultColor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.SelectSegments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SelectSegments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.SelectedAlpha" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SelectedAlpha
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.ShaderControlTool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ShaderControlTool
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.SkeletonLineWidth2d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SkeletonLineWidth2d
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.SkeletonLineWidth3d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SkeletonLineWidth3d
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.SkeletonMode2d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SkeletonMode2d
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.SkeletonMode3d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SkeletonMode3d
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.SplitSegments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SplitSegments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.Tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tool
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tool">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.Tool.to_json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_json
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.ToolPalette" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ToolPalette
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ToolPalette">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.ToolPalette.to_json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_json
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.ToolPalette.with_tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        with_tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.VolumeRendering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VolumeRendering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.VolumeRenderingDepthSamples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VolumeRenderingDepthSamples
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.VolumeRenderingGain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VolumeRenderingGain
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.add_palettes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_palettes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.bind_tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bind_tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.check_layer_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        check_layer_type
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.coerce_layer_tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        coerce_layer_tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.coerce_tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        coerce_tool
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../layouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.layouts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ngl_annotations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.ngl_annotations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../shaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.shaders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../skeletons/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.skeletons
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../helpers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../site_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    statebuilder.site_utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../segmentprops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    segmentprops
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    parser
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.Alpha3d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alpha3d
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.BaseSegmentColoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BaseSegmentColoring
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.Blend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Blend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.ColorSeed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ColorSeed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.CrossSectionRenderScale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CrossSectionRenderScale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.Dimension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dimension
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.HideSegmentZero" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HideSegmentZero
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.HoverHighlight" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HoverHighlight
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.IgnoreNullVisibleSet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IgnoreNullVisibleSet
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.LayerSetting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LayerSetting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.MergeSegments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MergeSegments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.MeshRenderScale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshRenderScale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.MeshSilhouette" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshSilhouette
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.NotSelectedAlpha" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NotSelectedAlpha
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.Opacity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Opacity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.Saturation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Saturation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.SegmentDefaultColor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SegmentDefaultColor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.SelectSegments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SelectSegments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.SelectedAlpha" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SelectedAlpha
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.ShaderControlTool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ShaderControlTool
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.SkeletonLineWidth2d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SkeletonLineWidth2d
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.SkeletonLineWidth3d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SkeletonLineWidth3d
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.SkeletonMode2d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SkeletonMode2d
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.SkeletonMode3d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SkeletonMode3d
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.SplitSegments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SplitSegments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.Tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tool
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tool">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.Tool.to_json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_json
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.ToolPalette" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ToolPalette
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ToolPalette">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.ToolPalette.to_json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_json
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.ToolPalette.with_tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        with_tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.VolumeRendering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VolumeRendering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.VolumeRenderingDepthSamples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VolumeRenderingDepthSamples
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.VolumeRenderingGain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VolumeRenderingGain
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.add_palettes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_palettes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.bind_tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bind_tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.check_layer_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        check_layer_type
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.coerce_layer_tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        coerce_layer_tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nglui.statebuilder.tools.coerce_tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        coerce_tool
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>statebuilder.tools</h1>
+
+<div class="doc doc-object doc-module">
+
+
+
+
+    <div class="doc doc-contents first">
+
+        <p>Neuroglancer tools: key bindings and tool palettes.</p>
+<p>A tool is an action a user activates with a key (<code>shift</code> plus the bound letter) or
+from a tool palette: selecting segments, adjusting a shader control or layer setting
+by dragging, or stepping through a dimension. Tools are bound when a <code>ViewerState</code> is built, so keys can be
+allocated across the whole viewer: Neuroglancer keeps one key namespace for every
+layer, and a key bound twice silently loses its earlier tool when the state loads.</p>
+<p>Annotation-placing tools are not here: Neuroglancer restores them only as a layer's
+active tool, never from a key binding or palette -- and an unrestorable binding makes
+it drop every binding after it on that layer. Use <code>AnnotationLayer(active_tool=...)</code>.</p>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">nglui.statebuilder</span><span class="w"> </span><span class="kn">import</span> <span class="n">tools</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">vs</span><span class="o">.</span><span class="n">add_tools</span><span class="p">(</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">... </span>    <span class="n">tools</span><span class="o">.</span><span class="n">SelectSegments</span><span class="p">(</span><span class="n">layer</span><span class="o">=</span><span class="s2">"seg"</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">"S"</span><span class="p">),</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">... </span>    <span class="n">tools</span><span class="o">.</span><span class="n">ShaderControlTool</span><span class="p">(</span><span class="n">layer</span><span class="o">=</span><span class="s2">"img"</span><span class="p">,</span> <span class="n">control</span><span class="o">=</span><span class="s2">"normalized"</span><span class="p">),</span>  <span class="c1"># key auto-assigned</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="gp">... </span>    <span class="n">tools</span><span class="o">.</span><span class="n">MeshSilhouette</span><span class="p">(</span><span class="n">layer</span><span class="o">=</span><span class="s2">"seg"</span><span class="p">),</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">... </span>    <span class="n">tools</span><span class="o">.</span><span class="n">Dimension</span><span class="p">(</span><span class="n">dimension</span><span class="o">=</span><span class="s2">"z"</span><span class="p">),</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="gp">... </span>    <span class="n">palette</span><span class="o">=</span><span class="n">tools</span><span class="o">.</span><span class="n">ToolPalette</span><span class="p">(</span><span class="s2">"Proofreading"</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="s2">"right"</span><span class="p">),</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="gp">... </span><span class="p">)</span>
+</span></code></pre></div>
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Classes:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="Alpha3d (nglui.statebuilder.tools.Alpha3d)" href="#nglui.statebuilder.tools.Alpha3d">Alpha3d</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Opacity of meshes in the 3d view. Hold the key and scroll to adjust.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="BaseSegmentColoring (nglui.statebuilder.tools.BaseSegmentColoring)" href="#nglui.statebuilder.tools.BaseSegmentColoring">BaseSegmentColoring</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Whether supervoxels are colored individually. Press to toggle.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="Blend (nglui.statebuilder.tools.Blend)" href="#nglui.statebuilder.tools.Blend">Blend</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>How the image combines with the layers beneath it. Hold the key and scroll to cycle through the options.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="ColorSeed (nglui.statebuilder.tools.ColorSeed)" href="#nglui.statebuilder.tools.ColorSeed">ColorSeed</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>The random segment color palette. Press to pick new random colors.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="CrossSectionRenderScale (nglui.statebuilder.tools.CrossSectionRenderScale)" href="#nglui.statebuilder.tools.CrossSectionRenderScale">CrossSectionRenderScale</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Resolution of the 2d rendering. Hold the key and scroll to adjust.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="Dimension (nglui.statebuilder.tools.Dimension)" href="#nglui.statebuilder.tools.Dimension">Dimension</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Step through one dimension, e.g. z, while the key is held.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="HideSegmentZero (nglui.statebuilder.tools.HideSegmentZero)" href="#nglui.statebuilder.tools.HideSegmentZero">HideSegmentZero</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Whether segment 0 is hidden. Press to toggle.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="HoverHighlight (nglui.statebuilder.tools.HoverHighlight)" href="#nglui.statebuilder.tools.HoverHighlight">HoverHighlight</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Whether the segment under the mouse is highlighted. Press to toggle.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="IgnoreNullVisibleSet (nglui.statebuilder.tools.IgnoreNullVisibleSet)" href="#nglui.statebuilder.tools.IgnoreNullVisibleSet">IgnoreNullVisibleSet</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Whether an empty selection shows every segment. Press to toggle.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Base class for tools that adjust one of a layer's display settings.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="MergeSegments (nglui.statebuilder.tools.MergeSegments)" href="#nglui.statebuilder.tools.MergeSegments">MergeSegments</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Merge two segments (graphene/proofreading-enabled segmentations).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="MeshRenderScale (nglui.statebuilder.tools.MeshRenderScale)" href="#nglui.statebuilder.tools.MeshRenderScale">MeshRenderScale</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Mesh level of detail. Hold the key and scroll to adjust.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="MeshSilhouette (nglui.statebuilder.tools.MeshSilhouette)" href="#nglui.statebuilder.tools.MeshSilhouette">MeshSilhouette</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Silhouette shading of meshes in the 3d view. Hold the key and scroll to adjust.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="NotSelectedAlpha (nglui.statebuilder.tools.NotSelectedAlpha)" href="#nglui.statebuilder.tools.NotSelectedAlpha">NotSelectedAlpha</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>2d opacity of unselected segments. Hold the key and scroll to adjust.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="Opacity (nglui.statebuilder.tools.Opacity)" href="#nglui.statebuilder.tools.Opacity">Opacity</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Image opacity in the 2d views. Hold the key and scroll to adjust.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="Saturation (nglui.statebuilder.tools.Saturation)" href="#nglui.statebuilder.tools.Saturation">Saturation</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Saturation of segment colors. Hold the key and scroll to adjust.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="SegmentDefaultColor (nglui.statebuilder.tools.SegmentDefaultColor)" href="#nglui.statebuilder.tools.SegmentDefaultColor">SegmentDefaultColor</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>One color for all segments without an explicit color. Press to switch to a fixed color, then scroll to adjust it.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="SelectSegments (nglui.statebuilder.tools.SelectSegments)" href="#nglui.statebuilder.tools.SelectSegments">SelectSegments</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Select or deselect segments by painting over them.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="SelectedAlpha (nglui.statebuilder.tools.SelectedAlpha)" href="#nglui.statebuilder.tools.SelectedAlpha">SelectedAlpha</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>2d opacity of selected segments. Hold the key and scroll to adjust.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="ShaderControlTool (nglui.statebuilder.tools.ShaderControlTool)" href="#nglui.statebuilder.tools.ShaderControlTool">ShaderControlTool</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Adjust one of a layer's shader controls, e.g. image contrast.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="SkeletonLineWidth2d (nglui.statebuilder.tools.SkeletonLineWidth2d)" href="#nglui.statebuilder.tools.SkeletonLineWidth2d">SkeletonLineWidth2d</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Skeleton line width in the 2d views. Hold the key and scroll to adjust.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="SkeletonLineWidth3d (nglui.statebuilder.tools.SkeletonLineWidth3d)" href="#nglui.statebuilder.tools.SkeletonLineWidth3d">SkeletonLineWidth3d</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Skeleton line width in the 3d view. Hold the key and scroll to adjust.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="SkeletonMode2d (nglui.statebuilder.tools.SkeletonMode2d)" href="#nglui.statebuilder.tools.SkeletonMode2d">SkeletonMode2d</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Skeletons as lines, or lines and points, in the 2d views. Hold the key and scroll to cycle through the options.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="SkeletonMode3d (nglui.statebuilder.tools.SkeletonMode3d)" href="#nglui.statebuilder.tools.SkeletonMode3d">SkeletonMode3d</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Skeletons as lines, or lines and points, in the 3d view. Hold the key and scroll to cycle through the options.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="SplitSegments (nglui.statebuilder.tools.SplitSegments)" href="#nglui.statebuilder.tools.SplitSegments">SplitSegments</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Split a segment (graphene/proofreading-enabled segmentations).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="Tool (nglui.statebuilder.tools.Tool)" href="#nglui.statebuilder.tools.Tool">Tool</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Base class for tools.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="ToolPalette (nglui.statebuilder.tools.ToolPalette)" href="#nglui.statebuilder.tools.ToolPalette">ToolPalette</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>A named panel of tool buttons, placed like any other side panel.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="VolumeRendering (nglui.statebuilder.tools.VolumeRendering)" href="#nglui.statebuilder.tools.VolumeRendering">VolumeRendering</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Volume rendering mode in the 3d view. Hold the key and scroll to cycle through the options.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="VolumeRenderingDepthSamples (nglui.statebuilder.tools.VolumeRenderingDepthSamples)" href="#nglui.statebuilder.tools.VolumeRenderingDepthSamples">VolumeRenderingDepthSamples</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Depth samples for the volume rendering. Hold the key and scroll to adjust.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="VolumeRenderingGain (nglui.statebuilder.tools.VolumeRenderingGain)" href="#nglui.statebuilder.tools.VolumeRenderingGain">VolumeRenderingGain</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Brightness of the volume rendering. Hold the key and scroll to adjust.</p>
+          </div>
+        </li>
+    </ul>
+
+
+
+
+<p><span class="doc-section-title">Functions:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="coerce_layer_tools(value) (nglui.statebuilder.tools.coerce_layer_tools)" href="#nglui.statebuilder.tools.coerce_layer_tools">coerce_layer_tools</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Normalize a layer's <code>tools</code>: a list of tools, or a mapping of key -&gt; tool.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="coerce_tool(value) (nglui.statebuilder.tools.coerce_tool)" href="#nglui.statebuilder.tools.coerce_tool">coerce_tool</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Make a Tool from a Tool, a Tool class, or a Neuroglancer tool type name.</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.Alpha3d" class="doc doc-heading">
+            <code>Alpha3d</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>Opacity of meshes in the 3d view. Hold the key and scroll to adjust.</p>
+<p>The "Opacity (3d)" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.BaseSegmentColoring" class="doc doc-heading">
+            <code>BaseSegmentColoring</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>Whether supervoxels are colored individually. Press to toggle.</p>
+<p>The "Base segment coloring" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.Blend" class="doc doc-heading">
+            <code>Blend</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>How the image combines with the layers beneath it. Hold the key and scroll to cycle through the options.</p>
+<p>The "Blending (slice)" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.ColorSeed" class="doc doc-heading">
+            <code>ColorSeed</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>The random segment color palette. Press to pick new random colors.</p>
+<p>The "Color seed" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.CrossSectionRenderScale" class="doc doc-heading">
+            <code>CrossSectionRenderScale</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>Resolution of the 2d rendering. Hold the key and scroll to adjust.</p>
+<p>The "Resolution (slice)" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.Dimension" class="doc doc-heading">
+            <code>Dimension</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="Tool (nglui.statebuilder.tools.Tool)" href="#nglui.statebuilder.tools.Tool">Tool</a></code></p>
+
+
+
+        <p>Step through one dimension, e.g. z, while the key is held.</p>
+<p>A viewer-level tool: it acts on the viewer position, not on a layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>dimension</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Name of the dimension, e.g. <code>"z"</code>.</p>
+          </div>
+        </li>
+    </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.HideSegmentZero" class="doc doc-heading">
+            <code>HideSegmentZero</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>Whether segment 0 is hidden. Press to toggle.</p>
+<p>The "Hide segment ID 0" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.HoverHighlight" class="doc doc-heading">
+            <code>HoverHighlight</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>Whether the segment under the mouse is highlighted. Press to toggle.</p>
+<p>The "Highlight on hover" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.IgnoreNullVisibleSet" class="doc doc-heading">
+            <code>IgnoreNullVisibleSet</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>Whether an empty selection shows every segment. Press to toggle.</p>
+<p>The "Show all by default" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.LayerSetting" class="doc doc-heading">
+            <code>LayerSetting</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="Tool (nglui.statebuilder.tools.Tool)" href="#nglui.statebuilder.tools.Tool">Tool</a></code></p>
+
+
+
+        <p>Base class for tools that adjust one of a layer's display settings.</p>
+<p>Activating one (shift plus its key) shows that setting's control at the bottom
+of the viewer. Use the named subclasses, e.g. <code>MeshSilhouette</code> or <code>Alpha3d</code>, so
+a misspelled setting is an attribute error your editor or type checker catches.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.MergeSegments" class="doc doc-heading">
+            <code>MergeSegments</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nglui.statebuilder.tools._SegmentationTool">_SegmentationTool</span></code></p>
+
+
+
+        <p>Merge two segments (graphene/proofreading-enabled segmentations).</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.MeshRenderScale" class="doc doc-heading">
+            <code>MeshRenderScale</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>Mesh level of detail. Hold the key and scroll to adjust.</p>
+<p>The "Resolution (mesh)" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.MeshSilhouette" class="doc doc-heading">
+            <code>MeshSilhouette</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>Silhouette shading of meshes in the 3d view. Hold the key and scroll to adjust.</p>
+<p>The "Silhouette (3d)" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.NotSelectedAlpha" class="doc doc-heading">
+            <code>NotSelectedAlpha</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>2d opacity of unselected segments. Hold the key and scroll to adjust.</p>
+<p>The "Opacity (off)" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.Opacity" class="doc doc-heading">
+            <code>Opacity</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>Image opacity in the 2d views. Hold the key and scroll to adjust.</p>
+<p>The "Opacity (slice)" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.Saturation" class="doc doc-heading">
+            <code>Saturation</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>Saturation of segment colors. Hold the key and scroll to adjust.</p>
+<p>The "Saturation" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.SegmentDefaultColor" class="doc doc-heading">
+            <code>SegmentDefaultColor</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>One color for all segments without an explicit color. Press to switch to a fixed color, then scroll to adjust it.</p>
+<p>The "Fixed color" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.SelectSegments" class="doc doc-heading">
+            <code>SelectSegments</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nglui.statebuilder.tools._SegmentationTool">_SegmentationTool</span></code></p>
+
+
+
+        <p>Select or deselect segments by painting over them.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.SelectedAlpha" class="doc doc-heading">
+            <code>SelectedAlpha</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>2d opacity of selected segments. Hold the key and scroll to adjust.</p>
+<p>The "Opacity (on)" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.ShaderControlTool" class="doc doc-heading">
+            <code>ShaderControlTool</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="Tool (nglui.statebuilder.tools.Tool)" href="#nglui.statebuilder.tools.Tool">Tool</a></code></p>
+
+
+
+        <p>Adjust one of a layer's shader controls, e.g. image contrast.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>control</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Name of the <code>#uicontrol</code>; <code>"normalized"</code> is the default image shader's
+contrast control.</p>
+          </div>
+        </li>
+    </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.SkeletonLineWidth2d" class="doc doc-heading">
+            <code>SkeletonLineWidth2d</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>Skeleton line width in the 2d views. Hold the key and scroll to adjust.</p>
+<p>The "Line width (2d)" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.SkeletonLineWidth3d" class="doc doc-heading">
+            <code>SkeletonLineWidth3d</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>Skeleton line width in the 3d view. Hold the key and scroll to adjust.</p>
+<p>The "Line width (3d)" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.SkeletonMode2d" class="doc doc-heading">
+            <code>SkeletonMode2d</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>Skeletons as lines, or lines and points, in the 2d views. Hold the key and scroll to cycle through the options.</p>
+<p>The "Skeleton mode (2d)" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.SkeletonMode3d" class="doc doc-heading">
+            <code>SkeletonMode3d</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>Skeletons as lines, or lines and points, in the 3d view. Hold the key and scroll to cycle through the options.</p>
+<p>The "Skeleton mode (3d)" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.SplitSegments" class="doc doc-heading">
+            <code>SplitSegments</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="nglui.statebuilder.tools._SegmentationTool">_SegmentationTool</span></code></p>
+
+
+
+        <p>Split a segment (graphene/proofreading-enabled segmentations).</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.Tool" class="doc doc-heading">
+            <code>Tool</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Base class for tools.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>layer</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a> or <a class="autorefs autorefs-internal" title="Layer (nglui.statebuilder.ngl_components.Layer)" href="../ngl_components/#nglui.statebuilder.ngl_components.Layer">Layer</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The layer the tool acts on. Required for layer tools added with
+<code>ViewerState.add_tools</code>; omitted when the tool is given to a layer's own
+<code>tools</code> list.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>key</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a> or False</code>)
+          –
+          <div class="doc-md-description">
+            <p>A single capital letter to bind the tool to. None assigns a free key;
+False binds no key, for a tool that should only appear in a palette.</p>
+          </div>
+        </li>
+    </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="to_json(layer_name=None) (nglui.statebuilder.tools.Tool.to_json)" href="#nglui.statebuilder.tools.Tool.to_json">to_json</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>The tool's JSON, with a <code>layer</code> field when given one (as palettes need).</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="nglui.statebuilder.tools.Tool.to_json" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">to_json</span><span class="p">(</span><span class="n">layer_name</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The tool's JSON, with a <code>layer</code> field when given one (as palettes need).</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.ToolPalette" class="doc doc-heading">
+            <code>ToolPalette</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="SidePanel (nglui.statebuilder.viewer_config.SidePanel)" href="../viewer_config/#nglui.statebuilder.viewer_config.SidePanel">SidePanel</a></code></p>
+
+
+
+        <p>A named panel of tool buttons, placed like any other side panel.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>name</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The palette's title.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tools</code></b>
+              (<code>sequence of Tool</code>)
+          –
+          <div class="doc-md-description">
+            <p>Tools shown in the palette. Tools can also be added with
+<code>vs.add_tools(..., palette=...)</code>. Layer tools need their <code>layer</code> set.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>query</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>A query that fills the palette with matching tools, in Neuroglancer's
+palette query syntax.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>visible</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Whether the palette is open. Default is True: unlike the built-in panels,
+a palette exists only because you added it.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>side</code></b>
+              (<code><span title="nglui.statebuilder.ngl_components.optional">optional</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Placement, as for <code>SidePanel</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>size</code></b>
+              (<code><span title="nglui.statebuilder.ngl_components.optional">optional</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Placement, as for <code>SidePanel</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>flex</code></b>
+              (<code><span title="nglui.statebuilder.ngl_components.optional">optional</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Placement, as for <code>SidePanel</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>row</code></b>
+              (<code><span title="nglui.statebuilder.ngl_components.optional">optional</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Placement, as for <code>SidePanel</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>col</code></b>
+              (<code><span title="nglui.statebuilder.ngl_components.optional">optional</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Placement, as for <code>SidePanel</code>.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">ToolPalette</span><span class="p">(</span><span class="s2">"Proofreading"</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="s2">"right"</span><span class="p">)</span>
+</span></code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="to_json(state) (nglui.statebuilder.tools.ToolPalette.to_json)" href="#nglui.statebuilder.tools.ToolPalette.to_json">to_json</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>The palette's JSON, checking each tool's layer against <code>state</code>.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="with_tools(*tools) (nglui.statebuilder.tools.ToolPalette.with_tools)" href="#nglui.statebuilder.tools.ToolPalette.with_tools">with_tools</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Return a copy of this palette with <code>tools</code> appended.</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="nglui.statebuilder.tools.ToolPalette.to_json" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">to_json</span><span class="p">(</span><span class="n">state</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The palette's JSON, checking each tool's layer against <code>state</code>.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="nglui.statebuilder.tools.ToolPalette.with_tools" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">with_tools</span><span class="p">(</span><span class="o">*</span><span class="n">tools</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return a copy of this palette with <code>tools</code> appended.</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.VolumeRendering" class="doc doc-heading">
+            <code>VolumeRendering</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>Volume rendering mode in the 3d view. Hold the key and scroll to cycle through the options.</p>
+<p>The "Volume rendering (experimental)" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.VolumeRenderingDepthSamples" class="doc doc-heading">
+            <code>VolumeRenderingDepthSamples</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>Depth samples for the volume rendering. Hold the key and scroll to adjust.</p>
+<p>The "Resolution (3D)" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nglui.statebuilder.tools.VolumeRenderingGain" class="doc doc-heading">
+            <code>VolumeRenderingGain</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="LayerSetting (nglui.statebuilder.tools.LayerSetting)" href="#nglui.statebuilder.tools.LayerSetting">LayerSetting</a></code></p>
+
+
+
+        <p>Brightness of the volume rendering. Hold the key and scroll to adjust.</p>
+<p>The "Gain (3D)" control in Neuroglancer's layer panel.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="nglui.statebuilder.tools.add_palettes" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_palettes</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">palettes</span><span class="p">)</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Write tool palettes onto a built neuroglancer state.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="nglui.statebuilder.tools.bind_tools" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">bind_tools</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">requests</span><span class="p">,</span> <span class="n">tag_layers</span><span class="o">=</span><span class="p">(),</span> <span class="n">reserved</span><span class="o">=</span><span class="p">())</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Bind tools onto a built neuroglancer state, allocating keys viewer-wide.</p>
+<p>Keys are claimed in order of how deliberately they were chosen:</p>
+<ol>
+<li>Bindings the state already has from a raw layer or base state, which are
+   kept as they are. Duplicates among them are warned about, since the viewer
+   will drop one.</li>
+<li>Tools with an explicit <code>key</code>, which must be free, or this raises.</li>
+<li>Tag tools that nglui generated on <code>tag_layers</code>. Each keeps its usual key
+   when that is free; the rest then move to the next free letters, with a
+   warning, and any left without a key are dropped, with a warning -- the tag
+   stays usable from the layer's annotation panel.</li>
+<li>Tools with <code>key=None</code>, which take the next free letter, or this raises.</li>
+</ol>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>state</code></b>
+              (<code><span title="nglui.statebuilder.base.neuroglancer.ViewerState">ViewerState</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The state, with every layer already added.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>requests</code></b>
+              (<code>list of (Tool, str or None)</code>)
+          –
+          <div class="doc-md-description">
+            <p>Each tool with the name of the layer it belongs to, if it came from a
+layer's own <code>tools</code> list.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tag_layers</code></b>
+              (<code>tuple of str</code>, default:
+                  <code>()</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Names of nglui annotation layers whose tag tool bindings may be moved.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>reserved</code></b>
+              (<code>iterable of str</code>, default:
+                  <code>()</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Keys bound elsewhere, e.g. by the viewer's <code>extra</code> JSON, which is merged
+in after binding and would otherwise silently replace what lands there.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="nglui.statebuilder.tools.check_layer_type" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">check_layer_type</span><span class="p">(</span><span class="n">tool</span><span class="p">,</span> <span class="n">layer_type</span><span class="p">,</span> <span class="n">layer_name</span><span class="p">)</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Raise if <code>tool</code> cannot act on a layer of <code>layer_type</code>.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="nglui.statebuilder.tools.coerce_layer_tools" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">coerce_layer_tools</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Normalize a layer's <code>tools</code>: a list of tools, or a mapping of key -&gt; tool.</p>
+<p>Values may be Tool instances, Tool classes, or Neuroglancer tool type names.</p>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">coerce_layer_tools</span><span class="p">({</span><span class="s2">"H"</span><span class="p">:</span> <span class="s2">"meshSilhouetteRendering"</span><span class="p">,</span> <span class="s2">"S"</span><span class="p">:</span> <span class="n">tools</span><span class="o">.</span><span class="n">SelectSegments</span><span class="p">})</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">[MeshSilhouette(layer=None, key='H'), SelectSegments(layer=None, key='S')]</span>
+</span></code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="nglui.statebuilder.tools.coerce_tool" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">coerce_tool</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Make a Tool from a Tool, a Tool class, or a Neuroglancer tool type name.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError">ValueError</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If a name is not a bindable tool type, or names a tool that needs options.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../viewer_config/" class="md-footer__link md-footer__link--prev" aria-label="Previous: statebuilder.viewer_config">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                statebuilder.viewer_config
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../layouts/" class="md-footer__link md-footer__link--next" aria-label="Next: statebuilder.layouts">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                statebuilder.layouts
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.indexes", "navigation.instant", "navigation.footer", "navigation.prune", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "toc.follow", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
