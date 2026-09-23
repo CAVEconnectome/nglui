@@ -403,14 +403,10 @@ The 4th row is implicit and always `[0, 0, 0, 1]`, so it is not specified.
 Image layers take `opacity`, `blend`, `cross_section_render_scale`, and the volume rendering options `volume_rendering_mode`, `volume_rendering_gain`, and `volume_rendering_depth_samples`.
 Options you do not set are left to Neuroglancer's defaults.
 
-To set the **contrast** of an image, use `set_contrast`.
-Neuroglancer's default image shader maps intensity through a control named `normalized`, and `range` sets the intensities that map to black and white:
+By default, nglui leaves the image shader to Neuroglancer, whose default maps intensity through an `invlerp` control named `normalized` -- the histogram and contrast slider in the layer's rendering tab.
+That default is almost always what you want, so leave it alone unless you need to pin a contrast range.
 
-``` py
-img_layer = ImageLayer(source=em_source).set_contrast(range=(40, 210))
-```
-
-More generally, `shader_controls` sets the values of any `#uicontrol` a shader declares, keyed by name:
+To pin one, `shader_controls` sets the values of any `#uicontrol` a shader declares, keyed by name:
 
 ``` py
 img_layer = ImageLayer(

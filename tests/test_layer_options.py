@@ -33,23 +33,7 @@ class TestImageShaderControls:
     def test_unset_is_omitted(self):
         assert "shaderControls" not in ImageLayer(source=IMG_SRC).to_dict()
 
-    def test_set_contrast_default_control(self):
-        d = ImageLayer(source=IMG_SRC).set_contrast(range=(40, 210)).to_dict()
-        assert d["shaderControls"] == {"normalized": {"range": [40.0, 210.0]}}
-
-    def test_set_contrast_merges(self):
-        layer = ImageLayer(source=IMG_SRC, shader_controls={"gain": 2})
-        layer.set_contrast(range=(0, 100)).set_contrast(window=(0, 255))
-        assert layer.shader_controls == {
-            "gain": 2,
-            "normalized": {"range": [0.0, 100.0], "window": [0.0, 255.0]},
-        }
-
-    def test_set_contrast_named_control(self):
-        layer = ImageLayer(source=IMG_SRC).set_contrast(range=(1, 2), control="red")
-        assert layer.shader_controls == {"red": {"range": [1.0, 2.0]}}
-
-    def test_contrast_through_viewer_state(self):
+    def test_shader_controls_through_viewer_state(self):
         vs = ViewerState(dimensions=[4, 4, 40], infer_coordinates=False)
         vs.add_image_layer(IMG_SRC, shader_controls={"normalized": {"range": [5, 9]}})
         layer = vs.to_dict()["layers"][0]

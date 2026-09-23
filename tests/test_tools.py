@@ -339,7 +339,7 @@ class TestProofreadingWorkflow:
     """A synapse-review state: points to place, segments to select, a palette."""
 
     def test_round_trip(self):
-        img = ImageLayer(source=IMG_SRC).set_contrast(range=(40, 210))
+        img = ImageLayer(source=IMG_SRC)
         seg = SegmentationLayer(source=SEG_SRC, segments=[864691135368056201])
         syn = _anno("synapses", linked_segmentation="seg", tags=["good", "bad"])
         vs = _state(

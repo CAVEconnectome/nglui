@@ -665,8 +665,9 @@ class ImageLayer(LayerWithSource):
         The scale for cross-section rendering. Default is None, which will use the default scale.
     shader_controls : dict, optional
         Values for the ``#uicontrol`` controls the shader declares, keyed by control
-        name. An ``invlerp`` control takes a dict such as ``{"range": [30, 220]}``.
-        See also `set_contrast`.
+        name. Unset, the default image shader's ``invlerp`` control is left to
+        Neuroglancer, which is usually the best contrast behavior; set a value only
+        to pin one, e.g. ``{"normalized": {"range": [30, 220]}}``.
     pick: bool, optional
         Whether to allow cursor interaction with meshes and skeletons. Default is True.
     extra : dict, optional
@@ -692,49 +693,6 @@ class ImageLayer(LayerWithSource):
     def __attrs_post_init__(self):
         self.color = parse_color(self.color)
         super().__attrs_post_init__()
-
-    def set_contrast(
-        self,
-        range: Optional[tuple[float, float]] = None,
-        window: Optional[tuple[float, float]] = None,
-        control: str = "normalized",
-    ) -> Self:
-        """Set the brightness/contrast range of an ``invlerp`` shader control.
-
-        Neuroglancer's default image shader maps intensity through an ``invlerp``
-        control named ``normalized``, so with the default shader this sets the
-        display contrast directly.
-
-        Parameters
-        ----------
-        range : tuple of float, optional
-            Intensities mapped to black and white. Values outside are clamped.
-        window : tuple of float, optional
-            Extent of the control's histogram widget in the layer panel.
-        control : str, optional
-            Name of the ``invlerp`` control. Default is "normalized".
-
-        Returns
-        -------
-        ImageLayer
-            The layer, for chaining.
-
-        Examples
-        --------
-        >>> ImageLayer(source=em_source).set_contrast(range=(40, 210))
-        """
-        params = _set_if_given(
-            {},
-            range=None if range is None else [float(x) for x in range],
-            window=None if window is None else [float(x) for x in window],
-        )
-        controls = dict(self.shader_controls or {})
-        existing = controls.get(control)
-        controls[control] = (
-            {**existing, **params} if isinstance(existing, dict) else params
-        )
-        self.shader_controls = controls
-        return self
 
     def to_neuroglancer_layer(self, capabilities=None) -> viewer_state.ImageLayer:
         super().to_neuroglancer_layer(capabilities=capabilities)
