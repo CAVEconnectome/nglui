@@ -172,12 +172,12 @@ Pass `True`/`False` to open or close a panel, or a `SidePanel` to also choose it
 from nglui.statebuilder import SidePanel
 
 viewerstate.set_panels(
-    layer_list=True,
-    selected_layer=SidePanel(visible=True, side="right", size=500),
+    layer_list_panel=True,
+    selected_layer_panel=SidePanel(side="right", size=500),
 )
 ```
 
-Which layer the selected-layer panel shows is set with `add_layer(..., selected=True)` or `set_selected_layer`.
+The selected-layer panel shows whichever layer you select with `add_layer(..., selected=True)` or `set_selected_layer`, and selecting a layer opens it; `set_selected_layer(layer, visible=False)` selects without opening.
 
 #### Tools
 

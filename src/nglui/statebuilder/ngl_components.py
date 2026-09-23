@@ -43,6 +43,7 @@ from .utils import (
     deep_merge,
     is_dict_like,
     is_list_like,
+    one_of,
     parse_color,
     parse_graphene_header,
     parse_graphene_image_url,
@@ -828,6 +829,9 @@ class SegmentationLayer(LayerWithSource):
         Equivalent to ``skeleton_rendering=SkeletonRendering(shader=...)``; set one or the other.
     skeleton_rendering : SkeletonRendering or dict, optional
         Skeleton shader, shader control values, render modes, and line widths.
+    shader_controls : dict, optional
+        Values for the skeleton shader's ``#uicontrol`` controls, keyed by name.
+        Equivalent to ``skeleton_rendering=SkeletonRendering(shader_controls=...)``.
     segment_query : str, optional
         Text in the layer's segment search box, e.g. a label prefix or ``#tag`` query
         against segment properties.
@@ -912,6 +916,13 @@ class SegmentationLayer(LayerWithSource):
         default=None, type=Optional[Union[str, bool]], kw_only=True, repr=False
     )
     equivalences = field(default=None, type=Optional[list], kw_only=True, repr=False)
+    shader_controls = field(
+        default=None,
+        converter=strip_numpy_types,
+        type=Optional[dict],
+        kw_only=True,
+        repr=False,
+    )
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -969,6 +980,16 @@ class SegmentationLayer(LayerWithSource):
                     "`shader` and in `skeleton_rendering`; set only one."
                 )
             rendering = attrs.evolve(rendering, shader=self.shader)
+        if self.shader_controls is not None:
+            if (
+                rendering.shader_controls is not None
+                and rendering.shader_controls != self.shader_controls
+            ):
+                raise ValueError(
+                    f"Segmentation layer '{self.name}' sets skeleton shader_controls "
+                    "both directly and in `skeleton_rendering`; set only one."
+                )
+            rendering = attrs.evolve(rendering, shader_controls=self.shader_controls)
         return rendering.to_json() or None
 
     def apply_to_neuroglancer(
@@ -1310,9 +1331,7 @@ class AnnotationLayer(LayerWithSource):
         default=None,
         kw_only=True,
         repr=False,
-        validator=attrs.validators.optional(
-            attrs.validators.in_(tuple(_ANNOTATE_TOOL_TYPES))
-        ),
+        validator=one_of(*_ANNOTATE_TOOL_TYPES, optional=True),
     )
     ignore_null_segment_filter = field(
         default=None, type=Optional[bool], kw_only=True, repr=False

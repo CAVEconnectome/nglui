@@ -93,10 +93,10 @@ _DISPLAY_OPTIONS = {
 
 # nglui panel name -> attribute of the neuroglancer ViewerState holding its location
 _PANELS = {
-    "layer_list": "layer_list_panel",
-    "statistics": "statistics",
-    "help": "help_panel",
-    "selected_layer": "selected_layer",
+    "layer_list_panel": "layer_list_panel",
+    "statistics_panel": "statistics",
+    "help_panel": "help_panel",
+    "selected_layer_panel": "selected_layer",
 }
 
 
@@ -160,7 +160,7 @@ class ViewerState:
         scale_3d: Optional[float] = None,
         show_slices: Optional[bool] = None,
         selected_layer: Optional[str] = None,
-        selected_layer_visible: bool = False,
+        selected_layer_visible: bool = True,
         layout: Optional[
             Union[
                 Literal[
@@ -214,9 +214,10 @@ class ViewerState:
         show_slices : bool
             Whether to show cross-sectional slices in the viewer. Default is False.
         selected_layer : str
-            The name of the selected layer. If None, no layer is selected.
+            The name of the selected layer, whose settings panel is shown. If None,
+            no layer is selected.
         selected_layer_visible : bool
-            Whether the selected layer is visible. Default is False.
+            Whether the selected layer's panel is open. Default is True.
         layout : str, Panel, or StackLayout
             The panel layout of the viewer: a preset (default "xy-3d"), or rows and
             columns of `Panel`s showing different layers. See `set_layout`.
@@ -281,6 +282,20 @@ class ViewerState:
             cross_section_scale=scale_imagery, projection_scale=scale_3d
         )
         if camera is not None:
+            for shorthand, value, field_name in [
+                ("scale_imagery", scale_imagery, "cross_section_scale"),
+                ("scale_3d", scale_3d, "projection_scale"),
+            ]:
+                from_camera = getattr(camera, field_name)
+                if (
+                    value is not None
+                    and from_camera is not None
+                    and float(value) != from_camera
+                ):
+                    raise ValueError(
+                        f"{shorthand}={value} conflicts with camera.{field_name}="
+                        f"{from_camera}; they set the same zoom, so give only one."
+                    )
             self._camera = self._camera.merge(camera)
         self._show_slices = _DEFAULT_SHOW_SLICES
         self._layout = _DEFAULT_LAYOUT
@@ -629,10 +644,10 @@ class ViewerState:
     def set_panels(
         self,
         *,
-        layer_list: Optional[Union[bool, SidePanel, dict]] = None,
-        statistics: Optional[Union[bool, SidePanel, dict]] = None,
-        help: Optional[Union[bool, SidePanel, dict]] = None,
-        selected_layer: Optional[Union[bool, SidePanel, dict]] = None,
+        layer_list_panel: Optional[Union[bool, SidePanel, dict]] = None,
+        statistics_panel: Optional[Union[bool, SidePanel, dict]] = None,
+        help_panel: Optional[Union[bool, SidePanel, dict]] = None,
+        selected_layer_panel: Optional[Union[bool, SidePanel, dict]] = None,
     ) -> Self:
         """Open, close, or place Neuroglancer's side panels.
 
@@ -641,16 +656,15 @@ class ViewerState:
 
         Parameters
         ----------
-        layer_list : bool, SidePanel, or dict, optional
+        layer_list_panel : bool, SidePanel, or dict, optional
             The panel listing all layers.
-        statistics : bool, SidePanel, or dict, optional
+        statistics_panel : bool, SidePanel, or dict, optional
             The chunk-download statistics panel.
-        help : bool, SidePanel, or dict, optional
+        help_panel : bool, SidePanel, or dict, optional
             The keyboard and mouse bindings help panel.
-        selected_layer : bool, SidePanel, or dict, optional
+        selected_layer_panel : bool, SidePanel, or dict, optional
             The panel for the selected layer's settings. Which layer it shows is set
-            with `set_selected_layer`; ``visible`` here takes precedence over
-            `selected_layer_visible`.
+            with `set_selected_layer`; ``visible`` here takes precedence over it.
 
         Returns
         -------
@@ -659,13 +673,16 @@ class ViewerState:
 
         Examples
         --------
-        >>> vs.set_panels(layer_list=True, selected_layer=SidePanel(side="right", size=500))
+        >>> vs.set_panels(
+        ...     layer_list_panel=True,
+        ...     selected_layer_panel=SidePanel(side="right", size=500),
+        ... )
         """
         given = dict(
-            layer_list=layer_list,
-            statistics=statistics,
-            help=help,
-            selected_layer=selected_layer,
+            layer_list_panel=layer_list_panel,
+            statistics_panel=statistics_panel,
+            help_panel=help_panel,
+            selected_layer_panel=selected_layer_panel,
         )
         for name, value in given.items():
             if value is None:
@@ -805,12 +822,30 @@ class ViewerState:
         self.set_selected_layer(value)
 
     def set_selected_layer(
-        self, selected_layer: Union[str, ImageLayer, SegmentationLayer, AnnotationLayer]
+        self,
+        selected_layer: Union[str, ImageLayer, SegmentationLayer, AnnotationLayer],
+        visible: bool = True,
     ) -> Self:
+        """Select a layer, showing its settings in the selected-layer panel.
+
+        Parameters
+        ----------
+        selected_layer : str or Layer
+            The layer, by name or object.
+        visible : bool, optional
+            Whether the panel is open. Default is True. Place the panel with
+            ``set_panels(selected_layer_panel=SidePanel(...))``.
+
+        Returns
+        -------
+        ViewerState
+            The viewer state, for chaining.
+        """
         if isinstance(selected_layer, str):
             self._selected_layer = selected_layer
         else:
             self._selected_layer = selected_layer.name
+        self._selected_layer_visible = visible
         self._reset_viewer()
         return self
 
@@ -2066,8 +2101,21 @@ class ViewerState:
             for name, value in self._display.items():
                 setattr(s, name, value)
             if self._selected_layer is not None:
+                if self._selected_layer not in self._all_layer_names(s):
+                    raise ValueError(
+                        f"The selected layer {self._selected_layer!r} is not in the "
+                        f"viewer. Layers: {self._all_layer_names(s)}"
+                    )
                 s.selected_layer.layer = self._selected_layer
                 s.selected_layer.visible = self._selected_layer_visible
+            elif (
+                "selected_layer_panel" in self._panels
+                and self._panels["selected_layer_panel"].visible
+            ):
+                raise ValueError(
+                    "The selected-layer panel is set to open, but no layer is "
+                    "selected; choose one with set_selected_layer()."
+                )
             for name, panel in self._panels.items():
                 panel.apply_to(getattr(s, _PANELS[name]))
             capabilities = self._resolve_capabilities()

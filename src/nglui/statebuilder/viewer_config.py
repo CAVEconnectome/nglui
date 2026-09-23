@@ -17,7 +17,7 @@ from typing import Literal, Optional, Sequence, Union
 import attrs
 import numpy as np
 
-from .utils import strip_numpy_types
+from .utils import one_of, strip_numpy_types
 
 __all__ = [
     "Camera",
@@ -173,16 +173,16 @@ class SidePanel:
 
     Examples
     --------
-    >>> vs.set_panels(layer_list=True, selected_layer=SidePanel(side="right", size=500))
+    >>> vs.set_panels(
+    ...     layer_list_panel=True, selected_layer_panel=SidePanel(side="right", size=500)
+    ... )
     """
 
     visible: Optional[bool] = attrs.field(default=None, kw_only=True)
     side: Optional[Literal["left", "right", "top", "bottom"]] = attrs.field(
         default=None,
         kw_only=True,
-        validator=attrs.validators.optional(
-            attrs.validators.in_(("left", "right", "top", "bottom"))
-        ),
+        validator=one_of("left", "right", "top", "bottom", optional=True),
     )
     size: Optional[int] = attrs.field(default=None, kw_only=True)
     flex: Optional[float] = attrs.field(default=None, kw_only=True)
@@ -242,16 +242,12 @@ class SkeletonRendering:
     mode_2d: Optional[Literal["lines", "lines_and_points"]] = attrs.field(
         default=None,
         kw_only=True,
-        validator=attrs.validators.optional(
-            attrs.validators.in_(("lines", "lines_and_points"))
-        ),
+        validator=one_of("lines", "lines_and_points", optional=True),
     )
     mode_3d: Optional[Literal["lines", "lines_and_points"]] = attrs.field(
         default=None,
         kw_only=True,
-        validator=attrs.validators.optional(
-            attrs.validators.in_(("lines", "lines_and_points"))
-        ),
+        validator=one_of("lines", "lines_and_points", optional=True),
     )
     line_width_2d: Optional[float] = attrs.field(
         default=None, kw_only=True, converter=_optional_float

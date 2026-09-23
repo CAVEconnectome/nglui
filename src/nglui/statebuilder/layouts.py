@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Literal, Optional, Union
 
 import attrs
 
+from .utils import one_of
 from .viewer_config import Camera, _set_fields
 
 if TYPE_CHECKING:
@@ -95,13 +96,13 @@ class Panel:
 
     layers: Optional[list] = attrs.field(default=None, converter=_layer_names)
     layout: str = attrs.field(
-        default="xy", kw_only=True, validator=attrs.validators.in_(PRESET_LAYOUTS)
+        default="xy", kw_only=True, validator=one_of(*PRESET_LAYOUTS)
     )
     camera: Optional[Camera] = attrs.field(default=None, kw_only=True)
     camera_link: Literal["unlinked", "relative"] = attrs.field(
         default="unlinked",
         kw_only=True,
-        validator=attrs.validators.in_(("unlinked", "relative")),
+        validator=one_of("unlinked", "relative"),
     )
     flex: Optional[float] = attrs.field(
         default=None, kw_only=True, validator=_positive_flex
@@ -132,9 +133,7 @@ class Panel:
 class StackLayout:
     """A row or column of panels and nested layouts. Build with `row` or `column`."""
 
-    direction: Literal["row", "column"] = attrs.field(
-        validator=attrs.validators.in_(("row", "column"))
-    )
+    direction: Literal["row", "column"] = attrs.field(validator=one_of("row", "column"))
     children: list = attrs.field(converter=list)
     flex: Optional[float] = attrs.field(
         default=None, kw_only=True, validator=_positive_flex

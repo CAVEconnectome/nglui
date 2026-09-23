@@ -1,4 +1,5 @@
 import copy
+import difflib
 import numbers
 import re
 from collections.abc import Iterable, Mapping
@@ -206,6 +207,11 @@ def parse_color(clr):
         else:
             return webcolors.name_to_hex(clr)
     else:
+        if any(not 0 <= x <= 1 for x in clr):
+            raise ValueError(
+                f"RGB color values must be between 0 and 1, got {tuple(clr)}. "
+                "For 0-255 values, divide by 255."
+            )
         return webcolors.rgb_to_hex([int(255 * x) for x in clr])
 
 
@@ -280,3 +286,32 @@ def deep_merge(base: dict, override: Mapping, remove_none: bool = True) -> dict:
         else:
             merged[key] = copy.deepcopy(value)
     return merged
+
+
+def one_of(*choices, optional: bool = False):
+    """An attrs validator requiring one of `choices`, with a readable error.
+
+    attrs' own ``in_`` validator raises with the whole field definition attached;
+    this names the field, lists the choices, and suggests a close match.
+
+    Parameters
+    ----------
+    *choices
+        The allowed values.
+    optional : bool, optional
+        Whether None is also allowed. Default is False.
+    """
+
+    def validate(instance, attribute, value):
+        if value is None and optional:
+            return
+        if value in choices:
+            return
+        close = difflib.get_close_matches(str(value), [str(c) for c in choices], n=1)
+        hint = f" Did you mean {close[0]!r}?" if close else ""
+        raise ValueError(
+            f"{attribute.name} must be one of {', '.join(repr(c) for c in choices)}; "
+            f"got {value!r}.{hint}"
+        )
+
+    return validate

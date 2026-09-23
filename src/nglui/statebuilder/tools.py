@@ -34,6 +34,7 @@ import attrs
 from neuroglancer import viewer_state
 
 from .ngl_annotations import TOGGLE_BOOL_PROPERTY_TOOL
+from .utils import one_of
 
 if TYPE_CHECKING:
     from .ngl_components import Layer
@@ -594,9 +595,7 @@ class ToolPalette:
     side: Optional[str] = attrs.field(
         default=None,
         kw_only=True,
-        validator=attrs.validators.optional(
-            attrs.validators.in_(("left", "right", "top", "bottom"))
-        ),
+        validator=one_of("left", "right", "top", "bottom", optional=True),
     )
     size: Optional[int] = attrs.field(default=None, kw_only=True)
     visible: Optional[bool] = attrs.field(default=True, kw_only=True)

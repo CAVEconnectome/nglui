@@ -100,9 +100,11 @@ class TestCamera:
         assert d["projectionScale"] == 800.0
         assert "projectionOrientation" in d
 
-    def test_constructor_camera_overrides_flat_scales(self):
-        vs = _state(scale_3d=100, camera=Camera(projection_scale=200))
-        assert vs.to_dict()["projectionScale"] == 200.0
+    def test_constructor_camera_combines_with_flat_scales(self):
+        vs = _state(scale_3d=100, camera=Camera(projection_orientation="xz"))
+        d = vs.to_dict()
+        assert d["projectionScale"] == 100.0
+        assert "projectionOrientation" in d
 
     def test_camera_respects_base_state(self):
         base = {"projectionScale": 1234.0, "crossSectionScale": 5.0}
@@ -177,30 +179,32 @@ class TestDisplayOptions:
 
 class TestPanels:
     def test_bool_shorthand(self):
-        d = _state().set_panels(layer_list=True, statistics=False).to_dict()
+        d = _state().set_panels(layer_list_panel=True, statistics_panel=False).to_dict()
         assert d["layerListPanel"] == {"visible": True}
         assert d["statistics"] == {"visible": False}
 
     def test_side_panel_fields(self):
         d = (
             _state()
-            .set_panels(help=SidePanel(visible=True, side="left", size=300))
+            .set_panels(help_panel=SidePanel(visible=True, side="left", size=300))
             .to_dict()
         )
         assert d["helpPanel"] == {"visible": True, "side": "left", "size": 300}
 
     def test_dict_is_accepted(self):
-        d = _state().set_panels(layer_list={"side": "right"}).to_dict()
+        d = _state().set_panels(layer_list_panel={"side": "right"}).to_dict()
         assert d["layerListPanel"] == {"side": "right"}
 
     def test_repeat_calls_merge(self):
-        vs = _state().set_panels(layer_list=SidePanel(side="left"))
-        vs.set_panels(layer_list=True)
+        vs = _state().set_panels(layer_list_panel=SidePanel(side="left"))
+        vs.set_panels(layer_list_panel=True)
         assert vs.to_dict()["layerListPanel"] == {"visible": True, "side": "left"}
 
     def test_selected_layer_panel_combines_with_layer(self):
         vs = _state(ImageLayer(source=IMG_SRC), selected_layer="img")
-        vs.set_panels(selected_layer=SidePanel(visible=True, side="right", size=500))
+        vs.set_panels(
+            selected_layer_panel=SidePanel(visible=True, side="right", size=500)
+        )
         assert vs.to_dict()["selectedLayer"] == {
             "layer": "img",
             "visible": True,
@@ -214,7 +218,7 @@ class TestPanels:
 
     def test_invalid_type(self):
         with pytest.raises(TypeError):
-            _state().set_panels(help="yes")
+            _state().set_panels(help_panel="yes")
 
 
 class TestDeepMerge:
@@ -296,7 +300,9 @@ class TestFigureWorkflow:
                 selected=True,
             )
             .set_camera(projection_orientation="xz", projection_scale=12000)
-            .set_panels(layer_list=True, selected_layer=SidePanel(side="right"))
+            .set_panels(
+                layer_list_panel=True, selected_layer_panel=SidePanel(side="right")
+            )
         )
         url = vs.to_url(target_url="https://neuroglancer-demo.appspot.com")
         parsed = neuroglancer.parse_url(url).to_json()
