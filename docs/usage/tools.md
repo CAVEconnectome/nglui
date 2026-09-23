@@ -35,7 +35,7 @@ viewerstate.add_tools(
 **As raw JSON**, through a layer's `extra` argument: `extra={"toolBindings": {"H": "meshSilhouetteRendering"}}`.
 This skips nglui's checks, so prefer the forms above.
 
-In a `tools={...}` mapping, a value can be a tool class (`tools.MeshSilhouette`), a tool object (needed for tools with options, like `tools.ShaderControl(control="gain")`), or Neuroglancer's name for the tool (`"meshSilhouetteRendering"`).
+In a `tools={...}` mapping, a value can be a tool class (`tools.MeshSilhouette`), a tool object (needed for tools with options, like `tools.ShaderControlTool(control="gain")`), or Neuroglancer's name for the tool (`"meshSilhouetteRendering"`).
 Classes are best: a typo in a class name is caught by your editor or type checker, while a typo in a string is only caught when the layer is created (with a suggestion of what you meant).
 
 ### How keys are assigned
@@ -109,7 +109,7 @@ Activating one shows that control at the bottom of the viewer.
 
 | Tool | Does | Options | Neuroglancer name |
 |---|---|---|---|
-| `ShaderControl` | Adjust one of the shader's `#uicontrol` controls, such as an image's contrast. | `control`: the control's name. Default `"normalized"`, the default image shader's contrast control. | `shaderControl` |
+| `ShaderControlTool` | Adjust one of the shader's `#uicontrol` controls, such as an image's contrast. | `control`: the control's name. Default `"normalized"`, the default image shader's contrast control. | `shaderControl` |
 
 ## Viewer
 

@@ -315,3 +315,33 @@ def one_of(*choices, optional: bool = False):
         )
 
     return validate
+
+
+def drop_none(mapping: Mapping) -> dict:
+    """The items of `mapping` whose value is not None.
+
+    nglui leaves unset options out of the state, so Neuroglancer's own defaults
+    (or a base state's values) apply; this is how "unset" is filtered.
+    """
+    return {k: v for k, v in mapping.items() if v is not None}
+
+
+def set_fields(obj) -> dict:
+    """The fields of an attrs object that are set, i.e. not None."""
+    import attrs
+
+    return drop_none(attrs.asdict(obj, recurse=False))
+
+
+def to_camel(name: str) -> str:
+    """Convert a snake_case name to Neuroglancer's camelCase JSON key.
+
+    Examples
+    --------
+    >>> to_camel("projection_scale")
+    'projectionScale'
+    >>> to_camel("line_width_3d")
+    'lineWidth3d'
+    """
+    first, *rest = name.split("_")
+    return first + "".join(part[:1].upper() + part[1:] for part in rest)

@@ -38,9 +38,10 @@ from .ngl_annotations import (
     unique_tags,
 )
 from .shaders import DEFAULT_SHADER_MAP
-from .tools import check_layer_type, coerce_layer_tools
+from .tools import ANNOTATE_TOOL_TYPES, check_layer_type, coerce_layer_tools
 from .utils import (
     deep_merge,
+    drop_none,
     is_dict_like,
     is_list_like,
     one_of,
@@ -256,14 +257,14 @@ class Layer(ABC):
     _datamap_priority = field(factory=dict, type=dict, init=False, repr=False)
 
     #: Neuroglancer layer type, for checking tools at construction; None skips it
-    _ng_layer_type = None
+    _neuroglancer_type = None
 
     def _check_tools(self, value: list) -> None:
-        if self._ng_layer_type is None:
+        if self._neuroglancer_type is None:
             return
         for tool in value:
             if tool.layer is None or tool.layer == self.name:
-                check_layer_type(tool, self._ng_layer_type, self.name)
+                check_layer_type(tool, self._neuroglancer_type, self.name)
 
     @contextmanager
     def with_datamap(self, datamap: dict):
@@ -572,26 +573,6 @@ def _handle_linked_segmentation(segmentation_layer) -> dict:
         )
 
 
-# AnnotationLayer.active_tool value -> Neuroglancer annotate tool type. These are
-# only restorable as a layer's active tool, not as key bindings.
-_ANNOTATE_TOOL_TYPES = {
-    "point": "annotatePoint",
-    "line": "annotateLine",
-    "box": "annotateBoundingBox",
-    "ellipsoid": "annotateSphere",
-    "polyline": "annotatePolyline",
-}
-
-
-def _set_if_given(kwargs: dict, **optional) -> dict:
-    """Add the `optional` values that are not None to `kwargs`.
-
-    Unset options are left out so Neuroglancer's own defaults apply.
-    """
-    kwargs.update({k: v for k, v in optional.items() if v is not None})
-    return kwargs
-
-
 def _handle_filter_by_segmentation(
     filter: Optional[Union[list, bool, str]],
     linked_segmentation: Optional[Union[list, bool, str]],
@@ -707,7 +688,7 @@ class ImageLayer(LayerWithSource):
         Raw Neuroglancer layer JSON merged over the layer last, for options nglui does not wrap.
     """
 
-    _ng_layer_type = "image"
+    _neuroglancer_type = "image"
     name = field(default="img", type=str)
     source = field(factory=list, type=Union[list, Source])
     shader = field(default=None, type=Optional[str], kw_only=True, repr=False)
@@ -743,16 +724,19 @@ class ImageLayer(LayerWithSource):
             annotation_color=self.color,
         )
         # Unset options are left out so Neuroglancer's own defaults apply.
-        _set_if_given(
-            kwargs,
-            shader=self.shader,
-            shader_controls=self.shader_controls,
-            opacity=self.opacity,
-            blend=self.blend,
-            volume_rendering_mode=self.volume_rendering_mode,
-            volume_rendering_gain=self.volume_rendering_gain,
-            volume_rendering_depth_samples=self.volume_rendering_depth_samples,
-            cross_section_render_scale=self.cross_section_render_scale,
+        kwargs.update(
+            drop_none(
+                dict(
+                    shader=self.shader,
+                    shader_controls=self.shader_controls,
+                    opacity=self.opacity,
+                    blend=self.blend,
+                    volume_rendering_mode=self.volume_rendering_mode,
+                    volume_rendering_gain=self.volume_rendering_gain,
+                    volume_rendering_depth_samples=self.volume_rendering_depth_samples,
+                    cross_section_render_scale=self.cross_section_render_scale,
+                )
+            )
         )
         return viewer_state.ImageLayer(**kwargs)
 
@@ -864,7 +848,7 @@ class SegmentationLayer(LayerWithSource):
 
     """
 
-    _ng_layer_type = "segmentation"
+    _neuroglancer_type = "segmentation"
     name = field(default="seg", type=str)
     source = field(default=None, type=Union[str, Source])
     segments = field(
@@ -950,24 +934,28 @@ class SegmentationLayer(LayerWithSource):
             mesh_silhouette_rendering=self.mesh_silhouette,
             pick=self.pick,
         )
-        _set_if_given(
-            kwargs,
-            skeleton_rendering=self._skeleton_rendering_json(),
-            hide_segment_zero=self.hide_segment_zero,
-            segment_query=self.segment_query,
-            saturation=self.saturation,
-            color_seed=self.color_seed,
-            segment_default_color=self.segment_default_color,
-            mesh_render_scale=self.mesh_render_scale,
-            cross_section_render_scale=self.cross_section_render_scale,
-            hover_highlight=self.hover_highlight,
-            base_segment_coloring=self.base_segment_coloring,
-            ignore_null_visible_set=self.ignore_null_visible_set,
-            linked_segmentation_group=self.linked_segmentation_group,
-            linked_segmentation_color_group=self.linked_segmentation_color_group,
-            equivalences=None
-            if self.equivalences is None
-            else [[int(sid) for sid in group] for group in self.equivalences],
+        equivalences = None
+        if self.equivalences is not None:
+            equivalences = [[int(sid) for sid in group] for group in self.equivalences]
+        kwargs.update(
+            drop_none(
+                dict(
+                    skeleton_rendering=self._skeleton_rendering_json(),
+                    hide_segment_zero=self.hide_segment_zero,
+                    segment_query=self.segment_query,
+                    saturation=self.saturation,
+                    color_seed=self.color_seed,
+                    segment_default_color=self.segment_default_color,
+                    mesh_render_scale=self.mesh_render_scale,
+                    cross_section_render_scale=self.cross_section_render_scale,
+                    hover_highlight=self.hover_highlight,
+                    base_segment_coloring=self.base_segment_coloring,
+                    ignore_null_visible_set=self.ignore_null_visible_set,
+                    linked_segmentation_group=self.linked_segmentation_group,
+                    linked_segmentation_color_group=self.linked_segmentation_color_group,
+                    equivalences=equivalences,
+                )
+            )
         )
         return viewer_state.SegmentationLayer(**kwargs)
 
@@ -1302,7 +1290,7 @@ class SegmentationLayer(LayerWithSource):
 
 @define
 class AnnotationLayer(LayerWithSource):
-    _ng_layer_type = "annotation"
+    _neuroglancer_type = "annotation"
     name = field(default="anno", type=str)
     source = field(default=None, type=Union[str, list, Source])
     resolution = field(default=None, type=list, kw_only=True, repr=False)
@@ -1331,7 +1319,7 @@ class AnnotationLayer(LayerWithSource):
         default=None,
         kw_only=True,
         repr=False,
-        validator=one_of(*_ANNOTATE_TOOL_TYPES, optional=True),
+        validator=one_of(*ANNOTATE_TOOL_TYPES, optional=True),
     )
     ignore_null_segment_filter = field(
         default=None, type=Optional[bool], kw_only=True, repr=False
@@ -1397,16 +1385,18 @@ class AnnotationLayer(LayerWithSource):
         )
         if filter_by:
             kwargs["filter_by_segmentation"] = filter_by
-        self._set_display_options(kwargs)
+        kwargs.update(self._optional_kwargs())
         return viewer_state.LocalAnnotationLayer(**kwargs)
 
-    def _set_display_options(self, kwargs: dict) -> dict:
-        return _set_if_given(
-            kwargs,
-            shader=self.shader,
-            shader_controls=self.shader_controls,
-            ignore_null_segment_filter=self.ignore_null_segment_filter,
-            tool=_ANNOTATE_TOOL_TYPES.get(self.active_tool),
+    def _optional_kwargs(self) -> dict:
+        """Options shared by local and cloud annotation layers, when set."""
+        return drop_none(
+            dict(
+                shader=self.shader,
+                shader_controls=self.shader_controls,
+                ignore_null_segment_filter=self.ignore_null_segment_filter,
+                tool=ANNOTATE_TOOL_TYPES.get(self.active_tool),
+            )
         )
 
     def _to_neuroglancer_layer_cloud(self) -> viewer_state.AnnotationLayer:
@@ -1429,7 +1419,7 @@ class AnnotationLayer(LayerWithSource):
             ),
             swap_visible_segments_on_move=self.swap_visible_segments_on_move,
         )
-        self._set_display_options(kwargs)
+        kwargs.update(self._optional_kwargs())
         return viewer_state.AnnotationLayer(**kwargs)
 
     def _resolve_capabilities(self, capabilities=None):

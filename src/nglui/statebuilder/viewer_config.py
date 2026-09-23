@@ -17,7 +17,7 @@ from typing import Literal, Optional, Sequence, Union
 import attrs
 import numpy as np
 
-from .utils import one_of, strip_numpy_types
+from .utils import one_of, set_fields, strip_numpy_types, to_camel
 
 __all__ = [
     "Camera",
@@ -88,11 +88,6 @@ def _optional_float(value) -> Optional[float]:
     return None if value is None else float(value)
 
 
-def _set_fields(obj) -> dict:
-    """The fields of an attrs config object that have been set."""
-    return {k: v for k, v in attrs.asdict(obj, recurse=False).items() if v is not None}
-
-
 @attrs.frozen
 class Camera:
     """Where the viewer looks, in both the 2d cross-section and the 3d projection.
@@ -144,11 +139,11 @@ class Camera:
 
     def merge(self, other: Camera) -> Camera:
         """Return a camera with `other`'s set fields laid over this one's."""
-        return attrs.evolve(self, **_set_fields(other))
+        return attrs.evolve(self, **set_fields(other))
 
-    def apply_to(self, state) -> None:
+    def apply_to_neuroglancer(self, state) -> None:
         """Write the set fields onto a neuroglancer state or layer-group panel."""
-        for name, value in _set_fields(self).items():
+        for name, value in set_fields(self).items():
             setattr(state, name, value)
 
 
@@ -204,11 +199,11 @@ class SidePanel:
 
     def merge(self, other: SidePanel) -> SidePanel:
         """Return a panel with `other`'s set fields laid over this one's."""
-        return attrs.evolve(self, **_set_fields(other))
+        return attrs.evolve(self, **set_fields(other))
 
-    def apply_to(self, panel_state) -> None:
+    def apply_to_neuroglancer(self, panel_state) -> None:
         """Write the set fields onto a neuroglancer side panel state."""
-        for name, value in _set_fields(self).items():
+        for name, value in set_fields(self).items():
             setattr(panel_state, name, value)
 
 
@@ -256,17 +251,10 @@ class SkeletonRendering:
         default=None, kw_only=True, converter=_optional_float
     )
 
-    _JSON_KEYS = {
-        "shader": "shader",
-        "shader_controls": "shaderControls",
-        "mode_2d": "mode2d",
-        "mode_3d": "mode3d",
-        "line_width_2d": "lineWidth2d",
-        "line_width_3d": "lineWidth3d",
-    }
-
     @classmethod
-    def coerce(cls, value: Union[SkeletonRendering, dict, None]):
+    def coerce(
+        cls, value: Union[SkeletonRendering, dict, None]
+    ) -> Optional[SkeletonRendering]:
         """Accept a SkeletonRendering or a dict of its fields."""
         if value is None or isinstance(value, cls):
             return value
@@ -276,4 +264,4 @@ class SkeletonRendering:
 
     def to_json(self) -> dict:
         """The set fields, under Neuroglancer's ``skeletonRendering`` JSON keys."""
-        return {self._JSON_KEYS[k]: v for k, v in _set_fields(self).items()}
+        return {to_camel(k): v for k, v in set_fields(self).items()}

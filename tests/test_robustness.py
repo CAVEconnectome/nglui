@@ -101,7 +101,7 @@ class TestPaletteReuse:
             "selectSegments",
             "meshSilhouetteRendering",
         ]
-        assert palette.tools == []  # the caller's object is untouched
+        assert palette.tools == ()  # the caller's object is untouched
 
     def test_palette_does_not_leak_between_states(self):
         palette = tools.ToolPalette("P")
@@ -126,7 +126,7 @@ class TestNoStaleState:
             Camera(),
             SidePanel(),
             tools.SelectSegments(),
-            tools.ShaderControl(),
+            tools.ShaderControlTool(),
         ],
     )
     def test_config_objects_are_immutable(self, obj):

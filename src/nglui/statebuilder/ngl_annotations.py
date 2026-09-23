@@ -76,7 +76,7 @@ def make_annotation_properties(annotations, tag_base_number=0):
 def make_bindings(properties, bindings=None):
     "Make a dictinary describing key bindings for tags"
     if bindings is None:
-        bindings = ["Q", "W", "E", "R", "T", "A", "S", "D", "F", "G"]
+        bindings = DEFAULT_TAG_BINDINGS
     if len(properties) > len(bindings):
         raise ValueError("Too many properties for bindings")
     tool_bindings = {}

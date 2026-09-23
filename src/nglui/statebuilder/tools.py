@@ -15,7 +15,7 @@ Examples
 >>> from nglui.statebuilder import tools
 >>> vs.add_tools(
 ...     tools.SelectSegments(layer="seg", key="S"),
-...     tools.ShaderControl(layer="img", control="normalized"),  # key auto-assigned
+...     tools.ShaderControlTool(layer="img", control="normalized"),  # key auto-assigned
 ...     tools.MeshSilhouette(layer="seg"),
 ...     tools.Dimension(dimension="z"),
 ...     palette=tools.ToolPalette("Proofreading", side="right"),
@@ -33,8 +33,9 @@ from typing import TYPE_CHECKING, ClassVar, Optional, Union
 import attrs
 from neuroglancer import viewer_state
 
-from .ngl_annotations import TOGGLE_BOOL_PROPERTY_TOOL
-from .utils import one_of
+from .ngl_annotations import DEFAULT_TAG_BINDINGS, TOGGLE_BOOL_PROPERTY_TOOL
+from .utils import set_fields
+from .viewer_config import SidePanel
 
 if TYPE_CHECKING:
     from .ngl_components import Layer
@@ -44,7 +45,7 @@ __all__ = [
     "SelectSegments",
     "MergeSegments",
     "SplitSegments",
-    "ShaderControl",
+    "ShaderControlTool",
     "LayerSetting",
     "Opacity",
     "Blend",
@@ -77,12 +78,26 @@ __all__ = [
 
 _KEY_PATTERN = re.compile(r"^[A-Z]$")
 
-# Keys handed out when a tool does not name one. Tag tools take Q W E R T A S D F G,
-# so these start from the other rows to leave tags on the keys users expect.
-_AUTO_KEY_ORDER = "ZXCVBNMYUIOPHJKLQWERTASDFG"
+_TAG_KEYS = "".join(DEFAULT_TAG_BINDINGS)
+# Keys handed out when a tool does not name one: the rows tag tools don't use, so
+# tags stay on the keys users expect.
+_AUTO_KEY_ORDER = "ZXCVBNMYUIOPHJKL" + _TAG_KEYS
 # Where a tag tool goes when its usual key is taken: on after the tag keys, so a
 # second tagged layer's tags sit next to the first's.
-_TAG_KEY_ORDER = "QWERTASDFGYUIOPHJKLZXCVBNM"
+_TAG_KEY_ORDER = _TAG_KEYS + "YUIOPHJKLZXCVBNM"
+assert sorted(_AUTO_KEY_ORDER) == sorted(_TAG_KEY_ORDER) == sorted(set(_TAG_KEY_ORDER))
+
+#: AnnotationLayer.active_tool value -> Neuroglancer's annotate tool type
+ANNOTATE_TOOL_TYPES = {
+    "point": "annotatePoint",
+    "line": "annotateLine",
+    "box": "annotateBoundingBox",
+    "ellipsoid": "annotateSphere",
+    "polyline": "annotatePolyline",
+}
+#: Tool types Neuroglancer restores only as a layer's active tool. Bound to a key or
+#: listed in a palette, one fails to restore and takes later bindings with it.
+ACTIVE_TOOL_ONLY_TYPES = frozenset(ANNOTATE_TOOL_TYPES.values())
 
 
 def _validate_key(instance, attribute, value):
@@ -169,7 +184,7 @@ class SplitSegments(_SegmentationTool):
 
 
 @attrs.frozen
-class ShaderControl(Tool):
+class ShaderControlTool(Tool):
     """Adjust one of a layer's shader controls, e.g. image contrast.
 
     Parameters
@@ -564,42 +579,39 @@ def check_layer_type(tool: Tool, layer_type: str, layer_name: str) -> None:
         )
 
 
-@attrs.define
-class ToolPalette:
-    """A named panel of tool buttons.
+@attrs.frozen
+class ToolPalette(SidePanel):
+    """A named panel of tool buttons, placed like any other side panel.
 
     Parameters
     ----------
     name : str
         The palette's title.
-    tools : list of Tool, optional
+    tools : sequence of Tool, optional
         Tools shown in the palette. Tools can also be added with
         ``vs.add_tools(..., palette=...)``. Layer tools need their `layer` set.
-    side : {"left", "right", "top", "bottom"}, optional
-        Which edge of the viewer the palette docks to.
-    size : int, optional
-        Width (or height, for top/bottom) in pixels.
-    visible : bool, optional
-        Whether the palette is open. Default is True.
     query : str, optional
         A query that fills the palette with matching tools, in Neuroglancer's
         palette query syntax.
+    visible : bool, optional
+        Whether the palette is open. Default is True: unlike the built-in panels,
+        a palette exists only because you added it.
+    side, size, flex, row, col : optional
+        Placement, as for `SidePanel`.
 
     Examples
     --------
     >>> ToolPalette("Proofreading", side="right")
     """
 
-    name: str
-    tools: list = attrs.field(factory=list, converter=list)
-    side: Optional[str] = attrs.field(
-        default=None,
-        kw_only=True,
-        validator=one_of("left", "right", "top", "bottom", optional=True),
-    )
-    size: Optional[int] = attrs.field(default=None, kw_only=True)
-    visible: Optional[bool] = attrs.field(default=True, kw_only=True)
+    name: str = attrs.field()
+    tools: tuple = attrs.field(factory=tuple, converter=tuple)
     query: Optional[str] = attrs.field(default=None, kw_only=True)
+    visible: Optional[bool] = attrs.field(default=True, kw_only=True)
+
+    def with_tools(self, *tools: Tool) -> ToolPalette:
+        """Return a copy of this palette with `tools` appended."""
+        return attrs.evolve(self, tools=(*self.tools, *tools))
 
     def to_json(self, state) -> dict:
         """The palette's JSON, checking each tool's layer against `state`."""
@@ -608,12 +620,10 @@ class ToolPalette:
             layer_name = tool.layer if tool.is_layer_tool else None
             _check_target(state, tool, layer_name)
             entries.append(tool.to_json(layer_name=layer_name))
-        spec = {"tools": entries}
-        for field in ("side", "size", "visible", "query"):
-            value = getattr(self, field)
-            if value is not None:
-                spec[field] = value
-        return spec
+        placement = set_fields(self)
+        placement.pop("name")
+        placement.pop("tools")
+        return {"tools": entries, **placement}
 
 
 def bind_tools(
@@ -733,18 +743,6 @@ def add_palettes(state, palettes: dict) -> None:
         state.tool_palettes[name] = palette.to_json(state)
 
 
-#: Tool types Neuroglancer restores only as a layer's active tool, not from bindings
-LEGACY_ONLY_TOOLS = frozenset(
-    {
-        "annotatePoint",
-        "annotateLine",
-        "annotateBoundingBox",
-        "annotateSphere",
-        "annotatePolyline",
-    }
-)
-
-
 def _tool_type(value) -> str:
     return value if isinstance(value, str) else value.get("type", "")
 
@@ -778,7 +776,7 @@ def _existing_bindings(state, tag_layers) -> tuple[dict, list, dict]:
         bindings = layer.to_json().get("toolBindings", {})
         movable = layer.name in tag_layers
         for key, value in bindings.items():
-            if _tool_type(value) in LEGACY_ONLY_TOOLS:
+            if _tool_type(value) in ACTIVE_TOOL_ONLY_TYPES:
                 warnings.warn(
                     f"Layer '{layer.name}' binds {_tool_type(value)!r} to key {key!r}. "
                     "Neuroglancer cannot restore annotation tools from key bindings: "
@@ -833,13 +831,6 @@ def _check_target(state, tool: Tool, layer_name: Optional[str]) -> None:
             f"the viewer. Layers: {[layer.name for layer in state.layers]}"
         )
     check_layer_type(tool, state.layers[layer_name].type, layer_name)
-
-
-def _bind(state, tool: Tool, layer_name: Optional[str], key: str) -> None:
-    if tool.is_layer_tool:
-        state.layers[layer_name].tool_bindings[key] = tool.to_json()
-    else:
-        state.tool_bindings[key] = tool.to_json()
 
 
 def _describe(tool: Tool, layer_name: Optional[str]) -> str:

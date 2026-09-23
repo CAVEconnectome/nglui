@@ -18,40 +18,31 @@ Examples
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Optional, Union
+from typing import TYPE_CHECKING, Literal, Optional, Union, get_args
 
 import attrs
 
-from .utils import one_of
-from .viewer_config import Camera, _set_fields
+from .utils import one_of, set_fields, to_camel
+from .viewer_config import Camera
 
 if TYPE_CHECKING:
     from .ngl_components import Layer
 
-__all__ = ["Panel", "StackLayout", "row", "column", "PRESET_LAYOUTS"]
+__all__ = [
+    "Panel",
+    "StackLayout",
+    "row",
+    "column",
+    "Layout",
+    "PresetLayout",
+    "PRESET_LAYOUTS",
+]
 
 #: Neuroglancer's built-in arrangements of 2d and 3d views
-PRESET_LAYOUTS = (
-    "xy",
-    "yz",
-    "xz",
-    "xy-3d",
-    "xz-3d",
-    "yz-3d",
-    "4panel",
-    "3d",
-    "4panel-alt",
-)
-
-# Camera field -> the LayerGroupViewer JSON key holding its linked value
-_CAMERA_KEYS = {
-    "cross_section_scale": "crossSectionScale",
-    "cross_section_orientation": "crossSectionOrientation",
-    "cross_section_depth": "crossSectionDepth",
-    "projection_scale": "projectionScale",
-    "projection_orientation": "projectionOrientation",
-    "projection_depth": "projectionDepth",
-}
+PresetLayout = Literal[
+    "xy", "yz", "xz", "xy-3d", "xz-3d", "yz-3d", "4panel", "3d", "4panel-alt"
+]
+PRESET_LAYOUTS: tuple[str, ...] = get_args(PresetLayout)
 
 
 def _layer_names(layers) -> Optional[list[str]]:
@@ -124,8 +115,8 @@ class Panel:
         if self.flex is not None:
             out["flex"] = self.flex
         if self.camera is not None:
-            for name, value in _set_fields(self.camera).items():
-                out[_CAMERA_KEYS[name]] = {"link": self.camera_link, "value": value}
+            for name, value in set_fields(self.camera).items():
+                out[to_camel(name)] = {"link": self.camera_link, "value": value}
         return out
 
 
@@ -195,7 +186,8 @@ def column(
     return StackLayout("column", list(children), flex=flex)
 
 
-Layout = Union[str, Panel, StackLayout]
+#: What a ViewerState's layout can be
+Layout = Union[PresetLayout, Panel, StackLayout]
 
 
 def validate_layout(value) -> None:

@@ -47,7 +47,7 @@ class TestToolJson:
             (tools.MergeSegments(), {"type": "mergeSegments"}),
             (tools.SplitSegments(), {"type": "splitSegments"}),
             (
-                tools.ShaderControl(control="gain"),
+                tools.ShaderControlTool(control="gain"),
                 {"type": "shaderControl", "control": "gain"},
             ),
             (tools.Alpha3d(), {"type": "objectAlpha"}),
@@ -66,7 +66,7 @@ class TestToolJson:
 
     def test_layer_object_becomes_name(self):
         img = ImageLayer(name="em", source=IMG_SRC)
-        assert tools.ShaderControl(layer=img).layer == "em"
+        assert tools.ShaderControlTool(layer=img).layer == "em"
 
     @pytest.mark.parametrize("key", ["p", "PP", "1", ""])
     def test_invalid_key(self, key):
@@ -99,7 +99,7 @@ class TestToolJson:
 class TestBinding:
     def test_explicit_key_on_layer(self):
         vs = _state(_anno()).add_tools(
-            tools.ShaderControl(control="size", layer="anno", key="P")
+            tools.ShaderControlTool(control="size", layer="anno", key="P")
         )
         assert _layer(vs.to_dict(), "anno")["toolBindings"] == {
             "P": {"type": "shaderControl", "control": "size"}
@@ -108,7 +108,7 @@ class TestBinding:
     def test_auto_keys_are_distinct(self):
         vs = _state(ImageLayer(source=IMG_SRC), SegmentationLayer(source=SEG_SRC))
         vs.add_tools(
-            tools.ShaderControl(layer="img"),
+            tools.ShaderControlTool(layer="img"),
             tools.SelectSegments(layer="seg"),
             tools.Alpha3d(layer="seg"),
         )
@@ -121,8 +121,8 @@ class TestBinding:
     def test_explicit_keys_claimed_before_auto(self):
         vs = _state(_anno())
         vs.add_tools(
-            tools.ShaderControl(control="width", layer="anno"),
-            tools.ShaderControl(control="size", layer="anno", key="Z"),
+            tools.ShaderControlTool(control="width", layer="anno"),
+            tools.ShaderControlTool(control="size", layer="anno", key="Z"),
         )
         bindings = _layer(vs.to_dict(), "anno")["toolBindings"]
         assert bindings == {
@@ -132,7 +132,7 @@ class TestBinding:
 
     def test_key_false_is_not_bound(self):
         vs = _state(_anno()).add_tools(
-            tools.ShaderControl(control="size", layer="anno", key=False)
+            tools.ShaderControlTool(control="size", layer="anno", key=False)
         )
         # Local annotation layers always carry a (here empty) toolBindings map
         assert not _layer(vs.to_dict(), "anno").get("toolBindings")
@@ -154,7 +154,7 @@ class TestBinding:
 
     def test_layer_given_as_object(self):
         img = ImageLayer(name="em", source=IMG_SRC)
-        vs = _state(img).add_tools(tools.ShaderControl(layer=img, key="B"))
+        vs = _state(img).add_tools(tools.ShaderControlTool(layer=img, key="B"))
         assert _layer(vs.to_dict(), "em")["toolBindings"]["B"]["control"] == (
             "normalized"
         )
@@ -180,7 +180,7 @@ class TestBindingErrors:
 
     def test_explicit_key_collision(self):
         vs = _state(_anno(), SegmentationLayer(source=SEG_SRC)).add_tools(
-            tools.ShaderControl(control="size", layer="anno", key="P"),
+            tools.ShaderControlTool(control="size", layer="anno", key="P"),
             tools.SelectSegments(layer="seg", key="P"),
         )
         with pytest.raises(ValueError, match="already bound"):
@@ -196,7 +196,7 @@ class TestCoexistence:
         """Auto keys avoid the keys tag tools already hold."""
         anno = _anno(tags=["axon", "dendrite"])
         vs = _state(anno, capabilities="main")
-        vs.add_tools(tools.ShaderControl(control="size", layer="anno"))
+        vs.add_tools(tools.ShaderControlTool(control="size", layer="anno"))
         bindings = _layer(vs.to_dict(), "anno")["toolBindings"]
         assert set(bindings) == {"Q", "W", "Z"}
         assert bindings["Z"] == {"type": "shaderControl", "control": "size"}
@@ -204,7 +204,7 @@ class TestCoexistence:
     def test_explicit_key_moves_tag_tool(self):
         """A key the user names wins; the generated tag tool moves to a free one."""
         vs = _state(_anno(tags=["axon"]), capabilities="main")
-        vs.add_tools(tools.ShaderControl(control="size", layer="anno", key="Q"))
+        vs.add_tools(tools.ShaderControlTool(control="size", layer="anno", key="Q"))
         with pytest.warns(UserWarning, match="moved"):
             d = vs.to_dict()
         bindings = _layer(d, "anno")["toolBindings"]
@@ -307,7 +307,7 @@ class TestCoexistence:
 class TestPalettes:
     def test_palette_from_add_tools(self):
         vs = _state(_anno(), SegmentationLayer(source=SEG_SRC)).add_tools(
-            tools.ShaderControl(control="size", layer="anno", key="P"),
+            tools.ShaderControlTool(control="size", layer="anno", key="P"),
             tools.SelectSegments(layer="seg", key=False),
             palette=tools.ToolPalette("Review", side="right", size=250),
         )
@@ -327,10 +327,12 @@ class TestPalettes:
 
     def test_palette_by_name_accumulates(self):
         vs = _state(_anno()).add_tools(
-            tools.ShaderControl(control="size", layer="anno", key=False), palette="P1"
+            tools.ShaderControlTool(control="size", layer="anno", key=False),
+            palette="P1",
         )
         vs.add_tools(
-            tools.ShaderControl(control="width", layer="anno", key=False), palette="P1"
+            tools.ShaderControlTool(control="width", layer="anno", key=False),
+            palette="P1",
         )
         entries = vs.to_dict()["toolPalettes"]["P1"]["tools"]
         assert [e["type"] for e in entries] == ["shaderControl", "shaderControl"]
@@ -370,9 +372,9 @@ class TestProofreadingWorkflow:
         vs = _state(
             img, seg, syn, capabilities="main", title="Synapse review"
         ).add_tools(
-            tools.ShaderControl(control="size", layer=syn, key="P"),
+            tools.ShaderControlTool(control="size", layer=syn, key="P"),
             tools.SelectSegments(layer=seg),
-            tools.ShaderControl(layer=img),
+            tools.ShaderControlTool(layer=img),
             tools.Dimension(dimension="z", key="J"),
             palette=tools.ToolPalette("Review", side="right"),
         )
