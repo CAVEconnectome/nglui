@@ -194,6 +194,27 @@ def omit_nones(seg_list):
 
 
 def parse_color(clr):
+    """Convert a color to a hex string.
+
+    Parameters
+    ----------
+    clr : str, number, or sequence of 3 numbers, or None
+        A hex string (``"#ff0000"``), a web color name (``"red"``), a single gray
+        level, or an RGB triple. RGB values between 0 and 1 are read as fractions,
+        so ``(1, 1, 1)`` is white. If any value is above 1, the color is read as
+        8-bit, which requires whole numbers from 0 to 255: ``(128, 128, 128)``.
+
+    Returns
+    -------
+    str or None
+        The color as ``"#rrggbb"``, or None if `clr` is None.
+
+    Raises
+    ------
+    ValueError
+        If RGB values fit neither convention, e.g. ``(1.5, 0, 0)`` or
+        ``(0.5, 200, 0)``: guessing would silently give the wrong color.
+    """
     if clr is None:
         return None
 
@@ -206,13 +227,15 @@ def parse_color(clr):
             return clr
         else:
             return webcolors.name_to_hex(clr)
-    else:
-        if any(not 0 <= x <= 1 for x in clr):
-            raise ValueError(
-                f"RGB color values must be between 0 and 1, got {tuple(clr)}. "
-                "For 0-255 values, divide by 255."
-            )
-        return webcolors.rgb_to_hex([int(255 * x) for x in clr])
+    values = [float(x) for x in clr]
+    if all(0 <= x <= 1 for x in values):
+        return webcolors.rgb_to_hex([int(255 * x) for x in values])
+    if all(0 <= x <= 255 and x.is_integer() for x in values):
+        return webcolors.rgb_to_hex([int(x) for x in values])
+    raise ValueError(
+        f"RGB color {tuple(clr)} is ambiguous: values must be all 0-1 or whole "
+        "numbers 0-255."
+    )
 
 
 def parse_graphene_header(source):

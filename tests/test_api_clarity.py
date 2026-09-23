@@ -1,5 +1,6 @@
 """API behaviors a notebook user relies on, from the viewer-options review."""
 
+import numpy as np
 import pytest
 
 from nglui.statebuilder import (
@@ -127,14 +128,31 @@ class TestReadableErrors:
 
 
 class TestColors:
-    def test_rgb_over_one_raises(self):
-        with pytest.raises(ValueError, match="0 and 1"):
-            _vs(projection_background_color=(128, 128, 128))
-
     @pytest.mark.parametrize(
         "color, expected",
-        [((1, 0, 0), "#ff0000"), ((0.5, 0.5, 0.5), "#7f7f7f"), ("white", "#ffffff")],
+        [
+            ((1, 1, 1), "#ffffff"),  # all 0/1 reads as a 0-1 color: white
+            ((1, 0, 0), "#ff0000"),
+            ((0.5, 0.5, 0.5), "#7f7f7f"),
+            ((128, 128, 128), "#808080"),  # a value above 1 means 8-bit
+            ((255, 0, 0), "#ff0000"),
+            ((128.0, 64.0, 0.0), "#804000"),  # whole-number floats count as 8-bit
+            ((np.uint8(10), np.uint8(20), np.uint8(30)), "#0a141e"),
+            ("white", "#ffffff"),
+        ],
     )
     def test_valid_colors(self, color, expected):
         d = _vs(projection_background_color=color).to_dict()
         assert d["projectionBackgroundColor"] == expected
+
+    @pytest.mark.parametrize(
+        "color",
+        [(1.5, 0, 0), (300, 0, 0), (-1, 0, 0), (0.5, 200, 0), (-0.1, 0.5, 0.5)],
+    )
+    def test_ambiguous_colors_raise(self, color):
+        with pytest.raises(ValueError, match="0-1 or whole numbers 0-255"):
+            _vs(projection_background_color=color)
+
+    def test_applies_to_segment_colors(self):
+        layer = SegmentationLayer(source=SEG).add_segment_colors({5: (255, 0, 0)})
+        assert layer.to_dict()["segmentColors"] == {"5": "#ff0000"}

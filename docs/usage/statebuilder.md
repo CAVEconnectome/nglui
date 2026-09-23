@@ -112,7 +112,7 @@ viewerstate = ViewerState(
 ```
 
 The full list is `title`, `show_axis_lines`, `show_scale_bar`, `show_default_annotations`, `cross_section_background_color`, `projection_background_color`, `hide_cross_section_background_3d`, and `wire_frame`.
-Colors can be names, hex strings, or RGB tuples in [0, 1].
+Colors can be names, hex strings, or RGB tuples, either 0-1 (`(1, 1, 1)` is white) or whole numbers 0-255 (`(128, 128, 128)`); a tuple with any value above 1 is read as 0-255.
 
 #### Camera
 

@@ -275,9 +275,9 @@ class ViewerState:
             Whether to draw the default annotations, such as the outline of the
             cross-section plane in the 3d view. Neuroglancer's default is True.
         cross_section_background_color : str or tuple, optional
-            Background color of the 2d views, as a name, hex string, or RGB in [0, 1].
+            Background color of the 2d views, as a name, hex string, or RGB (0-1 or 0-255).
         projection_background_color : str or tuple, optional
-            Background color of the 3d view, as a name, hex string, or RGB in [0, 1].
+            Background color of the 3d view, as a name, hex string, or RGB (0-1 or 0-255).
         hide_cross_section_background_3d : bool, optional
             Whether to hide the background of the cross-section plane where it
             appears in the 3d view.

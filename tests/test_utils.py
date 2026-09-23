@@ -401,7 +401,7 @@ class TestParseColor:
     def test_parse_color_rgb_out_of_range(self):
         # Clamping turned a 0-255 color such as (128, 128, 128) into white, so
         # out-of-range values raise instead
-        with pytest.raises(ValueError, match="between 0 and 1"):
+        with pytest.raises(ValueError, match="all 0-1 or whole numbers 0-255"):
             parse_color((2.0, -1.0, 0.5))
 
     def test_parse_color_wrong_tuple_length(self):
