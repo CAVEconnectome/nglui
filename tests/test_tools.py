@@ -43,11 +43,6 @@ class TestToolJson:
     @pytest.mark.parametrize(
         "tool, expected",
         [
-            (tools.AnnotatePoint(), {"type": "annotatePoint"}),
-            (tools.AnnotateLine(), {"type": "annotateLine"}),
-            (tools.AnnotateBoundingBox(), {"type": "annotateBoundingBox"}),
-            (tools.AnnotateEllipsoid(), {"type": "annotateSphere"}),
-            (tools.AnnotatePolyline(), {"type": "annotatePolyline"}),
             (tools.SelectSegments(), {"type": "selectSegments"}),
             (tools.MergeSegments(), {"type": "mergeSegments"}),
             (tools.SplitSegments(), {"type": "splitSegments"}),
@@ -76,7 +71,7 @@ class TestToolJson:
     @pytest.mark.parametrize("key", ["p", "PP", "1", ""])
     def test_invalid_key(self, key):
         with pytest.raises(ValueError, match="single capital letter"):
-            tools.AnnotatePoint(key=key)
+            tools.SelectSegments(key=key)
 
     def test_invalid_setting(self):
         with pytest.raises(ValueError):
@@ -85,9 +80,11 @@ class TestToolJson:
 
 class TestBinding:
     def test_explicit_key_on_layer(self):
-        vs = _state(_anno()).add_tools(tools.AnnotatePoint(layer="anno", key="P"))
+        vs = _state(_anno()).add_tools(
+            tools.ShaderControl(control="size", layer="anno", key="P")
+        )
         assert _layer(vs.to_dict(), "anno")["toolBindings"] == {
-            "P": {"type": "annotatePoint"}
+            "P": {"type": "shaderControl", "control": "size"}
         }
 
     def test_auto_keys_are_distinct(self):
@@ -106,16 +103,19 @@ class TestBinding:
     def test_explicit_keys_claimed_before_auto(self):
         vs = _state(_anno())
         vs.add_tools(
-            tools.AnnotateLine(layer="anno"), tools.AnnotatePoint(layer="anno", key="Z")
+            tools.ShaderControl(control="width", layer="anno"),
+            tools.ShaderControl(control="size", layer="anno", key="Z"),
         )
         bindings = _layer(vs.to_dict(), "anno")["toolBindings"]
         assert bindings == {
-            "Z": {"type": "annotatePoint"},
-            "X": {"type": "annotateLine"},
+            "Z": {"type": "shaderControl", "control": "size"},
+            "X": {"type": "shaderControl", "control": "width"},
         }
 
     def test_key_false_is_not_bound(self):
-        vs = _state(_anno()).add_tools(tools.AnnotatePoint(layer="anno", key=False))
+        vs = _state(_anno()).add_tools(
+            tools.ShaderControl(control="size", layer="anno", key=False)
+        )
         # Local annotation layers always carry a (here empty) toolBindings map
         assert not _layer(vs.to_dict(), "anno").get("toolBindings")
 
@@ -144,12 +144,12 @@ class TestBinding:
 
 class TestBindingErrors:
     def test_missing_layer(self):
-        vs = _state().add_tools(tools.AnnotatePoint())
+        vs = _state().add_tools(tools.SelectSegments())
         with pytest.raises(ValueError, match="pass layer="):
             vs.to_dict()
 
     def test_unknown_layer(self):
-        vs = _state(_anno()).add_tools(tools.AnnotatePoint(layer="nope"))
+        vs = _state(_anno()).add_tools(tools.SelectSegments(layer="nope"))
         with pytest.raises(ValueError, match="not in the viewer"):
             vs.to_dict()
 
@@ -162,7 +162,7 @@ class TestBindingErrors:
 
     def test_explicit_key_collision(self):
         vs = _state(_anno(), SegmentationLayer(source=SEG_SRC)).add_tools(
-            tools.AnnotatePoint(layer="anno", key="P"),
+            tools.ShaderControl(control="size", layer="anno", key="P"),
             tools.SelectSegments(layer="seg", key="P"),
         )
         with pytest.raises(ValueError, match="already bound"):
@@ -178,17 +178,17 @@ class TestCoexistence:
         """Auto keys avoid the keys tag tools already hold."""
         anno = _anno(tags=["axon", "dendrite"])
         vs = _state(anno, capabilities="main")
-        vs.add_tools(tools.AnnotatePoint(layer="anno"))
+        vs.add_tools(tools.ShaderControl(control="size", layer="anno"))
         bindings = _layer(vs.to_dict(), "anno")["toolBindings"]
         assert set(bindings) == {"Q", "W", "Z"}
-        assert bindings["Z"] == {"type": "annotatePoint"}
+        assert bindings["Z"] == {"type": "shaderControl", "control": "size"}
 
     def test_explicit_key_moves_tag_tool(self):
         """A key the user names wins; the generated tag tool moves to a free one."""
         vs = _state(_anno(tags=["axon"]), capabilities="main")
-        vs.add_tools(tools.AnnotatePoint(layer="anno", key="Q"))
+        vs.add_tools(tools.ShaderControl(control="size", layer="anno", key="Q"))
         bindings = _layer(vs.to_dict(), "anno")["toolBindings"]
-        assert bindings["Q"] == {"type": "annotatePoint"}
+        assert bindings["Q"] == {"type": "shaderControl", "control": "size"}
         assert bindings["W"] == {"type": "toggleBoolProperty", "property": "axon"}
 
     def test_two_tagged_layers_get_distinct_keys(self):
@@ -284,7 +284,7 @@ class TestCoexistence:
 class TestPalettes:
     def test_palette_from_add_tools(self):
         vs = _state(_anno(), SegmentationLayer(source=SEG_SRC)).add_tools(
-            tools.AnnotatePoint(layer="anno", key="P"),
+            tools.ShaderControl(control="size", layer="anno", key="P"),
             tools.SelectSegments(layer="seg", key=False),
             palette=tools.ToolPalette("Review", side="right", size=250),
         )
@@ -292,7 +292,7 @@ class TestPalettes:
         assert d["toolPalettes"] == {
             "Review": {
                 "tools": [
-                    {"type": "annotatePoint", "layer": "anno"},
+                    {"type": "shaderControl", "control": "size", "layer": "anno"},
                     {"type": "selectSegments", "layer": "seg"},
                 ],
                 "side": "right",
@@ -304,11 +304,13 @@ class TestPalettes:
 
     def test_palette_by_name_accumulates(self):
         vs = _state(_anno()).add_tools(
-            tools.AnnotatePoint(layer="anno", key=False), palette="P1"
+            tools.ShaderControl(control="size", layer="anno", key=False), palette="P1"
         )
-        vs.add_tools(tools.AnnotateLine(layer="anno", key=False), palette="P1")
+        vs.add_tools(
+            tools.ShaderControl(control="width", layer="anno", key=False), palette="P1"
+        )
         entries = vs.to_dict()["toolPalettes"]["P1"]["tools"]
-        assert [e["type"] for e in entries] == ["annotatePoint", "annotateLine"]
+        assert [e["type"] for e in entries] == ["shaderControl", "shaderControl"]
 
     def test_add_tool_palette_only_lists(self):
         palette = tools.ToolPalette(
@@ -345,7 +347,7 @@ class TestProofreadingWorkflow:
         vs = _state(
             img, seg, syn, capabilities="main", title="Synapse review"
         ).add_tools(
-            tools.AnnotatePoint(layer=syn, key="P"),
+            tools.ShaderControl(control="size", layer=syn, key="P"),
             tools.SelectSegments(layer=seg),
             tools.ShaderControl(layer=img),
             tools.Dimension(dimension="z", key="J"),
@@ -356,13 +358,13 @@ class TestProofreadingWorkflow:
 
         layers = {layer["name"]: layer for layer in parsed["layers"]}
         syn_keys = layers["synapses"]["toolBindings"]
-        assert syn_keys["P"] == {"type": "annotatePoint"}
+        assert syn_keys["P"] == {"type": "shaderControl", "control": "size"}
         assert {"Q", "W"} <= set(syn_keys)  # the tag tools are untouched
         assert list(layers["seg"]["toolBindings"]) == ["Z"]
         assert list(layers["img"]["toolBindings"]) == ["X"]
         assert parsed["toolBindings"] == {"J": {"type": "dimension", "dimension": "z"}}
         assert [t["type"] for t in parsed["toolPalettes"]["Review"]["tools"]] == [
-            "annotatePoint",
+            "shaderControl",
             "selectSegments",
             "shaderControl",
             "dimension",
@@ -372,3 +374,49 @@ class TestProofreadingWorkflow:
         ]
         all_keys += list(parsed["toolBindings"])
         assert len(all_keys) == len(set(all_keys))
+
+
+class TestAnnotationActiveTool:
+    """Annotate tools cannot be key-bound; they are set as the layer's active tool."""
+
+    @pytest.mark.parametrize(
+        "name, tool_type",
+        [
+            ("point", "annotatePoint"),
+            ("line", "annotateLine"),
+            ("box", "annotateBoundingBox"),
+            ("ellipsoid", "annotateSphere"),
+            ("polyline", "annotatePolyline"),
+        ],
+    )
+    def test_active_tool(self, name, tool_type):
+        d = _anno(active_tool=name).to_dict()
+        assert d["tool"] == {"type": tool_type}
+        assert tool_type not in str(d.get("toolBindings"))
+
+    def test_active_tool_on_cloud_layer(self):
+        layer = AnnotationLayer(source="precomputed://gs://x/anno", active_tool="point")
+        assert layer.to_dict()["tool"] == {"type": "annotatePoint"}
+
+    def test_unset_is_omitted(self):
+        assert "tool" not in _anno().to_dict()
+
+    def test_invalid(self):
+        with pytest.raises(ValueError):
+            _anno(active_tool="annotatePoint")
+
+    def test_no_annotate_tool_classes(self):
+        assert not any(name.startswith("Annotate") for name in tools.__all__)
+
+    def test_legacy_binding_from_raw_layer_warns(self):
+        raw = RawLayer(
+            name="old",
+            json_data={
+                "type": "annotation",
+                "source": "local://annotations",
+                "toolBindings": {"P": "annotatePoint"},
+            },
+        )
+        vs = _state(raw).add_tools(tools.Dimension(dimension="z"))
+        with pytest.warns(UserWarning, match="cannot restore annotation tools"):
+            vs.to_dict()

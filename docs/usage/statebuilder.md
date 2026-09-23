@@ -181,15 +181,15 @@ Which layer the selected-layer panel shows is set with `add_layer(..., selected=
 
 #### Tools
 
-Neuroglancer tools are actions bound to a key -- activated with shift plus that key -- or shown as buttons in a tool palette: placing annotations, selecting segments, or adjusting a layer setting by dragging.
+Neuroglancer tools are actions bound to a key -- activated with shift plus that key -- or shown as buttons in a tool palette: selecting segments, adjusting a shader control or layer setting by dragging, or stepping through a dimension.
 Add them with `add_tools`, from the `tools` module:
 
 ``` py
 from nglui.statebuilder import tools
 
 viewerstate.add_tools(
-    tools.AnnotatePoint(layer="synapses", key="P"),
-    tools.SelectSegments(layer="seg"),                           # key assigned for you
+    tools.SelectSegments(layer="seg", key="S"),
+    tools.MergeSegments(layer="seg"),                            # key assigned for you
     tools.ShaderControl(layer="img", control="normalized"),      # image contrast
     tools.LayerSetting(layer="seg", setting="objectAlpha"),      # mesh transparency
     tools.Dimension(dimension="z"),                              # step through z
@@ -209,8 +209,15 @@ Layer tools accept the layer as a name or as the layer object, and are checked a
 A layer can also carry its own tools, which need no `layer` argument: `SegmentationLayer(..., tools=[tools.SelectSegments()])`.
 These are bound only when the layer is part of a ViewerState.
 
-The available tools are `AnnotatePoint`, `AnnotateLine`, `AnnotateBoundingBox`, `AnnotateEllipsoid`, `AnnotatePolyline`, `SelectSegments`, `MergeSegments`, `SplitSegments`, `ShaderControl`, `LayerSetting` (any setting in `tools.LAYER_SETTINGS`), and `Dimension`.
-`AnnotatePolyline` is newer than the rest, and Neuroglancer deployments built before it reject it.
+The available tools are `SelectSegments`, `MergeSegments`, `SplitSegments`, `ShaderControl`, `LayerSetting` (any setting in `tools.LAYER_SETTINGS`), and `Dimension`.
+
+Annotation-placing tools are the exception: Neuroglancer can't restore them from a key binding or palette.
+Worse, it drops every binding after them on the same layer.
+Instead, make one the layer's active tool, so it is ready to use as soon as the state loads:
+
+``` py
+AnnotationLayer(name="synapses", ..., active_tool="point")   # or "line", "box", "ellipsoid", "polyline"
+```
 
 #### Anything Else: `extra`
 

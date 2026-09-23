@@ -550,6 +550,17 @@ def _handle_linked_segmentation(segmentation_layer) -> dict:
         )
 
 
+# AnnotationLayer.active_tool value -> Neuroglancer annotate tool type. These are
+# only restorable as a layer's active tool, not as key bindings.
+_ANNOTATE_TOOL_TYPES = {
+    "point": "annotatePoint",
+    "line": "annotateLine",
+    "box": "annotateBoundingBox",
+    "ellipsoid": "annotateSphere",
+    "polyline": "annotatePolyline",
+}
+
+
 def _set_if_given(kwargs: dict, **optional) -> dict:
     """Add the `optional` values that are not None to `kwargs`.
 
@@ -1259,6 +1270,14 @@ class AnnotationLayer(LayerWithSource):
         default=True, type=bool, kw_only=True, repr=False
     )
     shader_controls = field(default=None, type=Optional[dict], kw_only=True, repr=False)
+    active_tool = field(
+        default=None,
+        kw_only=True,
+        repr=False,
+        validator=attrs.validators.optional(
+            attrs.validators.in_(tuple(_ANNOTATE_TOOL_TYPES))
+        ),
+    )
     ignore_null_segment_filter = field(
         default=None, type=Optional[bool], kw_only=True, repr=False
     )
@@ -1332,6 +1351,7 @@ class AnnotationLayer(LayerWithSource):
             shader=self.shader,
             shader_controls=self.shader_controls,
             ignore_null_segment_filter=self.ignore_null_segment_filter,
+            tool=_ANNOTATE_TOOL_TYPES.get(self.active_tool),
         )
 
     def _to_neuroglancer_layer_cloud(self) -> viewer_state.AnnotationLayer:

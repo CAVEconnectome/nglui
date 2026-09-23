@@ -1,18 +1,22 @@
 """Neuroglancer tools: key bindings and tool palettes.
 
 A tool is an action a user activates with a key (``shift`` plus the bound letter) or
-from a tool palette: placing annotations, selecting segments, or adjusting a layer
-setting by dragging. Tools are bound when a `ViewerState` is built, so keys can be
+from a tool palette: selecting segments, adjusting a shader control or layer setting
+by dragging, or stepping through a dimension. Tools are bound when a `ViewerState` is built, so keys can be
 allocated across the whole viewer: Neuroglancer keeps one key namespace for every
 layer, and a key bound twice silently loses its earlier tool when the state loads.
+
+Annotation-placing tools are not here: Neuroglancer restores them only as a layer's
+active tool, never from a key binding or palette -- and an unrestorable binding makes
+it drop every binding after it on that layer. Use ``AnnotationLayer(active_tool=...)``.
 
 Examples
 --------
 >>> from nglui.statebuilder import tools
 >>> vs.add_tools(
-...     tools.AnnotatePoint(layer="synapses", key="P"),
+...     tools.SelectSegments(layer="seg", key="S"),
 ...     tools.ShaderControl(layer="img", control="normalized"),  # key auto-assigned
-...     tools.SelectSegments(layer="seg"),
+...     tools.Dimension(dimension="z"),
 ...     palette=tools.ToolPalette("Proofreading", side="right"),
 ... )
 """
@@ -33,11 +37,6 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Tool",
-    "AnnotatePoint",
-    "AnnotateLine",
-    "AnnotateBoundingBox",
-    "AnnotateEllipsoid",
-    "AnnotatePolyline",
     "SelectSegments",
     "MergeSegments",
     "SplitSegments",
@@ -139,50 +138,6 @@ class Tool:
         if layer_name is not None:
             out["layer"] = layer_name
         return out
-
-
-@attrs.define
-class _AnnotationTool(Tool):
-    layer_types: ClassVar = ("annotation",)
-
-
-@attrs.define
-class AnnotatePoint(_AnnotationTool):
-    """Place point annotations."""
-
-    tool_type: ClassVar[str] = "annotatePoint"
-
-
-@attrs.define
-class AnnotateLine(_AnnotationTool):
-    """Place line annotations."""
-
-    tool_type: ClassVar[str] = "annotateLine"
-
-
-@attrs.define
-class AnnotateBoundingBox(_AnnotationTool):
-    """Place axis-aligned bounding box annotations."""
-
-    tool_type: ClassVar[str] = "annotateBoundingBox"
-
-
-@attrs.define
-class AnnotateEllipsoid(_AnnotationTool):
-    """Place ellipsoid annotations (Neuroglancer's ``annotateSphere`` tool)."""
-
-    tool_type: ClassVar[str] = "annotateSphere"
-
-
-@attrs.define
-class AnnotatePolyline(_AnnotationTool):
-    """Place polyline annotations.
-
-    Newer than the other annotation tools; a deployment built before polyline
-    support rejects the tool, which can drop the layer it is bound on.
-    """
-
-    tool_type: ClassVar[str] = "annotatePolyline"
 
 
 @attrs.define
@@ -403,8 +358,24 @@ def add_palettes(state, palettes: dict) -> None:
         state.tool_palettes[name] = palette.to_json(state)
 
 
+#: Tool types Neuroglancer restores only as a layer's active tool, not from bindings
+LEGACY_ONLY_TOOLS = frozenset(
+    {
+        "annotatePoint",
+        "annotateLine",
+        "annotateBoundingBox",
+        "annotateSphere",
+        "annotatePolyline",
+    }
+)
+
+
+def _tool_type(value) -> str:
+    return value if isinstance(value, str) else value.get("type", "")
+
+
 def _is_tag_tool(value) -> bool:
-    tool_type = value if isinstance(value, str) else value.get("type", "")
+    tool_type = _tool_type(value)
     return tool_type.startswith("tagTool_") or tool_type == TOGGLE_BOOL_PROPERTY_TOOL
 
 
@@ -432,6 +403,14 @@ def _existing_bindings(state, tag_layers) -> tuple[dict, list, dict]:
         bindings = layer.to_json().get("toolBindings", {})
         movable = layer.name in tag_layers
         for key, value in bindings.items():
+            if _tool_type(value) in LEGACY_ONLY_TOOLS:
+                warnings.warn(
+                    f"Layer '{layer.name}' binds {_tool_type(value)!r} to key {key!r}. "
+                    "Neuroglancer cannot restore annotation tools from key bindings: "
+                    "it drops this binding and every binding after it on the layer. "
+                    "Use AnnotationLayer(active_tool=...) instead.",
+                    stacklevel=4,
+                )
             if movable and _is_tag_tool(value):
                 tag_bindings.append((layer.name, key, value))
                 continue
@@ -496,11 +475,6 @@ def _describe(tool: Tool, layer_name: Optional[str]) -> str:
 _missing = {
     cls.tool_type
     for cls in (
-        AnnotatePoint,
-        AnnotateLine,
-        AnnotateBoundingBox,
-        AnnotateEllipsoid,
-        AnnotatePolyline,
         SelectSegments,
         MergeSegments,
         SplitSegments,

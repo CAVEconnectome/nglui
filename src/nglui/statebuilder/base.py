@@ -681,7 +681,7 @@ class ViewerState:
         --------
         >>> from nglui.statebuilder import tools
         >>> vs.add_tools(
-        ...     tools.AnnotatePoint(layer="synapses", key="P"),
+        ...     tools.SelectSegments(layer="seg", key="S"),
         ...     tools.LayerSetting(layer="seg", setting="objectAlpha"),
         ...     palette=tools.ToolPalette("Review", side="right"),
         ... )
