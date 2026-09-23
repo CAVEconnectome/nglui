@@ -20,6 +20,7 @@ from neuroglancer import viewer, viewer_base
 
 from . import source_info
 from .capabilities import Capabilities, capabilities_for_url, parse_capabilities
+from .layouts import Panel, StackLayout, layout_to_json, validate_layout
 from .ngl_components import (
     AnnotationLayer,
     CoordSpace,
@@ -44,7 +45,6 @@ if TYPE_CHECKING:
     import caveclient
     import pandas as pd
 
-_LAYOUTS = ("xy", "yz", "xz", "xy-3d", "xz-3d", "yz-3d", "4panel", "3d", "4panel-alt")
 _DEFAULT_LAYOUT = "xy-3d"
 _DEFAULT_SCALE_IMAGERY = 1.0
 _DEFAULT_SCALE_3D = 50000.0
@@ -134,16 +134,20 @@ class ViewerState:
         selected_layer: Optional[str] = None,
         selected_layer_visible: bool = False,
         layout: Optional[
-            Literal[
-                "xy",
-                "yz",
-                "xz",
-                "xy-3d",
-                "xz-3d",
-                "yz-3d",
-                "4panel",
-                "3d",
-                "4panel-alt",
+            Union[
+                Literal[
+                    "xy",
+                    "yz",
+                    "xz",
+                    "xy-3d",
+                    "xz-3d",
+                    "yz-3d",
+                    "4panel",
+                    "3d",
+                    "4panel-alt",
+                ],
+                Panel,
+                StackLayout,
             ]
         ] = None,
         title: Optional[str] = None,
@@ -185,8 +189,9 @@ class ViewerState:
             The name of the selected layer. If None, no layer is selected.
         selected_layer_visible : bool
             Whether the selected layer is visible. Default is False.
-        layout : str
-            The panel layout of the viewer. Default is "xy-3d".
+        layout : str, Panel, or StackLayout
+            The panel layout of the viewer: a preset (default "xy-3d"), or rows and
+            columns of `Panel`s showing different layers. See `set_layout`.
         title : str, optional
             Title shown in the browser tab.
         show_axis_lines : bool, optional
@@ -581,6 +586,11 @@ class ViewerState:
         self._reset_viewer()
         return self
 
+    def _all_layer_names(self, s) -> list:
+        """Names of every layer the built state will have: the base state's and ours."""
+        names = [layer.name for layer in s.layers]
+        return names + [layer.name for layer in self.layers if layer.name not in names]
+
     def _set_display(self, **options) -> None:
         """Set presentation options, ignoring any passed as None."""
         for name, value in options.items():
@@ -791,10 +801,30 @@ class ViewerState:
 
     @staticmethod
     def _validate_layout(value):
-        if value not in _LAYOUTS:
-            raise ValueError(
-                f"Invalid layout: {value}. Must be one of 'xy', 'yz', 'xz', 'xy-3d', 'xz-3d', 'yz-3d', '4panel', '3d', or '4panel-alt'."
-            )
+        validate_layout(value)
+
+    def set_layout(self, layout: Union[str, Panel, StackLayout]) -> Self:
+        """Set the panel layout: a preset, or rows and columns of `Panel`s.
+
+        Parameters
+        ----------
+        layout : str, Panel, or StackLayout
+            A preset such as "xy-3d" or "4panel", which shows every layer in every
+            view; or a `Panel` or `row`/`column` of panels, each showing its own
+            layers with its own view type and optionally its own camera.
+
+        Returns
+        -------
+        ViewerState
+            The viewer state, for chaining.
+
+        Examples
+        --------
+        >>> from nglui.statebuilder import Panel, row
+        >>> vs.set_layout(row(Panel([img, seg], layout="xy"), Panel([seg], layout="3d")))
+        """
+        self.layout = layout
+        return self
 
     @property
     def base_state(self):
@@ -825,16 +855,20 @@ class ViewerState:
         selected_layer: Optional[Union[str, ImageLayer]] = None,
         selected_layer_visible: Optional[bool] = None,
         layout: Optional[
-            Literal[
-                "xy",
-                "yz",
-                "xz",
-                "xy-3d",
-                "xz-3d",
-                "yz-3d",
-                "4panel",
-                "3d",
-                "4panel-alt",
+            Union[
+                Literal[
+                    "xy",
+                    "yz",
+                    "xz",
+                    "xy-3d",
+                    "xz-3d",
+                    "yz-3d",
+                    "4panel",
+                    "3d",
+                    "4panel-alt",
+                ],
+                Panel,
+                StackLayout,
             ]
         ] = None,
         title: Optional[str] = None,
@@ -876,8 +910,8 @@ class ViewerState:
             The name of the selected layer or the layer object itself.
         selected_layer_visible : bool, optional
             Whether the selected layer is visible.
-        layout : {"xy", "yz", "xz", "xy-3d", "xz-3d", "yz-3d", "4panel", "3d", "4panel-alt"}, optional
-            The panel layout of the viewer.
+        layout : str, Panel, or StackLayout, optional
+            The panel layout of the viewer; see `set_layout`.
         title, show_axis_lines, show_scale_bar, show_default_annotations : optional
             Presentation options; see the `ViewerState` constructor.
         cross_section_background_color, projection_background_color : optional
@@ -1911,7 +1945,11 @@ class ViewerState:
             if s.dimensions.rank == 0:
                 s.dimensions = self.dimensions.to_neuroglancer()
             view_settings = [
-                ("layout", "layout", self.layout),
+                (
+                    "layout",
+                    "layout",
+                    layout_to_json(self.layout, self._all_layer_names(s)),
+                ),
                 ("show_slices", "show_slices", self.show_slices),
             ]
             for name, attr, value in view_settings:

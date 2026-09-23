@@ -140,6 +140,29 @@ for root_id in root_ids:
 
 `scale_imagery` and `scale_3d` are shorthand for the camera's `cross_section_scale` and `projection_scale`.
 
+#### Multi-panel Layouts
+
+A preset `layout` such as `"xy-3d"` or `"4panel"` shows every layer in every view.
+For side-by-side comparisons, build the layout from `Panel`s, each showing its own layers, arranged with `row` and `column`:
+
+``` py
+from nglui.statebuilder import Panel, row, column, Camera
+
+viewerstate.set_layout(
+    column(
+        row(
+            Panel(["cell_a"], layout="3d"),
+            Panel(["cell_b"], layout="3d", camera=Camera(projection_orientation="xz")),
+            flex=2,                                   # the top row takes 2/3 of the height
+        ),
+        Panel(["img", "cell_a", "cell_b"], layout="xy"),
+    )
+)
+```
+
+Each panel's `layout` is one of the presets, and its layers can be given by name or as layer objects; a panel with no layers shows all of them.
+Camera fields set on a panel are decoupled from the rest of the viewer, while unset fields follow the global camera; pass `camera_link="relative"` to make them an offset from the global view instead.
+
 #### Side Panels
 
 `set_panels` opens, closes, and places the layer list, statistics, help, and selected-layer panels.
