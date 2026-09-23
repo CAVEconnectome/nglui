@@ -808,6 +808,21 @@ Local and cloud annotation layers both take `shader_controls`, which sets values
 With `filter_by_segmentation`, annotations are shown only if linked to a visible segment, and `ignore_null_segment_filter=False` also hides annotations with no linked segment.
 `filter_by_segmentation` takes `True` (every linked relationship), a relationship name, or a list of them.
 
+The one-call helpers on the ViewerState -- `add_points`, `add_lines`, `add_ellipsoids`, `add_boxes`, and `add_polylines` -- pass any other `AnnotationLayer` option through to the layer they create:
+
+``` py
+vs.add_points(
+    syn_df,
+    name="synapses",
+    point_column="ctr_pt_position",
+    segment_column="pre_pt_root_id",
+    active_tool="point",                 # ready to place points on load
+    shader_controls={"size": 4},
+)
+```
+
+These options apply only when the call creates the layer; passing them for a layer that already exists raises an error instead of silently ignoring them.
+
 #### Cloud Annotations
 
 Cloud annotations are similar to local annotations, but they are stored in a cloud-hosted source.

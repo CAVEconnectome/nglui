@@ -1412,6 +1412,7 @@ class ViewerState:
         shader: Optional[str] = None,
         color: Optional[str] = None,
         swap_visible_segments_on_move: Union[bool, Literal["auto"]] = "auto",
+        **layer_kwargs,
     ) -> Self:
         """Add points to an existing annotation layer or create a new one.
         Parameters
@@ -1451,6 +1452,11 @@ class ViewerState:
         swap_visible_segments_on_move: bool or "auto", optional
             If True, will swap the visibility of segments when moving points.
             If "auto" (default), will swap only when segment_column is provided.
+        **layer_kwargs
+            Further options for the annotation layer when this call creates it, such
+            as `active_tool`, `shader_controls`, `filter_by_segmentation`, `tools`, or
+            `extra`. See `AnnotationLayer`. Passing any when the layer already exists
+            raises, rather than silently ignoring them.
         Returns
         -------
         Self
@@ -1465,6 +1471,12 @@ class ViewerState:
                 raise ValueError(
                     f"Layer {name} already exists but is not a AnnotationLayer."
                 )
+            if layer_kwargs:
+                raise ValueError(
+                    f"Layer {name} already exists, so layer options "
+                    f"{sorted(layer_kwargs)} cannot be applied. Pass them when the "
+                    "layer is first created, or set them on the layer object."
+                )
         else:
             layer = AnnotationLayer(
                 name=name,
@@ -1474,6 +1486,7 @@ class ViewerState:
                 color=color,
                 shader=shader,
                 swap_visible_segments_on_move=swap_visible_segments_on_move,
+                **layer_kwargs,
             )
             self.add_layer(layer)
         layer.add_points(
@@ -1505,6 +1518,7 @@ class ViewerState:
         shader: Optional[str] = None,
         color: Optional[str] = None,
         swap_visible_segments_on_move: Union[bool, Literal["auto"]] = "auto",
+        **layer_kwargs,
     ) -> Self:
         """Add lines to an existing annotation layer or create a new one.
 
@@ -1544,6 +1558,11 @@ class ViewerState:
         swap_visible_segments_on_move : bool or "auto", optional
             If True, will swap the visibility of segments when moving lines.
             If "auto" (default), will swap only when segment_column is provided.
+        **layer_kwargs
+            Further options for the annotation layer when this call creates it, such
+            as `active_tool`, `shader_controls`, `filter_by_segmentation`, `tools`, or
+            `extra`. See `AnnotationLayer`. Passing any when the layer already exists
+            raises, rather than silently ignoring them.
         Returns
         -------
         Self
@@ -1558,6 +1577,12 @@ class ViewerState:
                 raise ValueError(
                     f"Layer {name} already exists but is not a AnnotationLayer."
                 )
+            if layer_kwargs:
+                raise ValueError(
+                    f"Layer {name} already exists, so layer options "
+                    f"{sorted(layer_kwargs)} cannot be applied. Pass them when the "
+                    "layer is first created, or set them on the layer object."
+                )
         else:
             layer = AnnotationLayer(
                 name=name,
@@ -1567,6 +1592,7 @@ class ViewerState:
                 shader=shader,
                 color=color,
                 swap_visible_segments_on_move=swap_visible_segments_on_move,
+                **layer_kwargs,
             )
             self.add_layer(layer)
         layer.add_lines(
@@ -1597,6 +1623,7 @@ class ViewerState:
         shader: Optional[str] = None,
         color: Optional[str] = None,
         swap_visible_segments_on_move: Union[bool, Literal["auto"]] = "auto",
+        **layer_kwargs,
     ) -> Self:
         """Add ellipsoid annotations to an existing annotation layer or create a new one.
 
@@ -1633,6 +1660,11 @@ class ViewerState:
         swap_visible_segments_on_move : bool or "auto", optional
             If True, will swap the visibility of segments when moving ellipsoids.
             If "auto" (default), will swap only when segment_column is provided.
+        **layer_kwargs
+            Further options for the annotation layer when this call creates it, such
+            as `active_tool`, `shader_controls`, `filter_by_segmentation`, `tools`, or
+            `extra`. See `AnnotationLayer`. Passing any when the layer already exists
+            raises, rather than silently ignoring them.
         Returns
         -------
         Self
@@ -1647,6 +1679,12 @@ class ViewerState:
                 raise ValueError(
                     f"Layer {name} already exists but is not a AnnotationLayer."
                 )
+            if layer_kwargs:
+                raise ValueError(
+                    f"Layer {name} already exists, so layer options "
+                    f"{sorted(layer_kwargs)} cannot be applied. Pass them when the "
+                    "layer is first created, or set them on the layer object."
+                )
         else:
             layer = AnnotationLayer(
                 name=name,
@@ -1656,6 +1694,7 @@ class ViewerState:
                 shader=shader,
                 color=color,
                 swap_visible_segments_on_move=swap_visible_segments_on_move,
+                **layer_kwargs,
             )
             self.add_layer(layer)
         layer.add_ellipsoids(
@@ -1686,6 +1725,7 @@ class ViewerState:
         shader: Optional[str] = None,
         color: Optional[str] = None,
         swap_visible_segments_on_move: Union[bool, Literal["auto"]] = "auto",
+        **layer_kwargs,
     ) -> Self:
         """Add bounding box annotations to an existing annotation layer or create a new one.
 
@@ -1723,6 +1763,11 @@ class ViewerState:
             If True, will swap the visibility of segments when moving boxes.
             If "auto" (default), will swap only when segment_column is provided.
 
+        **layer_kwargs
+            Further options for the annotation layer when this call creates it, such
+            as `active_tool`, `shader_controls`, `filter_by_segmentation`, `tools`, or
+            `extra`. See `AnnotationLayer`. Passing any when the layer already exists
+            raises, rather than silently ignoring them.
         Returns
         -------
         Self
@@ -1737,6 +1782,12 @@ class ViewerState:
                 raise ValueError(
                     f"Layer {name} already exists but is not a AnnotationLayer."
                 )
+            if layer_kwargs:
+                raise ValueError(
+                    f"Layer {name} already exists, so layer options "
+                    f"{sorted(layer_kwargs)} cannot be applied. Pass them when the "
+                    "layer is first created, or set them on the layer object."
+                )
         else:
             layer = AnnotationLayer(
                 name=name,
@@ -1746,6 +1797,7 @@ class ViewerState:
                 shader=shader,
                 color=color,
                 swap_visible_segments_on_move=swap_visible_segments_on_move,
+                **layer_kwargs,
             )
             self.add_layer(layer)
         layer.add_boxes(
@@ -1775,6 +1827,7 @@ class ViewerState:
         shader: Optional[str] = None,
         color: Optional[str] = None,
         swap_visible_segments_on_move: Union[bool, Literal["auto"]] = "auto",
+        **layer_kwargs,
     ) -> Self:
         """Add points to an existing annotation layer or create a new one.
         Parameters
@@ -1812,6 +1865,11 @@ class ViewerState:
         swap_visible_segments_on_move: bool or "auto", optional
             If True, will swap the visibility of segments when moving points.
             If "auto" (default), will swap only when segment_column is provided.
+        **layer_kwargs
+            Further options for the annotation layer when this call creates it, such
+            as `active_tool`, `shader_controls`, `filter_by_segmentation`, `tools`, or
+            `extra`. See `AnnotationLayer`. Passing any when the layer already exists
+            raises, rather than silently ignoring them.
         Returns
         -------
         Self
@@ -1826,6 +1884,12 @@ class ViewerState:
                 raise ValueError(
                     f"Layer {name} already exists but is not a AnnotationLayer."
                 )
+            if layer_kwargs:
+                raise ValueError(
+                    f"Layer {name} already exists, so layer options "
+                    f"{sorted(layer_kwargs)} cannot be applied. Pass them when the "
+                    "layer is first created, or set them on the layer object."
+                )
         else:
             layer = AnnotationLayer(
                 name=name,
@@ -1835,6 +1899,7 @@ class ViewerState:
                 color=color,
                 shader=shader,
                 swap_visible_segments_on_move=swap_visible_segments_on_move,
+                **layer_kwargs,
             )
             self.add_layer(layer)
         layer.add_polylines(

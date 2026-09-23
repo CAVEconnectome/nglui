@@ -536,7 +536,7 @@ def segments_to_neuroglancer(segments):
 
 
 def _handle_linked_segmentation(segmentation_layer) -> dict:
-    if segmentation_layer is None:
+    if segmentation_layer is None or segmentation_layer is False:
         return None
     elif isinstance(segmentation_layer, dict):
         return segmentation_layer

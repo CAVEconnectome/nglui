@@ -226,3 +226,77 @@ class TestAnnotationOptions:
         d = layer.map({"pts": df}).to_dict()
         assert d["shaderControls"] == {"size": 3}
         assert len(d["annotations"]) == 1
+
+
+_HELPER_CASES = {
+    "add_points": (
+        pd.DataFrame({"x": [1], "y": [2], "z": [3]}),
+        {"point_column": ["x", "y", "z"]},
+    ),
+    "add_lines": (
+        pd.DataFrame({"a": [[1, 2, 3]], "b": [[4, 5, 6]]}),
+        {"point_a_column": "a", "point_b_column": "b"},
+    ),
+    "add_ellipsoids": (
+        pd.DataFrame({"c": [[1, 2, 3]], "r": [[4, 5, 6]]}),
+        {"center_column": "c", "radii_column": "r"},
+    ),
+    "add_boxes": (
+        pd.DataFrame({"a": [[1, 2, 3]], "b": [[4, 5, 6]]}),
+        {"point_a_column": "a", "point_b_column": "b"},
+    ),
+    "add_polylines": (
+        pd.DataFrame({"path": [[[1, 2, 3], [4, 5, 6]]]}),
+        {"points_column": "path"},
+    ),
+}
+
+
+class TestAnnotationHelperLayerKwargs:
+    """The one-call dataframe helpers pass extra options to the layer they create."""
+
+    @pytest.fixture
+    def vs(self):
+        return ViewerState(dimensions=[4, 4, 40], infer_coordinates=False)
+
+    @pytest.mark.parametrize("helper", list(_HELPER_CASES))
+    def test_layer_options_reach_new_layer(self, vs, helper):
+        data, columns = _HELPER_CASES[helper]
+        getattr(vs, helper)(
+            data,
+            name="anno",
+            linked_segmentation=False,
+            active_tool="point",
+            shader_controls={"size": 4},
+            extra={"annotationColor": "#123456"},
+            **columns,
+        )
+        layer = vs.to_dict()["layers"][0]
+        assert layer["tool"] == {"type": "annotatePoint"}
+        assert layer["shaderControls"] == {"size": 4}
+        assert layer["annotationColor"] == "#123456"
+        assert len(layer["annotations"]) == 1
+
+    @pytest.mark.parametrize("helper", list(_HELPER_CASES))
+    def test_layer_options_on_existing_layer_raise(self, vs, helper):
+        data, columns = _HELPER_CASES[helper]
+        getattr(vs, helper)(data, name="anno", linked_segmentation=False, **columns)
+        with pytest.raises(ValueError, match="already exists"):
+            getattr(vs, helper)(
+                data,
+                name="anno",
+                linked_segmentation=False,
+                active_tool="point",
+                **columns,
+            )
+
+    def test_adding_to_existing_layer_without_options_still_works(self, vs):
+        data, columns = _HELPER_CASES["add_points"]
+        vs.add_points(data, name="anno", linked_segmentation=False, **columns)
+        vs.add_points(data, name="anno", linked_segmentation=False, **columns)
+        assert len(vs.to_dict()["layers"][0]["annotations"]) == 2
+
+    def test_unknown_option_raises(self, vs):
+        data, columns = _HELPER_CASES["add_points"]
+        with pytest.raises(TypeError):
+            vs.add_points(data, name="anno", not_an_option=1, **columns)
