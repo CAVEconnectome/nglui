@@ -19,8 +19,8 @@ dependencies = [
     "six>=1.16.0",
     "webcolors>=24.11.1",
     "cachetools>=5.5.2",
-    "palettable>=3.3.3,<4.9.0",
-    "typing-extensions>=4.13.2,<5.0.0 ; python_full_version < '3.11'",
+    "palettable>=3.3.3",
+    "typing-extensions>=4.13.2 ; python_full_version < '3.11'",
     "pyperclip>=1.9.0",
     "neuroglancer>=2.41.2",
 ]
@@ -95,6 +95,8 @@ filename = "src/nglui/__init__.py"
 
 [[tool.bumpversion.files]]
 filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
 
 [tool.ruff]
 extend-exclude = ["*.ipynb"]
