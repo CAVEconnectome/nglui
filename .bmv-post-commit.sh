@@ -1,2 +1,2 @@
 #!/bin/zsh
-git push --tags
+git push --follow-tags
