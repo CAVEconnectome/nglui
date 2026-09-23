@@ -19,6 +19,7 @@ nav:
     - reference/statebuilder.md
     - reference/ngl_components.md
     - reference/viewer_config.md
+    - reference/tools.md
     - reference/ngl_annotations.md
     - reference/shaders.md
     - reference/skeletons.md

@@ -30,6 +30,7 @@ from .ngl_components import (
     Source,
 )
 from .site_utils import MAX_URL_LENGTH, neuroglancer_url
+from .tools import Tool, ToolPalette, add_palettes, bind_tools
 from .utils import (
     NamedList,
     deep_merge,
@@ -262,6 +263,8 @@ class ViewerState:
             wire_frame=wire_frame,
         )
         self._panels: dict[str, SidePanel] = {}
+        self._tools: list[Tool] = []
+        self._palettes: dict[str, ToolPalette] = {}
         self._extra = dict(extra) if extra else {}
         if show_slices is not None:
             self._show_slices = show_slices
@@ -640,6 +643,88 @@ class ViewerState:
     def panels(self) -> dict:
         """Side panel settings, keyed by panel name."""
         return dict(self._panels)
+
+    def add_tools(
+        self, *tools: Tool, palette: Optional[Union[str, ToolPalette]] = None
+    ) -> Self:
+        """Bind tools to keys, and optionally show them in a tool palette.
+
+        Keys are allocated across the whole viewer when the state is built, since
+        Neuroglancer has one key namespace for every layer: a tool's explicit `key`
+        must be free, and tools with ``key=None`` get the next free letter.
+
+        Parameters
+        ----------
+        *tools : Tool
+            Tools from `nglui.statebuilder.tools`. Layer tools need `layer` set, as
+            a layer name or object. Use ``key=False`` for a palette-only tool.
+        palette : str or ToolPalette, optional
+            A palette to also show these tools in, by name or as a `ToolPalette`
+            for placement. Tools are added to an existing palette of that name.
+
+        Returns
+        -------
+        ViewerState
+            The viewer state, for chaining.
+
+        Examples
+        --------
+        >>> from nglui.statebuilder import tools
+        >>> vs.add_tools(
+        ...     tools.AnnotatePoint(layer="synapses", key="P"),
+        ...     tools.LayerSetting(layer="seg", setting="objectAlpha"),
+        ...     palette=tools.ToolPalette("Review", side="right"),
+        ... )
+        """
+        for tool in tools:
+            if not isinstance(tool, Tool):
+                raise TypeError(
+                    f"Expected a Tool from nglui.statebuilder.tools, got {tool!r}."
+                )
+        self._tools.extend(tools)
+        if palette is not None:
+            if isinstance(palette, str):
+                palette = ToolPalette(palette)
+            self.add_tool_palette(palette)
+            self._palettes[palette.name].tools.extend(tools)
+        self._reset_viewer()
+        return self
+
+    def add_tool_palette(self, palette: ToolPalette) -> Self:
+        """Add a tool palette, or update the placement of one with the same name.
+
+        Tools listed in `palette` are shown in it but not bound to keys; use
+        `add_tools` to bind them as well.
+
+        Parameters
+        ----------
+        palette : ToolPalette
+            The palette to add.
+
+        Returns
+        -------
+        ViewerState
+            The viewer state, for chaining.
+        """
+        existing = self._palettes.get(palette.name)
+        if existing is None:
+            self._palettes[palette.name] = palette
+        else:
+            existing_tools = existing.tools
+            self._palettes[palette.name] = palette
+            palette.tools[:0] = existing_tools
+        self._reset_viewer()
+        return self
+
+    @property
+    def tools(self) -> list:
+        """Tools added with `add_tools`."""
+        return list(self._tools)
+
+    @property
+    def tool_palettes(self) -> dict:
+        """Tool palettes, keyed by name."""
+        return dict(self._palettes)
 
     @property
     def extra(self) -> dict:
@@ -1849,6 +1934,14 @@ class ViewerState:
             capabilities = self._resolve_capabilities()
             for layer in self.layers:
                 layer.apply_to_neuroglancer(s, capabilities=capabilities)
+            # After every layer exists, so keys already bound by tags, raw layers,
+            # or a base state are known before any are handed out.
+            requests = [(tool, None) for tool in self._tools] + [
+                (tool, layer.name) for layer in self.layers for tool in layer.tools
+            ]
+            if requests:
+                bind_tools(s, requests)
+            add_palettes(s, self._palettes)
 
         if self._extra:
             self._viewer.set_state(

@@ -156,6 +156,35 @@ viewerstate.set_panels(
 
 Which layer the selected-layer panel shows is set with `add_layer(..., selected=True)` or `set_selected_layer`.
 
+#### Tools
+
+Neuroglancer tools are actions bound to a key -- activated with shift plus that key -- or shown as buttons in a tool palette: placing annotations, selecting segments, or adjusting a layer setting by dragging.
+Add them with `add_tools`, from the `tools` module:
+
+``` py
+from nglui.statebuilder import tools
+
+viewerstate.add_tools(
+    tools.AnnotatePoint(layer="synapses", key="P"),
+    tools.SelectSegments(layer="seg"),                           # key assigned for you
+    tools.ShaderControl(layer="img", control="normalized"),      # image contrast
+    tools.LayerSetting(layer="seg", setting="objectAlpha"),      # mesh transparency
+    tools.Dimension(dimension="z"),                              # step through z
+    palette=tools.ToolPalette("Review", side="right"),           # also show as buttons
+)
+```
+
+Neuroglancer has one set of keys for the whole viewer, and a key bound twice silently loses one of its tools when the state loads.
+So nglui assigns keys when the state is built, after it knows every key already taken -- by annotation tag tools, raw layers, or a base state.
+A tool with an explicit `key` must use a free one (otherwise you get an error naming what holds it); a tool with `key=None` gets the next free letter; and `key=False` binds no key, for a tool that should only appear in a palette.
+
+Layer tools accept the layer as a name or as the layer object, and are checked against the layer type (you cannot bind `SelectSegments` to an image layer).
+A layer can also carry its own tools, which need no `layer` argument: `SegmentationLayer(..., tools=[tools.SelectSegments()])`.
+These are bound only when the layer is part of a ViewerState.
+
+The available tools are `AnnotatePoint`, `AnnotateLine`, `AnnotateBoundingBox`, `AnnotateEllipsoid`, `AnnotatePolyline`, `SelectSegments`, `MergeSegments`, `SplitSegments`, `ShaderControl`, `LayerSetting` (any setting in `tools.LAYER_SETTINGS`), and `Dimension`.
+`AnnotatePolyline` is newer than the rest, and Neuroglancer deployments built before it reject it.
+
 #### Anything Else: `extra`
 
 For options nglui does not wrap, pass raw Neuroglancer state JSON as `extra`.

@@ -239,6 +239,8 @@ class Layer(ABC):
     archived = field(default=False, type=bool, kw_only=True, repr=False)
     pick = field(default=True, type=bool, kw_only=True, repr=False)
     extra = field(factory=dict, type=dict, kw_only=True, repr=False)
+    # Bound by the ViewerState, which allocates keys across all layers.
+    tools = field(factory=list, converter=list, kw_only=True, repr=False)
     _datamaps = field(factory=dict, type=dict, init=False, repr=False)
     _datamap_priority = field(factory=dict, type=dict, init=False, repr=False)
 

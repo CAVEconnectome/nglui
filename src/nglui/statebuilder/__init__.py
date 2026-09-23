@@ -1,4 +1,4 @@
-from . import capabilities, helpers, shaders
+from . import capabilities, helpers, shaders, tools
 from .base import *
 from .capabilities import (
     Capabilities,
