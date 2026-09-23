@@ -1,4 +1,5 @@
 import re
+import warnings
 from collections import namedtuple
 from itertools import cycle
 from typing import Literal, Optional, Union
@@ -184,26 +185,92 @@ class ColorControl(ShaderControl):
         return f'#uicontrol vec3 {self.name} color(default="{self.color}");'
 
 
+def _pair(value) -> Optional[list]:
+    if value is None:
+        return None
+    value = list(value)
+    if len(value) != 2:
+        raise ValueError(f"Expected two numbers [low, high], got {value!r}.")
+    return value
+
+
+def _format_number(x) -> str:
+    return repr(float(x)) if not float(x).is_integer() else str(int(float(x)))
+
+
 @define
-class InverlpControl(ShaderControl):
-    range = field(type=list, default=None)
-    window = field(type=list, default=None)
-    channel = field(type=list, default=None)
-    clamp = field(type=bool, default=True)
-    property = field(type=str, default=None)
+class InvlerpControl(ShaderControl):
+    """An ``invlerp`` control: maps a data range to [0, 1] with an interactive histogram.
+
+    Neuroglancer's default image shader uses one named ``normalized``; declare your
+    own when writing a custom shader, then call it in ``main`` as ``name()``.
+
+    Parameters
+    ----------
+    name : str
+        The control's name, which the shader calls as a function.
+    range : list of float, optional
+        Data values mapped to 0 and 1. Defaults to the data type's full range.
+        An inverted interval such as ``[200, 30]`` inverts the mapping.
+    window : list of float, optional
+        Extent of the histogram shown in the layer panel. Defaults to `range`.
+    channel : int or list of int, optional
+        Channel of a multi-channel image to read. Image layers only.
+    clamp : bool, optional
+        Whether values outside `range` are clamped to [0, 1]. Default is True.
+    property : str, optional
+        Annotation or segment property to read, instead of image data.
+
+    Examples
+    --------
+    >>> str(InvlerpControl("contrast", range=[30, 220]))
+    '#uicontrol invlerp contrast(range=[30, 220]);'
+    """
+
+    range = field(default=None, converter=_pair)
+    window = field(default=None, converter=_pair)
+    channel = field(default=None, type=Optional[Union[int, list]])
+    clamp = field(default=True, type=bool)
+    property = field(default=None, type=Optional[str])
+
+    def __attrs_post_init__(self):
+        if self.channel is not None and self.property is not None:
+            raise ValueError(
+                "An invlerp control reads either an image `channel` or an "
+                "annotation `property`, not both."
+            )
 
     def __str__(self):
-        if self.range is not None:
-            range_str = f"range=[{self.range[0]}, {self.range[1]}]"
-        else:
-            range_str = ""
-        if self.window is not None:
-            window_str = f"window=[{self.window[0]}, {self.window[1]}]"
-        else:
-            window_str = ""
-        if self.channel is None:
-            self.channel = ["red", "green", "blue"]
-        return f'#uicontrol inverlp {self.name} range={self.range} window={self.window} channel={self.channel} clamp={str(self.clamp).lower()} property="{self.property}"'
+        params = []
+        for key in ("range", "window"):
+            value = getattr(self, key)
+            if value is not None:
+                params.append(f"{key}=[{', '.join(_format_number(v) for v in value)}]")
+        if self.channel is not None:
+            channel = self.channel
+            if isinstance(channel, (list, tuple)):
+                params.append(f"channel=[{', '.join(str(int(c)) for c in channel)}]")
+            else:
+                params.append(f"channel={int(channel)}")
+        if self.property is not None:
+            params.append(f'property="{self.property}"')
+        if not self.clamp:
+            params.append("clamp=false")
+        args = f"({', '.join(params)})" if params else ""
+        return f"#uicontrol invlerp {self.name}{args};"
+
+
+@define
+class InverlpControl(InvlerpControl):
+    """Deprecated misspelling of `InvlerpControl`."""
+
+    def __attrs_post_init__(self):
+        warnings.warn(
+            "InverlpControl is deprecated; use InvlerpControl.",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+        super().__attrs_post_init__()
 
 
 def shader_base(
