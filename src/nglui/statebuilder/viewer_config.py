@@ -17,6 +17,8 @@ from typing import Literal, Optional, Sequence, Union
 import attrs
 import numpy as np
 
+from .utils import strip_numpy_types
+
 __all__ = [
     "Camera",
     "SidePanel",
@@ -91,7 +93,7 @@ def _set_fields(obj) -> dict:
     return {k: v for k, v in attrs.asdict(obj, recurse=False).items() if v is not None}
 
 
-@attrs.define
+@attrs.frozen
 class Camera:
     """Where the viewer looks, in both the 2d cross-section and the 3d projection.
 
@@ -150,7 +152,7 @@ class Camera:
             setattr(state, name, value)
 
 
-@attrs.define
+@attrs.frozen
 class SidePanel:
     """Placement and visibility of one of Neuroglancer's side panels.
 
@@ -210,7 +212,7 @@ class SidePanel:
             setattr(panel_state, name, value)
 
 
-@attrs.define
+@attrs.frozen
 class SkeletonRendering:
     """How a segmentation layer draws skeletons.
 
@@ -234,7 +236,9 @@ class SkeletonRendering:
     """
 
     shader: Optional[str] = attrs.field(default=None, kw_only=True)
-    shader_controls: Optional[dict] = attrs.field(default=None, kw_only=True)
+    shader_controls: Optional[dict] = attrs.field(
+        default=None, kw_only=True, converter=strip_numpy_types
+    )
     mode_2d: Optional[Literal["lines", "lines_and_points"]] = attrs.field(
         default=None,
         kw_only=True,

@@ -239,7 +239,9 @@ class Layer(ABC):
     visible = field(default=True, type=bool, kw_only=True, repr=False)
     archived = field(default=False, type=bool, kw_only=True, repr=False)
     pick = field(default=True, type=bool, kw_only=True, repr=False)
-    extra = field(factory=dict, type=dict, kw_only=True, repr=False)
+    extra = field(
+        factory=dict, converter=strip_numpy_types, type=dict, kw_only=True, repr=False
+    )
     # Bound by the ViewerState, which allocates keys across all layers. A list of
     # tools, or a mapping of key -> tool (a Tool, Tool class, or tool type name).
     tools = field(
@@ -719,7 +721,13 @@ class ImageLayer(LayerWithSource):
     cross_section_render_scale = field(
         default=None, type=float, kw_only=True, repr=False
     )
-    shader_controls = field(default=None, type=Optional[dict], kw_only=True, repr=False)
+    shader_controls = field(
+        default=None,
+        converter=strip_numpy_types,
+        type=Optional[dict],
+        kw_only=True,
+        repr=False,
+    )
 
     def __attrs_post_init__(self):
         self.color = parse_color(self.color)
@@ -1291,7 +1299,13 @@ class AnnotationLayer(LayerWithSource):
     swap_visible_segments_on_move = field(
         default=True, type=bool, kw_only=True, repr=False
     )
-    shader_controls = field(default=None, type=Optional[dict], kw_only=True, repr=False)
+    shader_controls = field(
+        default=None,
+        converter=strip_numpy_types,
+        type=Optional[dict],
+        kw_only=True,
+        repr=False,
+    )
     active_tool = field(
         default=None,
         kw_only=True,

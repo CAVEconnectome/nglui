@@ -66,7 +66,7 @@ def _positive_flex(instance, attribute, value):
         raise ValueError(f"flex must be positive, got {value}.")
 
 
-@attrs.define
+@attrs.frozen
 class Panel:
     """One view in a multi-panel layout, showing a chosen set of layers.
 
@@ -128,7 +128,7 @@ class Panel:
         return out
 
 
-@attrs.define
+@attrs.frozen
 class StackLayout:
     """A row or column of panels and nested layouts. Build with `row` or `column`."""
 

@@ -205,7 +205,9 @@ class TestCoexistence:
         """A key the user names wins; the generated tag tool moves to a free one."""
         vs = _state(_anno(tags=["axon"]), capabilities="main")
         vs.add_tools(tools.ShaderControl(control="size", layer="anno", key="Q"))
-        bindings = _layer(vs.to_dict(), "anno")["toolBindings"]
+        with pytest.warns(UserWarning, match="moved"):
+            d = vs.to_dict()
+        bindings = _layer(d, "anno")["toolBindings"]
         assert bindings["Q"] == {"type": "shaderControl", "control": "size"}
         assert bindings["W"] == {"type": "toggleBoolProperty", "property": "axon"}
 
@@ -215,8 +217,7 @@ class TestCoexistence:
             _anno("b", tags=["spine"]),
             capabilities="main",
         )
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
+        with pytest.warns(UserWarning, match="layer 'b': 'spine' Q->E"):
             d = vs.to_dict()
         assert list(_layer(d, "a")["toolBindings"]) == ["Q", "W"]
         assert _layer(d, "b")["toolBindings"] == {
@@ -227,7 +228,8 @@ class TestCoexistence:
         vs = _state(
             _anno("a", tags=["axon"]), _anno("b", tags=["soma"]), capabilities="legacy"
         )
-        d = vs.to_dict()
+        with pytest.warns(UserWarning, match="moved"):
+            d = vs.to_dict()
         assert _layer(d, "a")["toolBindings"] == {"Q": "tagTool_tag0"}
         assert _layer(d, "b")["toolBindings"] == {"W": "tagTool_tag0"}
 
@@ -240,7 +242,8 @@ class TestCoexistence:
                 "toolBindings": {"Q": "selectSegments"},
             },
         )
-        d = _state(raw, _anno(tags=["axon"]), capabilities="main").to_dict()
+        with pytest.warns(UserWarning, match="moved"):
+            d = _state(raw, _anno(tags=["axon"]), capabilities="main").to_dict()
         assert _layer(d, "old")["toolBindings"] == {"Q": "selectSegments"}
         assert list(_layer(d, "anno")["toolBindings"]) == ["W"]
 
@@ -292,11 +295,13 @@ class TestCoexistence:
         with pytest.warns(UserWarning, match="bound both"):
             vs.to_dict()
 
-    def test_no_tools_no_warning(self):
+    def test_moved_tags_warn_once_per_build(self):
         vs = _state(_anno("a", tags=["axon"]), _anno("b", tags=["soma"]))
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
             vs.to_dict()
+        moved = [w for w in caught if "moved to free keys" in str(w.message)]
+        assert len(moved) == 1
 
 
 class TestPalettes:

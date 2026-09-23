@@ -5,6 +5,7 @@ import json
 import warnings
 import webbrowser
 from contextlib import contextmanager
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Literal, Optional, Union
 
 try:
@@ -12,6 +13,7 @@ try:
 except ImportError:
     from typing_extensions import Self
 
+import attrs
 import neuroglancer
 import numpy as np
 import pyperclip
@@ -37,6 +39,7 @@ from .utils import (
     deep_merge,
     parse_color,
     strip_layers,
+    strip_numpy_types,
     strip_state_properties,
 )
 from .viewer_config import Camera, SidePanel
@@ -50,17 +53,42 @@ _DEFAULT_SCALE_IMAGERY = 1.0
 _DEFAULT_SCALE_3D = 50000.0
 _DEFAULT_SHOW_SLICES = False
 
+
 # Top-level presentation options, emitted under the same attribute name on the
 # neuroglancer ViewerState. Each maps to its parser.
+def _require(kind: type):
+    """A parser that rejects values of the wrong type instead of coercing them.
+
+    ``bool("false")`` is True, so coercion would silently invert a mistyped flag.
+    """
+
+    def parse(name: str, value):
+        if kind is bool and isinstance(value, np.bool_):
+            value = bool(value)
+        if not isinstance(value, kind) or (
+            kind is not bool and isinstance(value, bool)
+        ):
+            raise TypeError(
+                f"{name} must be a {kind.__name__}, got {type(value).__name__} {value!r}."
+            )
+        return value
+
+    return parse
+
+
+def _color(name: str, value):
+    return parse_color(value)
+
+
 _DISPLAY_OPTIONS = {
-    "title": str,
-    "show_axis_lines": bool,
-    "show_scale_bar": bool,
-    "show_default_annotations": bool,
-    "cross_section_background_color": parse_color,
-    "projection_background_color": parse_color,
-    "hide_cross_section_background_3d": bool,
-    "wire_frame": bool,
+    "title": _require(str),
+    "show_axis_lines": _require(bool),
+    "show_scale_bar": _require(bool),
+    "show_default_annotations": _require(bool),
+    "cross_section_background_color": _color,
+    "projection_background_color": _color,
+    "hide_cross_section_background_3d": _require(bool),
+    "wire_frame": _require(bool),
 }
 
 # nglui panel name -> attribute of the neuroglancer ViewerState holding its location
@@ -270,7 +298,7 @@ class ViewerState:
         self._panels: dict[str, SidePanel] = {}
         self._tools: list[Tool] = []
         self._palettes: dict[str, ToolPalette] = {}
-        self._extra = dict(extra) if extra else {}
+        self._extra = strip_numpy_types(dict(extra)) if extra else {}
         if show_slices is not None:
             self._show_slices = show_slices
         if layout is not None:
@@ -595,7 +623,7 @@ class ViewerState:
         """Set presentation options, ignoring any passed as None."""
         for name, value in options.items():
             if value is not None:
-                self._display[name] = _DISPLAY_OPTIONS[name](value)
+                self._display[name] = _DISPLAY_OPTIONS[name](name, value)
         self._reset_viewer()
 
     def set_panels(
@@ -716,13 +744,13 @@ class ViewerState:
         ViewerState
             The viewer state, for chaining.
         """
+        # Keep a copy: tools are appended to the stored palette later, and the
+        # caller's object may be reused for other states.
+        palette = attrs.evolve(palette, tools=list(palette.tools))
         existing = self._palettes.get(palette.name)
-        if existing is None:
-            self._palettes[palette.name] = palette
-        else:
-            existing_tools = existing.tools
-            self._palettes[palette.name] = palette
-            palette.tools[:0] = existing_tools
+        if existing is not None:
+            palette.tools[:0] = existing.tools
+        self._palettes[palette.name] = palette
         self._reset_viewer()
         return self
 
@@ -733,17 +761,24 @@ class ViewerState:
 
     @property
     def tool_palettes(self) -> dict:
-        """Tool palettes, keyed by name."""
-        return dict(self._palettes)
+        """Tool palettes, keyed by name. Copies; use `add_tool_palette` to change them."""
+        return {
+            name: attrs.evolve(palette, tools=list(palette.tools))
+            for name, palette in self._palettes.items()
+        }
 
     @property
     def extra(self) -> dict:
-        """Raw Neuroglancer state JSON merged over the built state last."""
-        return self._extra
+        """Raw Neuroglancer state JSON merged over the built state last.
+
+        Read-only; assign a new dict, or use ``set_viewer_properties(extra=...)`` to
+        merge into it, so the cached state is rebuilt.
+        """
+        return MappingProxyType(copy.deepcopy(self._extra))
 
     @extra.setter
     def extra(self, value: Optional[dict]):
-        self._extra = dict(value) if value else {}
+        self._extra = strip_numpy_types(dict(value)) if value else {}
         self._reset_viewer()
 
     @property
@@ -970,7 +1005,8 @@ class ViewerState:
         if camera is not None:
             self.set_camera(camera)
         if extra is not None:
-            self.extra = deep_merge(self._extra, extra)
+            # Keep None values: they delete keys from the built state at build time
+            self.extra = deep_merge(self._extra, extra, remove_none=False)
         if base_state is not None:
             self.base_state = base_state
         if interactive is not None:
@@ -2049,8 +2085,15 @@ class ViewerState:
                 for layer in self.layers
                 if isinstance(layer, AnnotationLayer) and layer.tags
             )
+            # Keys the viewer's extra JSON binds are merged in after this, so the
+            # allocator must treat them as taken
+            reserved = [
+                key
+                for key, value in (self._extra.get("toolBindings") or {}).items()
+                if value is not None
+            ]
             if requests or tag_layers:
-                bind_tools(s, requests, tag_layers=tag_layers)
+                bind_tools(s, requests, tag_layers=tag_layers, reserved=reserved)
             add_palettes(s, self._palettes)
 
         if self._extra:

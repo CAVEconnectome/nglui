@@ -242,11 +242,13 @@ def _parse_to_mainline_imagery(qry):
         return qry.geturl()
 
 
-def deep_merge(base: dict, override: Mapping) -> dict:
+def deep_merge(base: dict, override: Mapping, remove_none: bool = True) -> dict:
     """Merge `override` into a copy of `base`, recursing into nested dicts.
 
     Values in `override` replace those in `base`, except that two dicts at the same
-    key are merged rather than replaced, and a value of None removes the key.
+    key are merged rather than replaced, and a value of None removes the key --
+    unless `remove_none` is False, which keeps the None so that a later merge can
+    still apply the removal.
     Lists are replaced whole: Neuroglancer lists (layers, sources) are positional,
     so an element-wise merge would silently pair up unrelated entries.
 
@@ -256,6 +258,8 @@ def deep_merge(base: dict, override: Mapping) -> dict:
         The dict to merge into. It is not modified.
     override : Mapping
         The values to lay over `base`.
+    remove_none : bool, optional
+        Whether a None in `override` deletes the key. Default is True.
 
     Returns
     -------
@@ -269,10 +273,10 @@ def deep_merge(base: dict, override: Mapping) -> dict:
     """
     merged = copy.deepcopy(dict(base))
     for key, value in override.items():
-        if value is None:
+        if value is None and remove_none:
             merged.pop(key, None)
         elif isinstance(value, Mapping) and isinstance(merged.get(key), Mapping):
-            merged[key] = deep_merge(merged[key], value)
+            merged[key] = deep_merge(merged[key], value, remove_none)
         else:
             merged[key] = copy.deepcopy(value)
     return merged

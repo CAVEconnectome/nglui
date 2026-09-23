@@ -27,6 +27,7 @@ from __future__ import annotations
 import difflib
 import re
 import warnings
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, ClassVar, Optional, Union
 
 import attrs
@@ -99,7 +100,7 @@ def _layer_name(layer) -> Optional[str]:
     return layer.name
 
 
-@attrs.define
+@attrs.frozen
 class Tool:
     """Base class for tools.
 
@@ -140,33 +141,33 @@ class Tool:
         return out
 
 
-@attrs.define
+@attrs.frozen
 class _SegmentationTool(Tool):
     layer_types: ClassVar = ("segmentation",)
 
 
-@attrs.define
+@attrs.frozen
 class SelectSegments(_SegmentationTool):
     """Select or deselect segments by painting over them."""
 
     tool_type: ClassVar[str] = "selectSegments"
 
 
-@attrs.define
+@attrs.frozen
 class MergeSegments(_SegmentationTool):
     """Merge two segments (graphene/proofreading-enabled segmentations)."""
 
     tool_type: ClassVar[str] = "mergeSegments"
 
 
-@attrs.define
+@attrs.frozen
 class SplitSegments(_SegmentationTool):
     """Split a segment (graphene/proofreading-enabled segmentations)."""
 
     tool_type: ClassVar[str] = "splitSegments"
 
 
-@attrs.define
+@attrs.frozen
 class ShaderControl(Tool):
     """Adjust one of a layer's shader controls, e.g. image contrast.
 
@@ -184,7 +185,7 @@ class ShaderControl(Tool):
         return {"control": self.control}
 
 
-@attrs.define
+@attrs.frozen
 class LayerSetting(Tool):
     """Base class for tools that adjust one of a layer's display settings.
 
@@ -197,7 +198,7 @@ class LayerSetting(Tool):
     ui_label: ClassVar[str] = ""
 
 
-@attrs.define
+@attrs.frozen
 class Opacity(LayerSetting):
     """Image opacity in the 2d views. Hold the key and scroll to adjust.
 
@@ -209,7 +210,7 @@ class Opacity(LayerSetting):
     ui_label: ClassVar[str] = "Opacity (slice)"
 
 
-@attrs.define
+@attrs.frozen
 class Blend(LayerSetting):
     """How the image combines with the layers beneath it. Hold the key and scroll to cycle through the options.
 
@@ -221,7 +222,7 @@ class Blend(LayerSetting):
     ui_label: ClassVar[str] = "Blending (slice)"
 
 
-@attrs.define
+@attrs.frozen
 class VolumeRendering(LayerSetting):
     """Volume rendering mode in the 3d view. Hold the key and scroll to cycle through the options.
 
@@ -233,7 +234,7 @@ class VolumeRendering(LayerSetting):
     ui_label: ClassVar[str] = "Volume rendering (experimental)"
 
 
-@attrs.define
+@attrs.frozen
 class VolumeRenderingGain(LayerSetting):
     """Brightness of the volume rendering. Hold the key and scroll to adjust.
 
@@ -245,7 +246,7 @@ class VolumeRenderingGain(LayerSetting):
     ui_label: ClassVar[str] = "Gain (3D)"
 
 
-@attrs.define
+@attrs.frozen
 class VolumeRenderingDepthSamples(LayerSetting):
     """Depth samples for the volume rendering. Hold the key and scroll to adjust.
 
@@ -257,7 +258,7 @@ class VolumeRenderingDepthSamples(LayerSetting):
     ui_label: ClassVar[str] = "Resolution (3D)"
 
 
-@attrs.define
+@attrs.frozen
 class CrossSectionRenderScale(LayerSetting):
     """Resolution of the 2d rendering. Hold the key and scroll to adjust.
 
@@ -269,7 +270,7 @@ class CrossSectionRenderScale(LayerSetting):
     ui_label: ClassVar[str] = "Resolution (slice)"
 
 
-@attrs.define
+@attrs.frozen
 class SelectedAlpha(LayerSetting):
     """2d opacity of selected segments. Hold the key and scroll to adjust.
 
@@ -281,7 +282,7 @@ class SelectedAlpha(LayerSetting):
     ui_label: ClassVar[str] = "Opacity (on)"
 
 
-@attrs.define
+@attrs.frozen
 class NotSelectedAlpha(LayerSetting):
     """2d opacity of unselected segments. Hold the key and scroll to adjust.
 
@@ -293,7 +294,7 @@ class NotSelectedAlpha(LayerSetting):
     ui_label: ClassVar[str] = "Opacity (off)"
 
 
-@attrs.define
+@attrs.frozen
 class Alpha3d(LayerSetting):
     """Opacity of meshes in the 3d view. Hold the key and scroll to adjust.
 
@@ -305,7 +306,7 @@ class Alpha3d(LayerSetting):
     ui_label: ClassVar[str] = "Opacity (3d)"
 
 
-@attrs.define
+@attrs.frozen
 class MeshSilhouette(LayerSetting):
     """Silhouette shading of meshes in the 3d view. Hold the key and scroll to adjust.
 
@@ -317,7 +318,7 @@ class MeshSilhouette(LayerSetting):
     ui_label: ClassVar[str] = "Silhouette (3d)"
 
 
-@attrs.define
+@attrs.frozen
 class MeshRenderScale(LayerSetting):
     """Mesh level of detail. Hold the key and scroll to adjust.
 
@@ -329,7 +330,7 @@ class MeshRenderScale(LayerSetting):
     ui_label: ClassVar[str] = "Resolution (mesh)"
 
 
-@attrs.define
+@attrs.frozen
 class Saturation(LayerSetting):
     """Saturation of segment colors. Hold the key and scroll to adjust.
 
@@ -341,7 +342,7 @@ class Saturation(LayerSetting):
     ui_label: ClassVar[str] = "Saturation"
 
 
-@attrs.define
+@attrs.frozen
 class HideSegmentZero(LayerSetting):
     """Whether segment 0 is hidden. Press to toggle.
 
@@ -353,7 +354,7 @@ class HideSegmentZero(LayerSetting):
     ui_label: ClassVar[str] = "Hide segment ID 0"
 
 
-@attrs.define
+@attrs.frozen
 class HoverHighlight(LayerSetting):
     """Whether the segment under the mouse is highlighted. Press to toggle.
 
@@ -365,7 +366,7 @@ class HoverHighlight(LayerSetting):
     ui_label: ClassVar[str] = "Highlight on hover"
 
 
-@attrs.define
+@attrs.frozen
 class BaseSegmentColoring(LayerSetting):
     """Whether supervoxels are colored individually. Press to toggle.
 
@@ -377,7 +378,7 @@ class BaseSegmentColoring(LayerSetting):
     ui_label: ClassVar[str] = "Base segment coloring"
 
 
-@attrs.define
+@attrs.frozen
 class IgnoreNullVisibleSet(LayerSetting):
     """Whether an empty selection shows every segment. Press to toggle.
 
@@ -389,7 +390,7 @@ class IgnoreNullVisibleSet(LayerSetting):
     ui_label: ClassVar[str] = "Show all by default"
 
 
-@attrs.define
+@attrs.frozen
 class ColorSeed(LayerSetting):
     """The random segment color palette. Press to pick new random colors.
 
@@ -401,7 +402,7 @@ class ColorSeed(LayerSetting):
     ui_label: ClassVar[str] = "Color seed"
 
 
-@attrs.define
+@attrs.frozen
 class SegmentDefaultColor(LayerSetting):
     """One color for all segments without an explicit color. Press to switch to a fixed color, then scroll to adjust it.
 
@@ -413,7 +414,7 @@ class SegmentDefaultColor(LayerSetting):
     ui_label: ClassVar[str] = "Fixed color"
 
 
-@attrs.define
+@attrs.frozen
 class SkeletonMode2d(LayerSetting):
     """Skeletons as lines, or lines and points, in the 2d views. Hold the key and scroll to cycle through the options.
 
@@ -425,7 +426,7 @@ class SkeletonMode2d(LayerSetting):
     ui_label: ClassVar[str] = "Skeleton mode (2d)"
 
 
-@attrs.define
+@attrs.frozen
 class SkeletonMode3d(LayerSetting):
     """Skeletons as lines, or lines and points, in the 3d view. Hold the key and scroll to cycle through the options.
 
@@ -437,7 +438,7 @@ class SkeletonMode3d(LayerSetting):
     ui_label: ClassVar[str] = "Skeleton mode (3d)"
 
 
-@attrs.define
+@attrs.frozen
 class SkeletonLineWidth2d(LayerSetting):
     """Skeleton line width in the 2d views. Hold the key and scroll to adjust.
 
@@ -449,7 +450,7 @@ class SkeletonLineWidth2d(LayerSetting):
     ui_label: ClassVar[str] = "Line width (2d)"
 
 
-@attrs.define
+@attrs.frozen
 class SkeletonLineWidth3d(LayerSetting):
     """Skeleton line width in the 3d view. Hold the key and scroll to adjust.
 
@@ -461,7 +462,7 @@ class SkeletonLineWidth3d(LayerSetting):
     ui_label: ClassVar[str] = "Line width (3d)"
 
 
-@attrs.define
+@attrs.frozen
 class Dimension(Tool):
     """Step through one dimension, e.g. z, while the key is held.
 
@@ -616,7 +617,12 @@ class ToolPalette:
         return spec
 
 
-def bind_tools(state, requests: list, tag_layers: tuple = ()) -> None:
+def bind_tools(
+    state,
+    requests: list[tuple[Tool, Optional[str]]],
+    tag_layers: tuple[str, ...] = (),
+    reserved: Iterable[str] = (),
+) -> None:
     """Bind tools onto a built neuroglancer state, allocating keys viewer-wide.
 
     Keys are claimed in order of how deliberately they were chosen:
@@ -625,9 +631,11 @@ def bind_tools(state, requests: list, tag_layers: tuple = ()) -> None:
        kept as they are. Duplicates among them are warned about, since the viewer
        will drop one.
     2. Tools with an explicit `key`, which must be free, or this raises.
-    3. Tag tools that nglui generated on `tag_layers`, which keep their usual key
-       when it is free and otherwise move to the next free letter.
-    4. Tools with ``key=None``, which take the next free letter.
+    3. Tag tools that nglui generated on `tag_layers`. Each keeps its usual key
+       when that is free; the rest then move to the next free letters, with a
+       warning, and any left without a key are dropped, with a warning -- the tag
+       stays usable from the layer's annotation panel.
+    4. Tools with ``key=None``, which take the next free letter, or this raises.
 
     Parameters
     ----------
@@ -638,9 +646,14 @@ def bind_tools(state, requests: list, tag_layers: tuple = ()) -> None:
         layer's own ``tools`` list.
     tag_layers : tuple of str
         Names of nglui annotation layers whose tag tool bindings may be moved.
+    reserved : iterable of str
+        Keys bound elsewhere, e.g. by the viewer's ``extra`` JSON, which is merged
+        in after binding and would otherwise silently replace what lands there.
     """
     fixed, tag_bindings, kept = _existing_bindings(state, tag_layers)
     used = dict(fixed)
+    for key in reserved:
+        used.setdefault(key, "the viewer's extra toolBindings")
     resolved = []
     for tool, owner in requests:
         layer_name = tool.layer or owner
@@ -665,10 +678,35 @@ def bind_tools(state, requests: list, tag_layers: tuple = ()) -> None:
             target = layer_name if tool.is_layer_tool else None
             claim(tool.key, target, tool.to_json(), _describe(tool, layer_name))
 
+    # Tags whose usual key is free keep it, so one conflict moves only that tag
+    displaced = []
     for layer_name, key, value in tag_bindings:
         if key in used:
-            key = _next_free(used, _TAG_KEY_ORDER, "tag tools")
+            displaced.append((layer_name, key, value))
+        else:
+            claim(key, layer_name, value, f"a tag tool on layer '{layer_name}'")
+    moved, dropped = {}, {}
+    for layer_name, old_key, value in displaced:
+        key = next((k for k in _TAG_KEY_ORDER if k not in used), None)
+        if key is None:
+            dropped.setdefault(layer_name, []).append(_tag_label(value))
+            continue
         claim(key, layer_name, value, f"a tag tool on layer '{layer_name}'")
+        moved.setdefault(layer_name, []).append(f"{_tag_label(value)} {old_key}->{key}")
+    if moved:
+        warnings.warn(
+            "Tag tools moved to free keys, since Neuroglancer has one set of keys "
+            "for the whole viewer: "
+            + "; ".join(f"layer '{n}': {', '.join(m)}" for n, m in moved.items()),
+            stacklevel=4,
+        )
+    for layer_name, labels in dropped.items():
+        warnings.warn(
+            f"No free key is left for the tag tools {', '.join(labels)} on layer "
+            f"'{layer_name}'; they are left unbound and remain usable from the "
+            "layer's annotation panel.",
+            stacklevel=4,
+        )
 
     for tool, layer_name in resolved:
         if tool.key is None:
@@ -771,9 +809,16 @@ def _next_free(used: dict, order: str, what: str) -> str:
     if key is None:
         raise ValueError(
             f"Every key A-Z is in use, so no key is left for the {what}. "
-            "Set key=False on some tools, or use fewer tags."
+            "Set key=False on some tools to show them only in a palette."
         )
     return key
+
+
+def _tag_label(value) -> str:
+    """A readable name for a tag tool binding, for warnings."""
+    if isinstance(value, dict) and "property" in value:
+        return repr(value["property"])
+    return repr(_tool_type(value).removeprefix("tagTool_"))
 
 
 def _check_target(state, tool: Tool, layer_name: Optional[str]) -> None:
