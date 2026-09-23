@@ -50,7 +50,7 @@ class TestToolJson:
                 tools.ShaderControl(control="gain"),
                 {"type": "shaderControl", "control": "gain"},
             ),
-            (tools.LayerSetting(setting="objectAlpha"), {"type": "objectAlpha"}),
+            (tools.Alpha3d(), {"type": "objectAlpha"}),
             (
                 tools.Dimension(dimension="z"),
                 {"type": "dimension", "dimension": "z"},
@@ -61,7 +61,7 @@ class TestToolJson:
         assert tool.to_json() == expected
 
     def test_palette_json_carries_layer(self):
-        tool = tools.LayerSetting(setting="opacity", layer="img")
+        tool = tools.Opacity(layer="img")
         assert tool.to_json(layer_name="img") == {"type": "opacity", "layer": "img"}
 
     def test_layer_object_becomes_name(self):
@@ -73,9 +73,27 @@ class TestToolJson:
         with pytest.raises(ValueError, match="single capital letter"):
             tools.SelectSegments(key=key)
 
-    def test_invalid_setting(self):
-        with pytest.raises(ValueError):
-            tools.LayerSetting(setting="brightness")
+    def test_every_named_tool_is_in_the_neuroglancer_registry(self):
+        from neuroglancer import viewer_state
+
+        assert set(tools.TOOL_TYPES) <= set(viewer_state.tool_types)
+        for tool_type, cls in tools.TOOL_TYPES.items():
+            assert cls.tool_type == tool_type
+            assert cls.__name__ in tools.__all__
+
+    @pytest.mark.parametrize(
+        "cls, tool_type",
+        [
+            (tools.MeshSilhouette, "meshSilhouetteRendering"),
+            (tools.Alpha3d, "objectAlpha"),
+            (tools.SelectedAlpha, "selectedAlpha"),
+            (tools.MeshRenderScale, "meshRenderScale"),
+            (tools.SkeletonLineWidth3d, "skeletonRendering.lineWidth3d"),
+            (tools.Opacity, "opacity"),
+        ],
+    )
+    def test_named_settings(self, cls, tool_type):
+        assert cls(key="H").to_json() == {"type": tool_type}
 
 
 class TestBinding:
@@ -92,7 +110,7 @@ class TestBinding:
         vs.add_tools(
             tools.ShaderControl(layer="img"),
             tools.SelectSegments(layer="seg"),
-            tools.LayerSetting(layer="seg", setting="objectAlpha"),
+            tools.Alpha3d(layer="seg"),
         )
         d = vs.to_dict()
         keys = list(_layer(d, "img")["toolBindings"]) + list(
@@ -315,7 +333,7 @@ class TestPalettes:
     def test_add_tool_palette_only_lists(self):
         palette = tools.ToolPalette(
             "Display",
-            tools=[tools.LayerSetting(layer="img", setting="opacity")],
+            tools=[tools.Opacity(layer="img")],
             query="type:opacity",
         )
         vs = _state(ImageLayer(source=IMG_SRC)).add_tool_palette(palette)
@@ -420,3 +438,59 @@ class TestAnnotationActiveTool:
         vs = _state(raw).add_tools(tools.Dimension(dimension="z"))
         with pytest.warns(UserWarning, match="cannot restore annotation tools"):
             vs.to_dict()
+
+
+class TestLayerToolsMapping:
+    def test_mapping_of_names_classes_and_instances(self):
+        seg = SegmentationLayer(
+            source=SEG_SRC,
+            tools={
+                "H": "meshSilhouetteRendering",
+                "S": tools.SelectSegments,
+                "A": tools.Alpha3d(),
+            },
+        )
+        d = _state(seg).to_dict()
+        assert _layer(d, "seg")["toolBindings"] == {
+            "H": {"type": "meshSilhouetteRendering"},
+            "S": {"type": "selectSegments"},
+            "A": {"type": "objectAlpha"},
+        }
+
+    def test_mapping_through_add_segmentation_layer(self):
+        vs = _state().add_segmentation_layer(
+            SEG_SRC, name="seg", tools={"H": tools.MeshSilhouette}
+        )
+        assert _layer(vs.to_dict(), "seg")["toolBindings"] == {
+            "H": {"type": "meshSilhouetteRendering"}
+        }
+
+    def test_misspelled_name_fails_at_construction(self):
+        with pytest.raises(ValueError, match="Did you mean"):
+            SegmentationLayer(source=SEG_SRC, tools={"H": "meshSilhoutte"})
+
+    def test_wrong_layer_type_fails_at_construction(self):
+        with pytest.raises(ValueError, match="segmentation layers"):
+            ImageLayer(source=IMG_SRC, tools={"H": tools.MeshSilhouette})
+
+    def test_wrong_layer_type_on_assignment(self):
+        img = ImageLayer(source=IMG_SRC)
+        with pytest.raises(ValueError, match="segmentation layers"):
+            img.tools = [tools.SelectSegments()]
+
+    def test_annotation_tool_name_points_to_active_tool(self):
+        with pytest.raises(ValueError, match="active_tool"):
+            _anno(tools={"P": "annotatePoint"})
+
+    def test_tool_needing_options(self):
+        with pytest.raises(ValueError, match="needs options"):
+            SegmentationLayer(source=SEG_SRC, tools={"J": "dimension"})
+
+    def test_conflicting_key(self):
+        with pytest.raises(ValueError, match="one place"):
+            SegmentationLayer(source=SEG_SRC, tools={"H": tools.Alpha3d(key="J")})
+
+    def test_mapped_keys_join_viewer_allocation(self):
+        seg = SegmentationLayer(source=SEG_SRC, tools={"Z": tools.MeshSilhouette})
+        vs = _state(seg).add_tools(tools.Alpha3d(layer="seg"))
+        assert set(_layer(vs.to_dict(), "seg")["toolBindings"]) == {"Z", "X"}

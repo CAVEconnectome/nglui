@@ -682,7 +682,7 @@ class ViewerState:
         >>> from nglui.statebuilder import tools
         >>> vs.add_tools(
         ...     tools.SelectSegments(layer="seg", key="S"),
-        ...     tools.LayerSetting(layer="seg", setting="objectAlpha"),
+        ...     tools.MeshSilhouette(layer="seg"),
         ...     palette=tools.ToolPalette("Review", side="right"),
         ... )
         """

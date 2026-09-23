@@ -191,7 +191,7 @@ viewerstate.add_tools(
     tools.SelectSegments(layer="seg", key="S"),
     tools.MergeSegments(layer="seg"),                            # key assigned for you
     tools.ShaderControl(layer="img", control="normalized"),      # image contrast
-    tools.LayerSetting(layer="seg", setting="objectAlpha"),      # mesh transparency
+    tools.Alpha3d(layer="seg"),                                  # mesh transparency
     tools.Dimension(dimension="z"),                              # step through z
     palette=tools.ToolPalette("Review", side="right"),           # also show as buttons
 )
@@ -206,10 +206,31 @@ So nglui assigns keys when the state is built, once it knows every key in use:
 4. A tool with `key=None` gets the next free letter, and `key=False` binds no key, for a tool that should only appear in a palette.
 
 Layer tools accept the layer as a name or as the layer object, and are checked against the layer type (you cannot bind `SelectSegments` to an image layer).
-A layer can also carry its own tools, which need no `layer` argument: `SegmentationLayer(..., tools=[tools.SelectSegments()])`.
-These are bound only when the layer is part of a ViewerState.
+A layer can also carry its own tools, which need no `layer` argument.
+The most compact form maps keys to tools:
 
-The available tools are `SelectSegments`, `MergeSegments`, `SplitSegments`, `ShaderControl`, `LayerSetting` (any setting in `tools.LAYER_SETTINGS`), and `Dimension`.
+``` py
+SegmentationLayer(
+    source=seg_source,
+    tools={"H": tools.MeshSilhouette, "S": tools.SelectSegments},
+)
+```
+
+Values can be tool classes, tool objects (for tools with options, such as `tools.ShaderControl(control="gain")`), or Neuroglancer's tool type names such as `"meshSilhouetteRendering"`.
+Prefer the classes: a misspelled class name is flagged by your editor or type checker (pyright, mypy) before the code runs, while a misspelled string is only caught when the layer is created.
+Either way, a tool that does not suit the layer type -- `MeshSilhouette` on an image layer -- fails when the layer is created.
+Layer tools are bound only when the layer is part of a ViewerState, and their keys join the viewer-wide allocation above.
+
+The available tools are:
+
+| Layers | Tools |
+|---|---|
+| Segmentation | `SelectSegments`, `MergeSegments`, `SplitSegments`, `SelectedAlpha`, `NotSelectedAlpha`, `Alpha3d`, `MeshSilhouette`, `MeshRenderScale`, `Saturation`, `HideSegmentZero`, `HoverHighlight`, `BaseSegmentColoring`, `IgnoreNullVisibleSet`, `ColorSeed`, `SegmentDefaultColor`, `SkeletonMode2d`, `SkeletonMode3d`, `SkeletonLineWidth2d`, `SkeletonLineWidth3d` |
+| Image | `Opacity`, `Blend`, `VolumeRendering`, `VolumeRenderingGain`, `VolumeRenderingDepthSamples` |
+| Image or segmentation | `CrossSectionRenderScale`, `ShaderControl` (also annotation) |
+| Viewer | `Dimension` |
+
+Setting tools are named after the matching layer option where nglui has one (`mesh_silhouette` → `MeshSilhouette`, `alpha_3d` → `Alpha3d`); `tools.TOOL_TYPES` maps Neuroglancer's names to them.
 
 Annotation-placing tools are the exception: Neuroglancer can't restore them from a key binding or palette.
 Worse, it drops every binding after them on the same layer.

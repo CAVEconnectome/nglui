@@ -38,6 +38,7 @@ from .ngl_annotations import (
     unique_tags,
 )
 from .shaders import DEFAULT_SHADER_MAP
+from .tools import check_layer_type, coerce_layer_tools
 from .utils import (
     deep_merge,
     is_dict_like,
@@ -239,10 +240,27 @@ class Layer(ABC):
     archived = field(default=False, type=bool, kw_only=True, repr=False)
     pick = field(default=True, type=bool, kw_only=True, repr=False)
     extra = field(factory=dict, type=dict, kw_only=True, repr=False)
-    # Bound by the ViewerState, which allocates keys across all layers.
-    tools = field(factory=list, converter=list, kw_only=True, repr=False)
+    # Bound by the ViewerState, which allocates keys across all layers. A list of
+    # tools, or a mapping of key -> tool (a Tool, Tool class, or tool type name).
+    tools = field(
+        factory=list,
+        converter=coerce_layer_tools,
+        validator=lambda self, attribute, value: self._check_tools(value),
+        kw_only=True,
+        repr=False,
+    )
     _datamaps = field(factory=dict, type=dict, init=False, repr=False)
     _datamap_priority = field(factory=dict, type=dict, init=False, repr=False)
+
+    #: Neuroglancer layer type, for checking tools at construction; None skips it
+    _ng_layer_type = None
+
+    def _check_tools(self, value: list) -> None:
+        if self._ng_layer_type is None:
+            return
+        for tool in value:
+            if tool.layer is None or tool.layer == self.name:
+                check_layer_type(tool, self._ng_layer_type, self.name)
 
     @contextmanager
     def with_datamap(self, datamap: dict):
@@ -685,6 +703,7 @@ class ImageLayer(LayerWithSource):
         Raw Neuroglancer layer JSON merged over the layer last, for options nglui does not wrap.
     """
 
+    _ng_layer_type = "image"
     name = field(default="img", type=str)
     source = field(factory=list, type=Union[list, Source])
     shader = field(default=None, type=Optional[str], kw_only=True, repr=False)
@@ -832,6 +851,7 @@ class SegmentationLayer(LayerWithSource):
 
     """
 
+    _ng_layer_type = "segmentation"
     name = field(default="seg", type=str)
     source = field(default=None, type=Union[str, Source])
     segments = field(
@@ -1252,6 +1272,7 @@ class SegmentationLayer(LayerWithSource):
 
 @define
 class AnnotationLayer(LayerWithSource):
+    _ng_layer_type = "annotation"
     name = field(default="anno", type=str)
     source = field(default=None, type=Union[str, list, Source])
     resolution = field(default=None, type=list, kw_only=True, repr=False)

@@ -16,6 +16,7 @@ Examples
 >>> vs.add_tools(
 ...     tools.SelectSegments(layer="seg", key="S"),
 ...     tools.ShaderControl(layer="img", control="normalized"),  # key auto-assigned
+...     tools.MeshSilhouette(layer="seg"),
 ...     tools.Dimension(dimension="z"),
 ...     palette=tools.ToolPalette("Proofreading", side="right"),
 ... )
@@ -23,6 +24,7 @@ Examples
 
 from __future__ import annotations
 
+import difflib
 import re
 import warnings
 from typing import TYPE_CHECKING, ClassVar, Optional, Union
@@ -42,9 +44,33 @@ __all__ = [
     "SplitSegments",
     "ShaderControl",
     "LayerSetting",
+    "Opacity",
+    "Blend",
+    "VolumeRendering",
+    "VolumeRenderingGain",
+    "VolumeRenderingDepthSamples",
+    "CrossSectionRenderScale",
+    "SelectedAlpha",
+    "NotSelectedAlpha",
+    "Alpha3d",
+    "MeshSilhouette",
+    "MeshRenderScale",
+    "Saturation",
+    "HideSegmentZero",
+    "HoverHighlight",
+    "BaseSegmentColoring",
+    "IgnoreNullVisibleSet",
+    "ColorSeed",
+    "SegmentDefaultColor",
+    "SkeletonMode2d",
+    "SkeletonMode3d",
+    "SkeletonLineWidth2d",
+    "SkeletonLineWidth3d",
     "Dimension",
     "ToolPalette",
-    "LAYER_SETTINGS",
+    "TOOL_TYPES",
+    "coerce_tool",
+    "coerce_layer_tools",
 ]
 
 _KEY_PATTERN = re.compile(r"^[A-Z]$")
@@ -55,32 +81,6 @@ _AUTO_KEY_ORDER = "ZXCVBNMYUIOPHJKLQWERTASDFG"
 # Where a tag tool goes when its usual key is taken: on after the tag keys, so a
 # second tagged layer's tags sit next to the first's.
 _TAG_KEY_ORDER = "QWERTASDFGYUIOPHJKLZXCVBNM"
-
-#: Layer settings Neuroglancer can bind to a key, adjusted by dragging while held.
-LAYER_SETTINGS = (
-    "opacity",
-    "blend",
-    "volumeRendering",
-    "volumeRenderingGain",
-    "volumeRenderingDepthSamples",
-    "crossSectionRenderScale",
-    "selectedAlpha",
-    "notSelectedAlpha",
-    "objectAlpha",
-    "hideSegmentZero",
-    "hoverHighlight",
-    "baseSegmentColoring",
-    "ignoreNullVisibleSet",
-    "colorSeed",
-    "segmentDefaultColor",
-    "meshRenderScale",
-    "meshSilhouetteRendering",
-    "saturation",
-    "skeletonRendering.mode2d",
-    "skeletonRendering.mode3d",
-    "skeletonRendering.lineWidth2d",
-    "skeletonRendering.lineWidth3d",
-)
 
 
 def _validate_key(instance, attribute, value):
@@ -186,22 +186,187 @@ class ShaderControl(Tool):
 
 @attrs.define
 class LayerSetting(Tool):
-    """Adjust a layer setting, such as opacity or mesh alpha, while the key is held.
+    """Base class for tools that adjust a layer setting while the key is held.
 
-    Parameters
-    ----------
-    setting : str
-        One of `LAYER_SETTINGS`, e.g. ``"opacity"``, ``"objectAlpha"``, or
-        ``"skeletonRendering.lineWidth3d"``.
+    Use the named subclasses, e.g. `MeshSilhouette` or `Alpha3d`, so a misspelled
+    setting is an attribute error your editor or type checker catches.
     """
 
-    setting: str = attrs.field(
-        kw_only=True, validator=attrs.validators.in_(LAYER_SETTINGS)
-    )
 
-    @property
-    def tool_type(self) -> str:  # type: ignore[override]
-        return self.setting
+@attrs.define
+class Opacity(LayerSetting):
+    """Image opacity."""
+
+    tool_type: ClassVar[str] = "opacity"
+    layer_types: ClassVar = ("image",)
+
+
+@attrs.define
+class Blend(LayerSetting):
+    """Image blend mode."""
+
+    tool_type: ClassVar[str] = "blend"
+    layer_types: ClassVar = ("image",)
+
+
+@attrs.define
+class VolumeRendering(LayerSetting):
+    """Image volume rendering mode."""
+
+    tool_type: ClassVar[str] = "volumeRendering"
+    layer_types: ClassVar = ("image",)
+
+
+@attrs.define
+class VolumeRenderingGain(LayerSetting):
+    """Volume rendering gain."""
+
+    tool_type: ClassVar[str] = "volumeRenderingGain"
+    layer_types: ClassVar = ("image",)
+
+
+@attrs.define
+class VolumeRenderingDepthSamples(LayerSetting):
+    """Volume rendering depth samples."""
+
+    tool_type: ClassVar[str] = "volumeRenderingDepthSamples"
+    layer_types: ClassVar = ("image",)
+
+
+@attrs.define
+class CrossSectionRenderScale(LayerSetting):
+    """2d rendering resolution (the UI's 'Resolution (slice)')."""
+
+    tool_type: ClassVar[str] = "crossSectionRenderScale"
+    layer_types: ClassVar = ("image", "segmentation")
+
+
+@attrs.define
+class SelectedAlpha(LayerSetting):
+    """2d opacity of selected segments (the UI's 'Opacity (on)')."""
+
+    tool_type: ClassVar[str] = "selectedAlpha"
+    layer_types: ClassVar = ("segmentation",)
+
+
+@attrs.define
+class NotSelectedAlpha(LayerSetting):
+    """2d opacity of unselected segments (the UI's 'Opacity (off)')."""
+
+    tool_type: ClassVar[str] = "notSelectedAlpha"
+    layer_types: ClassVar = ("segmentation",)
+
+
+@attrs.define
+class Alpha3d(LayerSetting):
+    """3d mesh opacity (the UI's 'Opacity (3d)')."""
+
+    tool_type: ClassVar[str] = "objectAlpha"
+    layer_types: ClassVar = ("segmentation",)
+
+
+@attrs.define
+class MeshSilhouette(LayerSetting):
+    """3d mesh silhouette (the UI's 'Silhouette (3d)')."""
+
+    tool_type: ClassVar[str] = "meshSilhouetteRendering"
+    layer_types: ClassVar = ("segmentation",)
+
+
+@attrs.define
+class MeshRenderScale(LayerSetting):
+    """Mesh level of detail (the UI's 'Resolution (mesh)')."""
+
+    tool_type: ClassVar[str] = "meshRenderScale"
+    layer_types: ClassVar = ("segmentation",)
+
+
+@attrs.define
+class Saturation(LayerSetting):
+    """Segment color saturation."""
+
+    tool_type: ClassVar[str] = "saturation"
+    layer_types: ClassVar = ("segmentation",)
+
+
+@attrs.define
+class HideSegmentZero(LayerSetting):
+    """Toggle hiding segment 0."""
+
+    tool_type: ClassVar[str] = "hideSegmentZero"
+    layer_types: ClassVar = ("segmentation",)
+
+
+@attrs.define
+class HoverHighlight(LayerSetting):
+    """Toggle highlighting the segment under the mouse."""
+
+    tool_type: ClassVar[str] = "hoverHighlight"
+    layer_types: ClassVar = ("segmentation",)
+
+
+@attrs.define
+class BaseSegmentColoring(LayerSetting):
+    """Toggle coloring supervoxels individually."""
+
+    tool_type: ClassVar[str] = "baseSegmentColoring"
+    layer_types: ClassVar = ("segmentation",)
+
+
+@attrs.define
+class IgnoreNullVisibleSet(LayerSetting):
+    """Toggle whether an empty selection shows everything."""
+
+    tool_type: ClassVar[str] = "ignoreNullVisibleSet"
+    layer_types: ClassVar = ("segmentation",)
+
+
+@attrs.define
+class ColorSeed(LayerSetting):
+    """Randomize segment colors."""
+
+    tool_type: ClassVar[str] = "colorSeed"
+    layer_types: ClassVar = ("segmentation",)
+
+
+@attrs.define
+class SegmentDefaultColor(LayerSetting):
+    """Single default segment color."""
+
+    tool_type: ClassVar[str] = "segmentDefaultColor"
+    layer_types: ClassVar = ("segmentation",)
+
+
+@attrs.define
+class SkeletonMode2d(LayerSetting):
+    """2d skeleton mode (lines, or lines and points)."""
+
+    tool_type: ClassVar[str] = "skeletonRendering.mode2d"
+    layer_types: ClassVar = ("segmentation",)
+
+
+@attrs.define
+class SkeletonMode3d(LayerSetting):
+    """3d skeleton mode (lines, or lines and points)."""
+
+    tool_type: ClassVar[str] = "skeletonRendering.mode3d"
+    layer_types: ClassVar = ("segmentation",)
+
+
+@attrs.define
+class SkeletonLineWidth2d(LayerSetting):
+    """2d skeleton line width."""
+
+    tool_type: ClassVar[str] = "skeletonRendering.lineWidth2d"
+    layer_types: ClassVar = ("segmentation",)
+
+
+@attrs.define
+class SkeletonLineWidth3d(LayerSetting):
+    """3d skeleton line width."""
+
+    tool_type: ClassVar[str] = "skeletonRendering.lineWidth3d"
+    layer_types: ClassVar = ("segmentation",)
 
 
 @attrs.define
@@ -222,6 +387,87 @@ class Dimension(Tool):
 
     def _options(self) -> dict:
         return {"dimension": self.dimension}
+
+
+def _concrete_tools(cls) -> list:
+    found = []
+    for sub in cls.__subclasses__():
+        if isinstance(sub.__dict__.get("tool_type"), str) and sub.tool_type:
+            found.append(sub)
+        found.extend(_concrete_tools(sub))
+    return found
+
+
+#: Neuroglancer tool type -> nglui tool class, for every bindable tool
+TOOL_TYPES: dict = {cls.tool_type: cls for cls in _concrete_tools(Tool)}
+
+
+def coerce_tool(value) -> Tool:
+    """Make a Tool from a Tool, a Tool class, or a Neuroglancer tool type name.
+
+    Raises
+    ------
+    ValueError
+        If a name is not a bindable tool type, or names a tool that needs options.
+    """
+    if isinstance(value, Tool):
+        return value
+    if isinstance(value, type) and issubclass(value, Tool):
+        cls = value
+    elif isinstance(value, str):
+        cls = TOOL_TYPES.get(value)
+        if cls is None:
+            close = difflib.get_close_matches(value, TOOL_TYPES, n=3)
+            hint = f" Did you mean {close}?" if close else ""
+            raise ValueError(
+                f"{value!r} is not a bindable Neuroglancer tool type.{hint} "
+                "Annotation-placing tools cannot be bound; use active_tool."
+            )
+    else:
+        raise TypeError(
+            f"Expected a Tool, Tool class, or tool type name, got {value!r}."
+        )
+    try:
+        return cls()
+    except TypeError as err:
+        raise ValueError(
+            f"{cls.__name__} needs options; pass tools.{cls.__name__}(...) instead."
+        ) from err
+
+
+def coerce_layer_tools(value) -> list:
+    """Normalize a layer's ``tools``: a list of tools, or a mapping of key -> tool.
+
+    Values may be Tool instances, Tool classes, or Neuroglancer tool type names.
+
+    Examples
+    --------
+    >>> coerce_layer_tools({"H": "meshSilhouetteRendering", "S": tools.SelectSegments})
+    [MeshSilhouette(layer=None, key='H'), SelectSegments(layer=None, key='S')]
+    """
+    if value is None:
+        return []
+    if isinstance(value, dict):
+        out = []
+        for key, item in value.items():
+            tool = coerce_tool(item)
+            if tool.key is not None and tool.key != key:
+                raise ValueError(
+                    f"{type(tool).__name__} is mapped to key {key!r} but has "
+                    f"key={tool.key!r}; give the key in one place."
+                )
+            out.append(attrs.evolve(tool, key=key))
+        return out
+    return [coerce_tool(item) for item in value]
+
+
+def check_layer_type(tool: Tool, layer_type: str, layer_name: str) -> None:
+    """Raise if `tool` cannot act on a layer of `layer_type`."""
+    if tool.layer_types is not None and layer_type not in tool.layer_types:
+        raise ValueError(
+            f"{type(tool).__name__} works on {' or '.join(tool.layer_types)} layers, "
+            f"but layer '{layer_name}' has type {layer_type!r}."
+        )
 
 
 @attrs.define
@@ -450,12 +696,7 @@ def _check_target(state, tool: Tool, layer_name: Optional[str]) -> None:
             f"{type(tool).__name__} refers to layer '{layer_name}', which is not in "
             f"the viewer. Layers: {[layer.name for layer in state.layers]}"
         )
-    layer_type = state.layers[layer_name].type
-    if tool.layer_types is not None and layer_type not in tool.layer_types:
-        raise ValueError(
-            f"{type(tool).__name__} works on {' or '.join(tool.layer_types)} layers, "
-            f"but '{layer_name}' is a {layer_type} layer."
-        )
+    check_layer_type(tool, state.layers[layer_name].type, layer_name)
 
 
 def _bind(state, tool: Tool, layer_name: Optional[str], key: str) -> None:
@@ -472,17 +713,7 @@ def _describe(tool: Tool, layer_name: Optional[str]) -> str:
 
 # The tools here are all in neuroglancer-python's registry; make sure of it, since
 # binding an unregistered type raises inside the library.
-_missing = {
-    cls.tool_type
-    for cls in (
-        SelectSegments,
-        MergeSegments,
-        SplitSegments,
-        ShaderControl,
-        Dimension,
-    )
-} | set(LAYER_SETTINGS)
-_missing -= set(viewer_state.tool_types)
+_missing = set(TOOL_TYPES) - set(viewer_state.tool_types)
 if _missing:  # pragma: no cover - depends on the installed neuroglancer
     warnings.warn(
         f"The installed neuroglancer package does not know tool types {sorted(_missing)}; "
