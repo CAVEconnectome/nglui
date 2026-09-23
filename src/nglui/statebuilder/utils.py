@@ -1,4 +1,5 @@
 import copy
+import difflib
 import numbers
 import re
 from collections.abc import Iterable, Mapping
@@ -193,6 +194,27 @@ def omit_nones(seg_list):
 
 
 def parse_color(clr):
+    """Convert a color to a hex string.
+
+    Parameters
+    ----------
+    clr : str, number, or sequence of 3 numbers, or None
+        A hex string (``"#ff0000"``), a web color name (``"red"``), a single gray
+        level, or an RGB triple. RGB values between 0 and 1 are read as fractions,
+        so ``(1, 1, 1)`` is white. If any value is above 1, the color is read as
+        8-bit, which requires whole numbers from 0 to 255: ``(128, 128, 128)``.
+
+    Returns
+    -------
+    str or None
+        The color as ``"#rrggbb"``, or None if `clr` is None.
+
+    Raises
+    ------
+    ValueError
+        If RGB values fit neither convention, e.g. ``(1.5, 0, 0)`` or
+        ``(0.5, 200, 0)``: guessing would silently give the wrong color.
+    """
     if clr is None:
         return None
 
@@ -205,8 +227,15 @@ def parse_color(clr):
             return clr
         else:
             return webcolors.name_to_hex(clr)
-    else:
-        return webcolors.rgb_to_hex([int(255 * x) for x in clr])
+    values = [float(x) for x in clr]
+    if all(0 <= x <= 1 for x in values):
+        return webcolors.rgb_to_hex([int(255 * x) for x in values])
+    if all(0 <= x <= 255 and x.is_integer() for x in values):
+        return webcolors.rgb_to_hex([int(x) for x in values])
+    raise ValueError(
+        f"RGB color {tuple(clr)} is ambiguous: values must be all 0-1 or whole "
+        "numbers 0-255."
+    )
 
 
 def parse_graphene_header(source):
@@ -240,3 +269,102 @@ def _parse_to_mainline_imagery(qry):
             return f"precomputed://middleauth+http:{qry.path}"
     else:
         return qry.geturl()
+
+
+def deep_merge(base: dict, override: Mapping, remove_none: bool = True) -> dict:
+    """Merge `override` into a copy of `base`, recursing into nested dicts.
+
+    Values in `override` replace those in `base`, except that two dicts at the same
+    key are merged rather than replaced, and a value of None removes the key --
+    unless `remove_none` is False, which keeps the None so that a later merge can
+    still apply the removal.
+    Lists are replaced whole: Neuroglancer lists (layers, sources) are positional,
+    so an element-wise merge would silently pair up unrelated entries.
+
+    Parameters
+    ----------
+    base : dict
+        The dict to merge into. It is not modified.
+    override : Mapping
+        The values to lay over `base`.
+    remove_none : bool, optional
+        Whether a None in `override` deletes the key. Default is True.
+
+    Returns
+    -------
+    dict
+        The merged dict.
+
+    Examples
+    --------
+    >>> deep_merge({"a": {"b": 1, "c": 2}, "d": 3}, {"a": {"b": 5}, "d": None})
+    {'a': {'b': 5, 'c': 2}}
+    """
+    merged = copy.deepcopy(dict(base))
+    for key, value in override.items():
+        if value is None and remove_none:
+            merged.pop(key, None)
+        elif isinstance(value, Mapping) and isinstance(merged.get(key), Mapping):
+            merged[key] = deep_merge(merged[key], value, remove_none)
+        else:
+            merged[key] = copy.deepcopy(value)
+    return merged
+
+
+def one_of(*choices, optional: bool = False):
+    """An attrs validator requiring one of `choices`, with a readable error.
+
+    attrs' own ``in_`` validator raises with the whole field definition attached;
+    this names the field, lists the choices, and suggests a close match.
+
+    Parameters
+    ----------
+    *choices
+        The allowed values.
+    optional : bool, optional
+        Whether None is also allowed. Default is False.
+    """
+
+    def validate(instance, attribute, value):
+        if value is None and optional:
+            return
+        if value in choices:
+            return
+        close = difflib.get_close_matches(str(value), [str(c) for c in choices], n=1)
+        hint = f" Did you mean {close[0]!r}?" if close else ""
+        raise ValueError(
+            f"{attribute.name} must be one of {', '.join(repr(c) for c in choices)}; "
+            f"got {value!r}.{hint}"
+        )
+
+    return validate
+
+
+def drop_none(mapping: Mapping) -> dict:
+    """The items of `mapping` whose value is not None.
+
+    nglui leaves unset options out of the state, so Neuroglancer's own defaults
+    (or a base state's values) apply; this is how "unset" is filtered.
+    """
+    return {k: v for k, v in mapping.items() if v is not None}
+
+
+def set_fields(obj) -> dict:
+    """The fields of an attrs object that are set, i.e. not None."""
+    import attrs
+
+    return drop_none(attrs.asdict(obj, recurse=False))
+
+
+def to_camel(name: str) -> str:
+    """Convert a snake_case name to Neuroglancer's camelCase JSON key.
+
+    Examples
+    --------
+    >>> to_camel("projection_scale")
+    'projectionScale'
+    >>> to_camel("line_width_3d")
+    'lineWidth3d'
+    """
+    first, *rest = name.split("_")
+    return first + "".join(part[:1].upper() + part[1:] for part in rest)

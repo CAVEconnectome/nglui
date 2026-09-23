@@ -6,6 +6,45 @@ This project attempts to follow [Semantic Versioning](https://semver.org) and us
 
 ### Added
 
+- **StateBuilder**: Viewer presentation options are keyword arguments on `ViewerState` and `set_viewer_properties`, and properties on the state: `title`, `show_axis_lines`, `show_scale_bar`, `show_default_annotations`, `cross_section_background_color`, `projection_background_color`, `hide_cross_section_background_3d`, and `wire_frame`. Unset options are left out of the state, so Neuroglancer's defaults apply.
+- **StateBuilder**: `Camera` and `ViewerState.set_camera` set zoom, orientation, and depth for the 2d and 3d views. Orientations are a plane name (`"xy"`, `"xz"`, `"yz"`) or an `[x, y, z, w]` quaternion, and a `Camera` can be reused across many states. `scale_imagery` and `scale_3d` are shorthand for its zooms; setting them to values that conflict with a camera raises.
+- **StateBuilder**: `SidePanel` and `ViewerState.set_panels(layer_list_panel=, statistics_panel=, help_panel=, selected_layer_panel=)` open, close, and place Neuroglancer's side panels.
+- **StateBuilder**: Multi-panel layouts. `Panel` shows its own layers with its own view type and, optionally, its own camera, fixed or offset from the main view; `row` and `column` arrange panels, and `set_layout` or `layout=` accept them alongside the preset names.
+- **StateBuilder**: The `tools` module binds Neuroglancer tools to keys and shows them in tool palettes. Every bindable tool has a named class (`tools.MeshSilhouette`, `tools.Alpha3d`, `tools.SelectSegments`, `tools.ShaderControlTool`, ...) so editors can autocomplete them and flag typos, and each checks that it suits its layer's type. Bind them with `ViewerState.add_tools(...)` or on the layer, e.g. `SegmentationLayer(..., tools={"H": tools.MeshSilhouette})`, and group them with `ToolPalette`. Neuroglancer has one set of keys for the whole viewer and silently drops a tool bound to a key twice, so nglui assigns keys when the state is built: explicit keys must be free, and tools without one take the next free letter. A new *Tools and Key Bindings* page documents every tool.
+- **StateBuilder**: `AnnotationLayer(active_tool="point" | "line" | "box" | "ellipsoid" | "polyline")` starts an annotation layer with a drawing tool active. Neuroglancer cannot restore annotation-placing tools from key bindings -- a binding for one also drops every later binding on its layer -- so they are not offered as bindable tools.
+- **StateBuilder**: New layer display options. Image layers take `shader_controls`. Segmentation layers take `segment_query`, `saturation`, `color_seed`, `segment_default_color`, `mesh_render_scale`, `cross_section_render_scale`, `hover_highlight`, `base_segment_coloring`, `ignore_null_visible_set`, `linked_segmentation_group`, `linked_segmentation_color_group`, `equivalences`, `shader_controls`, and a `SkeletonRendering` for skeleton shaders, render modes, and line widths. Annotation layers take `shader_controls` and `ignore_null_segment_filter`.
+- **StateBuilder**: An `extra` argument on `ViewerState` and every layer merges raw Neuroglancer JSON over the built state last, for options nglui does not wrap, without resorting to a `base_state`.
+- **StateBuilder**: `ViewerState.add_points`, `add_lines`, `add_ellipsoids`, `add_boxes`, and `add_polylines` pass further `AnnotationLayer` options (such as `active_tool` or `shader_controls`) to the layer they create, and raise rather than silently ignore them for a layer that already exists.
+- **StateBuilder**: `shaders.InvlerpControl` declares an `invlerp` shader control for custom shaders.
+
+### Changed
+
+- **StateBuilder**: When several annotation layers have tags, the later layers' tag tools move to free keys instead of every layer binding `Q`, `W`, ... -- where Neuroglancer kept only one. Each tag keeps its usual key when it is free, moves are listed in a warning, and tags left without any free key are unbound, with a warning, and remain usable from the annotation panel. A single tagged layer's output is unchanged.
+- **StateBuilder**: A `base_state`'s layout, zoom, and slice settings are kept unless set explicitly; `layout` previously always overwrote the base state's.
+- **StateBuilder**: Selecting a layer -- `add_layer(..., selected=True)`, `selected_layer=`, or `set_selected_layer` -- now opens its panel; pass `set_selected_layer(layer, visible=False)` to select without opening. A selected layer that is not in the viewer raises.
+- **StateBuilder**: RGB colors are read as 0-1 when every value is within 0-1, so `(1, 1, 1)` is white, and as 8-bit when any value is above 1, so `(128, 128, 128)` is gray. Values that fit neither, such as `(1.5, 0, 0)`, raise; they were previously clamped, which turned 8-bit colors white.
+- **StateBuilder**: `ImageLayer.opacity` and `SegmentationLayer.hide_segment_zero` default to None, meaning Neuroglancer's default. The previously documented defaults were never actually emitted, so output is unchanged.
+- **StateBuilder**: `Camera`, `SidePanel`, `SkeletonRendering`, `Panel`, `ToolPalette`, and the tool classes are immutable, and `ViewerState.extra` is read-only, so changing them after a state has been built raises instead of being silently ignored.
+- **StateBuilder**: `shaders.InverlpControl` is a deprecated alias of `InvlerpControl`.
+- **Docs**: API reference pages document modules as `nglui.*` rather than `src.nglui.*`, which changes their link anchors.
+
+### Fixed
+
+- **StateBuilder**: Several options were accepted but never written to the state: `ImageLayer` `opacity`, `blend`, the volume rendering options, and `cross_section_render_scale`; `SegmentationLayer.hide_segment_zero`; `selected_layer`; and `filter_by_segmentation` on local annotation layers.
+- **StateBuilder**: `set_viewer_properties` turned off `infer_coordinates` on every call, and `set_viewer_properties(selected_layer_visible=...)` raised.
+- **StateBuilder**: `SegmentationLayer.set_view_options` ignored zero values, such as `not_selected_alpha=0`.
+- **StateBuilder**: `add_segments_from_data` and `add_segment_properties` failed when given a `DataMap`.
+- **StateBuilder**: A list-valued `filter_by_segmentation` emitted the link dictionary instead of the list, and a string value emitted nothing.
+- **StateBuilder**: `CoordSpaceTransform` failed on a plain list for `input_dimensions`.
+- **StateBuilder**: `linked_segmentation=False` raised, although it is documented to mean "do not link".
+- **StateBuilder**: Segment ids in `equivalences` above 2^53 were written as bare JSON numbers, which Neuroglancer's `JSON.parse` rounds -- so real root ids named different segments. They are now written as strings.
+- **StateBuilder**: `shaders.InverlpControl` generated a `#uicontrol` directive Neuroglancer rejects.
+- **Docs**: Building the docs locally crashed on every API reference page because the locked pymdown-extensions was incompatible with Pygments 2.20; `mkdocs build --strict` now passes with no warnings.
+
+## [4.8.0] - 2026-09-11
+
+### Added
+
 - **StateBuilder**: Annotation tags can now be emitted in main Neuroglancer's format, where a tag is an annotation property of `type: "bool"` bound to a `toggleBoolProperty` hotkey, alongside the existing Spelunker format. The encoding is chosen by what the target deployment supports rather than by a version number, since Neuroglancer is not semantically versioned. Pass `capabilities="main"` (tracking google/neuroglancer's main branch) or `capabilities="legacy"` (tracking Spelunker) to `ViewerState` or an `AnnotationLayer` to choose explicitly; left unset, nglui reads the deployment's own client bundle and looks for the features in it, which needs no list of known deployments and is not fooled by a fork's version string — Spelunker reported `v2.37` both before and after gaining the whole bool-property system. A deployment that cannot be identified is assumed to track main, and warns — set `capabilities="legacy"` or `set_default_capabilities("legacy")` for an unidentifiable deployment that predates bool annotation properties, which would otherwise drop the annotation layer rather than render it. That lookup only happens when a local annotation layer has tags, is cached, and never raises, so offline use is unaffected.
 - **StateBuilder**: The deployments nglui ships with (`spelunker`, `google`) have their capabilities declared in code, so targeting either costs no network request. `declare_capabilities()` records others, or corrects a shipped declaration that has gone stale without waiting for a release. A `network`-marked test re-validates the shipped declarations against the live deployments and is deselected by default.
 - **StateBuilder**: Capability lookups are cached per deployment origin for an hour and cleared with `clear_capability_cache()`; `prefetch()` warms one deliberately. Every URL pointing at the same viewer shares an entry, so a session working with many state links does not evict real answers from the cache.

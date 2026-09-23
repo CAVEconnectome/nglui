@@ -399,16 +399,10 @@ class TestParseColor:
             parse_color(invalid_name)
 
     def test_parse_color_rgb_out_of_range(self):
-        # Test behavior with out-of-range values
-        rgb_tuple = (2.0, -1.0, 0.5)
-
-        # webcolors.rgb_to_hex clamps values, so this should work
-        result = parse_color(rgb_tuple)
-        # 2.0*255=510 -> clamped to 255 = ff
-        # -1.0*255=-255 -> clamped to 0 = 00
-        # 0.5*255=127.5 -> int(127.5)=127 = 7f
-        assert isinstance(result, str)
-        assert result.startswith("#")
+        # Clamping turned a 0-255 color such as (128, 128, 128) into white, so
+        # out-of-range values raise instead
+        with pytest.raises(ValueError, match="all 0-1 or whole numbers 0-255"):
+            parse_color((2.0, -1.0, 0.5))
 
     def test_parse_color_wrong_tuple_length(self):
         invalid_tuple = (1.0, 0.0)  # Missing blue component

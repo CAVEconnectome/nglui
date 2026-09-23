@@ -42,8 +42,8 @@ class TestViewerStateCreation:
         vs = ViewerState()
         assert vs._target_site is None
         assert vs._position is None
-        assert vs._scale_imagery == 1.0
-        assert vs._scale_3d == 50000.0
+        assert vs.scale_imagery == 1.0
+        assert vs.scale_3d == 50000.0
         assert vs._show_slices is False
         assert vs._selected_layer is None
         assert vs._layout == "xy-3d"

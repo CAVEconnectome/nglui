@@ -1,8 +1,8 @@
 ---
-title: statebuilder.site_utils
+title: statebuilder.viewer_config
 ---
 
-::: nglui.statebuilder.site_utils
+::: nglui.statebuilder.viewer_config
     options:
         show_source: false
         heading_level: 2

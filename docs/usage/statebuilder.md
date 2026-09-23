@@ -31,8 +31,8 @@ Where possible, Statebuilder tries to tie components together as simply as possi
 
 !!! note
 
-    Current functionality is focused on viewing data. The many options for controlling the Neuroglancer interface are not yet implemented directly, although they are available in the underlying `neuroglancer` python library and JSON state.
-    You can always access the raw neuroglancer state with `vs.to_neuroglancer_state` for further manipulation.
+    Common viewer options -- title, camera, background colors, side panels -- are set directly (see [Viewer Options](#viewer-options)).
+    Anything nglui does not wrap can still be set with the `extra` argument, which takes raw Neuroglancer JSON, or by manipulating the neuroglancer state from `vs.to_neuroglancer_state()`.
 
 ## NGLui ViewerState
 
@@ -73,7 +73,7 @@ Which returns a [Neuroglancer Link](https://spelunker.cave-explorer.org/#!%7B%22
     You can turn off automated resolution suggestions by setting `infer_dimensions=False` in the ViewerState constructor or explicitly setting the dimensions like above.
     Note that Neuroglancer does not always behave well if the dimensions are not set ahead of time, for example by setting the initial location or zoom level to be extremely far from the data.
 
-Each function like [add_layer](../reference/statebuilder.md#src.nglui.statebuilder.base.ViewerState.add_layer) returns the layer object, so you can also initialize the layers in a pipeline.
+Each function like [add_layer](../reference/statebuilder.md#nglui.statebuilder.base.ViewerState.add_layer) returns the layer object, so you can also initialize the layers in a pipeline.
 This pipeline pattern is the one that we will typically use in this documentation.
 
 ``` py
@@ -96,6 +96,120 @@ viewerstate = (
 
 There are many such convenience functions, with the goal of making the most typical use cases as simple as possible while allowing for more complex configurations by using the underlying layer classes directly.
 
+### Viewer Options
+
+Simple, single-value options are keyword arguments on `ViewerState` (and on `set_viewer_properties`, to change them later).
+Options left unset are left out of the state, so Neuroglancer's own defaults apply.
+
+``` py
+viewerstate = ViewerState(
+    title="Pyramidal cell 864691135",   # shown in the browser tab
+    show_axis_lines=False,
+    show_scale_bar=False,
+    projection_background_color="white",
+    layout="3d",
+)
+```
+
+The full list is `title`, `show_axis_lines`, `show_scale_bar`, `show_default_annotations`, `cross_section_background_color`, `projection_background_color`, `hide_cross_section_background_3d`, and `wire_frame`.
+Colors can be names, hex strings, or RGB tuples, either 0-1 (`(1, 1, 1)` is white) or whole numbers 0-255 (`(128, 128, 128)`); a tuple with any value above 1 is read as 0-255.
+
+#### Camera
+
+Neuroglancer keeps separate zoom, orientation, and depth for the 2d cross-section views and the 3d projection view.
+Set them with `set_camera`, which only changes the values you pass:
+
+``` py
+viewerstate.set_camera(
+    projection_orientation="xz",   # look at the 3d view the way the xz panel does
+    projection_scale=12000,        # smaller is closer
+)
+```
+
+Orientations are either a plane name (`"xy"`, `"xz"`, `"yz"`) or an `[x, y, z, w]` quaternion, such as one copied from an existing state.
+Because a `Camera` is an object, you can define a view once and reuse it across many states:
+
+``` py
+from nglui.statebuilder import Camera
+
+side_view = Camera(projection_orientation=[0.5, 0.5, 0.5, 0.5], projection_scale=8000)
+
+for root_id in root_ids:
+    vs = ViewerState(camera=side_view).add_segmentation_layer(...)
+```
+
+`scale_imagery` and `scale_3d` are shorthand for the camera's `cross_section_scale` and `projection_scale`.
+
+#### Multi-panel Layouts
+
+A preset `layout` such as `"xy-3d"` or `"4panel"` shows every layer in every view.
+For side-by-side comparisons, build the layout from `Panel`s, each showing its own layers, arranged with `row` and `column`:
+
+``` py
+from nglui.statebuilder import Panel, row, column, Camera
+
+viewerstate.set_layout(
+    column(
+        row(
+            Panel(["cell_a"], layout="3d"),
+            Panel(["cell_b"], layout="3d", camera=Camera(projection_orientation="xz")),
+            flex=2,                                   # the top row takes 2/3 of the height
+        ),
+        Panel(["img", "cell_a", "cell_b"], layout="xy"),
+    )
+)
+```
+
+Each panel's `layout` is one of the presets, and its layers can be given by name or as layer objects; a panel with no layers shows all of them.
+Camera fields set on a panel are decoupled from the rest of the viewer, while unset fields follow the global camera; pass `camera_link="relative"` to make them an offset from the global view instead.
+
+#### Side Panels
+
+`set_panels` opens, closes, and places the layer list, statistics, help, and selected-layer panels.
+Pass `True`/`False` to open or close a panel, or a `SidePanel` to also choose its side and size:
+
+``` py
+from nglui.statebuilder import SidePanel
+
+viewerstate.set_panels(
+    layer_list_panel=True,
+    selected_layer_panel=SidePanel(side="right", size=500),
+)
+```
+
+The selected-layer panel shows whichever layer you select with `add_layer(..., selected=True)` or `set_selected_layer`, and selecting a layer opens it; `set_selected_layer(layer, visible=False)` selects without opening.
+
+#### Tools
+
+Neuroglancer tools are actions triggered with shift plus a bound key, or from a tool palette: selecting segments, adjusting a layer's display settings, or stepping through a dimension.
+The quickest way to bind them is on the layer they act on:
+
+``` py
+from nglui.statebuilder import tools
+
+SegmentationLayer(
+    source=seg_source,
+    tools={"H": tools.MeshSilhouette, "S": tools.SelectSegments},
+)
+```
+
+nglui assigns keys across the whole viewer when the state is built, so bindings never silently collide.
+See [Tools and Key Bindings](tools.md) for every available tool, what each one does in Neuroglancer, palettes, and how keys are assigned.
+
+#### Anything Else: `extra`
+
+For options nglui does not wrap, pass raw Neuroglancer state JSON as `extra`.
+It is merged into the finished state last, so it overrides anything nglui set; nested dictionaries are merged and a value of `None` removes a key.
+Every layer takes an `extra` argument as well, merged into that layer's JSON.
+
+``` py
+viewerstate = ViewerState(extra={"gpuMemoryLimit": 4_000_000_000, "concurrentDownloads": 64})
+seg = SegmentationLayer(source=..., extra={"meshRenderScale": 1})
+```
+
+Keys are Neuroglancer's JSON names (camelCase), exactly as they appear in a state's JSON.
+Neuroglancer does not validate them when building the state, so a misspelled key is silently ignored by the viewer.
+
 ### Exporting States...
 
 You can export the ViewerState to a Neuroglancer state in a number of formats that are useful for different purposes.
@@ -116,7 +230,7 @@ In a notebook context, it is often convenient to return the URL as a formatted H
 
 In addition, CAVE offers a [link shortener](https://caveconnectome.github.io/CAVEclient/tutorials/state/
 ) that can be used to store JSON states and return a shortened URL that can be used to access the state.
-We can use this link shortener directly using [to_link_shortener](../reference/statebuilder.md#src.nglui.statebuilder.base.ViewerState.to_link_shortener) and passing an appropriate CAVEclient client object.
+We can use this link shortener directly using [to_link_shortener](../reference/statebuilder.md#nglui.statebuilder.base.ViewerState.to_link_shortener) and passing an appropriate CAVEclient client object.
 
 ``` py
 from caveclient import CAVEclient
@@ -127,18 +241,18 @@ viewerstate.to_link_shortener(client)
 
 will upload the state and return a short link with a form like `'https://spelunker.cave-explorer.org/#!middleauth+https://global.daf-apis.com/nglstate/api/v1/4690769064493056'`.
 
-You can also use the link shortener in the [to_url](../reference/statebuilder.md#src.nglui.statebuilder.base.ViewerState.to_url) and [to_link](../reference/statebuilder.md#src.nglui.statebuilder.base.ViewerState.to_link) methods by setting the `shorten` argument to `True` or `if_long` and passing a CAVEclient object.
+You can also use the link shortener in the [to_url](../reference/statebuilder.md#nglui.statebuilder.base.ViewerState.to_url) and [to_link](../reference/statebuilder.md#nglui.statebuilder.base.ViewerState.to_link) methods by setting the `shorten` argument to `True` or `if_long` and passing a CAVEclient object.
 The `if_long` option will only shorten the url if it gets long enough to start breaking the URL length limits of most browsers, approximately 1.75 million characters.
 
 There are also convenience functions for copying the URL to the clipboard or opening it in a web browser, both of which have similar paramaters as the `to_url` method.
 
-The [to_clipboard](../reference/statebuilder.md#src.nglui.statebuilder.base.ViewerState.to_clipboard) method will copy the URL to your system clipboard, after passing through the link shortener:
+The [to_clipboard](../reference/statebuilder.md#nglui.statebuilder.base.ViewerState.to_clipboard) method will copy the URL to your system clipboard, after passing through the link shortener:
 
 ```py
 viewerstate.to_clipboard(shorten=True, client=client)
 ```
 
-And the [to_browser](../reference/statebuilder.md#src.nglui.statebuilder.base.ViewerState.to_browser) method will open the URL in your the web browser of your choosing, again after passing through the link shortener:
+And the [to_browser](../reference/statebuilder.md#nglui.statebuilder.base.ViewerState.to_browser) method will open the URL in your the web browser of your choosing, again after passing through the link shortener:
 
 ```py
 viewerstate.to_browser(shorten=True, client=client, browser='firefox')
@@ -268,6 +382,24 @@ img_layer_transformed = ImageLayer(
 The first three columns of the CoordSpaceTransform specify a linear transform matrix, while the last column is a translation vector.
 The 4th row is implicit and always `[0, 0, 0, 1]`, so it is not specified.
 
+#### Display Options
+
+Image layers take `opacity`, `blend`, `cross_section_render_scale`, and the volume rendering options `volume_rendering_mode`, `volume_rendering_gain`, and `volume_rendering_depth_samples`.
+Options you do not set are left to Neuroglancer's defaults.
+
+By default, nglui leaves the image shader to Neuroglancer, whose default maps intensity through an `invlerp` control named `normalized` -- the histogram and contrast slider in the layer's rendering tab.
+That default is almost always what you want, so leave it alone unless you need to pin a contrast range.
+
+To pin one, `shader_controls` sets the values of any `#uicontrol` a shader declares, keyed by name:
+
+``` py
+img_layer = ImageLayer(
+    source=em_source,
+    shader=my_shader,
+    shader_controls={"normalized": {"range": [40, 210]}, "brightness": 0.2},
+)
+```
+
 ### Segmentation Layers
 
 Segmentation layers are also volumetric data, but have objects with segment ids that can be selected, hidden, and visualized in 3d using meshes or skeletons.
@@ -327,6 +459,36 @@ seg_layer = (
 
 As in images, any specification of sources can be either a string URL or a list of URLs.
 
+#### Display Options
+
+Beyond `set_view_options`, segmentation layers take these options as keyword arguments:
+
+| Option | Effect |
+|---|---|
+| `segment_query` | Text in the layer's segment search box |
+| `saturation` | Saturation of segment colors, from 0 (gray) to 1 |
+| `color_seed` | Seed for random segment colors; change it for a different palette |
+| `segment_default_color` | One color for every segment without an explicit color |
+| `mesh_render_scale` | Mesh level of detail; smaller loads finer meshes |
+| `cross_section_render_scale` | Resolution of the 2d rendering; larger is coarser |
+| `hover_highlight` | Whether to highlight the segment under the mouse |
+| `base_segment_coloring` | Color supervoxels individually rather than by root |
+| `hide_segment_zero` | Whether segment 0 is hidden |
+| `ignore_null_visible_set` | Whether an empty selection shows nothing (True) or everything (False) |
+| `linked_segmentation_group` | Share segment visibility with another segmentation layer |
+| `linked_segmentation_color_group` | Share segment colors with another layer, or `False` to keep them separate |
+| `equivalences` | Groups of segment ids to treat as a single object |
+
+Linking is useful for showing the same cells two ways, for example a mesh layer and a skeleton-only layer that follows its selection:
+
+``` py
+vs = (
+    ViewerState()
+    .add_layer(SegmentationLayer(name="seg", source=seg_source, segments=root_ids))
+    .add_layer(SegmentationLayer(name="skel", source=skeleton_source, linked_segmentation_group="seg"))
+)
+```
+
 Would select all segment ids in `my_dataframe['pt_root_id']` to the segmentation layer, toggle their visibility by the boolean values in `my_dataframe['is_visible']`, and set their colors to the values in `my_dataframe['color_value']`.
 Colors can be hex values or web-readable color names, such as `'red'`, `'blue'`, or `'green'`.
 
@@ -371,6 +533,23 @@ See the [Segment Properties documentation](segmentprops.md) for more information
 The `shader` field of a segmentation layer currently specifies how skeletons are rendered in Neuroglancer.
 The `statebuilder.shaders` module has some examples and tooling to help generate these shaders, but GL shaders like this are effectively a new language.
 Once you have a shader you want to use, you can set it with the `add_shader` method of the segmentation layer.
+
+Other skeleton options -- line widths, whether to draw vertices, and values for the shader's controls -- go in a `SkeletonRendering`:
+
+``` py
+from nglui.statebuilder import SkeletonRendering
+
+seg_layer = SegmentationLayer(
+    source=seg_source,
+    skeleton_rendering=SkeletonRendering(
+        line_width_3d=3,
+        mode_3d="lines_and_points",
+        shader_controls={"axon_saturation": 0.5},
+    ),
+)
+```
+
+A shader can be given either as `shader` or inside `SkeletonRendering`, but not both.
 
 ### Annotation Layers
 
@@ -600,6 +779,27 @@ vs.add_annotation_layer(name="annos", tags=[...], strict_property_ids=True)
 ```
 
 
+#### Annotation Display Options
+
+Local and cloud annotation layers both take `shader_controls`, which sets values for the `#uicontrol` controls an annotation shader declares, and `ignore_null_segment_filter`.
+With `filter_by_segmentation`, annotations are shown only if linked to a visible segment, and `ignore_null_segment_filter=False` also hides annotations with no linked segment.
+`filter_by_segmentation` takes `True` (every linked relationship), a relationship name, or a list of them.
+
+The one-call helpers on the ViewerState -- `add_points`, `add_lines`, `add_ellipsoids`, `add_boxes`, and `add_polylines` -- pass any other `AnnotationLayer` option through to the layer they create:
+
+``` py
+vs.add_points(
+    syn_df,
+    name="synapses",
+    point_column="ctr_pt_position",
+    segment_column="pre_pt_root_id",
+    active_tool="point",                 # ready to place points on load
+    shader_controls={"size": 4},
+)
+```
+
+These options apply only when the call creates the layer; passing them for a layer that already exists raises an error instead of silently ignoring them.
+
 #### Cloud Annotations
 
 Cloud annotations are similar to local annotations, but they are stored in a cloud-hosted source.
@@ -622,7 +822,9 @@ However, there are a few changes you can make when bringing them into your Viewe
 If you're using raw layers, you might find it useful to be using a base state as well.
 You can provide a `base_state` state dictionary to the `ViewerState` class on creation.
 You can strip out inconvenient parts with functions `strip_layers` (which strips just the layer definitions and active layer) and `strip_state_properties`, which offers more selective control.
-This might be useful if you want to preserve things that cannot be easily set in the python interface such as complex tool panels. 
+This might be useful if you want to preserve things that cannot be easily set in the python interface such as complex tool panels.
+Values from a base state are kept unless you set them explicitly: for example, a base state's layout survives unless you also pass `layout`.
+For individual options, the `extra` argument (see [Viewer Options](#anything-else-extra)) is usually simpler than a base state.
 
 ### CAVEclient Integration
 

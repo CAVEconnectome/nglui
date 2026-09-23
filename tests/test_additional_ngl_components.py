@@ -195,5 +195,12 @@ class TestAdditionalNglComponents:
 
         # Test with list
         linked_seg = {"segments": "seg_layer", "meshes": "mesh_layer"}
+        # A list names the relationships to filter on; it is not the link map
         result = _handle_filter_by_segmentation(["segments"], linked_seg)
-        assert result == linked_seg
+        assert result == ["segments"]
+        assert _handle_filter_by_segmentation("meshes", linked_seg) == ["meshes"]
+        assert _handle_filter_by_segmentation(True, linked_seg) == [
+            "segments",
+            "meshes",
+        ]
+        assert _handle_filter_by_segmentation(False, linked_seg) == []

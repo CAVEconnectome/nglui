@@ -5,13 +5,25 @@ import json
 import warnings
 import webbrowser
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Literal, Optional, Union
+from types import MappingProxyType
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Generic,
+    Literal,
+    Optional,
+    TypeVar,
+    Union,
+    overload,
+)
 
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 
+import attrs
 import neuroglancer
 import numpy as np
 import pyperclip
@@ -20,6 +32,7 @@ from neuroglancer import viewer, viewer_base
 
 from . import source_info
 from .capabilities import Capabilities, capabilities_for_url, parse_capabilities
+from .layouts import Layout, Panel, StackLayout, layout_to_json, validate_layout
 from .ngl_components import (
     AnnotationLayer,
     CoordSpace,
@@ -30,11 +43,96 @@ from .ngl_components import (
     Source,
 )
 from .site_utils import MAX_URL_LENGTH, neuroglancer_url
-from .utils import NamedList, strip_layers, strip_state_properties
+from .tools import Tool, ToolPalette, add_palettes, bind_tools
+from .utils import (
+    NamedList,
+    deep_merge,
+    parse_color,
+    strip_layers,
+    strip_numpy_types,
+    strip_state_properties,
+)
+from .viewer_config import Camera, Orientation, SidePanel
 
 if TYPE_CHECKING:
     import caveclient
     import pandas as pd
+
+_DEFAULT_LAYOUT = "xy-3d"
+_DEFAULT_CROSS_SECTION_SCALE = 1.0
+_DEFAULT_PROJECTION_SCALE = 50000.0
+_DEFAULT_SHOW_SLICES = False
+
+
+# Top-level presentation options, emitted under the same attribute name on the
+# neuroglancer ViewerState. Each maps to its parser.
+def _require(kind: type):
+    """A parser that rejects values of the wrong type instead of coercing them.
+
+    ``bool("false")`` is True, so coercion would silently invert a mistyped flag.
+    """
+
+    def parse(name: str, value):
+        if kind is bool and isinstance(value, np.bool_):
+            value = bool(value)
+        if not isinstance(value, kind) or (
+            kind is not bool and isinstance(value, bool)
+        ):
+            raise TypeError(
+                f"{name} must be a {kind.__name__}, got {type(value).__name__} {value!r}."
+            )
+        return value
+
+    return parse
+
+
+def _color(name: str, value):
+    return parse_color(value)
+
+
+T = TypeVar("T")
+
+
+class _DisplayOption(Generic[T]):
+    """A top-level presentation option of a ViewerState, e.g. ``vs.title``.
+
+    Declared in the class body, rather than attached in a loop, so editors and type
+    checkers see each option. Setting None unsets it.
+    """
+
+    def __init__(self, parse: Callable[[str, Any], T], doc: str):
+        self.parse = parse
+        self.__doc__ = doc
+
+    def __set_name__(self, owner, name: str) -> None:
+        self.name = name
+
+    @overload
+    def __get__(self, obj: None, objtype: Any = None) -> _DisplayOption[T]: ...
+
+    @overload
+    def __get__(self, obj: object, objtype: Any = None) -> Optional[T]: ...
+
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        return obj._display.get(self.name)
+
+    def __set__(self, obj, value: Any) -> None:
+        if value is None:
+            obj._display.pop(self.name, None)
+            obj._reset_viewer()
+        else:
+            obj._set_display(**{self.name: value})
+
+
+# nglui panel name -> attribute of the neuroglancer ViewerState holding its location
+_PANELS = {
+    "layer_list_panel": "layer_list_panel",
+    "statistics_panel": "statistics",
+    "help_panel": "help_panel",
+    "selected_layer_panel": "selected_layer",
+}
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -85,6 +183,31 @@ class UnservedViewer(viewer_base.UnsynchronizedViewerBase):
 
 
 class ViewerState:
+    title = _DisplayOption[str](_require(str), "Title shown in the browser tab.")
+    show_axis_lines = _DisplayOption[bool](
+        _require(bool), "Whether the red/green/blue axis lines are drawn."
+    )
+    show_scale_bar = _DisplayOption[bool](
+        _require(bool), "Whether the scale bar is drawn."
+    )
+    show_default_annotations = _DisplayOption[bool](
+        _require(bool),
+        "Whether default annotations, such as the cross-section outline in 3d, are drawn.",
+    )
+    cross_section_background_color = _DisplayOption[str](
+        _color, "Background color of the 2d views, as a hex string."
+    )
+    projection_background_color = _DisplayOption[str](
+        _color, "Background color of the 3d view, as a hex string."
+    )
+    hide_cross_section_background_3d = _DisplayOption[bool](
+        _require(bool),
+        "Whether the cross-section plane's background is hidden in the 3d view.",
+    )
+    wire_frame = _DisplayOption[bool](
+        _require(bool), "Whether meshes are drawn as wire frames."
+    )
+
     def __init__(
         self,
         target_site: str = None,
@@ -93,14 +216,22 @@ class ViewerState:
         dimensions: Optional[Union[list, CoordSpace]] = None,
         *,
         position: Optional[Union[list, np.ndarray]] = None,
-        scale_imagery: float = 1.0,
-        scale_3d: float = 50000.0,
-        show_slices: bool = False,
+        scale_imagery: Optional[float] = None,
+        scale_3d: Optional[float] = None,
+        show_slices: Optional[bool] = None,
         selected_layer: Optional[str] = None,
-        selected_layer_visible: bool = False,
-        layout: Literal[
-            "xy", "yz", "xz", "xy-3d", "xz-3d", "yz-3d", "4panel", "3d", "4panel-alt"
-        ] = "xy-3d",
+        selected_layer_visible: bool = True,
+        layout: Optional[Layout] = None,
+        title: Optional[str] = None,
+        show_axis_lines: Optional[bool] = None,
+        show_scale_bar: Optional[bool] = None,
+        show_default_annotations: Optional[bool] = None,
+        cross_section_background_color: Optional[Union[str, tuple]] = None,
+        projection_background_color: Optional[Union[str, tuple]] = None,
+        hide_cross_section_background_3d: Optional[bool] = None,
+        wire_frame: Optional[bool] = None,
+        camera: Optional[Camera] = None,
+        extra: Optional[dict] = None,
         base_state: Optional[dict] = None,
         interactive: bool = False,
         infer_coordinates: bool = True,
@@ -127,13 +258,43 @@ class ViewerState:
         show_slices : bool
             Whether to show cross-sectional slices in the viewer. Default is False.
         selected_layer : str
-            The name of the selected layer. If None, no layer is selected.
+            The name of the selected layer, whose settings panel is shown. If None,
+            no layer is selected.
         selected_layer_visible : bool
-            Whether the selected layer is visible. Default is False.
-        layout : str
-            The panel layout of the viewer. Default is "xy-3d".
+            Whether the selected layer's panel is open. Default is True.
+        layout : str, Panel, or StackLayout
+            The panel layout of the viewer: a preset (default "xy-3d"), or rows and
+            columns of `Panel`s showing different layers. See `set_layout`.
+        title : str, optional
+            Title shown in the browser tab.
+        show_axis_lines : bool, optional
+            Whether to draw the red/green/blue axis lines. Neuroglancer's default is True.
+        show_scale_bar : bool, optional
+            Whether to draw the scale bar. Neuroglancer's default is True.
+        show_default_annotations : bool, optional
+            Whether to draw the default annotations, such as the outline of the
+            cross-section plane in the 3d view. Neuroglancer's default is True.
+        cross_section_background_color : str or tuple, optional
+            Background color of the 2d views, as a name, hex string, or RGB (0-1 or 0-255).
+        projection_background_color : str or tuple, optional
+            Background color of the 3d view, as a name, hex string, or RGB (0-1 or 0-255).
+        hide_cross_section_background_3d : bool, optional
+            Whether to hide the background of the cross-section plane where it
+            appears in the 3d view.
+        wire_frame : bool, optional
+            Whether to render meshes as wire frames.
+        camera : Camera, optional
+            Zoom, orientation, and depth for the 2d and 3d views. Its scales take
+            precedence over `scale_imagery` and `scale_3d`. See `set_camera`.
+        extra : dict, optional
+            Raw Neuroglancer state JSON (camelCase keys) for options nglui does not
+            wrap, deep-merged over the built state last so it wins over anything
+            nglui sets. A value of None removes that key.
+            For example, ``{"gpuMemoryLimit": 2_000_000_000}``.
         base_state : dict
             The base state of the viewer. If None, the default state will be used.
+            When given, its values for `scale_imagery`, `scale_3d`, `show_slices`,
+            and `layout` are kept unless those are set explicitly.
         interactive : bool
             Whether the viewer is interactive. Default is False.
         infer_coordinates : bool
@@ -153,12 +314,57 @@ class ViewerState:
         self._layers = NamedList(layers) if layers else NamedList()
         self._dimensions = dimensions
         self._position = position
-        self._scale_imagery = scale_imagery
-        self._scale_3d = scale_3d
-        self._show_slices = show_slices
+        # View settings the user set explicitly, which override a base state. The
+        # rest fall back to nglui's defaults only when there is no base state.
+        # Camera fields are None until set, so they track this themselves.
+        self._explicit_view = {
+            name
+            for name, value in [("show_slices", show_slices), ("layout", layout)]
+            if value is not None
+        }
+        self._camera = Camera(
+            cross_section_scale=scale_imagery, projection_scale=scale_3d
+        )
+        if camera is not None:
+            for shorthand, value, field_name in [
+                ("scale_imagery", scale_imagery, "cross_section_scale"),
+                ("scale_3d", scale_3d, "projection_scale"),
+            ]:
+                from_camera = getattr(camera, field_name)
+                if (
+                    value is not None
+                    and from_camera is not None
+                    and float(value) != from_camera
+                ):
+                    raise ValueError(
+                        f"{shorthand}={value} conflicts with camera.{field_name}="
+                        f"{from_camera}; they set the same zoom, so give only one."
+                    )
+            self._camera = self._camera.merge(camera)
+        self._show_slices = _DEFAULT_SHOW_SLICES
+        self._layout = _DEFAULT_LAYOUT
+        self._display = {}
+        self._set_display(
+            title=title,
+            show_axis_lines=show_axis_lines,
+            show_scale_bar=show_scale_bar,
+            show_default_annotations=show_default_annotations,
+            cross_section_background_color=cross_section_background_color,
+            projection_background_color=projection_background_color,
+            hide_cross_section_background_3d=hide_cross_section_background_3d,
+            wire_frame=wire_frame,
+        )
+        self._panels: dict[str, SidePanel] = {}
+        self._tools: list[Tool] = []
+        self._palettes: dict[str, ToolPalette] = {}
+        self._extra = strip_numpy_types(dict(extra)) if extra else {}
+        if show_slices is not None:
+            self._show_slices = show_slices
+        if layout is not None:
+            validate_layout(layout)
+            self._layout = layout
         self._selected_layer = selected_layer
         self._selected_layer_visible = selected_layer_visible
-        self._layout = layout
         self._base_state = base_state
         self._interactive = interactive
         self._saved_state_url = None
@@ -380,21 +586,257 @@ class ViewerState:
 
     @property
     def scale_imagery(self):
-        return self._scale_imagery
+        """Zoom of the 2d views; the camera's `cross_section_scale`."""
+        if self._camera.cross_section_scale is None:
+            return _DEFAULT_CROSS_SECTION_SCALE
+        return self._camera.cross_section_scale
 
     @scale_imagery.setter
     def scale_imagery(self, value):
-        self._scale_imagery = value
-        self._reset_viewer()
+        self.set_camera(cross_section_scale=value)
 
     @property
     def scale_3d(self):
-        return self._scale_3d
+        """Zoom of the 3d view; the camera's `projection_scale`."""
+        if self._camera.projection_scale is None:
+            return _DEFAULT_PROJECTION_SCALE
+        return self._camera.projection_scale
 
     @scale_3d.setter
     def scale_3d(self, value):
-        self._scale_3d = value
-        self._viewer = None
+        self.set_camera(projection_scale=value)
+
+    @property
+    def camera(self) -> Camera:
+        """The camera settings that have been set explicitly."""
+        return self._camera
+
+    @camera.setter
+    def camera(self, value: Camera):
+        self._camera = value if value is not None else Camera()
+        self._reset_viewer()
+
+    def set_camera(
+        self,
+        camera: Optional[Camera] = None,
+        *,
+        cross_section_scale: Optional[float] = None,
+        cross_section_orientation: Optional[Orientation] = None,
+        cross_section_depth: Optional[float] = None,
+        projection_scale: Optional[float] = None,
+        projection_orientation: Optional[Orientation] = None,
+        projection_depth: Optional[float] = None,
+    ) -> Self:
+        """Set the zoom, orientation, and depth of the 2d and 3d views.
+
+        Only the values given are changed; the rest keep their current settings.
+
+        Parameters
+        ----------
+        camera : Camera, optional
+            A camera whose set fields are applied, for reusing one view across states.
+        cross_section_scale : float, optional
+            Zoom of the 2d views. Same as `scale_imagery`.
+        cross_section_orientation : str or sequence of float, optional
+            Orientation of the 2d views, as a plane name (``"xy"``, ``"xz"``,
+            ``"yz"``) or an ``[x, y, z, w]`` quaternion.
+        cross_section_depth : float, optional
+            Depth of field of the 2d views.
+        projection_scale : float, optional
+            Zoom of the 3d view. Same as `scale_3d`.
+        projection_orientation : str or sequence of float, optional
+            Orientation of the 3d view, as a plane name or quaternion.
+        projection_depth : float, optional
+            Depth of the 3d view's clipping volume.
+
+        Returns
+        -------
+        ViewerState
+            The viewer state, for chaining.
+
+        Examples
+        --------
+        >>> vs.set_camera(projection_orientation="xz", projection_scale=5000)
+        """
+        if camera is not None:
+            self._camera = self._camera.merge(camera)
+        self._camera = self._camera.merge(
+            Camera(
+                cross_section_scale=cross_section_scale,
+                cross_section_orientation=cross_section_orientation,
+                cross_section_depth=cross_section_depth,
+                projection_scale=projection_scale,
+                projection_orientation=projection_orientation,
+                projection_depth=projection_depth,
+            )
+        )
+        self._reset_viewer()
+        return self
+
+    def _all_layer_names(self, s) -> list:
+        """Names of every layer the built state will have: the base state's and ours."""
+        names = [layer.name for layer in s.layers]
+        return names + [layer.name for layer in self.layers if layer.name not in names]
+
+    def _set_display(self, **options) -> None:
+        """Set presentation options, ignoring any passed as None."""
+        for name, value in options.items():
+            if value is not None:
+                self._display[name] = getattr(type(self), name).parse(name, value)
+        self._reset_viewer()
+
+    def set_panels(
+        self,
+        *,
+        layer_list_panel: Optional[Union[bool, SidePanel, dict]] = None,
+        statistics_panel: Optional[Union[bool, SidePanel, dict]] = None,
+        help_panel: Optional[Union[bool, SidePanel, dict]] = None,
+        selected_layer_panel: Optional[Union[bool, SidePanel, dict]] = None,
+    ) -> Self:
+        """Open, close, or place Neuroglancer's side panels.
+
+        Each panel takes a `SidePanel`, a dict of its fields, or a bool as shorthand
+        for ``SidePanel(visible=...)``. Only the panels and fields given are changed.
+
+        Parameters
+        ----------
+        layer_list_panel : bool, SidePanel, or dict, optional
+            The panel listing all layers.
+        statistics_panel : bool, SidePanel, or dict, optional
+            The chunk-download statistics panel.
+        help_panel : bool, SidePanel, or dict, optional
+            The keyboard and mouse bindings help panel.
+        selected_layer_panel : bool, SidePanel, or dict, optional
+            The panel for the selected layer's settings. Which layer it shows is set
+            with `set_selected_layer`; ``visible`` here takes precedence over it.
+
+        Returns
+        -------
+        ViewerState
+            The viewer state, for chaining.
+
+        Examples
+        --------
+        >>> vs.set_panels(
+        ...     layer_list_panel=True,
+        ...     selected_layer_panel=SidePanel(side="right", size=500),
+        ... )
+        """
+        given = dict(
+            layer_list_panel=layer_list_panel,
+            statistics_panel=statistics_panel,
+            help_panel=help_panel,
+            selected_layer_panel=selected_layer_panel,
+        )
+        for name, value in given.items():
+            if value is None:
+                continue
+            panel = SidePanel.coerce(value)
+            if name in self._panels:
+                panel = self._panels[name].merge(panel)
+            self._panels[name] = panel
+        self._reset_viewer()
+        return self
+
+    @property
+    def panels(self) -> dict[str, SidePanel]:
+        """Side panel settings, keyed by panel name."""
+        return dict(self._panels)
+
+    def add_tools(
+        self, *tools: Tool, palette: Optional[Union[str, ToolPalette]] = None
+    ) -> Self:
+        """Bind tools to keys, and optionally show them in a tool palette.
+
+        Keys are allocated across the whole viewer when the state is built, since
+        Neuroglancer has one key namespace for every layer: a tool's explicit `key`
+        must be free, and tools with ``key=None`` get the next free letter.
+
+        Parameters
+        ----------
+        *tools : Tool
+            Tools from `nglui.statebuilder.tools`. Layer tools need `layer` set, as
+            a layer name or object. Use ``key=False`` for a palette-only tool.
+        palette : str or ToolPalette, optional
+            A palette to also show these tools in, by name or as a `ToolPalette`
+            for placement. Tools are added to an existing palette of that name.
+
+        Returns
+        -------
+        ViewerState
+            The viewer state, for chaining.
+
+        Examples
+        --------
+        >>> from nglui.statebuilder import tools
+        >>> vs.add_tools(
+        ...     tools.SelectSegments(layer="seg", key="S"),
+        ...     tools.MeshSilhouette(layer="seg"),
+        ...     palette=tools.ToolPalette("Review", side="right"),
+        ... )
+        """
+        for tool in tools:
+            if not isinstance(tool, Tool):
+                raise TypeError(
+                    f"Expected a Tool from nglui.statebuilder.tools, got {tool!r}."
+                )
+        self._tools.extend(tools)
+        if palette is not None:
+            if isinstance(palette, str):
+                palette = ToolPalette(palette)
+            self.add_tool_palette(palette)
+            self._palettes[palette.name] = self._palettes[palette.name].with_tools(
+                *tools
+            )
+        self._reset_viewer()
+        return self
+
+    def add_tool_palette(self, palette: ToolPalette) -> Self:
+        """Add a tool palette, or update the placement of one with the same name.
+
+        Tools listed in `palette` are shown in it but not bound to keys; use
+        `add_tools` to bind them as well.
+
+        Parameters
+        ----------
+        palette : ToolPalette
+            The palette to add.
+
+        Returns
+        -------
+        ViewerState
+            The viewer state, for chaining.
+        """
+        existing = self._palettes.get(palette.name)
+        if existing is not None:
+            palette = attrs.evolve(palette, tools=(*existing.tools, *palette.tools))
+        self._palettes[palette.name] = palette
+        self._reset_viewer()
+        return self
+
+    @property
+    def tools(self) -> list[Tool]:
+        """Tools added with `add_tools`."""
+        return list(self._tools)
+
+    @property
+    def tool_palettes(self) -> dict[str, ToolPalette]:
+        """Tool palettes, keyed by name."""
+        return dict(self._palettes)
+
+    @property
+    def extra(self) -> dict:
+        """Raw Neuroglancer state JSON merged over the built state last.
+
+        Read-only; assign a new dict, or use ``set_viewer_properties(extra=...)`` to
+        merge into it, so the cached state is rebuilt.
+        """
+        return MappingProxyType(copy.deepcopy(self._extra))
+
+    @extra.setter
+    def extra(self, value: Optional[dict]):
+        self._extra = strip_numpy_types(dict(value)) if value else {}
+        self._reset_viewer()
 
     @property
     def show_slices(self):
@@ -403,7 +845,8 @@ class ViewerState:
     @show_slices.setter
     def show_slices(self, value):
         self._show_slices = value
-        self._viewer = None
+        self._explicit_view.add("show_slices")
+        self._reset_viewer()
 
     @property
     def selected_layer(self):
@@ -419,12 +862,30 @@ class ViewerState:
         self.set_selected_layer(value)
 
     def set_selected_layer(
-        self, selected_layer: Union[str, ImageLayer, SegmentationLayer, AnnotationLayer]
+        self,
+        selected_layer: Union[str, ImageLayer, SegmentationLayer, AnnotationLayer],
+        visible: bool = True,
     ) -> Self:
+        """Select a layer, showing its settings in the selected-layer panel.
+
+        Parameters
+        ----------
+        selected_layer : str or Layer
+            The layer, by name or object.
+        visible : bool, optional
+            Whether the panel is open. Default is True. Place the panel with
+            ``set_panels(selected_layer_panel=SidePanel(...))``.
+
+        Returns
+        -------
+        ViewerState
+            The viewer state, for chaining.
+        """
         if isinstance(selected_layer, str):
             self._selected_layer = selected_layer
         else:
             self._selected_layer = selected_layer.name
+        self._selected_layer_visible = visible
         self._reset_viewer()
         return self
 
@@ -432,28 +893,44 @@ class ViewerState:
     def selected_layer_visible(self):
         return self._selected_layer_visible
 
+    @selected_layer_visible.setter
+    def selected_layer_visible(self, value: bool):
+        self._selected_layer_visible = value
+        self._reset_viewer()
+
     @property
     def layout(self):
         return self._layout
 
     @layout.setter
     def layout(self, value):
-        if value not in [
-            "xy",
-            "yz",
-            "xz",
-            "xy-3d",
-            "xz-3d",
-            "yz-3d",
-            "4panel",
-            "3d",
-            "4panel-alt",
-        ]:
-            raise ValueError(
-                f"Invalid layout: {value}. Must be one of 'xy', 'yz', 'xz', 'xy-3d', 'xz-3d', 'yz-3d', '4panel', '3d', or '4panel-alt'."
-            )
+        validate_layout(value)
         self._layout = value
+        self._explicit_view.add("layout")
         self._reset_viewer()
+
+    def set_layout(self, layout: Layout) -> Self:
+        """Set the panel layout: a preset, or rows and columns of `Panel`s.
+
+        Parameters
+        ----------
+        layout : str, Panel, or StackLayout
+            A preset such as "xy-3d" or "4panel", which shows every layer in every
+            view; or a `Panel` or `row`/`column` of panels, each showing its own
+            layers with its own view type and optionally its own camera.
+
+        Returns
+        -------
+        ViewerState
+            The viewer state, for chaining.
+
+        Examples
+        --------
+        >>> from nglui.statebuilder import Panel, row
+        >>> vs.set_layout(row(Panel([img, seg], layout="xy"), Panel([seg], layout="3d")))
+        """
+        self.layout = layout
+        return self
 
     @property
     def base_state(self):
@@ -483,22 +960,20 @@ class ViewerState:
         show_slices: Optional[bool] = None,
         selected_layer: Optional[Union[str, ImageLayer]] = None,
         selected_layer_visible: Optional[bool] = None,
-        layout: Optional[
-            Literal[
-                "xy",
-                "yz",
-                "xz",
-                "xy-3d",
-                "xz-3d",
-                "yz-3d",
-                "4panel",
-                "3d",
-                "4panel-alt",
-            ]
-        ] = None,
+        layout: Optional[Layout] = None,
+        title: Optional[str] = None,
+        show_axis_lines: Optional[bool] = None,
+        show_scale_bar: Optional[bool] = None,
+        show_default_annotations: Optional[bool] = None,
+        cross_section_background_color: Optional[Union[str, tuple]] = None,
+        projection_background_color: Optional[Union[str, tuple]] = None,
+        hide_cross_section_background_3d: Optional[bool] = None,
+        wire_frame: Optional[bool] = None,
+        camera: Optional[Camera] = None,
+        extra: Optional[dict] = None,
         base_state: Optional[dict] = None,
         interactive: Optional[bool] = None,
-        infer_coordinates: bool = False,
+        infer_coordinates: Optional[bool] = None,
     ) -> Self:
         """
         Set various properties of the viewer state.
@@ -525,8 +1000,18 @@ class ViewerState:
             The name of the selected layer or the layer object itself.
         selected_layer_visible : bool, optional
             Whether the selected layer is visible.
-        layout : {"xy", "yz", "xz", "xy-3d", "xz-3d", "yz-3d", "4panel", "3d", "4panel-alt"}, optional
-            The panel layout of the viewer.
+        layout : str, Panel, or StackLayout, optional
+            The panel layout of the viewer; see `set_layout`.
+        title, show_axis_lines, show_scale_bar, show_default_annotations : optional
+            Presentation options; see the `ViewerState` constructor.
+        cross_section_background_color, projection_background_color : optional
+            Background colors; see the `ViewerState` constructor.
+        hide_cross_section_background_3d, wire_frame : bool, optional
+            Presentation options; see the `ViewerState` constructor.
+        camera : Camera, optional
+            Camera settings to apply; see `set_camera`.
+        extra : dict, optional
+            Raw Neuroglancer state JSON, deep-merged into any existing `extra`.
         base_state : dict, optional
             The base state of the viewer.
         interactive : bool, optional
@@ -562,6 +1047,21 @@ class ViewerState:
             self.selected_layer_visible = selected_layer_visible
         if layout is not None:
             self.layout = layout
+        self._set_display(
+            title=title,
+            show_axis_lines=show_axis_lines,
+            show_scale_bar=show_scale_bar,
+            show_default_annotations=show_default_annotations,
+            cross_section_background_color=cross_section_background_color,
+            projection_background_color=projection_background_color,
+            hide_cross_section_background_3d=hide_cross_section_background_3d,
+            wire_frame=wire_frame,
+        )
+        if camera is not None:
+            self.set_camera(camera)
+        if extra is not None:
+            # Keep None values: they delete keys from the built state at build time
+            self.extra = deep_merge(self._extra, extra, remove_none=False)
         if base_state is not None:
             self.base_state = base_state
         if interactive is not None:
@@ -988,6 +1488,32 @@ class ViewerState:
         )
         return self
 
+    def _get_or_create_annotation_layer(
+        self, name: str, layer_kwargs: dict, **create_kwargs
+    ) -> AnnotationLayer:
+        """The annotation layer called `name`, creating it if it doesn't exist.
+
+        `create_kwargs` and `layer_kwargs` are only used to create the layer; the
+        dataframe helpers raise rather than silently drop `layer_kwargs` given for
+        a layer that already exists.
+        """
+        if name not in self.layer_names:
+            layer = AnnotationLayer(name=name, **create_kwargs, **layer_kwargs)
+            self.add_layer(layer)
+            return layer
+        layer = self.get_layer(name)
+        if not isinstance(layer, AnnotationLayer):
+            raise ValueError(
+                f"Layer '{name}' already exists but is not an AnnotationLayer."
+            )
+        if layer_kwargs:
+            raise ValueError(
+                f"Layer '{name}' already exists, so layer options "
+                f"{sorted(layer_kwargs)} cannot be applied. Pass them when the "
+                "layer is first created, or set them on the layer object."
+            )
+        return layer
+
     def add_points(
         self,
         data: Optional[Union[list, np.ndarray, pd.DataFrame, DataMap]] = None,
@@ -1003,6 +1529,7 @@ class ViewerState:
         shader: Optional[str] = None,
         color: Optional[str] = None,
         swap_visible_segments_on_move: Union[bool, Literal["auto"]] = "auto",
+        **layer_kwargs: Any,
     ) -> Self:
         """Add points to an existing annotation layer or create a new one.
         Parameters
@@ -1042,6 +1569,11 @@ class ViewerState:
         swap_visible_segments_on_move: bool or "auto", optional
             If True, will swap the visibility of segments when moving points.
             If "auto" (default), will swap only when segment_column is provided.
+        **layer_kwargs
+            Further options for the annotation layer when this call creates it, such
+            as `active_tool`, `shader_controls`, `filter_by_segmentation`, `tools`, or
+            `extra`. See `AnnotationLayer`. Passing any when the layer already exists
+            raises, rather than silently ignoring them.
         Returns
         -------
         Self
@@ -1050,23 +1582,16 @@ class ViewerState:
         if swap_visible_segments_on_move == "auto":
             swap_visible_segments_on_move = segment_column is not None
 
-        if name in self.layer_names:
-            layer = self.get_layer(name)
-            if not isinstance(layer, AnnotationLayer):
-                raise ValueError(
-                    f"Layer {name} already exists but is not a AnnotationLayer."
-                )
-        else:
-            layer = AnnotationLayer(
-                name=name,
-                resolution=data_resolution,
-                tags=tags,
-                linked_segmentation=linked_segmentation,
-                color=color,
-                shader=shader,
-                swap_visible_segments_on_move=swap_visible_segments_on_move,
-            )
-            self.add_layer(layer)
+        layer = self._get_or_create_annotation_layer(
+            name,
+            layer_kwargs,
+            resolution=data_resolution,
+            tags=tags,
+            linked_segmentation=linked_segmentation,
+            color=color,
+            shader=shader,
+            swap_visible_segments_on_move=swap_visible_segments_on_move,
+        )
         layer.add_points(
             data,
             point_column=point_column,
@@ -1096,6 +1621,7 @@ class ViewerState:
         shader: Optional[str] = None,
         color: Optional[str] = None,
         swap_visible_segments_on_move: Union[bool, Literal["auto"]] = "auto",
+        **layer_kwargs: Any,
     ) -> Self:
         """Add lines to an existing annotation layer or create a new one.
 
@@ -1135,6 +1661,11 @@ class ViewerState:
         swap_visible_segments_on_move : bool or "auto", optional
             If True, will swap the visibility of segments when moving lines.
             If "auto" (default), will swap only when segment_column is provided.
+        **layer_kwargs
+            Further options for the annotation layer when this call creates it, such
+            as `active_tool`, `shader_controls`, `filter_by_segmentation`, `tools`, or
+            `extra`. See `AnnotationLayer`. Passing any when the layer already exists
+            raises, rather than silently ignoring them.
         Returns
         -------
         Self
@@ -1143,23 +1674,16 @@ class ViewerState:
         if swap_visible_segments_on_move == "auto":
             swap_visible_segments_on_move = segment_column is not None
 
-        if name in self.layer_names:
-            layer = self.get_layer(name)
-            if not isinstance(layer, AnnotationLayer):
-                raise ValueError(
-                    f"Layer {name} already exists but is not a AnnotationLayer."
-                )
-        else:
-            layer = AnnotationLayer(
-                name=name,
-                resolution=data_resolution,
-                tags=tags,
-                linked_segmentation=linked_segmentation,
-                shader=shader,
-                color=color,
-                swap_visible_segments_on_move=swap_visible_segments_on_move,
-            )
-            self.add_layer(layer)
+        layer = self._get_or_create_annotation_layer(
+            name,
+            layer_kwargs,
+            resolution=data_resolution,
+            tags=tags,
+            linked_segmentation=linked_segmentation,
+            color=color,
+            shader=shader,
+            swap_visible_segments_on_move=swap_visible_segments_on_move,
+        )
         layer.add_lines(
             data,
             point_a_column=point_a_column,
@@ -1188,6 +1712,7 @@ class ViewerState:
         shader: Optional[str] = None,
         color: Optional[str] = None,
         swap_visible_segments_on_move: Union[bool, Literal["auto"]] = "auto",
+        **layer_kwargs: Any,
     ) -> Self:
         """Add ellipsoid annotations to an existing annotation layer or create a new one.
 
@@ -1224,6 +1749,11 @@ class ViewerState:
         swap_visible_segments_on_move : bool or "auto", optional
             If True, will swap the visibility of segments when moving ellipsoids.
             If "auto" (default), will swap only when segment_column is provided.
+        **layer_kwargs
+            Further options for the annotation layer when this call creates it, such
+            as `active_tool`, `shader_controls`, `filter_by_segmentation`, `tools`, or
+            `extra`. See `AnnotationLayer`. Passing any when the layer already exists
+            raises, rather than silently ignoring them.
         Returns
         -------
         Self
@@ -1232,23 +1762,16 @@ class ViewerState:
         if swap_visible_segments_on_move == "auto":
             swap_visible_segments_on_move = segment_column is not None
 
-        if name in self.layer_names:
-            layer = self.get_layer(name)
-            if not isinstance(layer, AnnotationLayer):
-                raise ValueError(
-                    f"Layer {name} already exists but is not a AnnotationLayer."
-                )
-        else:
-            layer = AnnotationLayer(
-                name=name,
-                resolution=data_resolution,
-                tags=tags,
-                linked_segmentation=linked_segmentation,
-                shader=shader,
-                color=color,
-                swap_visible_segments_on_move=swap_visible_segments_on_move,
-            )
-            self.add_layer(layer)
+        layer = self._get_or_create_annotation_layer(
+            name,
+            layer_kwargs,
+            resolution=data_resolution,
+            tags=tags,
+            linked_segmentation=linked_segmentation,
+            color=color,
+            shader=shader,
+            swap_visible_segments_on_move=swap_visible_segments_on_move,
+        )
         layer.add_ellipsoids(
             data,
             center_column=center_column,
@@ -1277,6 +1800,7 @@ class ViewerState:
         shader: Optional[str] = None,
         color: Optional[str] = None,
         swap_visible_segments_on_move: Union[bool, Literal["auto"]] = "auto",
+        **layer_kwargs: Any,
     ) -> Self:
         """Add bounding box annotations to an existing annotation layer or create a new one.
 
@@ -1314,6 +1838,11 @@ class ViewerState:
             If True, will swap the visibility of segments when moving boxes.
             If "auto" (default), will swap only when segment_column is provided.
 
+        **layer_kwargs
+            Further options for the annotation layer when this call creates it, such
+            as `active_tool`, `shader_controls`, `filter_by_segmentation`, `tools`, or
+            `extra`. See `AnnotationLayer`. Passing any when the layer already exists
+            raises, rather than silently ignoring them.
         Returns
         -------
         Self
@@ -1322,23 +1851,16 @@ class ViewerState:
         if swap_visible_segments_on_move == "auto":
             swap_visible_segments_on_move = segment_column is not None
 
-        if name in self.layer_names:
-            layer = self.get_layer(name)
-            if not isinstance(layer, AnnotationLayer):
-                raise ValueError(
-                    f"Layer {name} already exists but is not a AnnotationLayer."
-                )
-        else:
-            layer = AnnotationLayer(
-                name=name,
-                resolution=data_resolution,
-                tags=tags,
-                linked_segmentation=linked_segmentation,
-                shader=shader,
-                color=color,
-                swap_visible_segments_on_move=swap_visible_segments_on_move,
-            )
-            self.add_layer(layer)
+        layer = self._get_or_create_annotation_layer(
+            name,
+            layer_kwargs,
+            resolution=data_resolution,
+            tags=tags,
+            linked_segmentation=linked_segmentation,
+            color=color,
+            shader=shader,
+            swap_visible_segments_on_move=swap_visible_segments_on_move,
+        )
         layer.add_boxes(
             data,
             point_a_column=point_a_column,
@@ -1366,6 +1888,7 @@ class ViewerState:
         shader: Optional[str] = None,
         color: Optional[str] = None,
         swap_visible_segments_on_move: Union[bool, Literal["auto"]] = "auto",
+        **layer_kwargs: Any,
     ) -> Self:
         """Add points to an existing annotation layer or create a new one.
         Parameters
@@ -1403,6 +1926,11 @@ class ViewerState:
         swap_visible_segments_on_move: bool or "auto", optional
             If True, will swap the visibility of segments when moving points.
             If "auto" (default), will swap only when segment_column is provided.
+        **layer_kwargs
+            Further options for the annotation layer when this call creates it, such
+            as `active_tool`, `shader_controls`, `filter_by_segmentation`, `tools`, or
+            `extra`. See `AnnotationLayer`. Passing any when the layer already exists
+            raises, rather than silently ignoring them.
         Returns
         -------
         Self
@@ -1411,23 +1939,16 @@ class ViewerState:
         if swap_visible_segments_on_move == "auto":
             swap_visible_segments_on_move = segment_column is not None
 
-        if name in self.layer_names:
-            layer = self.get_layer(name)
-            if not isinstance(layer, AnnotationLayer):
-                raise ValueError(
-                    f"Layer {name} already exists but is not a AnnotationLayer."
-                )
-        else:
-            layer = AnnotationLayer(
-                name=name,
-                resolution=data_resolution,
-                tags=tags,
-                linked_segmentation=linked_segmentation,
-                color=color,
-                shader=shader,
-                swap_visible_segments_on_move=swap_visible_segments_on_move,
-            )
-            self.add_layer(layer)
+        layer = self._get_or_create_annotation_layer(
+            name,
+            layer_kwargs,
+            resolution=data_resolution,
+            tags=tags,
+            linked_segmentation=linked_segmentation,
+            color=color,
+            shader=shader,
+            swap_visible_segments_on_move=swap_visible_segments_on_move,
+        )
         layer.add_polylines(
             data,
             points_column=points_column,
@@ -1533,18 +2054,76 @@ class ViewerState:
                 s.position = self._suggest_position_from_source(
                     resolution=self.dimensions.resolution
                 )
-            if self.layout:
-                s.layout = self.layout
             if s.dimensions.rank == 0:
                 s.dimensions = self.dimensions.to_neuroglancer()
+            view_settings = [
+                (
+                    "layout",
+                    "layout",
+                    layout_to_json(self.layout, self._all_layer_names(s)),
+                ),
+                ("show_slices", "show_slices", self.show_slices),
+            ]
+            for name, attr, value in view_settings:
+                if not self.base_state or name in self._explicit_view:
+                    setattr(s, attr, value)
+            camera = self._camera
             if not self.base_state:
-                s.cross_section_scale = self.scale_imagery
-                s.projection_scale = self.scale_3d
-                s.show_slices = self.show_slices
+                camera = Camera(
+                    cross_section_scale=_DEFAULT_CROSS_SECTION_SCALE,
+                    projection_scale=_DEFAULT_PROJECTION_SCALE,
+                ).merge(camera)
+            camera.apply_to_neuroglancer(s)
+            for name, value in self._display.items():
+                setattr(s, name, value)
+            if self._selected_layer is not None:
+                if self._selected_layer not in self._all_layer_names(s):
+                    raise ValueError(
+                        f"The selected layer {self._selected_layer!r} is not in the "
+                        f"viewer. Layers: {self._all_layer_names(s)}"
+                    )
+                s.selected_layer.layer = self._selected_layer
+                s.selected_layer.visible = self._selected_layer_visible
+            elif (
+                "selected_layer_panel" in self._panels
+                and self._panels["selected_layer_panel"].visible
+            ):
+                raise ValueError(
+                    "The selected-layer panel is set to open, but no layer is "
+                    "selected; choose one with set_selected_layer()."
+                )
+            for name, panel in self._panels.items():
+                panel.apply_to_neuroglancer(getattr(s, _PANELS[name]))
             capabilities = self._resolve_capabilities()
             for layer in self.layers:
                 layer.apply_to_neuroglancer(s, capabilities=capabilities)
+            # After every layer exists, so keys already bound by tags, raw layers,
+            # or a base state are known before any are handed out.
+            requests = [(tool, None) for tool in self._tools] + [
+                (tool, layer.name) for layer in self.layers for tool in layer.tools
+            ]
+            # Tag tools nglui generated may move to free keys; bindings from raw
+            # layers or a base state were chosen by the user and stay put.
+            tag_layers = tuple(
+                layer.name
+                for layer in self.layers
+                if isinstance(layer, AnnotationLayer) and layer.tags
+            )
+            # Keys the viewer's extra JSON binds are merged in after this, so the
+            # allocator must treat them as taken
+            reserved = [
+                key
+                for key, value in (self._extra.get("toolBindings") or {}).items()
+                if value is not None
+            ]
+            if requests or tag_layers:
+                bind_tools(s, requests, tag_layers=tag_layers, reserved=reserved)
+            add_palettes(s, self._palettes)
 
+        if self._extra:
+            self._viewer.set_state(
+                deep_merge(self._viewer.state.to_json(), self._extra)
+            )
         return self._viewer
 
     def map(self, datamap: dict, inplace: bool = False) -> Self:

@@ -195,7 +195,7 @@ class TestImageLayer:
         layer = ImageLayer(name="test_img")
         assert layer.name == "test_img"
         assert layer.source == []
-        assert layer.opacity == 1.0
+        assert layer.opacity is None  # defers to Neuroglancer's default
         assert layer.color is None
 
     def test_imagelayer_with_source(self):
