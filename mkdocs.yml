@@ -87,13 +87,16 @@ plugins:
             - https://docs.python.org/3/objects.inv
             - https://numpy.org/doc/stable/objects.inv
             - https://pandas.pydata.org/pandas-docs/stable/objects.inv
-          paths: [.]
+          paths: [src]
           options:
             show_source: false
             docstring_style: numpy
             docstring_section_style: list # list, table, spacy
             docstring_options:
               ignore_init_summary: false
+              # attrs generates __init__, which griffe cannot see, so documented
+              # parameters would all be reported as missing from the signature
+              warn_unknown_params: false
             merge_init_into_class: true
             show_root_heading: false
             show_root_toc_entry: false

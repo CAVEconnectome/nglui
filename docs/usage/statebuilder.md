@@ -73,7 +73,7 @@ Which returns a [Neuroglancer Link](https://spelunker.cave-explorer.org/#!%7B%22
     You can turn off automated resolution suggestions by setting `infer_dimensions=False` in the ViewerState constructor or explicitly setting the dimensions like above.
     Note that Neuroglancer does not always behave well if the dimensions are not set ahead of time, for example by setting the initial location or zoom level to be extremely far from the data.
 
-Each function like [add_layer](../reference/statebuilder.md#src.nglui.statebuilder.base.ViewerState.add_layer) returns the layer object, so you can also initialize the layers in a pipeline.
+Each function like [add_layer](../reference/statebuilder.md#nglui.statebuilder.base.ViewerState.add_layer) returns the layer object, so you can also initialize the layers in a pipeline.
 This pipeline pattern is the one that we will typically use in this documentation.
 
 ``` py
@@ -230,7 +230,7 @@ In a notebook context, it is often convenient to return the URL as a formatted H
 
 In addition, CAVE offers a [link shortener](https://caveconnectome.github.io/CAVEclient/tutorials/state/
 ) that can be used to store JSON states and return a shortened URL that can be used to access the state.
-We can use this link shortener directly using [to_link_shortener](../reference/statebuilder.md#src.nglui.statebuilder.base.ViewerState.to_link_shortener) and passing an appropriate CAVEclient client object.
+We can use this link shortener directly using [to_link_shortener](../reference/statebuilder.md#nglui.statebuilder.base.ViewerState.to_link_shortener) and passing an appropriate CAVEclient client object.
 
 ``` py
 from caveclient import CAVEclient
@@ -241,18 +241,18 @@ viewerstate.to_link_shortener(client)
 
 will upload the state and return a short link with a form like `'https://spelunker.cave-explorer.org/#!middleauth+https://global.daf-apis.com/nglstate/api/v1/4690769064493056'`.
 
-You can also use the link shortener in the [to_url](../reference/statebuilder.md#src.nglui.statebuilder.base.ViewerState.to_url) and [to_link](../reference/statebuilder.md#src.nglui.statebuilder.base.ViewerState.to_link) methods by setting the `shorten` argument to `True` or `if_long` and passing a CAVEclient object.
+You can also use the link shortener in the [to_url](../reference/statebuilder.md#nglui.statebuilder.base.ViewerState.to_url) and [to_link](../reference/statebuilder.md#nglui.statebuilder.base.ViewerState.to_link) methods by setting the `shorten` argument to `True` or `if_long` and passing a CAVEclient object.
 The `if_long` option will only shorten the url if it gets long enough to start breaking the URL length limits of most browsers, approximately 1.75 million characters.
 
 There are also convenience functions for copying the URL to the clipboard or opening it in a web browser, both of which have similar paramaters as the `to_url` method.
 
-The [to_clipboard](../reference/statebuilder.md#src.nglui.statebuilder.base.ViewerState.to_clipboard) method will copy the URL to your system clipboard, after passing through the link shortener:
+The [to_clipboard](../reference/statebuilder.md#nglui.statebuilder.base.ViewerState.to_clipboard) method will copy the URL to your system clipboard, after passing through the link shortener:
 
 ```py
 viewerstate.to_clipboard(shorten=True, client=client)
 ```
 
-And the [to_browser](../reference/statebuilder.md#src.nglui.statebuilder.base.ViewerState.to_browser) method will open the URL in your the web browser of your choosing, again after passing through the link shortener:
+And the [to_browser](../reference/statebuilder.md#nglui.statebuilder.base.ViewerState.to_browser) method will open the URL in your the web browser of your choosing, again after passing through the link shortener:
 
 ```py
 viewerstate.to_browser(shorten=True, client=client, browser='firefox')

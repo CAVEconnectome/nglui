@@ -359,14 +359,15 @@ class Layer(ABC):
 
     def to_dict(self, with_name: bool = True, capabilities=None) -> dict:
         """Convert the layer to a dictionary.
+
         Parameters
         ----------
         with_name : bool, optional
             Whether to include the name, visibility, and archived states of the layer in the dictionary, by default True.
             These are not typically included until the layer is part of a state, but adding them in allows the resulting data to be passed to a viewer state string.
-        datamap: dict, optional
-            A dictionary with keys being names of DataMap parameters and values being the data to be passed.
-            Must be provided if the layer has any datamaps registered.
+        capabilities : Capabilities, optional
+            What the target Neuroglancer deployment supports, which decides how
+            annotation tags are encoded. Defaults to the module-wide setting.
 
         Returns
         -------
@@ -697,7 +698,7 @@ class ImageLayer(LayerWithSource):
         name. Unset, the default image shader's ``invlerp`` control is left to
         Neuroglancer, which is usually the best contrast behavior; set a value only
         to pin one, e.g. ``{"normalized": {"range": [30, 220]}}``.
-    pick: bool, optional
+    pick : bool, optional
         Whether to allow cursor interaction with meshes and skeletons. Default is True.
     extra : dict, optional
         Raw Neuroglancer layer JSON merged over the layer last, for options nglui does not wrap.
@@ -844,7 +845,7 @@ class SegmentationLayer(LayerWithSource):
         Name of another segmentation layer to share segment colors with, or False to keep colors separate.
     equivalences : list of list of int, optional
         Groups of segment ids to treat as a single object.
-    pick: bool, optional
+    pick : bool, optional
         Whether to allow cursor interaction with meshes and skeletons. Default is True.
     extra : dict, optional
         Raw Neuroglancer layer JSON merged over the layer last, for options nglui does not wrap.
